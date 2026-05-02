@@ -1,0 +1,9 @@
+digraph MainFlow {
+  package = "ru.kode.demo.feature.main.routing"
+
+  mainFlow [
+    type = "flow"
+  ]
+
+  mainFlow -> main
+}

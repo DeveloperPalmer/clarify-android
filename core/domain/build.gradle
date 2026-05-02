@@ -1,0 +1,10 @@
+plugins {
+  id "kotlin-convention"
+}
+
+dependencies {
+  api libs.bundles.core
+  api libs.remo
+  api project(":lib:log:log")
+  api project(":lib:resource-refs:resource-refs")
+}

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_refresh">Обновить</string>
+
+    <string name="error_something_went_wrong_title">Что-то пошло не так</string>
+    <string name="error_something_went_wrong_description">Попробуй еще раз или зайди попозже</string>
+
+    <string name="error_no_connection_title">Нет связи</string>
+    <string name="error_no_connection_description">Возможно проблемы с интернетом. Попробуй еще раз или зайди попозже</string>
+
+    <string name="error_server_timeout_title">@string/error_something_went_wrong_title</string>
+    <string name="error_server_timeout_description">@string/error_something_went_wrong_description</string>
+
+    <string name="error_ssl_error_title">@string/error_something_went_wrong_title</string>
+    <string name="error_ssl_error_description">@string/error_something_went_wrong_description</string>
+</resources>
