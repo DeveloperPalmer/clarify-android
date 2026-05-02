@@ -31,4 +31,7 @@
 # kept. Suspend functions are wrapped in continuations where the type argument
 # is used.
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+# Add the Chat SDK classes to the "do not obfuscate" list.
+-keep class com.tencent.imsdk.** { *; }
 ## END RETROFIT ##
