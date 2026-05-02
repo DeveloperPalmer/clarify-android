@@ -1,5 +1,5 @@
 digraph MainFlow {
-  package = "ru.kode.demo.feature.main.routing"
+  package = "ru.sla.clarify.feature.main.routing"
 
   mainFlow [
     type = "flow"
