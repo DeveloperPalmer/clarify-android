@@ -1,0 +1,90 @@
+// plugins block in groovy script doesn't support using "alias(..)"
+// see https://github.com/gradle/gradle/issues/15383#issuecomment-1396061277
+// but outside of plugins block everything works ok
+plugins {
+  id "org.jetbrains.kotlin.jvm"
+  id "com.diffplug.spotless"
+  id "io.gitlab.arturbosch.detekt"
+}
+
+kotlin {
+  jvmToolchain {
+    languageVersion = JavaLanguageVersion.of(11)
+  }
+}
+
+dependencies {
+  detektPlugins(files(rootProject.file("libs/detekt-rules-1.2.0.jar")))
+  detektPlugins(libs.detekt.rules.compose)
+}
+
+// kotlin-only projects do not have "android-specific" detektDebug tasks,
+// but we simulate it by forwarding to detektMain task.
+// This is done to make it possible to uniformly and recursively run all detekt tasks
+// from root-project's prePushCheck task
+tasks.register("detektDebug") { task ->
+  group = "verification"
+  task.dependsOn("detektMain")
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+  kotlinOptions {
+    jvmTarget = "11"
+    freeCompilerArgs += "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
+    freeCompilerArgs += "-opt-in=kotlinx.coroutines.FlowPreview"
+    freeCompilerArgs += "-opt-in=kotlin.contracts.ExperimentalContracts"
+  }
+}
+
+test {
+  useJUnitPlatform()
+  testLogging {
+    events = ["failed", "skipped", "passed", "standard_out", "standard_error"]
+    showExceptions true
+    showStackTraces true
+    showCauses true
+    exceptionFormat "full"
+  }
+}
+
+spotless {
+  kotlin {
+    target("**/*.kt")
+    targetExclude("**/build/**/*.*")
+    ktlint(libs.versions.ktlint.get()).editorConfigOverride(
+      [
+        "indent_size"    : "2",
+        "max_line_length": "120",
+        "disabled_rules" : "filename",
+      ]
+    )
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+}
+
+detekt {
+  config = files(rootProject.file("detekt-config.yml"))
+  ignoredBuildTypes = [ "release" ]
+}
+
+tasks.withType(io.gitlab.arturbosch.detekt.Detekt).configureEach {
+  jvmTarget = "11"
+  // "exclude(**/generated/**)" doesn't work for some reason, see
+  // https://github.com/detekt/detekt/issues/4127#issuecomment-1260733842
+  exclude {
+    // Use separator to make sure it also works on Windows
+    def sep = File.separator
+    it.file.absolutePath.contains("${sep}generated${sep}")
+  }
+  reports {
+    xml.required.set(false)
+    html.required.set(false)
+    txt.required.set(false)
+    sarif.required.set(false)
+  }
+}
+
+tasks.withType(io.gitlab.arturbosch.detekt.DetektCreateBaselineTask).configureEach {
+  jvmTarget = "11"
+}

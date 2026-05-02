@@ -1,0 +1,14 @@
+plugins {
+  id 'android-library-convention'
+  id 'android-compose-convention'
+}
+
+android {
+  namespace "ru.kode.resourcerefs.compose"
+}
+
+dependencies {
+  api project(":lib:resource-refs:resource-refs")
+  api libs.bundles.android.core
+  api libs.bundles.android.ui
+}

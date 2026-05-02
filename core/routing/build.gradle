@@ -1,0 +1,16 @@
+plugins {
+  id 'android-library-convention'
+  id 'android-compose-convention'
+}
+
+android {
+  namespace "ru.kode.demo.core.routing"
+}
+
+dependencies {
+  api project(":core:ui")
+  api project(":core:domain")
+
+  api libs.way
+  api libs.way.compose
+}

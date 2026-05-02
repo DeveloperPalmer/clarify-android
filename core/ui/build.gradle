@@ -1,0 +1,19 @@
+plugins {
+  id 'android-library-convention'
+  id 'android-compose-convention'
+}
+
+android {
+  namespace "ru.kode.demo.core.ui"
+}
+
+dependencies {
+  api libs.bundles.android.core
+  api libs.bundles.android.ui
+  api libs.amvi.viewmodel
+  api libs.amvi.compose
+  api libs.way
+
+  api project(":core:domain")
+  api project(":core:resources")
+}

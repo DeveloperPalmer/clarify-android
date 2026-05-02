@@ -1,0 +1,17 @@
+plugins {
+  id 'android-library-convention'
+  id 'dagger-convention'
+  id 'android-compose-convention'
+  alias(libs.plugins.way)
+}
+
+android {
+  namespace "ru.kode.demo.feature.main.routing"
+}
+
+dependencies {
+  implementation project(":core:routing")
+  api project(":feature:main:domain")
+  api project(":feature:main:ui")
+}
+
