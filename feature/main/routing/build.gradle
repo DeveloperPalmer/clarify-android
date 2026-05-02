@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-  namespace "ru.kode.demo.feature.main.routing"
+  namespace "ru.sla.clarify.feature.main.routing"
 }
 
 dependencies {

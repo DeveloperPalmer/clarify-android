@@ -34,7 +34,7 @@ buildCache {
   }
 }
 
-rootProject.name = "Demo"
+rootProject.name = "Clarify"
 includeBuild("build-conventions")
 include ':lib:log:log'
 include ':lib:log:android'

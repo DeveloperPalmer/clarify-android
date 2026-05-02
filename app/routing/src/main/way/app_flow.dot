@@ -1,5 +1,5 @@
 digraph AppFlow {
-  package = "ru.kode.demo.app.routing"
+  package = "ru.sla.clarify.app.routing"
 
   appFlow [type = "flow"]
   mainFlow [type = "schema"]

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-  namespace "ru.kode.demo.core.data"
+  namespace "ru.sla.clarify.core.data"
 }
 
 dependencies {
