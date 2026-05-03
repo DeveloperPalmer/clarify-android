@@ -1,10 +1,10 @@
-package ru.kode.resourcerefs.compose
+package ru.sla.resourcerefs.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import ru.kode.resourcerefs.TextRef
+import ru.sla.resourcerefs.TextRef
 
 @Suppress("SpreadOperator")
 // is not usually called on a performance-critical path

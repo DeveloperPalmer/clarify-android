@@ -1,4 +1,4 @@
-package ru.kode.log
+package ru.sla.log
 
 interface LogDriver {
   /**

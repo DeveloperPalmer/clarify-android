@@ -1,7 +1,7 @@
 package ru.sla.clarify.core.domain
 
-import ru.kode.log.LogPriority
-import ru.kode.log.log
+import ru.sla.log.LogPriority
+import ru.sla.log.log
 import kotlin.contracts.contract
 
 // Error logging is done quite often, it's worth it to have a shortcut function for this.

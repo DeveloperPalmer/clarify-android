@@ -1,4 +1,4 @@
-package ru.kode.resourcerefs
+package ru.sla.resourcerefs
 
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
