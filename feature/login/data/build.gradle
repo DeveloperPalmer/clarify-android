@@ -1,0 +1,14 @@
+plugins {
+  id 'android-library-convention'
+  id 'dagger-convention'
+}
+
+android {
+  namespace "ru.kode.skinepic.feature.login.data"
+}
+
+dependencies {
+  implementation project(":auth-session:data")
+  implementation project(":auth-session:domain")
+  implementation project(":feature:login:domain")
+}

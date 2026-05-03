@@ -103,6 +103,7 @@ android-ui = [
 ]
 
 [plugins]
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 cachefix = { id = "org.gradle.android.cache-fix", version.ref = "cachefix" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

@@ -1,0 +1,10 @@
+digraph LoginFlow {
+  package = "ru.sla.clarify.feature.login.routing"
+
+  loginFlow [
+    type = "flow",
+    resultType = "ru.kode.skinepic.feature.login.routing.LoginFlow.Result"
+  ]
+
+  loginFlow -> splashIntro
+}
