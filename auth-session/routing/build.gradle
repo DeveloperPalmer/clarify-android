@@ -1,0 +1,13 @@
+plugins {
+  id 'android-library-convention'
+}
+
+android {
+  namespace "ru.sla.clarify.auth.session.routing"
+}
+
+dependencies {
+  implementation project(":core:routing")
+  api project(":auth-session:data")
+}
+

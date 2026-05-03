@@ -13,27 +13,6 @@ dependencyResolutionManagement {
   }
 }
 
-// Enables gradle remote cache, but it can work incorrect in some cases,
-// to fix this need to apply special plugin (org.gradle.android.cache-fix)
-// For example, MergeResources task can cache wrong files
-// see details https://github.com/gradle/android-cache-fix-gradle-plugin
-buildCache {
-  def isCi = System.getenv().containsKey("CI")
-  local {
-    enabled = false // !isCi // disabled for now, too many issues with kapt+dagger
-  }
-  remote(HttpBuildCache) {
-    url = 'http://10.39.2.144:8880/cache/'
-    credentials {
-      username = 'gradle-user'
-      password = System.getenv("GRADLE_BUILD_CACHE_USER_PASSWORD")
-    }
-    allowInsecureProtocol = true
-    allowUntrustedServer = true
-    push = isCi
-  }
-}
-
 rootProject.name = "Clarify"
 includeBuild("build-conventions")
 include ':lib:log:log'
@@ -51,6 +30,9 @@ include ':core:domain'
 include ':core:ui'
 include ':core:routing'
 include ':uikit'
+include ':auth-session:data'
+include ':auth-session:domain'
+include ':auth-session:routing'
 include ':feature:main:domain'
 include ':feature:main:ui'
 include ':feature:main:routing'
