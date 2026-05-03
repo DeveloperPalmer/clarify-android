@@ -16,4 +16,5 @@ dependencies {
 
   api project(":core:domain")
   api project(":core:resources")
+  api project(":lib:resource-refs:resource-refs-compose")
 }
