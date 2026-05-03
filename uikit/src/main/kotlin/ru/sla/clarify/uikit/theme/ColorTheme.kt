@@ -1,6 +1,7 @@
 package ru.sla.clarify.uikit.theme
 
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 
 enum class ColorTheme {
   Light, Dark
@@ -8,16 +9,20 @@ enum class ColorTheme {
 
 internal val LightColors = AppColors(
   isLight = true,
-  color1 = ColorPalette.Red,
-  color2 = ColorPalette.Green,
-  color3 = ColorPalette.Blue
+  bgPrimary = Color.White,
+  textPrimary = Color.Black,
+  textInvertPrimary = Color.Black,
+  surfaceNegative = Color.Red,
+  buttonPrimaryBlackPress = Color.Gray
 )
 
 internal val DarkColors = AppColors(
   isLight = false,
-  color1 = ColorPalette.Blue,
-  color2 = ColorPalette.Green,
-  color3 = ColorPalette.Red
+  bgPrimary = Color.White,
+  textPrimary = Color.Black,
+  textInvertPrimary = Color.Black,
+  surfaceNegative = Color.Red,
+  buttonPrimaryBlackPress = Color.Gray
 )
 
 internal val LocalAppColors = staticCompositionLocalOf<AppColors> {

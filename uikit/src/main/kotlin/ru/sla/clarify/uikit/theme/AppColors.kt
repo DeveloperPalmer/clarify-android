@@ -6,8 +6,9 @@ import androidx.compose.ui.graphics.Color
 @Immutable
 data class AppColors(
   val isLight: Boolean,
-
-  val color1: Color,
-  val color2: Color,
-  val color3: Color
+  val bgPrimary: Color,
+  val textPrimary: Color,
+  val textInvertPrimary: Color,
+  val surfaceNegative: Color,
+  val buttonPrimaryBlackPress: Color
 )
