@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-  namespace "ru.kode.skinepic.feature.login.ui"
+  namespace "ru.sla.clarify.feature.login.ui"
 }
 
 dependencies {

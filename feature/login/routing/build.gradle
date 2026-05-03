@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-  namespace "ru.kode.skinepic.feature.login.routing"
+  namespace "ru.sla.clarify.feature.login.routing"
 }
 
 dependencies {

@@ -4,11 +4,15 @@ plugins {
 }
 
 android {
-  namespace "ru.kode.skinepic.feature.login.data"
+  namespace "ru.sla.clarify.feature.login.data"
 }
 
 dependencies {
+  implementation project(":core:domain")
   implementation project(":auth-session:data")
   implementation project(":auth-session:domain")
   implementation project(":feature:login:domain")
+
+  implementation libs.googleid
+  implementation libs.firebase.auth
 }

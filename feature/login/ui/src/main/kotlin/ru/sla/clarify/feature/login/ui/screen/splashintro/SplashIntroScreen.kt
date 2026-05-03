@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import ru.kode.amvi.component.compose.MviComponent
 import ru.kode.amvi.component.compose.rememberViewIntents
+import ru.sla.clarify.uikit.scaffold.ScreenScaffold
+import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
@@ -21,22 +23,32 @@ fun SplashIntroScreen(viewModel: SplashIntroViewModel) {
   MviComponent(
     viewModel = viewModel,
     intents = rememberViewIntents()
-  ) { _, intents ->
-    Column(
-      modifier = Modifier
-        .fillMaxSize()
-        .navigationBarsPadding(),
-      verticalArrangement = Arrangement.Bottom,
-      horizontalAlignment = Alignment.CenterHorizontally
+  ) { state, intents ->
+    val scaffoldState = rememberScreenScaffoldState()
+    scaffoldState.dialogError = state.dialogError
+    scaffoldState.snackbarError = state.snackbarError
+    ScreenScaffold(
+      state = scaffoldState,
+      onDismissDialogError = intents.dismissDialogError,
+      onDismissSnackbarError = intents.dismissSnackbarError
     ) {
-      VSpacer(30.dp)
-      Button(
+      Column(
         modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 16.dp),
-        onClick = intents.signIn
+          .fillMaxSize()
+          .navigationBarsPadding(),
+        verticalArrangement = Arrangement.Bottom,
+        horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        Text("Sign in")
+        VSpacer(30.dp)
+        Button(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+          enabled = !state.processing,
+          onClick = intents.signIn
+        ) {
+          Text("Sign in")
+        }
       }
     }
   }
