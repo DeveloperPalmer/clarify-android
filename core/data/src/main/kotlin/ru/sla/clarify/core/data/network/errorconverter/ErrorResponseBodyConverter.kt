@@ -7,10 +7,10 @@ import kotlinx.serialization.json.decodeFromStream
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody
 import retrofit2.Response
-import ru.kode.log.asLog
 import ru.sla.clarify.core.data.network.entity.ApiErrorBody
 import ru.sla.clarify.core.domain.entity.ApiError
 import ru.sla.clarify.core.domain.logError
+import ru.sla.log.asLog
 import java.io.IOException
 
 class ErrorResponseBodyConverter(

@@ -1,14 +1,14 @@
 package ru.sla.clarify.core.ui.mapper
 
-import ru.kode.log.asLog
-import ru.kode.resourcerefs.resRef
-import ru.kode.resourcerefs.strRef
 import ru.sla.clarify.core.domain.entity.ApiError
 import ru.sla.clarify.core.domain.entity.ConnectivityError
 import ru.sla.clarify.core.domain.logError
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.entity.UiError
 import ru.sla.clarify.core.ui.entity.UiMessage
+import ru.sla.log.asLog
+import ru.sla.resourcerefs.resRef
+import ru.sla.resourcerefs.strRef
 
 /**
  * Converts a commonly known domain error into a ui error.

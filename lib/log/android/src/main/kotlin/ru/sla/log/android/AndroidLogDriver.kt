@@ -1,9 +1,9 @@
-package ru.kode.log.android
+package ru.sla.log.android
 
 import android.util.Log
-import ru.kode.log.LogDriver
-import ru.kode.log.LogPriority
-import ru.kode.log.PriorityLogging
+import ru.sla.log.LogDriver
+import ru.sla.log.LogPriority
+import ru.sla.log.PriorityLogging
 
 class AndroidLogDriver(
   private val priorityLogging: (priority: LogPriority) -> PriorityLogging

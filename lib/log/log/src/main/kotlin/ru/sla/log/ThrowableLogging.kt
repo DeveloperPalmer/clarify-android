@@ -1,4 +1,4 @@
-package ru.kode.log
+package ru.sla.log
 
 import java.io.PrintWriter
 import java.io.StringWriter

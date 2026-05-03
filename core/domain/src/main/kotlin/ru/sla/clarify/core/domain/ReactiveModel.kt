@@ -2,7 +2,7 @@ package ru.sla.clarify.core.domain
 
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import ru.kode.log.asLog
+import ru.sla.log.asLog
 
 open class ReactiveModel : ru.kode.remo.ReactiveModel() {
   override fun onPostStart() {

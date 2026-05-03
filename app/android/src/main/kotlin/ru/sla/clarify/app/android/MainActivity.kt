@@ -13,8 +13,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import ru.kode.log.asLog
-import ru.kode.log.log
 import ru.kode.way.Back
 import ru.kode.way.Event
 import ru.kode.way.Ignore
@@ -27,6 +25,8 @@ import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.routing.FlowEventMediator
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
+import ru.sla.log.asLog
+import ru.sla.log.log
 
 class MainActivity : ComponentActivity() {
   private val exceptionHandler = CoroutineExceptionHandler { _, error -> log { error.asLog() } }

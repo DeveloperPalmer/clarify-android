@@ -43,4 +43,5 @@ class ChatManagerImpl @Inject constructor(
 }
 
 // TODO: @sla Chat. Add secure storage logic
+@Suppress("UnderscoresInNumericLiterals")
 private const val SDK_APP_ID = 20039812

@@ -1,7 +1,7 @@
 package ru.sla.clarify.core.ui.entity
 
 import androidx.compose.runtime.Immutable
-import ru.kode.resourcerefs.TextRef
+import ru.sla.resourcerefs.TextRef
 
 @Immutable
 data class UiMessage(
