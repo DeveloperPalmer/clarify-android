@@ -4,6 +4,7 @@ plugins {
   alias(libs.plugins.spotless)
   alias(libs.plugins.detekt)
   alias(libs.plugins.cachefix)
+  alias(libs.plugins.google.services)
 
   id "dagger-convention"
   id "android-compose-convention"
@@ -102,6 +103,7 @@ dependencies {
 
   coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
   implementation libs.androidx.activity.compose
+  implementation libs.firebase.boom
   implementation project(":lib:log:android")
   implementation project(":build-config")
 

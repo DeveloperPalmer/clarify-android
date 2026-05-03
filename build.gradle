@@ -2,6 +2,7 @@ plugins {
   alias(libs.plugins.android.application) apply false
   alias(libs.plugins.kotlin.android) apply false
   alias(libs.plugins.cachefix) apply false
+  alias(libs.plugins.google.services) apply false
   // NOTE do not add plugins used in *-convention.gradle here
   //   They must be added as deps to build-conventions/build.gradle!
 }
