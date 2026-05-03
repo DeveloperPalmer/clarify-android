@@ -1,0 +1,28 @@
+plugins {
+  id 'android-library-convention'
+  id 'dagger-convention'
+  alias(libs.plugins.sqldelight)
+}
+
+android {
+  namespace "ru.sla.clarify.database"
+}
+
+sqldelight {
+  databases {
+    InMemoryDB {
+      packageName = "ru.sla.clarify.database"
+      srcDirs('src/main/sqldelight/memory')
+    }
+    PersistedDB {
+      packageName = "ru.sla.clarify.database"
+      srcDirs('src/main/sqldelight/persisted')
+    }
+  }
+}
+
+dependencies {
+  implementation(libs.sqldelight.android.driver)
+  api(libs.sqldelight.coroutines)
+  api(project(":core:domain"))
+}
