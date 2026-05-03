@@ -1,0 +1,16 @@
+plugins {
+  id 'android-library-convention'
+  id 'dagger-convention'
+  alias(libs.plugins.kotlinx.serialization)
+}
+
+android {
+  namespace "ru.sla.clarify.auth.session.data"
+}
+
+dependencies {
+  api project(":database")
+  api project(":core:data")
+  api project(":build-config")
+  api project(":auth-session:domain")
+}
