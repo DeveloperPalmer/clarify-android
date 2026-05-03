@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
     val flowEventMediator = FlowEventMediator(coroutineScope)
     val component: AppFlowComponent = appComponent.appFlowComponentBuilder()
       .eventSink(flowEventMediator)
+      .activity(this)
       .build()
 
     val service = NavigationService<Unit>(AppFlow.schema, AppFlow.nodeBuilder(component), onFinishRequest = {
