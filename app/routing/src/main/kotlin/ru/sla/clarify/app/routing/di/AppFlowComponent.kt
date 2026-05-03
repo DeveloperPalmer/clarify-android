@@ -7,6 +7,7 @@ import dagger.Subcomponent
 import ru.sla.clarify.core.domain.di.scope.ActivityContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.ui.FlowEventSink
+import ru.sla.clarify.feature.login.routing.di.LoginFlowComponent
 import ru.sla.clarify.feature.main.routing.di.MainFlowComponent
 
 @SingleIn(AppFlowScope::class)
@@ -15,6 +16,7 @@ interface AppFlowComponent {
   fun nodeFactory(): AppFlowNodeFactory
 
   fun mainFlowComponent(): MainFlowComponent
+  fun loginFlowComponent(): LoginFlowComponent
 
   @Subcomponent.Builder
   interface Builder {

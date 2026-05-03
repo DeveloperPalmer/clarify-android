@@ -1,0 +1,17 @@
+plugins {
+  id 'android-library-convention'
+  id 'dagger-convention'
+  id 'android-compose-convention'
+  alias(libs.plugins.way)
+}
+
+android {
+  namespace "ru.kode.skinepic.feature.login.routing"
+}
+
+dependencies {
+  implementation project(":core:routing")
+  api project(":feature:login:domain")
+  api project(":feature:login:data")
+  api project(":feature:login:ui")
+}
