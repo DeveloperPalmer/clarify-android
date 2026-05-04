@@ -1,10 +1,11 @@
-package ru.sla.clarify.feature.login.data
+package ru.sla.clarify.google.authenticator
 
 import android.app.Activity
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import com.google.android.gms.tasks.Task
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -14,15 +15,18 @@ import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
 import ru.sla.clarify.app.domain.buildconfig.BuildType
+import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.core.domain.di.scope.ActivityContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
-import ru.sla.clarify.feature.login.domain.LoginScope
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
-@SingleIn(LoginScope::class)
+@SingleIn(AppFlowScope::class)
 class GoogleAuthenticator @Inject constructor(
   @ActivityContext
   private val context: Activity,
@@ -88,6 +92,23 @@ class GoogleAuthenticator @Inject constructor(
       .build()
 
     return GetCredentialRequest.Builder().addCredentialOption(googleId).build()
+  }
+}
+
+suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
+  addOnCompleteListener { task ->
+    val exception = task.exception
+    when {
+      task.isSuccessful -> {
+        continuation.resume(task.result)
+      }
+      exception != null -> {
+        continuation.resumeWithException(exception)
+      }
+      else -> {
+        continuation.resumeWithException(IllegalStateException("Task failed without exception"))
+      }
+    }
   }
 }
 

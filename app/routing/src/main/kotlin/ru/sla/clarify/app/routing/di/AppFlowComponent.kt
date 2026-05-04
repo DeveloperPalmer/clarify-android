@@ -4,6 +4,7 @@ import android.app.Activity
 import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.BindsInstance
 import dagger.Subcomponent
+import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.core.domain.di.scope.ActivityContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.ui.FlowEventSink

@@ -11,7 +11,9 @@ android {
 
 dependencies {
   api project(":core:routing")
+  api project(":app:domain")
   api project(":auth-session:data")
   api project(":feature:main:routing")
   api project(":feature:login:routing")
+  api project(":lib:google:authenticator")
 }
