@@ -7,9 +7,9 @@ import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.UserId
+import ru.sla.clarify.chat.UserSigGenerator
 import ru.sla.clarify.core.domain.di.scope.SingleIn
-import ru.sla.clarify.core.domain.randomUuid
-import ru.sla.clarify.database.firestore.users.Firestore
+import ru.sla.clarify.database.firestore.Firestore
 import ru.sla.clarify.feature.login.domain.LoginRepository
 import ru.sla.clarify.feature.login.domain.LoginScope
 import ru.sla.clarify.google.authenticator.GoogleAuthenticator
@@ -39,9 +39,9 @@ class LoginRepositoryImpl @Inject constructor(
 
         val userId = user.uid.stableUserIdValue()
 
-        firestore.registerUser(
+        firestore.signIn(
           userId = userId,
-          chatSignature = randomUuid()
+          chatSignature = UserSigGenerator.generate(userId.toString())
         )
         // Temporary token mapping until backend-issued auth tokens are introduced.
         authSessionRepository.startNew(

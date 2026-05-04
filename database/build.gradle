@@ -25,6 +25,8 @@ dependencies {
   api project(":core:domain")
   api libs.sqldelight.coroutines
 
+  implementation project(":auth-session:domain")
+  implementation libs.firebase.auth
   implementation libs.firebase.firestore
   implementation libs.sqldelight.android.driver
 }
