@@ -1,9 +1,11 @@
 package ru.sla.clarify.google.authenticator
 
 import android.app.Activity
+import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.google.android.gms.tasks.Task
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -22,6 +24,7 @@ import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.core.domain.di.scope.ActivityContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.log.log
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -36,6 +39,7 @@ class GoogleAuthenticator @Inject constructor(
   private val credentialManager = CredentialManager.create(context)
   private val firebaseAuth = Firebase.auth
 
+  @Suppress("TooGenericExceptionCaught")
   suspend fun auth(): SignInResult {
     return try {
       SignInResult.Success(signInInternal(buildConfig.buildType.googleClientId))
@@ -47,6 +51,17 @@ class GoogleAuthenticator @Inject constructor(
       SignInResult.Error(exception)
     } finally {
       firebaseAuth.signOut()
+    }
+  }
+
+  suspend fun signOut() {
+    firebaseAuth.signOut()
+    try {
+      val clearRequest = ClearCredentialStateRequest()
+      credentialManager.clearCredentialState(clearRequest)
+    } catch (e: ClearCredentialException) {
+      log { "Couldn't clear user credentials: ${e.localizedMessage}" }
+      throw e
     }
   }
 
