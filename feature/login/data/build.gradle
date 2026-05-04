@@ -14,4 +14,6 @@ dependencies {
   implementation project(":auth-session:data")
   implementation project(":auth-session:domain")
   implementation project(":feature:login:domain")
+
+  implementation libs.firebase.firestore
 }
