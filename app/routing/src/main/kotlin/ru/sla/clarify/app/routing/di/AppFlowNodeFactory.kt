@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.ContributesBinding
 import ru.kode.way.FlowNode
 import ru.kode.way.NodeBuilder
 import ru.kode.way.ScreenNode
+import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.app.routing.AppFlowNode
 import ru.sla.clarify.app.routing.AppFlowNodeBuilder
 import ru.sla.clarify.app.routing.InitialFlowResolveNode
