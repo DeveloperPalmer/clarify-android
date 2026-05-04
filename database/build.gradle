@@ -22,7 +22,9 @@ sqldelight {
 }
 
 dependencies {
-  implementation(libs.sqldelight.android.driver)
-  api(libs.sqldelight.coroutines)
-  api(project(":core:domain"))
+  api project(":core:domain")
+  api libs.sqldelight.coroutines
+
+  implementation libs.firebase.firestore
+  implementation libs.sqldelight.android.driver
 }

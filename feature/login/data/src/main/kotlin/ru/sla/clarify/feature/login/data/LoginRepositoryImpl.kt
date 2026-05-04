@@ -9,6 +9,7 @@ import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.UserId
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.randomUuid
+import ru.sla.clarify.database.firestore.users.Firestore
 import ru.sla.clarify.feature.login.domain.LoginRepository
 import ru.sla.clarify.feature.login.domain.LoginScope
 import ru.sla.clarify.google.authenticator.GoogleAuthenticator
@@ -19,7 +20,7 @@ import kotlin.math.abs
 @SingleIn(LoginScope::class)
 @ContributesBinding(LoginScope::class)
 class LoginRepositoryImpl @Inject constructor(
-  private val storage: LoginFirebaseStorage,
+  private val firestore: Firestore,
   private val googleAuthenticator: GoogleAuthenticator,
   private val authSessionRepository: AuthSessionRepository
 ) : LoginRepository {
@@ -38,7 +39,7 @@ class LoginRepositoryImpl @Inject constructor(
 
         val userId = user.uid.stableUserIdValue()
 
-        storage.registerUser(
+        firestore.registerUser(
           userId = userId,
           chatSignature = randomUuid()
         )
