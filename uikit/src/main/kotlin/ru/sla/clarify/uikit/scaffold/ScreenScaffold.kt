@@ -117,7 +117,10 @@ fun ScreenScaffold(
           if (dialogError.message.primaryAction != null) {
             val action = dialogError.message.primaryAction!!
             Button(
-              onClick = { onDismissDialogError(DialogDismissReason.PrimaryButtonClick); action.listener() }
+              onClick = {
+                onDismissDialogError(DialogDismissReason.PrimaryButtonClick)
+                action.listener()
+              }
             ) {
               Text(
                 style = AppTheme.typography.button,
@@ -148,7 +151,9 @@ fun ScreenScaffold(
               )
             }
           }
-        } else null,
+        } else {
+          null
+        },
         text = {
           Text(
             text = dialogError.message.description?.let { resolveTextRef(it) } ?: "Error"

@@ -7,7 +7,8 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import com.google.android.gms.tasks.Task
+import com.github.michaelbull.result.coroutines.runSuspendCatching
+import com.github.michaelbull.result.getOrElse
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -17,7 +18,6 @@ import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
 import ru.sla.clarify.app.domain.buildconfig.BuildType
@@ -26,8 +26,6 @@ import ru.sla.clarify.core.domain.di.scope.ActivityContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.log.log
 import javax.inject.Inject
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 @SingleIn(AppFlowScope::class)
 class GoogleAuthenticator @Inject constructor(
@@ -66,7 +64,7 @@ class GoogleAuthenticator @Inject constructor(
   }
 
   private suspend fun signInInternal(clientId: String): AuthResult {
-    val googleAuthResult = runCatching {
+    val googleAuthResult = runSuspendCatching {
       val signInWithGoogle = GetSignInWithGoogleOption.Builder(clientId)
         .build()
 

@@ -45,7 +45,9 @@ class Application : android.app.Application(), AppComponentHolder, BuildConfigPr
           BuildType.Internal -> PriorityLogging.Enabled
           BuildType.Release -> if (priority == LogPriority.Error || priority == LogPriority.Assert) {
             PriorityLogging.Enabled
-          } else PriorityLogging.Disabled
+          } else {
+            PriorityLogging.Disabled
+          }
         }
       }
     )

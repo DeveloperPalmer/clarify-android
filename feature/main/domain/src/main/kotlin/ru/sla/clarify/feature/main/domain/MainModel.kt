@@ -13,7 +13,7 @@ class MainModel @Inject constructor(
   private val authSessionRepository: AuthSessionRepository
 ) : ReactiveModel() {
 
-  val signOut = task(name = "signOut") { ->
+  val signOut = task<Unit>(name = "signOut") {
     googleAuthenticator.signOut()
     authSessionRepository.reset(cleanupStorage = true)
   }

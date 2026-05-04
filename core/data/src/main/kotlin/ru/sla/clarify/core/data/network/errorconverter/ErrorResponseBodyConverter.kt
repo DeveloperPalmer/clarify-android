@@ -42,7 +42,9 @@ class ErrorResponseBodyConverter(
         logError { e.asLog("failed to convert error to a predefined error format") }
         null
       }
-    } else null
+    } else {
+      null
+    }
   }
 }
 
@@ -56,7 +58,10 @@ private val ResponseBody.hasJsonType: Boolean
         this.contentType()?.subtype == MEDIA_TYPE_JSON.subtype
       ).also { success ->
       if (!success) {
-        logError { "expected content type of \"$MEDIA_TYPE_JSON\" but was: \"${contentType()}\"" }
+        logError {
+          "expected content type of \"$MEDIA_TYPE_JSON\" " +
+            "but was: \"${contentType()?.toString().orEmpty()}\""
+        }
       }
     }
   }

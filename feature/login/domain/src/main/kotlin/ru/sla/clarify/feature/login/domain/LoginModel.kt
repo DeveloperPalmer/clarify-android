@@ -9,7 +9,7 @@ class LoginModel @Inject constructor(
   private val loginRepository: LoginRepository
 ) : ReactiveModel() {
 
-  val signIn = task(name = "signIn") { ->
+  val signIn = task<Unit>(name = "signIn") {
     loginRepository.signIn()
   }
 }

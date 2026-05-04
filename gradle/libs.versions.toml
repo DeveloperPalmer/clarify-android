@@ -3,6 +3,7 @@
 agp = "8.11.1"
 ksp = "2.2.21-2.0.4"
 kotlin = "2.2.21"
+kotlin-result = "1.1.17"
 kotlinx-coroutines = "1.7.3"
 kotlinx-serialization-json = "1.5.1"
 androidx-core = "1.10.1"
@@ -21,10 +22,10 @@ dagger = "2.59.2"
 anvil = "2.7.0"
 material3 = "1.4.0"
 # Additional versions
-ktlint = "0.46.0"
-spotless = "6.18.0"
-detekt = "1.23.0"
-detekt-rules-compose = "1.3.0"
+ktlint = "1.8.0"
+spotless = "8.4.0"
+detekt = "1.23.8"
+detekt-rules-compose = "1.4.0"
 coil = "2.3.0"
 cachefix = "3.0.3"
 # Chat versions
@@ -36,6 +37,8 @@ fairebase-auth = "24.0.1"
 fairebase-firestore = "26.2.0"
 
 [libraries]
+kotlin-result = { module = "com.michael-bull.kotlin-result:kotlin-result", version.ref = "kotlin-result" }
+kotlin-result-coroutines = { module = "com.michael-bull.kotlin-result:kotlin-result-coroutines", version.ref = "kotlin-result" }
 kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlin-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-pay-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinx-coroutines" }
@@ -89,6 +92,8 @@ ksp-plugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.
 core = [
     "kotlin-coroutines-core",
     "kotlin-coroutines-android",
+    "kotlin-result",
+    "kotlin-result-coroutines",
     "kotlinx-pay-services",
     "javax-inject",
 ]
