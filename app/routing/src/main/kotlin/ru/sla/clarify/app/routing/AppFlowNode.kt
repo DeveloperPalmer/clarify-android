@@ -26,8 +26,8 @@ class AppFlowNode @Inject constructor(
   override val initial: Target = Target.appFlow.initialFlowResolve
   private val scope: CoroutineScope by FlowNodeCoroutineScopeHook<Unit>()
 
-  override fun onEntry() {
-    super.onEntry()
+  override fun onEntry(event: Event) {
+    super.onEntry(event)
     scope.launch {
       val state = authSessionModel.sessionState.first()
       eventSink.sendEvent(AppFlow.Event.InitialSessionStateReceived(state))
@@ -36,13 +36,22 @@ class AppFlowNode @Inject constructor(
 
   override fun transition(event: Event): FlowTransition<Unit> {
     return when (event) {
+      is AppFlowChildFinishRequest.MainFlow -> {
+        NavigateTo(Target.appFlow.loginFlow)
+      }
+      is AppFlowChildFinishRequest.LoginFlow -> {
+        when (event.result) {
+          LoginFlow.Result.Success -> NavigateTo(Target.appFlow.mainFlow)
+          LoginFlow.Result.Dismissed -> Finish(Unit)
+        }
+      }
       is AppFlow.Event.InitialSessionStateReceived -> {
         when (event.state) {
           AuthSessionState.Active -> {
-            NavigateTo(mainFlow)
+            NavigateTo(Target.appFlow.mainFlow)
           }
           AuthSessionState.Inactive -> {
-            NavigateTo(loginFlow)
+            NavigateTo(Target.appFlow.loginFlow)
           }
         }
       }
@@ -50,16 +59,3 @@ class AppFlowNode @Inject constructor(
     }
   }
 }
-
-private val mainFlow = Target.appFlow.mainFlow(
-  onFinishRequest = { Ignore }
-)
-
-private val loginFlow = Target.appFlow.loginFlow(
-  onFinishRequest = { result ->
-    when (result) {
-      LoginFlow.Result.Success -> NavigateTo(Target.appFlow.mainFlow { Ignore })
-      LoginFlow.Result.Dismissed -> Finish(Unit)
-    }
-  }
-)

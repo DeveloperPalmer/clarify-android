@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
       .activity(this)
       .build()
 
-    val service = NavigationService<Unit>(AppFlow.schema, AppFlow.nodeBuilder(component), onFinishRequest = {
+    val service = NavigationService<Unit>(AppFlow.nodeBuilder(component), onFinishRequest = {
       log { "appFlow has finished -> calling activity finish" }
       finish()
       Ignore
