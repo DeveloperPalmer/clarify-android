@@ -6,5 +6,5 @@ enum class LogPriority {
   Info,
   Warn,
   Error,
-  Assert,
+  Assert
 }

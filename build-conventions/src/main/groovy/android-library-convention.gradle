@@ -63,11 +63,18 @@ spotless {
     target("**/*.kt")
     targetExclude("**/build/**/*.*")
     ktlint(libs.versions.ktlint.get()).editorConfigOverride(
-      [
-        "indent_size"    : "2",
-        "max_line_length": "120",
-        "disabled_rules" : "filename",
-      ]
+        [
+            "indent_size"                                       : "2",
+            "max_line_length"                                   : "120",
+            "ktlint_standard_filename"                          : "disabled",
+            "ktlint_standard_function-expression-body"          : "disabled",
+            "ktlint_standard_function-signature"                : "disabled",
+            "ktlint_standard_class-signature"                   : "disabled",
+            "ktlint_standard_blank-line-between-when-conditions": "disabled",
+            "ij_kotlin_allow_trailing_comma"                    : "false",
+            "ij_kotlin_allow_trailing_comma_on_call_site"       : "false",
+            "ktlint_function_naming_ignore_when_annotated_with" : "Composable",
+        ]
     )
     trimTrailingWhitespace()
     endWithNewline()
@@ -76,7 +83,7 @@ spotless {
 
 detekt {
   config = files(rootProject.file("detekt-config.yml"))
-  ignoredBuildTypes = [ "release" ]
+  ignoredBuildTypes = ["release"]
 }
 
 tasks.withType(io.gitlab.arturbosch.detekt.Detekt).configureEach {

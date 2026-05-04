@@ -3,11 +3,12 @@ plugins {
   alias(libs.plugins.kotlin.android) apply false
   alias(libs.plugins.cachefix) apply false
   alias(libs.plugins.google.services) apply false
+  alias(libs.plugins.spotless) apply false
   // NOTE do not add plugins used in *-convention.gradle here
   //   They must be added as deps to build-conventions/build.gradle!
 }
 
-def dependsOnRecursivelyByName =  { Task task, String name ->
+def dependsOnRecursivelyByName = { Task task, String name ->
   subprojects { project ->
     project.tasks.matching { it.name == name }.forEach { t ->
       task.dependsOn(t)

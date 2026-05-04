@@ -41,7 +41,7 @@ class LoginFirebaseStorage @Inject constructor() {
 
     val params = mapOf(
       USERS_FIELD_ID to userId,
-      USERS_FIELD_CHAT_SIGNATURE to chatSignature,
+      USERS_FIELD_CHAT_SIGNATURE to chatSignature
     )
 
     users

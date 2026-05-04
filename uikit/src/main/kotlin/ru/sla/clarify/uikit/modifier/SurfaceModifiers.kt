@@ -24,6 +24,8 @@ fun Modifier.surface(
     .then(
       if (onClick != null) {
         Modifier.clickable(onClick = onClick, enabled = enabled)
-      } else Modifier
+      } else {
+        Modifier
+      }
     )
 }

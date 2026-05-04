@@ -4,7 +4,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 enum class ColorTheme {
-  Light, Dark
+  Light,
+  Dark
 }
 
 internal val LightColors = AppColors(

@@ -29,12 +29,16 @@ class ChatManagerImpl @Inject constructor(
 
   override fun initialize() {
     V2TIMManager.getInstance().addIMSDKListener(
-      /* listener */ chatSdkListener
+      /* listener */
+      chatSdkListener
     )
     V2TIMManager.getInstance().initSDK(
-      /* context */ context,
-      /* sdkAppID */ SDK_APP_ID,
-      /* config */ V2TIMSDKConfig().apply {
+      /* context */
+      context,
+      /* sdkAppID */
+      SDK_APP_ID,
+      /* config */
+      V2TIMSDKConfig().apply {
         logLevel = V2TIM_LOG_DEBUG
         logListener = chatLogListener
       }

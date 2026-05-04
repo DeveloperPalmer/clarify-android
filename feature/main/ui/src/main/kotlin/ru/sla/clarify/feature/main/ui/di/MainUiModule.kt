@@ -23,4 +23,6 @@ object MainUiModule {
 annotation class WiredScreen(val screen: Screen)
 
 // All screens, provided by this UI module will be mentioned here
-enum class Screen { Main /*, Screen1*/ }
+enum class Screen {
+  Main
+}
