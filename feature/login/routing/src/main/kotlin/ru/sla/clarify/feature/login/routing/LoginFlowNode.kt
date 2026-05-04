@@ -20,8 +20,8 @@ class LoginFlowNode @Inject constructor(
   override val dismissResult = LoginFlow.Result.Dismissed
   override val initial = Target.loginFlow.splashIntro
 
-  override fun onEntry() {
-    super.onEntry()
+  override fun onEntry(event: Event) {
+    super.onEntry(event)
     loginModel.start(parentScope = scope)
   }
 
