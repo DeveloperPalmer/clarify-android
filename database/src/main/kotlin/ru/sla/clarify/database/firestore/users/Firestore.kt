@@ -1,16 +1,14 @@
-package ru.sla.clarify.feature.login.data
+package ru.sla.clarify.database.firestore.users
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
-import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.tasks.await
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import javax.inject.Inject
 
 @SingleIn(AppScope::class)
-class LoginFirebaseStorage @Inject constructor() {
+class Firestore @Inject constructor() {
 
   private val remoteDB = FirebaseFirestore.getInstance().apply {
     firestoreSettings = FirebaseFirestoreSettings.Builder()
@@ -33,7 +31,8 @@ class LoginFirebaseStorage @Inject constructor() {
     val alreadyExists = users
       .whereEqualTo(USERS_FIELD_ID, userId)
       .limit(1)
-      .await<QuerySnapshot>()
+      .get()
+      .await()
       .documents
       .isNotEmpty()
 
@@ -48,10 +47,6 @@ class LoginFirebaseStorage @Inject constructor() {
       .add(params)
       .await()
   }
-}
-
-private suspend fun <T> Query.await(): T {
-  return get().await() as T
 }
 
 private const val USERS_COLLECTIONS = "users"
