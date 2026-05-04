@@ -110,23 +110,6 @@ class GoogleAuthenticator @Inject constructor(
   }
 }
 
-suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
-  addOnCompleteListener { task ->
-    val exception = task.exception
-    when {
-      task.isSuccessful -> {
-        continuation.resume(task.result)
-      }
-      exception != null -> {
-        continuation.resumeWithException(exception)
-      }
-      else -> {
-        continuation.resumeWithException(IllegalStateException("Task failed without exception"))
-      }
-    }
-  }
-}
-
 private val BuildType.googleClientId: String
   get() = when (this) {
     BuildType.Dev,

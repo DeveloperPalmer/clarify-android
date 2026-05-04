@@ -32,11 +32,13 @@ chat = "8.9.7511"
 # Firebase
 googleid = "1.2.0"
 google-services = "4.4.4"
-fairebase = "24.0.1"
+fairebase-auth = "24.0.1"
+fairebase-firestore = "26.2.0"
 
 [libraries]
 kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlin-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+kotlinx-pay-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
 javax-inject = { module = "javax.inject:javax.inject", version = "1" }
@@ -61,7 +63,8 @@ compose-graphics = { module = "androidx.compose.animation:animation-graphics", v
 compose-compiler-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
-firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "fairebase" }
+firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "fairebase-auth" }
+firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "fairebase-firestore" }
 
 coil-base = { module = "io.coil-kt:coil-base", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
@@ -86,6 +89,7 @@ ksp-plugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.
 core = [
     "kotlin-coroutines-core",
     "kotlin-coroutines-android",
+    "kotlinx-pay-services",
     "javax-inject",
 ]
 
