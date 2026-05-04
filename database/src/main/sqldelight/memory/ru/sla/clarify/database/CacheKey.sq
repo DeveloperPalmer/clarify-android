@@ -1,0 +1,14 @@
+CREATE TABLE CacheKey(
+ id TEXT PRIMARY KEY NOT NULL,
+ cacheKey TEXT NOT NULL
+);
+
+save:
+INSERT OR REPLACE
+INTO CacheKey
+VALUES (?, ?);
+
+get:
+SELECT cacheKey
+FROM CacheKey
+WHERE id = ?;

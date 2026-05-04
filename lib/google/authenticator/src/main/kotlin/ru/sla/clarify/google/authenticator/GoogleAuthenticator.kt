@@ -47,8 +47,6 @@ class GoogleAuthenticator @Inject constructor(
       throw e
     } catch (exception: Exception) {
       SignInResult.Error(exception)
-    } finally {
-      firebaseAuth.signOut()
     }
   }
 

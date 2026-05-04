@@ -26,3 +26,13 @@ fun <T : Any> LceState<T>.toUiLceState(
     }
   }
 }
+
+fun List<ContentLoadState>.mergedState(): ContentLoadState {
+  return when {
+    this.all { it is ContentLoadState.Ready } -> ContentLoadState.Ready
+    this.all { it is ContentLoadState.NotStarted } -> ContentLoadState.NotStarted
+    this.any { it is ContentLoadState.Loading } -> ContentLoadState.Loading
+    this.any { it is ContentLoadState.Error } -> this.first { it is ContentLoadState.Error }
+    else -> this.first()
+  }
+}

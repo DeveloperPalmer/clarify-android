@@ -1,0 +1,16 @@
+CREATE TABLE FirestoreRequestLog (
+  log TEXT NOT NULL,
+  sentAt INTEGER NOT NULL
+);
+
+insertOne:
+INSERT
+INTO FirestoreRequestLog
+VALUES (?, ?);
+
+selectLastSentAt:
+SELECT sentAt
+FROM FirestoreRequestLog
+WHERE log = ?
+ORDER BY sentAt DESC
+LIMIT 1;

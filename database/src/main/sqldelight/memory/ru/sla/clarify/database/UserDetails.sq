@@ -1,0 +1,17 @@
+CREATE TABLE UserDetails (
+  key INTEGER NOT NULL PRIMARY KEY DEFAULT 0,
+  chatSignature TEXT NOT NULL
+);
+
+insert:
+INSERT OR REPLACE
+INTO UserDetails(chatSignature)
+VALUES (?);
+
+select:
+SELECT *
+FROM UserDetails
+LIMIT 1;
+
+delete:
+DELETE FROM UserDetails;
