@@ -6,6 +6,19 @@ plugins {
 
 android {
   namespace "ru.sla.clarify.database"
+
+  // Expose SqlDelight output to KSP (AGP disallows Provider-based srcDir here).
+  def genRoot = layout.buildDirectory.get().asFile
+  sourceSets {
+    debug {
+      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/InMemoryDB/debug"))
+      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/PersistedDB/debug"))
+    }
+    release {
+      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/InMemoryDB/release"))
+      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/PersistedDB/release"))
+    }
+  }
 }
 
 sqldelight {
@@ -17,6 +30,19 @@ sqldelight {
     PersistedDB {
       packageName = "ru.sla.clarify.database"
       srcDirs('src/main/sqldelight/persisted')
+    }
+  }
+}
+
+// KSP runs before Sqldelight codegen by default; Dagger needs generated InMemoryDB / PersistedDB types.
+afterEvaluate {
+  ["Debug", "Release"].each { vn ->
+    def kspTask = tasks.findByName("ksp${vn}Kotlin")
+    if (kspTask != null) {
+      kspTask.dependsOn(
+        tasks.named("generate${vn}InMemoryDBInterface"),
+        tasks.named("generate${vn}PersistedDBInterface"),
+      )
     }
   }
 }

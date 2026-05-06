@@ -29,7 +29,7 @@ import javax.inject.Inject
 
 @SingleIn(AppFlowScope::class)
 class GoogleAuthenticator @Inject constructor(
-  @ActivityContext
+  @param:ActivityContext
   private val context: Activity,
   private val buildConfig: BuildConfigProvider
 ) {

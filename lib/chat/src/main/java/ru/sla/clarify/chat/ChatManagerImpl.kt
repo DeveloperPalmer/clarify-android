@@ -16,8 +16,8 @@ import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.log.log
 import javax.inject.Inject
-import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.resume as resumeContinuation
 
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -28,7 +28,7 @@ class ChatManagerImpl @Inject constructor(
 ) : ChatManager {
 
   companion object {
-    const val SDK_APP_ID = 20039812
+    const val SDK_APP_ID = 20_039_812
   }
 
   private val chatSdkListener = object : V2TIMSDKListener() {
@@ -65,7 +65,7 @@ class ChatManagerImpl @Inject constructor(
       val callback = object : V2TIMCallback {
         override fun onSuccess() {
           log { "Chat: chat sign in successfully" }
-          cont.resume(Unit)
+          cont.resumeContinuation(Unit)
         }
         override fun onError(code: Int, description: String?) {
           cont.resumeWithException(ChatLoginException(description))
@@ -87,7 +87,7 @@ class ChatManagerImpl @Inject constructor(
       val callback = object : V2TIMCallback {
         override fun onSuccess() {
           log { "Chat: chat sign out successfully" }
-          cont.resume(Unit)
+          cont.resumeContinuation(Unit)
         }
         override fun onError(code: Int, description: String?) {
           cont.resumeWithException(ChatLoginException(description))

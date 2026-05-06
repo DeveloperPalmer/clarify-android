@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-  compileSdk = 33
+  compileSdk = 36
 
   defaultConfig {
     minSdk 26
@@ -26,16 +26,16 @@ android {
     targetCompatibility JavaVersion.VERSION_11
   }
 
-  kotlinOptions {
-    jvmTarget = "11"
-    freeCompilerArgs += "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
-    freeCompilerArgs += "-opt-in=kotlinx.coroutines.FlowPreview"
-    freeCompilerArgs += "-opt-in=kotlin.contracts.ExperimentalContracts"
-  }
-
   kotlin {
     jvmToolchain {
       languageVersion = JavaLanguageVersion.of(11)
+    }
+    compilerOptions {
+      jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+      freeCompilerArgs.add("-jvm-default=no-compatibility")
+      freeCompilerArgs.add("-opt-in=kotlinx.coroutines.FlowPreview")
+      freeCompilerArgs.add("-opt-in=kotlin.contracts.ExperimentalContracts")
+      freeCompilerArgs.add("-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
     }
   }
 
