@@ -30,9 +30,10 @@ tasks.register("detektDebug") { task ->
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
   kotlinOptions {
     jvmTarget = "11"
-    freeCompilerArgs += "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
-    freeCompilerArgs += "-opt-in=kotlinx.coroutines.FlowPreview"
+    freeCompilerArgs += "-jvm-default=no-compatibility"
     freeCompilerArgs += "-opt-in=kotlin.contracts.ExperimentalContracts"
+    freeCompilerArgs += "-opt-in=kotlinx.coroutines.FlowPreview"
+    freeCompilerArgs += "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
   }
 }
 

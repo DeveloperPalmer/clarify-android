@@ -12,7 +12,7 @@ plugins {
 
 android {
   namespace "ru.sla.clarify.app.android"
-  compileSdk 35
+  compileSdk 36
 
   defaultConfig {
     applicationId "ru.sla.clarify"
@@ -43,6 +43,7 @@ android {
 
   buildFeatures {
     buildConfig true
+    resValues true
   }
 
   buildTypes {
@@ -80,13 +81,13 @@ android {
     targetCompatibility JavaVersion.VERSION_11
   }
 
-  kotlinOptions {
-    jvmTarget = "11"
-  }
-
   kotlin {
     jvmToolchain {
       languageVersion = JavaLanguageVersion.of(11)
+    }
+    compilerOptions {
+      jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+      freeCompilerArgs.add("-jvm-default=no-compatibility")
     }
   }
 

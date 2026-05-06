@@ -3,7 +3,6 @@ package ru.sla.clarify.app.routing.di
 import android.app.Activity
 import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.BindsInstance
-import dagger.Subcomponent
 import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.core.domain.di.scope.ActivityContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
@@ -19,16 +18,13 @@ interface AppFlowComponent {
   fun mainFlowComponent(): MainFlowComponent
   fun loginFlowComponent(): LoginFlowComponent
 
-  @Subcomponent.Builder
+  @MergeSubcomponent.Builder
   interface Builder {
     @BindsInstance
     fun eventSink(sink: FlowEventSink): Builder
 
     @BindsInstance
-    fun activity(
-      @ActivityContext
-      activity: Activity
-    ): Builder
+    fun activity(@ActivityContext activity: Activity): Builder
 
     fun build(): AppFlowComponent
   }

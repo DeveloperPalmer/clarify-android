@@ -4,7 +4,6 @@ import android.content.Context
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
 import dagger.BindsInstance
-import dagger.Component
 import dagger.Module
 import dagger.Provides
 import ru.sla.clarify.app.android.Application
@@ -15,14 +14,14 @@ import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 
-@MergeComponent(AppScope::class)
 @SingleIn(AppScope::class)
+@MergeComponent(AppScope::class)
 interface AppComponent {
   fun appFlowComponentBuilder(): AppFlowComponent.Builder
 
   fun chatManager(): ChatManager
 
-  @Component.Builder
+  @MergeComponent.Builder
   interface Builder {
     @BindsInstance
     fun applicationContext(@ApplicationContext context: Context): Builder

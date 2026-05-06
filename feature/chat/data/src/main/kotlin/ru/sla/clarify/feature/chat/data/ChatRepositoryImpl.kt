@@ -1,3 +1,5 @@
+@file:Suppress("IgnoredReturnValue")
+
 package ru.sla.clarify.feature.chat.data
 
 import com.squareup.anvil.annotations.ContributesBinding
@@ -22,8 +24,8 @@ import ru.sla.clarify.feature.chat.domain.entity.ChatMessage
 import ru.sla.clarify.feature.chat.domain.entity.Conversation
 import ru.sla.log.log
 import javax.inject.Inject
-import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.resume as resumeContinuation
 
 @SingleIn(ChatScope::class)
 @ContributesBinding(ChatScope::class)
@@ -94,8 +96,12 @@ class ChatRepositoryImpl @Inject constructor() : ChatRepository {
         count,
         anchor,
         object : V2TIMValueCallback<List<V2TIMMessage>> {
-          override fun onSuccess(value: List<V2TIMMessage>) = cont.resume(value)
-          override fun onError(code: Int, desc: String?) = cont.resumeWithException(ChatSdkException(code, desc))
+          override fun onSuccess(value: List<V2TIMMessage>) {
+            cont.resumeContinuation(value)
+          }
+          override fun onError(code: Int, desc: String?) {
+            cont.resumeWithException(ChatSdkException(code, desc))
+          }
         }
       )
     }
@@ -114,7 +120,7 @@ class ChatRepositoryImpl @Inject constructor() : ChatRepository {
         null,
         object : V2TIMSendCallback<V2TIMMessage> {
           override fun onSuccess(value: V2TIMMessage) {
-            cont.resume(value.toDomain() ?: fallbackOutgoing(value, peerUserId, text))
+            cont.resumeContinuation(value.toDomain() ?: fallbackOutgoing(value, peerUserId, text))
           }
 
           override fun onError(code: Int, desc: String?) {
@@ -136,8 +142,12 @@ class ChatRepositoryImpl @Inject constructor() : ChatRepository {
       V2TIMManager.getMessageManager().markC2CMessageAsRead(
         peerUserId,
         object : V2TIMCallback {
-          override fun onSuccess() = cont.resume(Unit)
-          override fun onError(code: Int, desc: String?) = cont.resumeWithException(ChatSdkException(code, desc))
+          override fun onSuccess() {
+            cont.resumeContinuation(Unit)
+          }
+          override fun onError(code: Int, desc: String?) {
+            cont.resumeWithException(ChatSdkException(code, desc))
+          }
         }
       )
     }
@@ -152,8 +162,12 @@ class ChatRepositoryImpl @Inject constructor() : ChatRepository {
           nextSeq,
           CONVERSATION_PAGE_SIZE,
           object : V2TIMValueCallback<V2TIMConversationResult> {
-            override fun onSuccess(value: V2TIMConversationResult) = cont.resume(value)
-            override fun onError(code: Int, desc: String?) = cont.resumeWithException(ChatSdkException(code, desc))
+            override fun onSuccess(value: V2TIMConversationResult) {
+              cont.resumeContinuation(value)
+            }
+            override fun onError(code: Int, desc: String?) {
+              cont.resumeWithException(ChatSdkException(code, desc))
+            }
           }
         )
       }
@@ -169,8 +183,12 @@ class ChatRepositoryImpl @Inject constructor() : ChatRepository {
       V2TIMManager.getMessageManager().findMessages(
         listOf(msgId),
         object : V2TIMValueCallback<List<V2TIMMessage>> {
-          override fun onSuccess(value: List<V2TIMMessage>) = cont.resume(value.firstOrNull())
-          override fun onError(code: Int, desc: String?) = cont.resume(null)
+          override fun onSuccess(value: List<V2TIMMessage>) {
+            cont.resumeContinuation(value.firstOrNull())
+          }
+          override fun onError(code: Int, desc: String?) {
+            cont.resumeContinuation(null)
+          }
         }
       )
     }
