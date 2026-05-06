@@ -37,6 +37,12 @@ class MainViewModel @Inject constructor(
       }
     }
 
+    onEach(intent(ViewIntents::openChats)) {
+      action { _, _, _ ->
+        eventSink.sendEvent(FlowEvent.OpenChats)
+      }
+    }
+
     onEach(
       combine(
         mainModel.signOut.jobFlow

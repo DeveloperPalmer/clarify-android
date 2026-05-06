@@ -46,6 +46,12 @@ fun MainScreen(viewModel: MainViewModel) {
         ) {
           Text("logout")
         }
+        Button(
+          modifier = Modifier.align(Alignment.CenterHorizontally),
+          onClick = intents.openChats
+        ) {
+          Text("Open chats")
+        }
       }
     }
   }

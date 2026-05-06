@@ -5,5 +5,10 @@ digraph MainFlow {
     type = "flow"
   ]
 
+  chatFlow [
+    type = "schema"
+  ]
+
   mainFlow -> main
+  mainFlow -> chatFlow
 }

@@ -1,9 +1,10 @@
 package ru.sla.clarify.feature.main.routing
 
+import ru.sla.clarify.feature.chat.routing.ChatFlow
 import ru.sla.clarify.feature.main.routing.di.MainFlowComponent
 
 object MainFlow {
-  val schema = MainFlowSchema()
+  val schema = MainFlowSchema(chatFlowSchema = ChatFlow.schema)
 
   fun nodeBuilder(component: MainFlowComponent): MainFlowNodeBuilder {
     return MainFlowNodeBuilder(
