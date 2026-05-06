@@ -8,4 +8,5 @@ class ViewIntents : BaseViewIntents() {
   val dismissDialogError = intent<DialogDismissReason>(name = "handleGoogleIdTokenReceived")
   val dismissSnackbarError = intent(name = "dismissSnackbarError")
   val logout = intent(name = "logout")
+  val openChats = intent(name = "openChats")
 }

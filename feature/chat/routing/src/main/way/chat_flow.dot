@@ -1,0 +1,10 @@
+digraph ChatFlow {
+  package = "ru.sla.clarify.feature.chat.routing"
+
+  chatFlow [
+    type = "flow"
+  ]
+
+  chatFlow -> chatList
+  chatFlow -> chatThread
+}

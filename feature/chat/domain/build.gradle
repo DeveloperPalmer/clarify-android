@@ -1,0 +1,9 @@
+plugins {
+  id 'kotlin-convention'
+  id 'dagger-convention'
+  alias(libs.plugins.ksp)
+}
+
+dependencies {
+  api project(":core:domain")
+}

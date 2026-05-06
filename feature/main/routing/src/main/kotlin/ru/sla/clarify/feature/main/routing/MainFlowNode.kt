@@ -4,6 +4,8 @@ import kotlinx.coroutines.CoroutineScope
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
+import ru.kode.way.Ignore
+import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.kode.way.whenFlowEvent
@@ -27,10 +29,16 @@ class MainFlowNode @Inject constructor(
   }
 
   override fun transition(event: Event): FlowTransition<Unit> {
-    return event.whenFlowEvent { e: FlowEvent ->
+    val flowEventTransition = event.whenFlowEvent { e: FlowEvent ->
       when (e) {
         FlowEvent.LogoutSuccessfully -> Finish(Unit)
+        FlowEvent.OpenChats -> NavigateTo(Target.mainFlow.chatFlow)
       }
+    }
+    if (flowEventTransition !== Ignore) return flowEventTransition
+    return when (event) {
+      is MainFlowChildFinishRequest.ChatFlow -> NavigateTo(Target.mainFlow.main)
+      else -> Ignore
     }
   }
 }

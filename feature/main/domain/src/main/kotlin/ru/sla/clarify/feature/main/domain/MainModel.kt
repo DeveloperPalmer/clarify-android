@@ -1,19 +1,12 @@
 package ru.sla.clarify.feature.main.domain
 
-import com.tencent.imsdk.v2.V2TIMCallback
-import com.tencent.imsdk.v2.V2TIMManager
-import kotlinx.coroutines.suspendCancellableCoroutine
 import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.chat.ChatManager
-import ru.sla.clarify.chat.entity.ChatLoginException
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.main.domain.di.MainScope
 import ru.sla.clarify.google.authenticator.GoogleAuthenticator
-import ru.sla.log.log
 import javax.inject.Inject
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 @SingleIn(MainScope::class)
 class MainModel @Inject constructor(

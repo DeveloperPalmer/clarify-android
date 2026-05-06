@@ -31,15 +31,17 @@ class Firestore @Inject constructor(
   suspend fun signIn(
     userId: Int,
     chatSignature: String
-  ) = withContext(Dispatchers.IO) {
-    val params = mapOf(
-      USERS_FIELD_CHAT_SIGNATURE to chatSignature
-    )
+  ) {
+    withContext(Dispatchers.IO) {
+      val params = mapOf(
+        USERS_FIELD_CHAT_SIGNATURE to chatSignature
+      )
 
-    remoteDB.collection(USERS_COLLECTIONS)
-      .document("$userId")
-      .set(params)
-      .await()
+      remoteDB.collection(USERS_COLLECTIONS)
+        .document("$userId")
+        .set(params)
+        .await()
+    }
   }
 
   suspend fun getUserDetails(): UserDetails? = withContext(Dispatchers.IO) {
