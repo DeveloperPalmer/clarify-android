@@ -1,0 +1,60 @@
+CREATE TABLE ChatMessage(
+  msgId TEXT PRIMARY KEY NOT NULL,
+  peerId TEXT NOT NULL,
+  senderId TEXT NOT NULL,
+  text TEXT NOT NULL,
+  timestamp INTEGER NOT NULL,
+  isSelf INTEGER NOT NULL,
+  status TEXT NOT NULL,
+  FOREIGN KEY(peerId) REFERENCES Peer(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO ChatMessage(msgId, peerId, senderId, text, timestamp, isSelf, status)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+selectById:
+SELECT
+  msgId,
+  peerId,
+  senderId,
+  text,
+  timestamp,
+  isSelf,
+  status
+FROM ChatMessage
+WHERE msgId = :msgId;
+
+selectByPeer:
+SELECT
+  msgId,
+  peerId,
+  senderId,
+  text,
+  timestamp,
+  isSelf,
+  status
+FROM ChatMessage
+WHERE peerId = :peerId
+ORDER BY timestamp DESC
+LIMIT :messageLimit;
+
+selectByPeerBefore:
+SELECT
+  msgId,
+  peerId,
+  senderId,
+  text,
+  timestamp,
+  isSelf,
+  status
+FROM ChatMessage
+WHERE peerId = :peerId
+  AND timestamp < :timestamp
+ORDER BY timestamp DESC
+LIMIT :messageLimit;
+
+deleteByPeer:
+DELETE FROM ChatMessage
+WHERE peerId = :peerId;

@@ -13,26 +13,24 @@ import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.mapper.toAppUiError
 import ru.sla.clarify.core.ui.toUiLceState
-import ru.sla.clarify.feature.chat.domain.ChatNavState
 import ru.sla.clarify.feature.chat.domain.ChatThreadModel
 import javax.inject.Inject
 
 class ChatThreadViewModel @Inject constructor(
   private val eventSink: FlowEventSink,
-  private val chatThreadModel: ChatThreadModel,
-  chatNavState: ChatNavState
+  private val chatThreadModel: ChatThreadModel
 ) : ViewModel<ViewState, ViewIntents>() {
 
-  private val initialState = ViewState(peerUserId = chatNavState.requirePeerUserId())
-
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = initialState to {
-      chatThreadModel.loadInitial.start()
+    initial = ViewState(
+      peerId = chatThreadModel.readPeerId()
+    ) to {
+      chatThreadModel.loadHistory.start()
       chatThreadModel.markRead.start()
     }
 
     onEach(
-      chatThreadModel.loadInitial.jobFlow
+      chatThreadModel.loadHistory.jobFlow
         .asLceState(replayLastResult = true)
         .map { it.toUiLceState() }
     ) {
@@ -41,19 +39,19 @@ class ChatThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(chatThreadModel.loadInitial.jobFlow.successResults()) {
+    onEach(chatThreadModel.loadHistory.jobFlow.successResults()) {
       transitionTo { state, history ->
         state.copy(messages = history.sortedBy { it.timestamp })
       }
     }
 
-    onEach(chatThreadModel.loadInitial.jobFlow.errors()) {
+    onEach(chatThreadModel.loadHistory.jobFlow.errors()) {
       transitionTo { state, error ->
         state.copy(snackbarError = error.toAppUiError())
       }
     }
 
-    onEach(chatThreadModel.incomingMessages) {
+    onEach(chatThreadModel.treadMessages) {
       transitionTo { state, message ->
         if (state.messages.any { it.msgId.isNotEmpty() && it.msgId == message.msgId }) {
           state

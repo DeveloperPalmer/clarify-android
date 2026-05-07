@@ -59,7 +59,7 @@ fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
           .imePadding()
       ) {
         ChatThreadTopBar(
-          peerUserId = state.peerUserId,
+          peerId = state.peerId,
           onBack = intents.navigateBack
         )
         ChatThreadMessages(
@@ -85,7 +85,7 @@ fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
 
 @Composable
 private fun ChatThreadTopBar(
-  peerUserId: String,
+  peerId: String,
   onBack: () -> Unit
 ) {
   Row(
@@ -100,7 +100,7 @@ private fun ChatThreadTopBar(
     }
     Text(
       modifier = Modifier.padding(start = 4.dp),
-      text = peerUserId,
+      text = peerId,
       style = AppTheme.typography.title1,
       fontWeight = FontWeight.SemiBold
     )
