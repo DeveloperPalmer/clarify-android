@@ -12,16 +12,20 @@ import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.mapper.toAppUiError
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.domain.ChatListModel
-import ru.sla.clarify.feature.chat.ui.routing.ChatFlowEvent
+import ru.sla.clarify.feature.chat.domain.ChatThreadModel
+import ru.sla.clarify.feature.chat.ui.routing.FlowEvent
 import javax.inject.Inject
 
 class ChatListViewModel @Inject constructor(
   private val eventSink: FlowEventSink,
-  private val chatListModel: ChatListModel
+  private val chatListModel: ChatListModel,
+  private val chatThreadModel: ChatThreadModel
 ) : ViewModel<ViewState, ViewIntents>() {
 
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState(myUserId = chatListModel.currentUserId) to { chatListModel.refresh.start() }
+    initial = ViewState(myUserId = chatListModel.currentUserId) to {
+      chatListModel.refresh.start()
+    }
 
     onEach(chatListModel.conversations) {
       transitionTo { state, list ->
@@ -47,9 +51,8 @@ class ChatListViewModel @Inject constructor(
 
     onEach(intent(ViewIntents::openChat)) {
       action { _, _, peerId ->
-        if (peerId.isNotBlank()) {
-          eventSink.sendEvent(ChatFlowEvent.OpenChat(peerId.trim()))
-        }
+        chatThreadModel.savePeerId(peerId)
+        eventSink.sendEvent(FlowEvent.OpenChatThread)
       }
     }
 
@@ -73,10 +76,8 @@ class ChatListViewModel @Inject constructor(
 
     onEach(intent(ViewIntents::confirmNewChat)) {
       action { state, _, _ ->
-        val peerId = state.peerIdInput.trim()
-        if (peerId.isNotEmpty()) {
-          eventSink.sendEvent(ChatFlowEvent.OpenChat(peerId))
-        }
+        chatThreadModel.savePeerId(state.peerIdInput.trim())
+        eventSink.sendEvent(FlowEvent.OpenChatThread)
       }
       transitionTo { state, _ ->
         state.copy(newChatDialogVisible = false, peerIdInput = "")

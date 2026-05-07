@@ -1,0 +1,30 @@
+CREATE TABLE Conversation(
+  id TEXT PRIMARY KEY NOT NULL,
+  peerId TEXT NOT NULL,
+  lastMessage TEXT,
+  lastMessageTimestamp INTEGER NOT NULL,
+  unreadCount INTEGER NOT NULL,
+  FOREIGN KEY(peerId) REFERENCES Peer(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO Conversation(id, peerId, lastMessage, lastMessageTimestamp, unreadCount)
+VALUES (?, ?, ?, ?, ?);
+
+selectAll:
+SELECT
+  Conversation.id,
+  Conversation.peerId,
+  Conversation.lastMessage,
+  Conversation.lastMessageTimestamp,
+  Conversation.unreadCount,
+  Peer.name AS peerName,
+  Peer.faceUrl AS peerFaceUrl
+FROM Conversation
+JOIN Peer ON Peer.id = Conversation.peerId
+ORDER BY Conversation.lastMessageTimestamp DESC;
+
+delete:
+DELETE FROM Conversation
+WHERE id = ?;

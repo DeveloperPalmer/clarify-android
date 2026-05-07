@@ -154,11 +154,11 @@ private fun ChatListBody(
   LazyColumn(modifier = modifier) {
     items(
       items = conversations,
-      key = { it.peerUserId }
+      key = { it.peer.id }
     ) { conversation ->
       ConversationRow(
         conversation = conversation,
-        onClick = { onConversationClick(conversation.peerUserId) }
+        onClick = { onConversationClick(conversation.peer.id) }
       )
       HorizontalDivider()
     }
@@ -185,7 +185,7 @@ private fun ConversationRow(
       contentAlignment = Alignment.Center
     ) {
       Text(
-        text = (conversation.peerNickname ?: conversation.peerUserId).take(1).uppercase(),
+        text = (conversation.peer.name ?: conversation.peer.id).take(1).uppercase(),
         style = AppTheme.typography.button,
         color = AppTheme.colors.textPrimary
       )
@@ -196,7 +196,7 @@ private fun ConversationRow(
         .weight(1f)
     ) {
       Text(
-        text = conversation.peerNickname?.takeIf { it.isNotBlank() } ?: conversation.peerUserId,
+        text = conversation.peer.name?.takeIf { it.isNotBlank() } ?: conversation.peer.id,
         style = AppTheme.typography.button,
         fontWeight = FontWeight.SemiBold,
         maxLines = 1,
@@ -220,7 +220,7 @@ private fun ConversationRow(
         contentAlignment = Alignment.Center
       ) {
         Text(
-          text = conversation.unreadCount.coerceAtMost(MAX_UNREAD_BADGE).toString(),
+          text = conversation.unreadCount.coerceAtMost(MAX_UNREAD_BADGE.toLong()).toString(),
           style = AppTheme.typography.body2,
           color = AppTheme.colors.bgPrimary
         )

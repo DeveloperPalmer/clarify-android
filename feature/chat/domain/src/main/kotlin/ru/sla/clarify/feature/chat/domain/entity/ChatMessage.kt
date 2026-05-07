@@ -2,7 +2,7 @@ package ru.sla.clarify.feature.chat.domain.entity
 
 data class ChatMessage(
   val msgId: String,
-  val peerUserId: String,
+  val peerId: String,
   val senderId: String,
   val text: String,
   val timestamp: Long,
