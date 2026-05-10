@@ -5,5 +5,10 @@ digraph ChatFlow {
     type = "flow"
   ]
 
+  chatThread [
+    parameterName = "peerId",
+    parameterType = "kotlin.String"
+  ]
+
   chatFlow -> chatList -> chatThread
 }

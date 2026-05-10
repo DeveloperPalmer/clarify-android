@@ -7,6 +7,7 @@ import ru.sla.clarify.core.ui.WiredComposableScreen
 import ru.sla.clarify.feature.chat.routing.ChatFlowNode
 import ru.sla.clarify.feature.chat.routing.ChatFlowNodeBuilder
 import ru.sla.clarify.feature.chat.ui.di.Screen
+import ru.sla.clarify.feature.chat.ui.di.WiredComposableScreenFactory
 import ru.sla.clarify.feature.chat.ui.di.WiredScreen
 import javax.inject.Inject
 import javax.inject.Provider
@@ -16,7 +17,7 @@ class ChatFlowNodeFactory @Inject constructor(
   @WiredScreen(Screen.ChatList)
   private val chatListScreen: Provider<WiredComposableScreen>,
   @WiredScreen(Screen.ChatThread)
-  private val chatThreadScreen: Provider<WiredComposableScreen>
+  private val chatThreadScreen: Provider<WiredComposableScreenFactory>
 ) : ChatFlowNodeBuilder.Factory {
 
   override fun createRootNode(): FlowNode<*> {
@@ -27,7 +28,7 @@ class ChatFlowNodeFactory @Inject constructor(
     return BasicScreenNode(chatListScreen.get())
   }
 
-  override fun createChatThreadNode(): ScreenNode {
-    return BasicScreenNode(chatThreadScreen.get())
+  override fun createChatThreadNode(peerId: String): ScreenNode {
+    return BasicScreenNode(chatThreadScreen.get().create(peerId))
   }
 }

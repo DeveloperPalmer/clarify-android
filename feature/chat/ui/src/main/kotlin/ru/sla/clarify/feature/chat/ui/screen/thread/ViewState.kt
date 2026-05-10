@@ -7,7 +7,7 @@ import ru.sla.clarify.feature.chat.domain.entity.ChatMessage
 
 @Immutable
 data class ViewState(
-  val peerId: String = "",
+  val peerId: String,
   val messages: List<ChatMessage> = emptyList(),
   val inputValue: String = "",
   val isSending: Boolean = false,
