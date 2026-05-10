@@ -54,9 +54,10 @@ fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
         messages = state.messages,
         inputValue = state.inputValue,
         isSending = state.isSending,
+        onValueChange = intents.changeMessageQuery,
         onBack = intents.navigateBack,
-        onValueChange = intents.inputChanged,
-        onSend = intents.sendMessage
+        onSend = intents.sendMessage,
+        onChronology = intents.openChronology
       )
     }
   }
@@ -69,6 +70,7 @@ internal fun ChatThreadReadyContent(
   inputValue: String,
   isSending: Boolean,
   onBack: () -> Unit,
+  onChronology: () -> Unit,
   onValueChange: (String) -> Unit,
   onSend: () -> Unit,
   modifier: Modifier = Modifier
@@ -80,7 +82,8 @@ internal fun ChatThreadReadyContent(
   ) {
     ChatThreadTopBar(
       peerId = peerId,
-      onBack = onBack
+      onBack = onBack,
+      onChronology = onChronology
     )
     if (messages.isEmpty()) {
       TreadEmptyState(
@@ -111,14 +114,16 @@ internal fun ChatThreadReadyContent(
 @Composable
 private fun ChatThreadTopBar(
   peerId: String,
-  onBack: () -> Unit
+  onBack: () -> Unit,
+  onChronology: () -> Unit
 ) {
   Row(
     modifier = Modifier
       .fillMaxWidth()
       .statusBarsPadding()
       .padding(horizontal = 8.dp, vertical = 8.dp),
-    verticalAlignment = Alignment.CenterVertically
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     IconButton(onClick = onBack) {
       Text(
@@ -127,11 +132,19 @@ private fun ChatThreadTopBar(
       )
     }
     Text(
-      modifier = Modifier.padding(start = 4.dp),
+      modifier = Modifier
+        .weight(1f)
+        .padding(start = 4.dp),
       text = peerId,
       style = AppTheme.typography.title1,
       fontWeight = FontWeight.SemiBold
     )
+    IconButton(onClick = onChronology) {
+      Text(
+        text = "H",
+        style = AppTheme.typography.h2
+      )
+    }
   }
   HorizontalDivider()
 }

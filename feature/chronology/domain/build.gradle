@@ -1,0 +1,8 @@
+plugins {
+  id 'kotlin-convention'
+  id 'dagger-convention'
+}
+
+dependencies {
+  api project(":core:domain")
+}

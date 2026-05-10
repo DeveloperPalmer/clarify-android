@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chat.routing.di
 
 import ru.kode.way.FlowNode
+import ru.kode.way.NodeBuilder
 import ru.kode.way.ScreenNode
 import ru.sla.clarify.core.routing.BasicScreenNode
 import ru.sla.clarify.core.ui.WiredComposableScreen
@@ -9,14 +10,16 @@ import ru.sla.clarify.feature.chat.routing.ChatFlowNodeBuilder
 import ru.sla.clarify.feature.chat.ui.di.Screen
 import ru.sla.clarify.feature.chat.ui.di.WiredComposableScreenFactory
 import ru.sla.clarify.feature.chat.ui.di.WiredScreen
+import ru.sla.clarify.feature.chronology.routing.ChronologyFlow
 import javax.inject.Inject
 import javax.inject.Provider
 
 class ChatFlowNodeFactory @Inject constructor(
   private val flowNode: Provider<ChatFlowNode>,
-  @WiredScreen(Screen.ChatList)
+  private val component: ChatFlowComponent,
+  @param:WiredScreen(Screen.ChatList)
   private val chatListScreen: Provider<WiredComposableScreen>,
-  @WiredScreen(Screen.ChatThread)
+  @param:WiredScreen(Screen.ChatThread)
   private val chatThreadScreen: Provider<WiredComposableScreenFactory>
 ) : ChatFlowNodeBuilder.Factory {
 
@@ -30,5 +33,9 @@ class ChatFlowNodeFactory @Inject constructor(
 
   override fun createChatThreadNode(peerId: String): ScreenNode {
     return BasicScreenNode(chatThreadScreen.get().create(peerId))
+  }
+
+  override fun createChronologyFlowNodeBuilder(): NodeBuilder {
+    return ChronologyFlow.nodeBuilder(component.chronologyComponent())
   }
 }

@@ -14,4 +14,5 @@ dependencies {
   api project(":feature:chat:data")
   api project(":feature:chat:domain")
   api project(":feature:chat:ui")
+  api project(":feature:chronology:routing")
 }

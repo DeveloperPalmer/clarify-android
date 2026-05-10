@@ -50,6 +50,10 @@ class ChatModel @Inject constructor(
     stateFlow.update { it.copy(peerId = id) }
   }
 
+  fun requirePeerId(): String {
+    return requireNotNull(stateFlow.value.peerId)
+  }
+
   fun treadMessages(peerId: String): Flow<ChatMessage> {
     return chatRepository.treadMessages(peerId)
   }
