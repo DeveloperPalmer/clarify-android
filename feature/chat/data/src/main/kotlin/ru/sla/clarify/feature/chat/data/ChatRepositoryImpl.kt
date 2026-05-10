@@ -84,7 +84,7 @@ class ChatRepositoryImpl @Inject constructor(
             peerId = peerId
           )
           val message = selectMessageById(
-            id = msg.msgID
+            id = ChatMessage.Id(msg.msgID)
           )
           if (!message.isSelf && message.peerId == peerId) {
             trySend(message)
@@ -101,8 +101,8 @@ class ChatRepositoryImpl @Inject constructor(
     peerId: String,
     before: ChatMessage?
   ): List<ChatMessage> {
-    val anchor: V2TIMMessage? = before?.msgId
-      ?.takeIf { it.isNotEmpty() }
+    val anchor: V2TIMMessage? = before?.id
+      ?.takeIf { it.value.isNotEmpty() }
       ?.let { findRawMessage(it) }
     val historyMessages: List<V2TIMMessage> = loadHistory(
       count = count,
@@ -145,8 +145,15 @@ class ChatRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun sendText(peerId: String, text: String): ChatMessage {
+  override suspend fun sendText(
+    text: String,
+    peerId: String,
+    parentId: ChatMessage.Id?
+  ): ChatMessage {
     val outgoing = messageManager.createTextMessage(text)
+    if (!parentId?.value.isNullOrBlank()) {
+      outgoing.cloudCustomData = parentId.value
+    }
     return suspendCancellableCoroutine { cont ->
       messageManager.sendMessage(
         outgoing,
@@ -163,7 +170,7 @@ class ChatRepositoryImpl @Inject constructor(
               message = value
             )
             val message = inMemoryDB.messageQueries
-              .selectById(value.msgID, Mappers::mapToChatMessage)
+              .selectById(ChatMessage.Id(value.msgID), Mappers::mapToChatMessage)
               .executeAsOne()
             cont.resumeContinuation(message)
           }
@@ -228,10 +235,10 @@ class ChatRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun findRawMessage(msgId: String): V2TIMMessage? {
+  private suspend fun findRawMessage(msgId: ChatMessage.Id): V2TIMMessage? {
     return suspendCancellableCoroutine { cont ->
       V2TIMManager.getMessageManager().findMessages(
-        /* msgIds */ listOf(msgId),
+        /* msgIds */ listOf(msgId.value),
         /* listener */ object : V2TIMValueCallback<List<V2TIMMessage>> {
           override fun onSuccess(value: List<V2TIMMessage>) {
             cont.resumeContinuation(value.firstOrNull())
@@ -248,7 +255,7 @@ class ChatRepositoryImpl @Inject constructor(
     inMemoryDB.conversationQueries.delete(id)
   }
 
-  private fun selectMessageById(id: String): ChatMessage {
+  private fun selectMessageById(id: ChatMessage.Id): ChatMessage {
     return inMemoryDB.messageQueries
       .selectById(id, Mappers::mapToChatMessage)
       .executeAsOne()
@@ -285,6 +292,7 @@ class ChatRepositoryImpl @Inject constructor(
     val messageText = message.textElem?.text ?: text ?: return
     val senderId = message.sender ?: return
     val peerId = if (message.isSelf) peerId else senderId
+    val parentMsgId = message.cloudCustomData?.takeIf { it.isNotBlank() }
     inMemoryDB.transaction {
       inMemoryDB.peerQueries.insertIfAbsent(
         id = peerId,
@@ -292,7 +300,8 @@ class ChatRepositoryImpl @Inject constructor(
         faceUrl = null
       )
       inMemoryDB.messageQueries.insertOrReplace(
-        msgId = message.msgID,
+        id = ChatMessage.Id(message.msgID),
+        parentId = parentMsgId?.let(ChatMessage::Id),
         peerId = if (message.isSelf) peerId else senderId,
         senderId = senderId,
         text = messageText,

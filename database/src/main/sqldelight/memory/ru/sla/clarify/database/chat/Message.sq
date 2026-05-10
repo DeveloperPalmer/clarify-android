@@ -1,5 +1,8 @@
+import ru.sla.clarify.feature.chat.domain.entity.ChatMessage.Id;
+
 CREATE TABLE ChatMessage(
-  msgId TEXT PRIMARY KEY NOT NULL,
+  id TEXT AS Id PRIMARY KEY NOT NULL,
+  parentId TEXT AS Id,
   peerId TEXT NOT NULL,
   senderId TEXT NOT NULL,
   text TEXT NOT NULL,
@@ -11,12 +14,13 @@ CREATE TABLE ChatMessage(
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO ChatMessage(msgId, peerId, senderId, text, timestamp, isSelf, status)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INTO ChatMessage(id, parentId, peerId, senderId, text, timestamp, isSelf, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 selectById:
 SELECT
-  msgId,
+  id,
+  parentId,
   peerId,
   senderId,
   text,
@@ -24,11 +28,12 @@ SELECT
   isSelf,
   status
 FROM ChatMessage
-WHERE msgId = :msgId;
+WHERE id = :id;
 
 selectByPeer:
 SELECT
-  msgId,
+  id,
+  parentId,
   peerId,
   senderId,
   text,
@@ -42,7 +47,8 @@ LIMIT :messageLimit;
 
 selectByPeerBefore:
 SELECT
-  msgId,
+  id,
+  parentId,
   peerId,
   senderId,
   text,
@@ -54,6 +60,20 @@ WHERE peerId = :peerId
   AND timestamp < :timestamp
 ORDER BY timestamp DESC
 LIMIT :messageLimit;
+
+selectChronologyByPeer:
+SELECT
+  id,
+  parentId,
+  peerId,
+  senderId,
+  text,
+  timestamp,
+  isSelf,
+  status
+FROM ChatMessage
+WHERE peerId = :peerId
+ORDER BY timestamp ASC;
 
 deleteByPeer:
 DELETE FROM ChatMessage

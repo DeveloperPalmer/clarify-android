@@ -55,4 +55,6 @@ dependencies {
   implementation libs.firebase.auth
   implementation libs.firebase.firestore
   implementation libs.sqldelight.android.driver
+
+  implementation project(":feature:chat:domain")
 }

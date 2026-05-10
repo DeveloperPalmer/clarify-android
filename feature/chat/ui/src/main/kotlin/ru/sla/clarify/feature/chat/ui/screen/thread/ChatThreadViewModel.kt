@@ -66,7 +66,7 @@ class ChatThreadViewModel @AssistedInject constructor(
 
     onEach(chatModel.treadMessages(peerId)) {
       transitionTo { state, message ->
-        if (state.messages.any { it.msgId.isNotEmpty() && it.msgId == message.msgId }) {
+        if (state.messages.any { it.id.value.isNotEmpty() && it.id == message.id }) {
           state
         } else {
           state.copy(messages = state.messages + message)
@@ -82,7 +82,7 @@ class ChatThreadViewModel @AssistedInject constructor(
 
     onEach(chatModel.sendText.jobFlow.successResults()) {
       transitionTo { state, sent ->
-        if (state.messages.any { it.msgId.isNotEmpty() && it.msgId == sent.msgId }) {
+        if (state.messages.any { it.id.value.isNotEmpty() && it.id == sent.id }) {
           state
         } else {
           state.copy(messages = state.messages + sent)

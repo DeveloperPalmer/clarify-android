@@ -168,7 +168,7 @@ private fun ChatThreadMessages(
   ) {
     items(
       items = messages,
-      key = { it.msgId.ifEmpty { "${it.senderId}_${it.timestamp}_${it.text.hashCode()}" } }
+      key = { it.id.value.ifEmpty { "${it.senderId}_${it.timestamp}_${it.text.hashCode()}" } }
     ) { message ->
       MessageBubble(message)
     }

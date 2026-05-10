@@ -35,8 +35,9 @@ class ChatModel @Inject constructor(
 
   val sendText = task<String, ChatMessage>(name = "sendText") { text ->
     chatRepository.sendText(
+      text = text,
       peerId = requireNotNull(stateFlow.value.peerId),
-      text = text
+      parentId = null
     )
   }
 
