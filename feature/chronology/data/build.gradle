@@ -10,4 +10,6 @@ android {
 dependencies {
   implementation project(":database")
   implementation project(":feature:chronology:domain")
+  implementation project(":feature:chat:data")
+  implementation project(":feature:chat:domain")
 }

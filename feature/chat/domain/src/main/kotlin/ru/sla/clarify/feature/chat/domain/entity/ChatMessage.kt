@@ -5,7 +5,8 @@ import java.time.LocalDateTime
 
 @Immutable
 data class ChatMessage(
-  val msgId: String,
+  val id: Id,
+  val parentId: Id?,
   val peerId: String,
   val senderId: String,
   val text: String,
@@ -13,6 +14,10 @@ data class ChatMessage(
   val isSelf: Boolean,
   val status: Status
 ) {
+
+  @JvmInline
+  value class Id(val value: String)
+
   enum class Status {
     Sending,
     Sent,

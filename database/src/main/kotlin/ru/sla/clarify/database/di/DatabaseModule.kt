@@ -10,6 +10,8 @@ import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.PersistedDB
+import ru.sla.clarify.database.adapter.ChatMessageIdAdapter
+import ru.sla.clarify.database.chat.ChatMessage
 
 @ContributesTo(AppScope::class)
 @Module
@@ -18,7 +20,13 @@ object DatabaseModule {
   @Provides
   fun provideInMemoryDatabase(@ApplicationContext context: Context): InMemoryDB {
     val driver = AndroidSqliteDriver(InMemoryDB.Schema, context, name = null)
-    return InMemoryDB(driver)
+    return InMemoryDB(
+      driver = driver,
+      ChatMessageAdapter = ChatMessage.Adapter(
+        idAdapter = ChatMessageIdAdapter,
+        parentIdAdapter = ChatMessageIdAdapter
+      )
+    )
   }
 
   @SingleIn(AppScope::class)

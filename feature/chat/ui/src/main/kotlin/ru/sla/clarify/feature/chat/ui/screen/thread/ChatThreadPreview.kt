@@ -95,7 +95,8 @@ private fun sampleMessages(): List<ChatMessage> {
     .toLocalDateTime()
   return listOf(
     ChatMessage(
-      msgId = "m-1",
+      id = ChatMessage.Id("m-1"),
+      parentId = ChatMessage.Id("m-1"),
       peerId = "Алиса",
       senderId = "alice",
       text = "Привет! Как дела?",
@@ -104,7 +105,8 @@ private fun sampleMessages(): List<ChatMessage> {
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
-      msgId = "m-2",
+      id = ChatMessage.Id("m-2"),
+      parentId = ChatMessage.Id("m-1"),
       peerId = "Алиса",
       senderId = "me",
       text = "Привет! Всё отлично, спасибо.",
@@ -113,7 +115,8 @@ private fun sampleMessages(): List<ChatMessage> {
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
-      msgId = "m-3",
+      id = ChatMessage.Id("m-3"),
+      parentId = ChatMessage.Id("m-3"),
       peerId = "Алиса",
       senderId = "alice",
       text = "Чем сейчас занимаешься?",
@@ -122,7 +125,8 @@ private fun sampleMessages(): List<ChatMessage> {
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
-      msgId = "m-4",
+      id = ChatMessage.Id("m-4"),
+      parentId = ChatMessage.Id("m-4"),
       peerId = "Алиса",
       senderId = "me",
       text = "Делаю превью экранов в Compose. Подбираю пастельные тона.",
@@ -131,7 +135,8 @@ private fun sampleMessages(): List<ChatMessage> {
       status = ChatMessage.Status.Sending
     ),
     ChatMessage(
-      msgId = "m-5",
+      id = ChatMessage.Id("m-5"),
+      parentId = ChatMessage.Id("m-5"),
       peerId = "Алиса",
       senderId = "me",
       text = "Кажется, отправка зависла…",
@@ -149,7 +154,8 @@ private fun longSampleMessages(): List<ChatMessage> {
     .toLocalDateTime()
   val tail = listOf(
     ChatMessage(
-      msgId = "m-6",
+      id = ChatMessage.Id("m-6"),
+      parentId = ChatMessage.Id("m-6"),
       peerId = "Кейт",
       senderId = "kate",
       text = "Покажи скрин, когда будет готово",
@@ -158,7 +164,8 @@ private fun longSampleMessages(): List<ChatMessage> {
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
-      msgId = "m-7",
+      id = ChatMessage.Id("m-7"),
+      parentId = ChatMessage.Id("m-7"),
       peerId = "Кейт",
       senderId = "me",
       text = "Конечно, скоро пришлю",
@@ -167,7 +174,8 @@ private fun longSampleMessages(): List<ChatMessage> {
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
-      msgId = "m-8",
+      id = ChatMessage.Id("m-8"),
+      parentId = ChatMessage.Id("m-8"),
       peerId = "Кейт",
       senderId = "kate",
       text = "Спасибо!",

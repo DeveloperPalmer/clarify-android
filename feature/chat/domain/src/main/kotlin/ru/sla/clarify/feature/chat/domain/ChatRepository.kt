@@ -18,6 +18,11 @@ interface ChatRepository {
     before: ChatMessage? = null
   ): List<ChatMessage>
 
-  suspend fun sendText(peerId: String, text: String): ChatMessage
+  suspend fun sendText(
+    text: String,
+    peerId: String,
+    parentId: ChatMessage.Id?
+  ): ChatMessage
+
   suspend fun markConversationRead(peerId: String)
 }

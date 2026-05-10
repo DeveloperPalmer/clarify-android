@@ -11,4 +11,5 @@ android {
 dependencies {
   implementation project(":uikit")
   implementation project(":feature:chronology:domain")
+  implementation project(":feature:chat:domain")
 }
