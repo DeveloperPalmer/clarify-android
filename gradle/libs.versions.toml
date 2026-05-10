@@ -61,7 +61,7 @@ compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-util = { module = "androidx.compose.ui:ui-util", version.ref = "compose" }
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 compose-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeRuntime" }
+compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "composeRuntime" }
 compose-graphics = { module = "androidx.compose.animation:animation-graphics", version.ref = "compose" }
 compose-compiler-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 

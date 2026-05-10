@@ -31,6 +31,7 @@ import ru.sla.clarify.feature.chat.domain.entity.ChatMessage
 import ru.sla.clarify.feature.chat.domain.entity.ChatSdkException
 import ru.sla.clarify.feature.chat.domain.entity.Conversation
 import ru.sla.log.log
+import java.time.ZoneOffset
 import javax.inject.Inject
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.resume as resumeContinuation
@@ -261,7 +262,7 @@ class ChatRepositoryImpl @Inject constructor(
     val query = if (before != null) {
       inMemoryDB.messageQueries.selectByPeerBefore(
         peerId = peerId,
-        timestamp = before.timestamp,
+        timestamp = before.timestamp.toEpochSecond(ZoneOffset.UTC),
         messageLimit = count.toLong(),
         mapper = Mappers::mapToChatMessage
       )

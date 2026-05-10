@@ -52,7 +52,7 @@ class ChatListViewModel @Inject constructor(
     onEach(intent(ViewIntents::openChat)) {
       action { _, _, peerId ->
         chatThreadModel.savePeerId(peerId)
-        eventSink.sendEvent(FlowEvent.OpenChatThread)
+        eventSink.sendEvent(FlowEvent.ChatThreadRequested)
       }
     }
 
@@ -77,7 +77,7 @@ class ChatListViewModel @Inject constructor(
     onEach(intent(ViewIntents::confirmNewChat)) {
       action { state, _, _ ->
         chatThreadModel.savePeerId(state.peerIdInput.trim())
-        eventSink.sendEvent(FlowEvent.OpenChatThread)
+        eventSink.sendEvent(FlowEvent.ChatThreadRequested)
       }
       transitionTo { state, _ ->
         state.copy(newChatDialogVisible = false, peerIdInput = "")

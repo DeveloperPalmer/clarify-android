@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chat.ui.screen.thread
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
@@ -25,18 +23,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.kode.amvi.component.compose.MviComponent
 import ru.kode.amvi.component.compose.rememberViewIntents
+import ru.sla.clarify.core.ui.text.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.feature.chat.domain.entity.ChatMessage
+import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
@@ -53,32 +49,61 @@ fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
       onDismissDialogError = intents.dismissDialogError,
       onDismissSnackbarError = intents.dismissSnackbarError
     ) {
-      Column(
+      ChatThreadReadyContent(
+        peerId = state.peerId,
+        messages = state.messages,
+        inputValue = state.inputValue,
+        isSending = state.isSending,
+        onBack = intents.navigateBack,
+        onValueChange = intents.inputChanged,
+        onSend = intents.sendMessage
+      )
+    }
+  }
+}
+
+@Composable
+internal fun ChatThreadReadyContent(
+  peerId: String,
+  messages: List<ChatMessage>,
+  inputValue: String,
+  isSending: Boolean,
+  onBack: () -> Unit,
+  onValueChange: (String) -> Unit,
+  onSend: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Column(
+    modifier = modifier
+      .fillMaxSize()
+      .imePadding()
+  ) {
+    ChatThreadTopBar(
+      peerId = peerId,
+      onBack = onBack
+    )
+    if (messages.isEmpty()) {
+      TreadEmptyState(
         modifier = Modifier
           .fillMaxSize()
-          .imePadding()
-      ) {
-        ChatThreadTopBar(
-          peerId = state.peerId,
-          onBack = intents.navigateBack
-        )
-        ChatThreadMessages(
-          messages = state.messages,
-          modifier = Modifier
-            .weight(1f)
-            .fillMaxWidth()
-        )
-        HorizontalDivider()
-        ChatThreadInputRow(
-          value = state.inputValue,
-          isSending = state.isSending,
-          onValueChange = intents.inputChanged,
-          onSend = intents.sendMessage,
-          modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-        )
-      }
+      )
+    } else {
+      ChatThreadMessages(
+        messages = messages,
+        modifier = Modifier
+          .weight(1f)
+          .fillMaxWidth()
+      )
+      HorizontalDivider()
+      ChatThreadInputRow(
+        value = inputValue,
+        isSending = isSending,
+        onValueChange = onValueChange,
+        onSend = onSend,
+        modifier = Modifier
+          .fillMaxWidth()
+          .navigationBarsPadding()
+      )
     }
   }
 }
@@ -96,7 +121,10 @@ private fun ChatThreadTopBar(
     verticalAlignment = Alignment.CenterVertically
   ) {
     IconButton(onClick = onBack) {
-      Text(text = "<", style = AppTheme.typography.h2)
+      Text(
+        text = "<",
+        style = AppTheme.typography.h2
+      )
     }
     Text(
       modifier = Modifier.padding(start = 4.dp),
@@ -113,18 +141,6 @@ private fun ChatThreadMessages(
   messages: List<ChatMessage>,
   modifier: Modifier = Modifier
 ) {
-  if (messages.isEmpty()) {
-    Box(
-      modifier = modifier,
-      contentAlignment = Alignment.Center
-    ) {
-      Text(
-        text = "Say hi!",
-        style = AppTheme.typography.body1
-      )
-    }
-    return
-  }
   val listState = rememberLazyListState()
   LaunchedEffect(messages.size) {
     if (messages.isNotEmpty()) {
@@ -132,10 +148,10 @@ private fun ChatThreadMessages(
     }
   }
   LazyColumn(
+    modifier = modifier,
     state = listState,
-    modifier = modifier.padding(horizontal = 8.dp),
     verticalArrangement = Arrangement.spacedBy(4.dp),
-    contentPadding = PaddingValues(vertical = 8.dp)
+    contentPadding = PaddingValues(8.dp)
   ) {
     items(
       items = messages,
@@ -147,28 +163,53 @@ private fun ChatThreadMessages(
 }
 
 @Composable
+private fun TreadEmptyState(modifier: Modifier = Modifier) {
+  Box(
+    modifier = modifier,
+    contentAlignment = Alignment.Center
+  ) {
+    Text(
+      text = "Say hi!",
+      style = AppTheme.typography.body1
+    )
+  }
+  return
+}
+
+@Composable
 private fun MessageBubble(message: ChatMessage) {
   val alignment = if (message.isSelf) Alignment.End else Alignment.Start
-  val bubbleColor = if (message.isSelf) AppTheme.colors.textPrimary else AppTheme.colors.textInvertPrimary
-  val textColor = if (message.isSelf) AppTheme.colors.bgPrimary else AppTheme.colors.textPrimary
   Column(
     modifier = Modifier.fillMaxWidth(),
     horizontalAlignment = alignment
   ) {
     Box(
       modifier = Modifier
-        .clip(RoundedCornerShape(BUBBLE_RADIUS_DP.dp))
-        .background(bubbleColor)
-        .padding(horizontal = 12.dp, vertical = 8.dp)
+        .surface(
+          shape = AppTheme.shapes.round12,
+          backgroundColor = if (message.isSelf) {
+            AppTheme.colors.backgroundSecondary
+          } else {
+            AppTheme.colors.textPrimary
+          }
+        )
+        .padding(
+          vertical = 8.dp,
+          horizontal = 12.dp
+        )
     ) {
       Text(
         text = message.text,
         style = AppTheme.typography.body1,
-        color = textColor
+        color = if (message.isSelf) {
+          AppTheme.colors.textPrimary
+        } else {
+          AppTheme.colors.backgroundSecondary
+        }
       )
     }
     Text(
-      text = formatTime(message.timestamp) + when (message.status) {
+      text = message.timestamp.format(TIME_FORMATTER_HOUR_MINUTE) + when (message.status) {
         ChatMessage.Status.Sending -> "  •  sending"
         ChatMessage.Status.Failed -> "  •  failed"
         ChatMessage.Status.Sent -> ""
@@ -207,10 +248,3 @@ private fun ChatThreadInputRow(
     }
   }
 }
-
-private fun formatTime(epochMillis: Long): String {
-  if (epochMillis <= 0) return ""
-  return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(epochMillis))
-}
-
-private const val BUBBLE_RADIUS_DP = 12
