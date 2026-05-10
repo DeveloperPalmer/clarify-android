@@ -1,0 +1,9 @@
+digraph ChronologyFlow {
+  package = "ru.sla.clarify.feature.chronology.routing"
+
+  chronologyFlow [
+    type = "flow"
+  ]
+
+  chronologyFlow -> chronology
+}

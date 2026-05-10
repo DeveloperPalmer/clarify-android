@@ -1,13 +1,10 @@
-package ru.sla.clarify.feature.chat.ui.screen.thread
+package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
 import ru.sla.clarify.uikit.scaffold.DialogDismissReason
 import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents
 
 class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
-  val dismissSnackbarError = intent(name = "dismissSnackbarError")
   val dismissDialogError = intent<DialogDismissReason>(name = "dismissDialogError")
-  val changeMessageQuery = intent<String>(name = "changeMessage")
-  val openChronology = intent(name = "openChronology")
-  val sendMessage = intent(name = "sendMessage")
+  val dismissSnackbarError = intent(name = "dismissSnackbarError")
 }

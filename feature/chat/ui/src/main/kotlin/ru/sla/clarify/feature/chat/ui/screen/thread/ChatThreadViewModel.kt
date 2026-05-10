@@ -36,6 +36,12 @@ class ChatThreadViewModel @AssistedInject constructor(
       }
     }
 
+    onEach(intent(ViewIntents::openChronology)) {
+      action { _, _, _ ->
+        eventSink.sendEvent(FlowEvent.ChronologyRequested)
+      }
+    }
+
     onEach(
       chatModel.loadHistory.jobFlow
         .asLceState(replayLastResult = true)
@@ -90,7 +96,7 @@ class ChatThreadViewModel @AssistedInject constructor(
       }
     }
 
-    onEach(intent(ViewIntents::inputChanged)) {
+    onEach(intent(ViewIntents::changeMessageQuery)) {
       transitionTo { state, value ->
         state.copy(inputValue = value)
       }
