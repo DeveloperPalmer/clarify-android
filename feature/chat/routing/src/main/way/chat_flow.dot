@@ -5,6 +5,5 @@ digraph ChatFlow {
     type = "flow"
   ]
 
-  chatFlow -> chatList
-  chatFlow -> chatThread
+  chatFlow -> chatList -> chatThread
 }

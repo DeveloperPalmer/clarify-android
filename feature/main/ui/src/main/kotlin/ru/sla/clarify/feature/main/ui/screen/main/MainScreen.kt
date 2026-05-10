@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.main.ui.screen.main
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import ru.kode.amvi.component.compose.MviComponent
@@ -28,6 +28,9 @@ fun MainScreen(viewModel: MainViewModel) {
     scaffoldState.contentLoadState = state.contentLoadState
     scaffoldState.dialogError = state.dialogError
     scaffoldState.snackbarError = state.snackbarError
+    BackHandler(
+      onBack = intents.navigateBack
+    )
     ScreenScaffold(
       state = scaffoldState,
       onDismissDialogError = intents.dismissDialogError,
@@ -40,16 +43,10 @@ fun MainScreen(viewModel: MainViewModel) {
           .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        Button(
-          modifier = Modifier.align(Alignment.End),
-          onClick = intents.logout
-        ) {
+        Button(onClick = intents.logout) {
           Text("logout")
         }
-        Button(
-          modifier = Modifier.align(Alignment.CenterHorizontally),
-          onClick = intents.openChats
-        ) {
+        Button(onClick = intents.openChats) {
           Text("Open chats")
         }
       }

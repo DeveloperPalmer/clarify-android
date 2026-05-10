@@ -7,13 +7,12 @@ import ru.kode.amvi.viewmodel.ViewModel
 import ru.kode.remo.JobState
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
-import ru.kode.way.Back
-import ru.kode.way.Event
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.mapper.toAppUiError
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.domain.ChatThreadModel
+import ru.sla.clarify.feature.chat.ui.routing.FlowEvent
 import javax.inject.Inject
 
 class ChatThreadViewModel @Inject constructor(
@@ -27,6 +26,12 @@ class ChatThreadViewModel @Inject constructor(
     ) to {
       chatThreadModel.loadHistory.start()
       chatThreadModel.markRead.start()
+    }
+
+    onEach(intent(ViewIntents::navigateBack)) {
+      action { _, _, _ ->
+        eventSink.sendEvent(FlowEvent.ChatThreadDismissed)
+      }
     }
 
     onEach(
@@ -98,12 +103,6 @@ class ChatThreadViewModel @Inject constructor(
       }
       transitionTo { state, _ ->
         if (state.inputValue.isBlank()) state else state.copy(inputValue = "")
-      }
-    }
-
-    onEach(intent(ViewIntents::navigateBack)) {
-      action { _, _, _ ->
-        eventSink.sendEvent(Event.Back)
       }
     }
 
