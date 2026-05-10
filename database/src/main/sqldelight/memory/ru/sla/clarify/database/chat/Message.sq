@@ -58,3 +58,6 @@ LIMIT :messageLimit;
 deleteByPeer:
 DELETE FROM ChatMessage
 WHERE peerId = :peerId;
+
+deleteAll:
+DELETE FROM ChatMessage;

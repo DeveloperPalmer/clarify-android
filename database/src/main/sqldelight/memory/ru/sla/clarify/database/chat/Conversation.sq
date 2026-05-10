@@ -28,3 +28,6 @@ ORDER BY Conversation.lastMessageTimestamp DESC;
 delete:
 DELETE FROM Conversation
 WHERE id = ?;
+
+deleteAll:
+DELETE FROM Conversation;
