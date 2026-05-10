@@ -2,50 +2,60 @@ package ru.sla.clarify.feature.chat.domain
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.update
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.domain.di.ChatScope
 import ru.sla.clarify.feature.chat.domain.entity.ChatMessage
+import ru.sla.clarify.feature.chat.domain.entity.Conversation
 import javax.inject.Inject
 
 @SingleIn(ChatScope::class)
-class ChatThreadModel @Inject constructor(
+class ChatModel @Inject constructor(
   private val chatRepository: ChatRepository
 ) : ReactiveModel() {
 
   private val stateFlow = MutableStateFlow(State())
 
-  fun savePeerId(peerId: String) {
-    stateFlow.update { it.copy(peerId = peerId) }
+  override fun onPostStart() {
+    super.onPostStart()
+    chatRepository.subscribeOnConversations()
+      .launchIn(scope)
   }
 
-  fun readPeerId(): String {
-    return requireNotNull(stateFlow.value.peerId) {
-      "ChatThreadModel: peerId not found in cache"
-    }
-  }
+  val conversations: Flow<List<Conversation>> = chatRepository.conversations
 
-  val loadHistory = task<List<ChatMessage>>(name = "loadInitial") {
+  val loadHistory = task<List<ChatMessage>>(name = "loadHistory") {
     chatRepository.loadHistory(
       count = DEFAULT_HISTORY_PAGE_SIZE,
-      peerId = readPeerId()
+      peerId = requireNotNull(stateFlow.value.peerId)
     )
   }
 
   val sendText = task<String, ChatMessage>(name = "sendText") { text ->
     chatRepository.sendText(
-      peerId = readPeerId(),
+      peerId = requireNotNull(stateFlow.value.peerId),
       text = text
     )
   }
 
   val markRead = task<Unit>(name = "markRead") {
-    chatRepository.markConversationRead(readPeerId())
+    chatRepository.markConversationRead(
+      peerId = requireNotNull(stateFlow.value.peerId)
+    )
   }
 
-  val treadMessages: Flow<ChatMessage>
-    get() = chatRepository.treadMessages(readPeerId())
+  fun setPeerId(id: String) {
+    stateFlow.update { it.copy(peerId = id) }
+  }
+
+  fun treadMessages(peerId: String): Flow<ChatMessage> {
+    return chatRepository.treadMessages(peerId)
+  }
+
+  val currentUserId: String?
+    get() = chatRepository.getCurrentUserId()
 
   private data class State(
     val peerId: String? = null

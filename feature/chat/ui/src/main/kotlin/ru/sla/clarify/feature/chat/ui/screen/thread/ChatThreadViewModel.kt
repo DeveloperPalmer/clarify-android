@@ -1,5 +1,7 @@
 package ru.sla.clarify.feature.chat.ui.screen.thread
 
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.map
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.machine
@@ -11,21 +13,21 @@ import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.mapper.toAppUiError
 import ru.sla.clarify.core.ui.toUiLceState
-import ru.sla.clarify.feature.chat.domain.ChatThreadModel
+import ru.sla.clarify.feature.chat.domain.ChatModel
 import ru.sla.clarify.feature.chat.ui.routing.FlowEvent
-import javax.inject.Inject
 
-class ChatThreadViewModel @Inject constructor(
+class ChatThreadViewModel @AssistedInject constructor(
   private val eventSink: FlowEventSink,
-  private val chatThreadModel: ChatThreadModel
+  private val chatModel: ChatModel,
+  @Assisted
+  private val peerId: String
 ) : ViewModel<ViewState, ViewIntents>() {
 
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState(
-      peerId = chatThreadModel.readPeerId()
-    ) to {
-      chatThreadModel.loadHistory.start()
-      chatThreadModel.markRead.start()
+    initial = ViewState(peerId = peerId) to {
+      chatModel.setPeerId(peerId)
+      chatModel.markRead.start()
+      chatModel.loadHistory.start()
     }
 
     onEach(intent(ViewIntents::navigateBack)) {
@@ -35,7 +37,7 @@ class ChatThreadViewModel @Inject constructor(
     }
 
     onEach(
-      chatThreadModel.loadHistory.jobFlow
+      chatModel.loadHistory.jobFlow
         .asLceState(replayLastResult = true)
         .map { it.toUiLceState() }
     ) {
@@ -44,19 +46,19 @@ class ChatThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(chatThreadModel.loadHistory.jobFlow.successResults()) {
+    onEach(chatModel.loadHistory.jobFlow.successResults()) {
       transitionTo { state, history ->
         state.copy(messages = history.sortedBy { it.timestamp })
       }
     }
 
-    onEach(chatThreadModel.loadHistory.jobFlow.errors()) {
+    onEach(chatModel.loadHistory.jobFlow.errors()) {
       transitionTo { state, error ->
         state.copy(snackbarError = error.toAppUiError())
       }
     }
 
-    onEach(chatThreadModel.treadMessages) {
+    onEach(chatModel.treadMessages(peerId)) {
       transitionTo { state, message ->
         if (state.messages.any { it.msgId.isNotEmpty() && it.msgId == message.msgId }) {
           state
@@ -66,13 +68,13 @@ class ChatThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(chatThreadModel.sendText.jobFlow.state) {
+    onEach(chatModel.sendText.jobFlow.state) {
       transitionTo { state, jobState ->
         state.copy(isSending = jobState == JobState.Running)
       }
     }
 
-    onEach(chatThreadModel.sendText.jobFlow.successResults()) {
+    onEach(chatModel.sendText.jobFlow.successResults()) {
       transitionTo { state, sent ->
         if (state.messages.any { it.msgId.isNotEmpty() && it.msgId == sent.msgId }) {
           state
@@ -82,7 +84,7 @@ class ChatThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(chatThreadModel.sendText.jobFlow.errors()) {
+    onEach(chatModel.sendText.jobFlow.errors()) {
       transitionTo { state, error ->
         state.copy(snackbarError = error.toAppUiError())
       }
@@ -98,7 +100,7 @@ class ChatThreadViewModel @Inject constructor(
       action { state, _, _ ->
         val text = state.inputValue.trim()
         if (text.isNotEmpty()) {
-          chatThreadModel.sendText.start(text)
+          chatModel.sendText.start(text)
         }
       }
       transitionTo { state, _ ->

@@ -8,14 +8,12 @@ import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.kode.way.whenFlowEvent
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
-import ru.sla.clarify.feature.chat.domain.ChatListModel
-import ru.sla.clarify.feature.chat.domain.ChatThreadModel
+import ru.sla.clarify.feature.chat.domain.ChatModel
 import ru.sla.clarify.feature.chat.ui.routing.FlowEvent
 import javax.inject.Inject
 
 class ChatFlowNode @Inject constructor(
-  private val chatListModel: ChatListModel,
-  private val chatThreadModel: ChatThreadModel
+  private val chatModel: ChatModel
 ) : BaseFlowNode<Unit>() {
 
   private val scope: CoroutineScope by FlowNodeCoroutineScopeHook()
@@ -25,15 +23,14 @@ class ChatFlowNode @Inject constructor(
 
   override fun onEntry(event: Event) {
     super.onEntry(event)
-    chatListModel.start(scope)
-    chatThreadModel.start(scope)
+    chatModel.start(scope)
   }
 
   override fun transition(event: Event): FlowTransition<Unit> {
     return event.whenFlowEvent { e: FlowEvent ->
       when (e) {
         is FlowEvent.ChatThreadRequested -> {
-          NavigateTo(Target.chatFlow.chatThread)
+          NavigateTo(Target.chatFlow.chatThread(e.peerId))
         }
         is FlowEvent.ChatThreadDismissed -> {
           NavigateTo(Target.chatFlow.chatList)
