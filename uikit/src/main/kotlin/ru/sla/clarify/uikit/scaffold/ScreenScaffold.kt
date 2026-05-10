@@ -60,7 +60,7 @@ fun ScreenScaffold(
   Box(
     modifier = Modifier
       .fillMaxSize()
-      .background(AppTheme.colors.bgPrimary)
+      .background(AppTheme.colors.backgroundPrimary)
   ) {
     when (val contentLoadState = state.contentLoadState) {
       is ContentLoadState.Error -> {
@@ -217,7 +217,7 @@ object ScreenScaffold {
           ) {
             CircularProgressIndicator(
               modifier = Modifier.size(24.dp),
-              color = AppTheme.colors.textPrimary
+              color = AppTheme.colors.backgroundSecondary
             )
           }
         }

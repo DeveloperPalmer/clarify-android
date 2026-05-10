@@ -10,20 +10,20 @@ enum class ColorTheme {
 
 internal val LightColors = AppColors(
   isLight = true,
-  bgPrimary = Color.White,
-  textPrimary = Color.Black,
-  textInvertPrimary = Color.Black,
-  surfaceNegative = Color.Red,
-  buttonPrimaryBlackPress = Color.Gray
+  backgroundPrimary = Color.White,
+  backgroundSecondary = ColorPalette.backgroundSecondary,
+  textPrimary = ColorPalette.textPrimary,
+  errorPrimary = ColorPalette.errorPrimary,
+  buttonPrimary = Color.Gray
 )
 
 internal val DarkColors = AppColors(
   isLight = false,
-  bgPrimary = Color.White,
-  textPrimary = Color.Black,
-  textInvertPrimary = Color.Black,
-  surfaceNegative = Color.Red,
-  buttonPrimaryBlackPress = Color.Gray
+  backgroundPrimary = Color.White,
+  backgroundSecondary = ColorPalette.backgroundSecondary,
+  textPrimary = ColorPalette.textPrimary,
+  errorPrimary = ColorPalette.errorPrimary,
+  buttonPrimary = Color.Gray
 )
 
 internal val LocalAppColors = staticCompositionLocalOf<AppColors> {
