@@ -10,9 +10,9 @@ fun ErrorSnackbar(data: SnackbarData) {
   Snackbar(
     snackbarData = data,
     shape = AppTheme.shapes.round24,
-    containerColor = AppTheme.colors.surfaceNegative,
-    contentColor = AppTheme.colors.textInvertPrimary,
-    actionColor = AppTheme.colors.textInvertPrimary
+    containerColor = AppTheme.colors.errorPrimary,
+    contentColor = AppTheme.colors.textPrimary,
+    actionColor = AppTheme.colors.textPrimary
   )
 }
 
@@ -21,8 +21,8 @@ fun MessageSnackbar(data: SnackbarData) {
   Snackbar(
     snackbarData = data,
     shape = AppTheme.shapes.round24,
-    containerColor = AppTheme.colors.buttonPrimaryBlackPress,
-    contentColor = AppTheme.colors.textInvertPrimary,
-    actionColor = AppTheme.colors.textInvertPrimary
+    containerColor = AppTheme.colors.buttonPrimary,
+    contentColor = AppTheme.colors.textPrimary,
+    actionColor = AppTheme.colors.textPrimary
   )
 }

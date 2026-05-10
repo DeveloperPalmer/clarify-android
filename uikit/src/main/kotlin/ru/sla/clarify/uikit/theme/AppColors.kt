@@ -7,12 +7,9 @@ import androidx.compose.ui.graphics.Color
 data class AppColors(
   val isLight: Boolean,
 
-  val bgPrimary: Color,
-
+  val backgroundPrimary: Color,
+  val backgroundSecondary: Color,
   val textPrimary: Color,
-  val textInvertPrimary: Color,
-
-  val surfaceNegative: Color,
-
-  val buttonPrimaryBlackPress: Color
+  val errorPrimary: Color,
+  val buttonPrimary: Color
 )

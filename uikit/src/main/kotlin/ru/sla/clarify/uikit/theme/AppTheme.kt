@@ -35,13 +35,13 @@ fun AppTheme(
   }
 
   val textSelectionColors = TextSelectionColors(
-    handleColor = colors.textPrimary,
-    backgroundColor = colors.textInvertPrimary
+    handleColor = colors.backgroundSecondary,
+    backgroundColor = colors.textPrimary
   )
   CompositionLocalProvider(
     LocalAppColors provides colors,
     LocalAppTypography provides AppTheme.typography,
-    LocalContentColor provides colors.textPrimary,
+    LocalContentColor provides colors.backgroundSecondary,
     LocalTextSelectionColors provides textSelectionColors,
     content = content
   )

@@ -13,7 +13,10 @@ import androidx.compose.ui.graphics.Color
 //
 // IMPORTANT: Do not ever make this "public"! See ^^^
 internal object ColorPalette {
-  val Red = Color(0xFFFF0000)
-  val Green = Color(0xFF00FF00)
-  val Blue = Color(0xFF0000FF)
+  val textPrimary = Color(0xFF0F0E0C)
+  val backgroundPrimary = Color(0xFFAFC6D4)
+  val backgroundSecondary = Color(0xFFD9E6EE)
+  val errorPrimary = Color(0xFFD98F8B)
+  val successPrimary = Color(0xFF8FB58A)
+  val attentionPrimary = Color(0xFFD9B57E)
 }
