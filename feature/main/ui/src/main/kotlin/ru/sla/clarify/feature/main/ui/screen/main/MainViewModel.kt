@@ -7,8 +7,6 @@ import ru.dimsuz.unicorn2.machine
 import ru.kode.amvi.viewmodel.ViewModel
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
-import ru.kode.way.Back
-import ru.kode.way.Event
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.mapper.toAppUiError
@@ -27,7 +25,7 @@ class MainViewModel @Inject constructor(
 
     onEach(intent(ViewIntents::navigateBack)) {
       action { _, _, _ ->
-        eventSink.sendEvent(Event.Back)
+        // nothing to do
       }
     }
 

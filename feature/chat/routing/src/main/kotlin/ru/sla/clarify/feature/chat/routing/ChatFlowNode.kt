@@ -32,8 +32,11 @@ class ChatFlowNode @Inject constructor(
   override fun transition(event: Event): FlowTransition<Unit> {
     return event.whenFlowEvent { e: FlowEvent ->
       when (e) {
-        is FlowEvent.OpenChatThread -> {
+        is FlowEvent.ChatThreadRequested -> {
           NavigateTo(Target.chatFlow.chatThread)
+        }
+        is FlowEvent.ChatThreadDismissed -> {
+          NavigateTo(Target.chatFlow.chatList)
         }
       }
     }

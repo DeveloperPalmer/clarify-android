@@ -23,6 +23,7 @@ import ru.kode.way.extension.service.LogTransitionsExtensionPoint
 import ru.sla.clarify.app.routing.AppFlow
 import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.routing.FlowEventMediator
+import ru.sla.clarify.core.routing.rememberNavigationTransitionSpec
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.log.asLog
@@ -63,7 +64,10 @@ class MainActivity : ComponentActivity() {
       AppTheme(
         currentTheme = ColorTheme.Light
       ) {
-        NodeHost(service = service)
+        NodeHost(
+          service = service,
+          transitionSpec = rememberNavigationTransitionSpec(service)
+        )
       }
     }
   }
