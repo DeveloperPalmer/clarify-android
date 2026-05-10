@@ -11,4 +11,5 @@ android {
 dependencies {
   implementation project(":uikit")
   implementation project(":feature:main:domain")
+  implementation libs.androidx.activity.compose // for BackHandler
 }

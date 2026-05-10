@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -20,7 +20,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -56,48 +54,69 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
       onDismissDialogError = intents.dismissDialogError,
       onDismissSnackbarError = intents.dismissSnackbarError
     ) {
-      Scaffold(
-        modifier = Modifier
-          .fillMaxSize()
-          .statusBarsPadding(),
-        floatingActionButton = {
-          ExtendedFloatingActionButton(
-            onClick = intents.showNewChatDialog,
-            text = { Text("New chat") },
-            icon = {}
-          )
-        }
-      ) { padding ->
-        Column(
-          modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-        ) {
-          MyUserIdHeader(myUserId = state.myUserId)
-          HorizontalDivider()
-          ChatListBody(
-            conversations = state.conversations,
-            onConversationClick = intents.openChat,
-            modifier = Modifier
-              .fillMaxSize()
-          )
-        }
-      }
-
-      if (state.newChatDialogVisible) {
-        NewChatDialog(
-          peerId = state.peerIdInput,
-          onPeerIdChange = intents.peerIdChanged,
-          onConfirm = intents.confirmNewChat,
-          onDismiss = intents.dismissNewChatDialog
-        )
-      }
+      ChatListReadyContent(
+        myUserId = state.myUserId,
+        conversations = state.conversations,
+        newChatDialogVisible = state.newChatDialogVisible,
+        peerIdInput = state.peerIdInput,
+        onConversationClick = intents.openChat,
+        onShowNewChatDialog = intents.showNewChatDialog,
+        onDismissNewChatDialog = intents.dismissNewChatDialog,
+        onPeerIdChange = intents.peerIdChanged,
+        onConfirmNewChat = intents.confirmNewChat
+      )
     }
   }
 }
 
 @Composable
-private fun MyUserIdHeader(myUserId: String?) {
+internal fun ChatListReadyContent(
+  myUserId: String?,
+  conversations: List<Conversation>,
+  newChatDialogVisible: Boolean,
+  peerIdInput: String,
+  onConversationClick: (String) -> Unit,
+  onShowNewChatDialog: () -> Unit,
+  onDismissNewChatDialog: () -> Unit,
+  onPeerIdChange: (String) -> Unit,
+  onConfirmNewChat: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Box(
+    modifier = modifier
+      .fillMaxSize()
+      .systemBarsPadding()
+  ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+      Header(myUserId = myUserId)
+      HorizontalDivider()
+      ChatListBody(
+        conversations = conversations,
+        onConversationClick = onConversationClick,
+        modifier = Modifier.fillMaxSize()
+      )
+    }
+    ExtendedFloatingActionButton(
+      modifier = Modifier
+        .align(Alignment.BottomEnd)
+        .padding(bottom = 16.dp, end = 16.dp),
+      onClick = onShowNewChatDialog,
+      text = { Text("New chat") },
+      icon = {}
+    )
+  }
+  if (newChatDialogVisible) {
+    NewChatDialog(
+      peerId = peerIdInput,
+      onPeerIdChange = onPeerIdChange,
+      onConfirm = onConfirmNewChat,
+      onDismiss = onDismissNewChatDialog
+    )
+  }
+}
+
+@Composable
+private fun Header(myUserId: String?) {
   val clipboard = LocalClipboard.current
   val scope = rememberCoroutineScope()
   Row(
@@ -109,12 +128,13 @@ private fun MyUserIdHeader(myUserId: String?) {
     Column(modifier = Modifier.weight(1f)) {
       Text(
         text = "Your userId",
-        style = AppTheme.typography.caption2
+        style = AppTheme.typography.caption2,
+        color = AppTheme.colors.textPrimary
       )
       Text(
         text = myUserId ?: "(not signed in)",
         style = AppTheme.typography.title3,
-        fontWeight = FontWeight.SemiBold,
+        color = AppTheme.colors.textPrimary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
@@ -156,7 +176,7 @@ private fun ChatListBody(
       items = conversations,
       key = { it.peer.id }
     ) { conversation ->
-      ConversationRow(
+      ConversationItem(
         conversation = conversation,
         onClick = { onConversationClick(conversation.peer.id) }
       )
@@ -166,7 +186,7 @@ private fun ChatListBody(
 }
 
 @Composable
-private fun ConversationRow(
+private fun ConversationItem(
   conversation: Conversation,
   onClick: () -> Unit
 ) {
@@ -181,13 +201,13 @@ private fun ConversationRow(
       modifier = Modifier
         .size(40.dp)
         .clip(CircleShape)
-        .background(AppTheme.colors.textInvertPrimary),
+        .background(AppTheme.colors.textPrimary),
       contentAlignment = Alignment.Center
     ) {
       Text(
         text = (conversation.peer.name ?: conversation.peer.id).take(1).uppercase(),
         style = AppTheme.typography.button,
-        color = AppTheme.colors.textPrimary
+        color = AppTheme.colors.backgroundSecondary
       )
     }
     Column(
@@ -198,7 +218,7 @@ private fun ConversationRow(
       Text(
         text = conversation.peer.name?.takeIf { it.isNotBlank() } ?: conversation.peer.id,
         style = AppTheme.typography.button,
-        fontWeight = FontWeight.SemiBold,
+        color = AppTheme.colors.textPrimary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
@@ -206,6 +226,7 @@ private fun ConversationRow(
       Text(
         text = preview,
         style = AppTheme.typography.body2,
+        color = AppTheme.colors.textPrimary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
@@ -216,13 +237,13 @@ private fun ConversationRow(
           .padding(start = 8.dp)
           .size(24.dp)
           .clip(CircleShape)
-          .background(AppTheme.colors.textPrimary),
+          .background(AppTheme.colors.backgroundSecondary),
         contentAlignment = Alignment.Center
       ) {
         Text(
           text = conversation.unreadCount.coerceAtMost(MAX_UNREAD_BADGE.toLong()).toString(),
           style = AppTheme.typography.body2,
-          color = AppTheme.colors.bgPrimary
+          color = AppTheme.colors.backgroundPrimary
         )
       }
     }
