@@ -2,6 +2,8 @@ package ru.sla.clarify.feature.chat.data.mapper
 
 import com.tencent.imsdk.v2.V2TIMMessage
 import ru.sla.clarify.feature.chat.domain.entity.Conversation
+import java.time.Instant
+import java.time.ZoneId
 import ru.sla.clarify.database.chat.ChatMessage as ChatMessageDB
 import ru.sla.clarify.feature.chat.domain.entity.ChatMessage as ChatMessageDomain
 
@@ -50,6 +52,9 @@ object Mappers {
 }
 
 internal fun ChatMessageDB.toDomain(): ChatMessageDomain {
+  val timestamp = Instant.ofEpochSecond(timestamp)
+    .atZone(ZoneId.systemDefault())
+    .toLocalDateTime()
   return ChatMessageDomain(
     msgId = msgId,
     peerId = peerId,
