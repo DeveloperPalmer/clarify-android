@@ -4,12 +4,10 @@ import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.machine
 import ru.kode.amvi.viewmodel.ViewModel
 import ru.kode.remo.JobState
-import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.kode.way.Back
 import ru.kode.way.Event
 import ru.sla.clarify.core.ui.FlowEventSink
-import ru.sla.clarify.core.ui.mapper.toAppUiError
 import ru.sla.clarify.feature.login.domain.LoginModel
 import ru.sla.clarify.feature.login.ui.routing.FlowEvent
 import javax.inject.Inject
@@ -24,18 +22,6 @@ class SplashIntroViewModel @Inject constructor(
     onEach(intent(Intents::navigateBack)) {
       action { _, _, _ ->
         eventSink.sendEvent(Event.Back)
-      }
-    }
-
-    onEach(intent(Intents::dismissSnackbarError)) {
-      transitionTo { state, _ ->
-        state.copy(snackbarError = null)
-      }
-    }
-
-    onEach(intent(Intents::dismissDialogError)) {
-      transitionTo { state, _ ->
-        state.copy(dialogError = null)
       }
     }
 
@@ -54,12 +40,6 @@ class SplashIntroViewModel @Inject constructor(
     onEach(loginModel.signIn.jobFlow.successResults()) {
       action { _, _, _ ->
         eventSink.sendEvent(FlowEvent.GoogleSignInSucceeded)
-      }
-    }
-
-    onEach(loginModel.signIn.jobFlow.errors()) {
-      transitionTo { state, error ->
-        state.copy(snackbarError = error.toAppUiError())
       }
     }
   }

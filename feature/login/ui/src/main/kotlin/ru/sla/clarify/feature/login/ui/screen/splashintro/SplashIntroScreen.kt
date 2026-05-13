@@ -25,13 +25,7 @@ fun SplashIntroScreen(viewModel: SplashIntroViewModel) {
     intents = rememberViewIntents()
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
-    scaffoldState.dialogError = state.dialogError
-    scaffoldState.snackbarError = state.snackbarError
-    ScreenScaffold(
-      state = scaffoldState,
-      onDismissDialogError = intents.dismissDialogError,
-      onDismissSnackbarError = intents.dismissSnackbarError
-    ) {
+    ScreenScaffold(state = scaffoldState) {
       Column(
         modifier = Modifier
           .fillMaxSize()

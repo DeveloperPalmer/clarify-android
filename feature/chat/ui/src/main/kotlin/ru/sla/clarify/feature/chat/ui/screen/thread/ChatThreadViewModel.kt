@@ -6,12 +6,12 @@ import kotlinx.coroutines.flow.map
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
-import ru.kode.amvi.viewmodel.ViewModel
 import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.startOnSubscribe
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.entity.ContentLoadState
+import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.domain.ChatModel
 import ru.sla.clarify.feature.chat.ui.routing.FlowEvent

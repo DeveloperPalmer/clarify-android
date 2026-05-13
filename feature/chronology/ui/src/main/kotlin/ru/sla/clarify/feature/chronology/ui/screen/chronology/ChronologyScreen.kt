@@ -30,13 +30,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
-    scaffoldState.dialogError = state.dialogError
-    scaffoldState.snackbarError = state.snackbarError
-    ScreenScaffold(
-      state = scaffoldState,
-      onDismissDialogError = intents.dismissDialogError,
-      onDismissSnackbarError = intents.dismissSnackbarError
-    ) {
+    ScreenScaffold(state = scaffoldState) {
       ChronologyReadyContent(
         peerId = state.peerId,
         graph = state.graph,

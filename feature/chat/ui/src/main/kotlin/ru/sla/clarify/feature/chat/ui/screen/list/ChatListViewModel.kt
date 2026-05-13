@@ -29,18 +29,6 @@ class ChatListViewModel @Inject constructor(
       }
     }
 
-    onEach(intent(ViewIntents::dismissSnackbarError)) {
-      transitionTo { state, _ ->
-        state.copy(snackbarError = null)
-      }
-    }
-
-    onEach(intent(ViewIntents::dismissDialogError)) {
-      transitionTo { state, _ ->
-        state.copy(dialogError = null)
-      }
-    }
-
     onEach(intent(ViewIntents::openChat)) {
       action { _, _, peerId ->
         eventSink.sendEvent(FlowEvent.ChatThreadRequested(peerId))

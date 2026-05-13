@@ -10,4 +10,13 @@ android {
   buildFeatures {
     compose true
   }
+
+  kotlinOptions {
+    freeCompilerArgs += "-opt-in=androidx.compose.animation.ExperimentalAnimationApi"
+    freeCompilerArgs += "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi"
+    freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
+    freeCompilerArgs += "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi"
+    freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+    freeCompilerArgs += "-opt-in=coil.annotation.ExperimentalCoilApi"
+  }
 }

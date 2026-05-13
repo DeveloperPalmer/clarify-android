@@ -26,16 +26,10 @@ fun MainScreen(viewModel: MainViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
-    scaffoldState.dialogError = state.dialogError
-    scaffoldState.snackbarError = state.snackbarError
     BackHandler(
       onBack = intents.navigateBack
     )
-    ScreenScaffold(
-      state = scaffoldState,
-      onDismissDialogError = intents.dismissDialogError,
-      onDismissSnackbarError = intents.dismissSnackbarError
-    ) {
+    ScreenScaffold(state = scaffoldState) {
       Column(
         modifier = Modifier
           .fillMaxSize()

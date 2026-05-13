@@ -1,6 +1,7 @@
 plugins {
   id 'android-library-convention'
   id 'android-compose-convention'
+  id 'dagger-convention'
 }
 
 android {
@@ -14,6 +15,7 @@ dependencies {
   api libs.amvi.compose
   api libs.way
 
+  api project(":app:domain")
   api project(":core:domain")
   api project(":core:resources")
   api project(":lib:resource-refs:resource-refs-compose")

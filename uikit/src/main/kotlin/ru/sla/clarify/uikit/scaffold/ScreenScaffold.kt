@@ -12,17 +12,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,8 +27,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.ui.entity.ContentLoadState
-import ru.sla.clarify.core.ui.entity.UiError
-import ru.sla.clarify.uikit.components.ErrorSnackbar
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 import ru.sla.resourcerefs.compose.resolveTextRef
@@ -46,8 +37,6 @@ fun ScreenScaffold(
   // Prefer copying implementation until it will be proved that your modification
   // is repeated many times
   state: ScreenScaffoldState = rememberScreenScaffoldState(),
-  onDismissSnackbarError: () -> Unit,
-  onDismissDialogError: (DialogDismissReason) -> Unit,
   contentLoadPlaceholder: @Composable () -> Unit = { ScreenScaffold.ContentLoadProgressIndicator() },
   contentLoadError: @Composable (errorState: ContentLoadState.Error) -> Unit = { errorState ->
     ScreenScaffold.ContentLoadError(errorState)
@@ -75,91 +64,6 @@ fun ScreenScaffold(
       is ContentLoadState.Ready -> {
         contentReady()
       }
-    }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-    SnackbarHost(
-      modifier = Modifier
-        .align(Alignment.TopCenter)
-        .statusBarsPadding(),
-      hostState = snackbarHostState
-    ) { data ->
-      ErrorSnackbar(data)
-    }
-    val snackbarErrorMessage = state.snackbarError
-      ?.message
-      ?.let { message ->
-        val title = resolveTextRef(source = message.title).trim()
-        val description = message.description?.let { resolveTextRef(source = it) }
-        description ?: title
-      }
-    LaunchedEffect(snackbarErrorMessage) {
-      if (snackbarErrorMessage != null) {
-        when (snackbarHostState.showSnackbar(message = snackbarErrorMessage, duration = SnackbarDuration.Short)) {
-          SnackbarResult.Dismissed -> onDismissSnackbarError()
-          SnackbarResult.ActionPerformed -> Unit
-        }
-      }
-    }
-
-    val dialogError = state.dialogError
-    if (dialogError != null) {
-      AlertDialog(
-        onDismissRequest = { onDismissDialogError(DialogDismissReason.OutsideClick) },
-        title = {
-          Text(
-            style = AppTheme.typography.button,
-            textAlign = TextAlign.Center,
-            text = resolveTextRef(dialogError.message.title)
-          )
-        },
-        confirmButton = {
-          if (dialogError.message.primaryAction != null) {
-            val action = dialogError.message.primaryAction!!
-            Button(
-              onClick = {
-                onDismissDialogError(DialogDismissReason.PrimaryButtonClick)
-                action.listener()
-              }
-            ) {
-              Text(
-                style = AppTheme.typography.button,
-                textAlign = TextAlign.Center,
-                text = resolveTextRef(action.name)
-              )
-            }
-          } else {
-            Button(onClick = { onDismissDialogError(DialogDismissReason.DismissButtonClick) }) {
-              Text(
-                style = AppTheme.typography.button,
-                textAlign = TextAlign.Center,
-                text = "Ok"
-              )
-            }
-          }
-        },
-        // when there's a primary action we show this action + cancel-button otherwise we show only OK button
-        dismissButton = @Suppress("UseLet") if (dialogError.message.primaryAction != null) {
-          {
-            Button(
-              onClick = { onDismissDialogError(DialogDismissReason.DismissButtonClick) }
-            ) {
-              Text(
-                style = AppTheme.typography.button,
-                textAlign = TextAlign.Center,
-                text = "Cancel"
-              )
-            }
-          }
-        } else {
-          null
-        },
-        text = {
-          Text(
-            text = dialogError.message.description?.let { resolveTextRef(it) } ?: "Error"
-          )
-        }
-      )
     }
   }
 }
@@ -230,34 +134,18 @@ object ScreenScaffold {
 // false positive, conversion is not possible
 @Stable
 class ScreenScaffoldState {
-  var snackbarError: UiError? by mutableStateOf(null)
-  var dialogError: UiError? by mutableStateOf(null)
   var contentLoadState: ContentLoadState by mutableStateOf(ContentLoadState.Ready)
 
-  constructor(
-    contentLoadState: ContentLoadState = ContentLoadState.Ready,
-    snackbarError: UiError? = null,
-    dialogError: UiError? = null
-  ) {
+  constructor(contentLoadState: ContentLoadState = ContentLoadState.Ready) {
     this.contentLoadState = contentLoadState
-    this.snackbarError = snackbarError
-    this.dialogError = dialogError
   }
 }
 
 @Composable
 fun rememberScreenScaffoldState(
-  contentLoadState: ContentLoadState = ContentLoadState.Ready,
-  snackbarError: UiError? = null,
-  dialogError: UiError? = null
+  contentLoadState: ContentLoadState = ContentLoadState.Ready
 ): ScreenScaffoldState {
   return remember {
-    ScreenScaffoldState(contentLoadState, snackbarError, dialogError)
+    ScreenScaffoldState(contentLoadState)
   }
-}
-
-enum class DialogDismissReason {
-  OutsideClick,
-  PrimaryButtonClick,
-  DismissButtonClick
 }

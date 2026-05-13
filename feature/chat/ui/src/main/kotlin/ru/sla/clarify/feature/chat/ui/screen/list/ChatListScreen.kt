@@ -33,8 +33,8 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import ru.kode.amvi.component.compose.MviComponent
 import ru.kode.amvi.component.compose.rememberViewIntents
+import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.feature.chat.domain.entity.Conversation
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
@@ -48,16 +48,10 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
-    scaffoldState.dialogError = state.dialogError
-    scaffoldState.snackbarError = state.snackbarError
     BackHandler(
       onBack = intents.navigateBack
     )
-    ScreenScaffold(
-      state = scaffoldState,
-      onDismissDialogError = intents.dismissDialogError,
-      onDismissSnackbarError = intents.dismissSnackbarError
-    ) {
+    ScreenScaffold(state = scaffoldState) {
       ChatListReadyContent(
         myUserId = state.myUserId,
         conversations = state.conversations,

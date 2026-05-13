@@ -30,8 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import ru.kode.amvi.component.compose.MviComponent
-import ru.kode.amvi.component.compose.rememberViewIntents
+import ru.sla.clarify.core.ui.screen.MviComponent
+import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.core.ui.text.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.feature.chat.domain.entity.ChatMessage
 import ru.sla.clarify.uikit.modifier.surface
@@ -47,16 +47,10 @@ fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
-    scaffoldState.dialogError = state.dialogError
-    scaffoldState.snackbarError = state.snackbarError
     BackHandler(
       onBack = intents.navigateBack
     )
-    ScreenScaffold(
-      state = scaffoldState,
-      onDismissDialogError = intents.dismissDialogError,
-      onDismissSnackbarError = intents.dismissSnackbarError
-    ) {
+    ScreenScaffold(state = scaffoldState) {
       ChatThreadReadyContent(
         peerId = state.peerId,
         messages = state.messages,

@@ -5,6 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +31,8 @@ import ru.sla.clarify.core.routing.FlowEventMediator
 import ru.sla.clarify.core.routing.noTransition
 import ru.sla.clarify.core.routing.pushTransition
 import ru.sla.clarify.core.routing.rememberTransitionSpec
+import ru.sla.clarify.core.ui.event.LocalViewEventsHostMediator
+import ru.sla.clarify.uikit.event.ViewEventsHost
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.log.asLog
@@ -67,29 +73,36 @@ class MainActivity : ComponentActivity() {
       AppTheme(
         currentTheme = ColorTheme.Light
       ) {
-        NodeHost(
-          service = service,
-          transitionSpec = rememberTransitionSpec {
-            // TODO @dz @Way this is a rather bad way to go. Should not rely on a hardcoded string which could
-            //  unexpectedly change in the flow, which is in different module.
-            //
-            //  Instead this should either be something like
-            //   if (initialState.path == AbsoluteTargets.appFlow.initialFlowResolve.path) { ... }
-            //   (after AbsoluteTargets is implemented in Way)
-            //
-            // or something like
-            //
-            //  if (initialState.node.findParentFlowNode() is TransitionResolver &&
-            //    initialState.node.findParentFlowNode().customTransition(from, to) != null) {
-            //    initialState.node.findParentFlowNode().customTransition(from, to)
-            //  } else { pushTransition() }
-            if (initialState?.path?.segments?.lastOrNull()?.name == "initialFlowResolve") {
-              noTransition()
-            } else {
-              pushTransition()
-            }
+        CompositionLocalProvider(
+          LocalViewEventsHostMediator provides component.viewEventsHostMediator()
+        ) {
+          Box(modifier = Modifier.fillMaxSize()) {
+            NodeHost(
+              service = service,
+              transitionSpec = rememberTransitionSpec {
+                // TODO @dz @Way this is a rather bad way to go. Should not rely on a hardcoded string which could
+                //  unexpectedly change in the flow, which is in different module.
+                //
+                //  Instead this should either be something like
+                //   if (initialState.path == AbsoluteTargets.appFlow.initialFlowResolve.path) { ... }
+                //   (after AbsoluteTargets is implemented in Way)
+                //
+                // or something like
+                //
+                //  if (initialState.node.findParentFlowNode() is TransitionResolver &&
+                //    initialState.node.findParentFlowNode().customTransition(from, to) != null) {
+                //    initialState.node.findParentFlowNode().customTransition(from, to)
+                //  } else { pushTransition() }
+                if (initialState?.path?.segments?.lastOrNull()?.name == "initialFlowResolve") {
+                  noTransition()
+                } else {
+                  pushTransition()
+                }
+              }
+            )
+            ViewEventsHost()
           }
-        )
+        }
       }
     }
   }
