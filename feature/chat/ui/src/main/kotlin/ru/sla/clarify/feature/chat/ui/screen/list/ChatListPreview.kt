@@ -29,9 +29,13 @@ private fun ChatListReadyContentPreview(
         newChatDialogVisible = state.newChatDialogVisible,
         peerIdInput = state.peerIdInput,
         onConversationClick = {},
+        onConversationLongPress = {},
+        onDismissDeleteMenu = {},
         onShowNewChatDialog = {},
         onDismissNewChatDialog = {},
         onPeerIdChange = {},
+        conversationDeletionId = null,
+        onDeleteConfirmation = {},
         onConfirmNewChat = {}
       )
     }
@@ -44,7 +48,9 @@ internal data class ChatListPreviewState(
   val myUserId: String?,
   val conversations: List<Conversation>,
   val newChatDialogVisible: Boolean,
-  val peerIdInput: String
+  val peerIdInput: String,
+  val pendingDelete: Conversation? = null,
+  val deleteConfirmVisible: Boolean = false
 ) {
   // Compose tooling использует toString() как заголовок для каждого варианта,
   // поэтому отдаём короткий label вместо длинного дампа data class'а.
@@ -100,27 +106,37 @@ internal class ChatListPreviewProvider : PreviewParameterProvider<ChatListPrevie
       conversations = longSampleConversations(),
       newChatDialogVisible = false,
       peerIdInput = ""
+    ),
+    ChatListPreviewState(
+      label = "Delete confirmation",
+      theme = ColorTheme.Light,
+      myUserId = "user-12345",
+      conversations = sampleConversations(),
+      newChatDialogVisible = false,
+      peerIdInput = "",
+      pendingDelete = sampleConversations().first(),
+      deleteConfirmVisible = true
     )
   )
 }
 
 private fun sampleConversations(): List<Conversation> = listOf(
   Conversation(
-    id = "c-1",
+    id = Conversation.Id("c-1"),
     peer = Conversation.Peer(id = "alice", name = "Алиса", faceUrl = null),
     lastMessage = "Привет! Как дела?",
     lastMessageTimestamp = PREVIEW_NOW_EPOCH_MILLIS - MIN_5,
     unreadCount = 2
   ),
   Conversation(
-    id = "c-2",
+    id = Conversation.Id("c-2"),
     peer = Conversation.Peer(id = "bob", name = "Боб", faceUrl = null),
     lastMessage = null,
     lastMessageTimestamp = PREVIEW_NOW_EPOCH_MILLIS - HOUR_1,
     unreadCount = 0
   ),
   Conversation(
-    id = "c-3",
+    id = Conversation.Id("c-3"),
     peer = Conversation.Peer(id = "kate", name = "Кейт", faceUrl = null),
     lastMessage = "Готовлю апдейт, скоро пришлю длинный текст для проверки эллипсиса",
     lastMessageTimestamp = PREVIEW_NOW_EPOCH_MILLIS - DAY_1,
@@ -132,7 +148,7 @@ private fun longSampleConversations(): List<Conversation> {
   val base = sampleConversations()
   val extra = (1..12).map { idx ->
     Conversation(
-      id = "c-extra-$idx",
+      id = Conversation.Id("c-extra-$idx"),
       peer = Conversation.Peer(
         id = "peer-$idx",
         name = "Контакт №$idx",

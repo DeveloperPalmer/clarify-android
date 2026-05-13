@@ -46,6 +46,10 @@ class ChatModel @Inject constructor(
     )
   }
 
+  val deleteConversation = task<Conversation.Id, Unit>(name = "deleteConversation") { id ->
+    chatRepository.deleteConversation(id = id)
+  }
+
   fun markReadTreadMessages() {
     scope.launch {
       chatRepository.markConversationRead(

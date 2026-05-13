@@ -41,7 +41,7 @@ object Mappers {
     peerFaceUrl: String?
   ): Conversation {
     return Conversation(
-      id = id,
+      id = Conversation.Id(id),
       peer = Conversation.Peer(
         id = peerId,
         name = peerName,

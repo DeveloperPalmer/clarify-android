@@ -4,10 +4,10 @@ import kotlinx.coroutines.flow.map
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
-import ru.kode.amvi.viewmodel.ViewModel
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.startOnSubscribe
 import ru.sla.clarify.core.ui.FlowEventSink
+import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.domain.ChatModel
 import ru.sla.clarify.feature.chat.ui.routing.FlowEvent
@@ -62,10 +62,50 @@ class ChatListViewModel @Inject constructor(
       }
     }
 
-    configureConversationTransitions()
+    configureFetchConversationTransitions()
+    configureDeleteConversationTransitions()
   }
 
-  private fun MachineDsl<ViewState>.configureConversationTransitions() {
+  private fun MachineDsl<ViewState>.configureDeleteConversationTransitions() {
+    onEach(intent(ViewIntents::showDeleteMenu)) {
+      transitionTo { state, conversationDeletionId ->
+        state.copy(conversationDeletionId = conversationDeletionId)
+      }
+    }
+
+    onEach(intent(ViewIntents::dismissDeleteMenu)) {
+      transitionTo { state, _ ->
+        state.copy(
+          conversationDeletionId = null
+        )
+      }
+    }
+
+    onEach(intent(ViewIntents::showDeleteConfirmation)) {
+      transitionTo { state, _ ->
+        state.copy(
+          conversationDeletionId = null
+        )
+      }
+      action { state, _, _ ->
+        val target = state.conversations.first { it.id == state.conversationDeletionId }
+        sendViewEvent(
+          showDeleteConversationDialog(
+            peerLabel = target.peer.id,
+            conversationId = target.id
+          )
+        )
+      }
+    }
+
+    onEach(intent(ViewIntents::confirmDeleteConversation)) {
+      action { state, _, id ->
+        chatModel.deleteConversation.start(id)
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureFetchConversationTransitions() {
     onEach(chatModel.conversations) {
       transitionTo { state, conversations ->
         state.copy(

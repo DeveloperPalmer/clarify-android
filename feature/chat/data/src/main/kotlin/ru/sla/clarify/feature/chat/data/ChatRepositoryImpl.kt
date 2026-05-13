@@ -95,6 +95,22 @@ class ChatRepositoryImpl @Inject constructor(
     }
   }
 
+  override suspend fun deleteConversation(id: Conversation.Id) {
+    return suspendCancellableCoroutine { cont ->
+      V2TIMManager.getConversationManager().deleteConversation(
+        /* id */ id.value,
+        /* listener */ object : V2TIMCallback {
+          override fun onSuccess() {
+            cont.resumeContinuation(Unit)
+          }
+          override fun onError(code: Int, desc: String?) {
+            cont.resumeWithException(ChatSdkException(code, desc))
+          }
+        }
+      )
+    }
+  }
+
   override suspend fun loadHistory(
     count: Int,
     peerId: String,

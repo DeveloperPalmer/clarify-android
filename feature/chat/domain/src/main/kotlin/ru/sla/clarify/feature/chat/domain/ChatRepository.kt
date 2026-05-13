@@ -9,6 +9,7 @@ interface ChatRepository {
 
   fun subscribeOnConversations(): Flow<Unit>
   val conversations: Flow<List<Conversation>?>
+  suspend fun deleteConversation(id: Conversation.Id)
 
   fun treadMessages(peerId: String): Flow<ChatMessage>
 

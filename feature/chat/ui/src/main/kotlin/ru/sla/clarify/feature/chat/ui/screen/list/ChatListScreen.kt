@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.chat.ui.screen.list
 import android.content.ClipData
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
@@ -58,10 +60,14 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
         newChatDialogVisible = state.newChatDialogVisible,
         peerIdInput = state.peerIdInput,
         onConversationClick = intents.openChat,
+        conversationDeletionId = state.conversationDeletionId,
+        onConversationLongPress = intents.showDeleteMenu,
+        onDismissDeleteMenu = intents.dismissDeleteMenu,
         onShowNewChatDialog = intents.showNewChatDialog,
         onDismissNewChatDialog = intents.dismissNewChatDialog,
         onPeerIdChange = intents.peerIdChanged,
-        onConfirmNewChat = intents.confirmNewChat
+        onConfirmNewChat = intents.confirmNewChat,
+        onDeleteConfirmation = intents.showDeleteConfirmation
       )
     }
   }
@@ -73,7 +79,11 @@ internal fun ChatListReadyContent(
   conversations: List<Conversation>,
   newChatDialogVisible: Boolean,
   peerIdInput: String,
+  conversationDeletionId: Conversation.Id?,
   onConversationClick: (String) -> Unit,
+  onConversationLongPress: (Conversation.Id) -> Unit,
+  onDismissDeleteMenu: () -> Unit,
+  onDeleteConfirmation: () -> Unit,
   onShowNewChatDialog: () -> Unit,
   onDismissNewChatDialog: () -> Unit,
   onPeerIdChange: (String) -> Unit,
@@ -89,9 +99,13 @@ internal fun ChatListReadyContent(
       Header(myUserId = myUserId)
       HorizontalDivider()
       ChatListBody(
+        modifier = Modifier.fillMaxSize(),
         conversations = conversations,
+        conversationDeletionId = conversationDeletionId,
         onConversationClick = onConversationClick,
-        modifier = Modifier.fillMaxSize()
+        onConversationLongPress = onConversationLongPress,
+        onDismissDeleteMenu = onDismissDeleteMenu,
+        onDeleteConfirmation = onDeleteConfirmation
       )
     }
     ExtendedFloatingActionButton(
@@ -154,7 +168,11 @@ private fun Header(myUserId: String?) {
 @Composable
 private fun ChatListBody(
   conversations: List<Conversation>,
+  conversationDeletionId: Conversation.Id?,
   onConversationClick: (String) -> Unit,
+  onConversationLongPress: (Conversation.Id) -> Unit,
+  onDismissDeleteMenu: () -> Unit,
+  onDeleteConfirmation: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   if (conversations.isEmpty()) {
@@ -176,7 +194,11 @@ private fun ChatListBody(
     ) { conversation ->
       ConversationItem(
         conversation = conversation,
-        onClick = { onConversationClick(conversation.peer.id) }
+        showDeleteMenu = conversationDeletionId != null,
+        onClick = { onConversationClick(conversation.peer.id) },
+        onLongClick = { onConversationLongPress(conversation.id) },
+        onDeleteClick = onDeleteConfirmation,
+        onDismissDeleteMenu = onDismissDeleteMenu
       )
       HorizontalDivider()
     }
@@ -186,64 +208,88 @@ private fun ChatListBody(
 @Composable
 private fun ConversationItem(
   conversation: Conversation,
-  onClick: () -> Unit
+  showDeleteMenu: Boolean,
+  onClick: () -> Unit,
+  onLongClick: () -> Unit,
+  onDismissDeleteMenu: () -> Unit,
+  onDeleteClick: () -> Unit
 ) {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .clickable(onClick = onClick)
-      .padding(horizontal = 16.dp, vertical = 12.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Box(
+  Box(modifier = Modifier.fillMaxWidth()) {
+    Row(
       modifier = Modifier
-        .size(40.dp)
-        .clip(CircleShape)
-        .background(AppTheme.colors.textPrimary),
-      contentAlignment = Alignment.Center
+        .fillMaxWidth()
+        .combinedClickable(
+          onClick = onClick,
+          onLongClick = onLongClick
+        )
+        .padding(horizontal = 16.dp, vertical = 12.dp),
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      Text(
-        text = (conversation.peer.name ?: conversation.peer.id).take(1).uppercase(),
-        style = AppTheme.typography.button,
-        color = AppTheme.colors.backgroundSecondary
-      )
-    }
-    Column(
-      modifier = Modifier
-        .padding(start = 12.dp)
-        .weight(1f)
-    ) {
-      Text(
-        text = conversation.peer.name?.takeIf { it.isNotBlank() } ?: conversation.peer.id,
-        style = AppTheme.typography.button,
-        color = AppTheme.colors.textPrimary,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
-      val preview = conversation.lastMessage?.takeIf { it.isNotBlank() } ?: "(no messages yet)"
-      Text(
-        text = preview,
-        style = AppTheme.typography.body2,
-        color = AppTheme.colors.textPrimary,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
-    }
-    if (conversation.unreadCount > 0) {
       Box(
         modifier = Modifier
-          .padding(start = 8.dp)
-          .size(24.dp)
+          .size(40.dp)
           .clip(CircleShape)
-          .background(AppTheme.colors.backgroundSecondary),
+          .background(AppTheme.colors.textPrimary),
         contentAlignment = Alignment.Center
       ) {
         Text(
-          text = conversation.unreadCount.coerceAtMost(MAX_UNREAD_BADGE.toLong()).toString(),
-          style = AppTheme.typography.body2,
-          color = AppTheme.colors.backgroundPrimary
+          text = (conversation.peer.name ?: conversation.peer.id).take(1).uppercase(),
+          style = AppTheme.typography.button,
+          color = AppTheme.colors.backgroundSecondary
         )
       }
+      Column(
+        modifier = Modifier
+          .padding(start = 12.dp)
+          .weight(1f)
+      ) {
+        Text(
+          text = conversation.peer.name?.takeIf { it.isNotBlank() } ?: conversation.peer.id,
+          style = AppTheme.typography.button,
+          color = AppTheme.colors.textPrimary,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
+        val preview = conversation.lastMessage?.takeIf { it.isNotBlank() } ?: "(no messages yet)"
+        Text(
+          text = preview,
+          style = AppTheme.typography.body2,
+          color = AppTheme.colors.textPrimary,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
+      }
+      if (conversation.unreadCount > 0) {
+        Box(
+          modifier = Modifier
+            .padding(start = 8.dp)
+            .size(24.dp)
+            .clip(CircleShape)
+            .background(AppTheme.colors.backgroundSecondary),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            text = conversation.unreadCount.coerceAtMost(MAX_UNREAD_BADGE.toLong()).toString(),
+            style = AppTheme.typography.body2,
+            color = AppTheme.colors.backgroundPrimary
+          )
+        }
+      }
+    }
+    DropdownMenu(
+      expanded = showDeleteMenu,
+      onDismissRequest = onDismissDeleteMenu
+    ) {
+      DropdownMenuItem(
+        text = {
+          Text(
+            text = "Delete chat",
+            color = AppTheme.colors.errorPrimary,
+            style = AppTheme.typography.button
+          )
+        },
+        onClick = onDeleteClick
+      )
     }
   }
 }
