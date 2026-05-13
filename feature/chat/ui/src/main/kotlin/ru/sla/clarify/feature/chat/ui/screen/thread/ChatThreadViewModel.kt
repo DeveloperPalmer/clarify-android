@@ -91,6 +91,9 @@ class ChatThreadViewModel @AssistedInject constructor(
           messages = state.messages.addFirst(message)
         )
       }
+      action { _, _, _ ->
+        chatModel.markReadTreadMessages()
+      }
     }
   }
 

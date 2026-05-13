@@ -9,9 +9,6 @@ data class ViewState(
   val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
   val myUserId: String? = null,
   val conversations: List<Conversation> = emptyList(),
-
   val newChatDialogVisible: Boolean = false,
-
-  val peerIdInput: String = "",
   val conversationDeletionId: Conversation.Id? = null
 )

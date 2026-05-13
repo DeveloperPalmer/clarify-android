@@ -86,7 +86,8 @@ internal fun ChatThreadReadyContent(
     if (messages.isEmpty()) {
       TreadEmptyState(
         modifier = Modifier
-          .fillMaxSize()
+          .weight(1f)
+          .fillMaxWidth()
       )
     } else {
       ChatThreadMessages(
@@ -160,7 +161,10 @@ private fun ChatThreadMessages(
     modifier = modifier,
     state = listState,
     reverseLayout = true,
-    verticalArrangement = Arrangement.spacedBy(4.dp),
+    verticalArrangement = Arrangement.spacedBy(
+      space = 4.dp,
+      alignment = Alignment.Bottom
+    ),
     contentPadding = PaddingValues(8.dp)
   ) {
     items(
@@ -236,17 +240,17 @@ private fun ChatThreadInputRow(
   onSend: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  var inputValue by rememberSaveable { mutableStateOf("") }
   Row(
     modifier = modifier
       .padding(horizontal = 8.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(8.dp)
   ) {
+    var inputValue by rememberSaveable { mutableStateOf("") }
     OutlinedTextField(
+      modifier = Modifier.weight(1f),
       value = inputValue,
       onValueChange = { inputValue = it },
-      modifier = Modifier.weight(1f),
       placeholder = { Text("Message") }
     )
     Button(

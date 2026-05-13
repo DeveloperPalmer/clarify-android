@@ -26,7 +26,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,15 +62,13 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
         myUserId = state.myUserId,
         conversations = state.conversations,
         newChatDialogVisible = state.newChatDialogVisible,
-        peerIdInput = state.peerIdInput,
         onConversationClick = intents.openChat,
         conversationDeletionId = state.conversationDeletionId,
         onConversationLongPress = intents.showDeleteMenu,
         onDismissDeleteMenu = intents.dismissDeleteMenu,
         onShowNewChatDialog = intents.showNewChatDialog,
         onDismissNewChatDialog = intents.dismissNewChatDialog,
-        onPeerIdChange = intents.peerIdChanged,
-        onConfirmNewChat = intents.confirmNewChat,
+        onAddConversation = intents.confirmNewChat,
         onDeleteConfirmation = intents.showDeleteConfirmation
       )
     }
@@ -78,7 +80,6 @@ internal fun ChatListReadyContent(
   myUserId: String?,
   conversations: List<Conversation>,
   newChatDialogVisible: Boolean,
-  peerIdInput: String,
   conversationDeletionId: Conversation.Id?,
   onConversationClick: (String) -> Unit,
   onConversationLongPress: (Conversation.Id) -> Unit,
@@ -86,8 +87,7 @@ internal fun ChatListReadyContent(
   onDeleteConfirmation: () -> Unit,
   onShowNewChatDialog: () -> Unit,
   onDismissNewChatDialog: () -> Unit,
-  onPeerIdChange: (String) -> Unit,
-  onConfirmNewChat: () -> Unit,
+  onAddConversation: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
   Box(
@@ -119,9 +119,7 @@ internal fun ChatListReadyContent(
   }
   if (newChatDialogVisible) {
     NewChatDialog(
-      peerId = peerIdInput,
-      onPeerIdChange = onPeerIdChange,
-      onConfirm = onConfirmNewChat,
+      onConfirm = onAddConversation,
       onDismiss = onDismissNewChatDialog
     )
   }
@@ -296,11 +294,10 @@ private fun ConversationItem(
 
 @Composable
 private fun NewChatDialog(
-  peerId: String,
-  onPeerIdChange: (String) -> Unit,
-  onConfirm: () -> Unit,
+  onConfirm: (String) -> Unit,
   onDismiss: () -> Unit
 ) {
+  var inputValue by rememberSaveable { mutableStateOf("") }
   AlertDialog(
     onDismissRequest = onDismiss,
     title = { Text("New chat") },
@@ -308,17 +305,17 @@ private fun NewChatDialog(
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Enter the peer userId to chat with:")
         OutlinedTextField(
-          value = peerId,
-          onValueChange = onPeerIdChange,
-          singleLine = true,
-          modifier = Modifier.fillMaxWidth()
+          modifier = Modifier.fillMaxWidth(),
+          value = inputValue,
+          onValueChange = { inputValue = it },
+          singleLine = true
         )
       }
     },
     confirmButton = {
       Button(
-        onClick = onConfirm,
-        enabled = peerId.isNotBlank()
+        onClick = { onConfirm(inputValue) },
+        enabled = inputValue.isNotBlank()
       ) {
         Text("Start")
       }
