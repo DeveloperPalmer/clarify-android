@@ -9,13 +9,11 @@ import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
-import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.feature.main.domain.MainModel
 import ru.sla.clarify.feature.main.ui.routing.FlowEvent
 import javax.inject.Inject
 
 class MainFlowNode @Inject constructor(
-  private val eventSink: FlowEventSink,
   private val mainModel: MainModel
 ) : BaseFlowNode<Unit>() {
 

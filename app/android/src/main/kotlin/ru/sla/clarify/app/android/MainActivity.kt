@@ -20,10 +20,13 @@ import ru.kode.way.NavigationService
 import ru.kode.way.compose.NodeHost
 import ru.kode.way.extension.node.hook.NodeHooksSupportExtensionPoint
 import ru.kode.way.extension.service.LogTransitionsExtensionPoint
+import ru.kode.way.name
 import ru.sla.clarify.app.routing.AppFlow
 import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.routing.FlowEventMediator
-import ru.sla.clarify.core.routing.rememberNavigationTransitionSpec
+import ru.sla.clarify.core.routing.noTransition
+import ru.sla.clarify.core.routing.pushTransition
+import ru.sla.clarify.core.routing.rememberTransitionSpec
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.log.asLog
@@ -66,7 +69,26 @@ class MainActivity : ComponentActivity() {
       ) {
         NodeHost(
           service = service,
-          transitionSpec = rememberNavigationTransitionSpec(service)
+          transitionSpec = rememberTransitionSpec {
+            // TODO @dz @Way this is a rather bad way to go. Should not rely on a hardcoded string which could
+            //  unexpectedly change in the flow, which is in different module.
+            //
+            //  Instead this should either be something like
+            //   if (initialState.path == AbsoluteTargets.appFlow.initialFlowResolve.path) { ... }
+            //   (after AbsoluteTargets is implemented in Way)
+            //
+            // or something like
+            //
+            //  if (initialState.node.findParentFlowNode() is TransitionResolver &&
+            //    initialState.node.findParentFlowNode().customTransition(from, to) != null) {
+            //    initialState.node.findParentFlowNode().customTransition(from, to)
+            //  } else { pushTransition() }
+            if (initialState?.path?.segments?.lastOrNull()?.name == "initialFlowResolve") {
+              noTransition()
+            } else {
+              pushTransition()
+            }
+          }
         )
       }
     }
