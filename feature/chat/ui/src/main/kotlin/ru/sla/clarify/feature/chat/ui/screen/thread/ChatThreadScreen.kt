@@ -95,15 +95,15 @@ internal fun ChatThreadReadyContent(
           .weight(1f)
           .fillMaxWidth()
       )
-      HorizontalDivider()
-      ChatThreadInputRow(
-        isSending = isSending,
-        onSend = onSend,
-        modifier = Modifier
-          .fillMaxWidth()
-          .navigationBarsPadding()
-      )
     }
+    HorizontalDivider()
+    ChatThreadInputRow(
+      isSending = isSending,
+      onSend = onSend,
+      modifier = Modifier
+        .fillMaxWidth()
+        .navigationBarsPadding()
+    )
   }
 }
 
