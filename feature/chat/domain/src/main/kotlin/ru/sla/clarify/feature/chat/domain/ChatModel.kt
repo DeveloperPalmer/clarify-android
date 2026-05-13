@@ -2,6 +2,8 @@ package ru.sla.clarify.feature.chat.domain
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.update
 import ru.sla.clarify.core.domain.ReactiveModel
@@ -24,7 +26,9 @@ class ChatModel @Inject constructor(
       .launchIn(scope)
   }
 
-  val conversations: Flow<List<Conversation>> = chatRepository.conversations
+  val fetchConversations = task<Unit>(name = "fetchConversations") {
+    chatRepository.conversations.first()
+  }
 
   val loadHistory = task<List<ChatMessage>>(name = "loadHistory") {
     chatRepository.loadHistory(
@@ -61,6 +65,9 @@ class ChatModel @Inject constructor(
 
   val currentUserId: String?
     get() = chatRepository.getCurrentUserId()
+
+  val conversations: Flow<List<Conversation>> = chatRepository.conversations
+    .filterNotNull()
 
   private data class State(
     val peerId: String? = null

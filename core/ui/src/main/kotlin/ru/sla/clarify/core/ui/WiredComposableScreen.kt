@@ -21,6 +21,8 @@ interface WiredComposableScreen {
 
   @Composable
   fun Content(modifier: Modifier)
+
+  fun destroy()
 }
 
 private class BasicWiredComposableScreen<VM : ViewModel<*, *>>(
@@ -31,5 +33,13 @@ private class BasicWiredComposableScreen<VM : ViewModel<*, *>>(
   @Composable
   override fun Content(modifier: Modifier) {
     screen(viewModel)
+  }
+
+  override fun destroy() {
+    viewModel.destroy()
+  }
+
+  override fun toString(): String {
+    return viewModel.toString()
   }
 }

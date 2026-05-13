@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.ui.screen.thread
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,9 @@ fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
     scaffoldState.contentLoadState = state.contentLoadState
     scaffoldState.dialogError = state.dialogError
     scaffoldState.snackbarError = state.snackbarError
+    BackHandler(
+      onBack = intents.navigateBack
+    )
     ScreenScaffold(
       state = scaffoldState,
       onDismissDialogError = intents.dismissDialogError,

@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chat.ui.screen.list
 
 import android.content.ClipData
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,8 +47,12 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
     intents = rememberViewIntents()
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
+    scaffoldState.contentLoadState = state.contentLoadState
     scaffoldState.dialogError = state.dialogError
     scaffoldState.snackbarError = state.snackbarError
+    BackHandler(
+      onBack = intents.navigateBack
+    )
     ScreenScaffold(
       state = scaffoldState,
       onDismissDialogError = intents.dismissDialogError,

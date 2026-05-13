@@ -6,7 +6,7 @@ import ru.sla.clarify.core.ui.entity.UiError
 
 @Immutable
 data class ViewState(
-  val contentLoadState: ContentLoadState = ContentLoadState.Ready,
+  val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
   val dialogError: UiError? = null,
   val snackbarError: UiError? = null
 )

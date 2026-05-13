@@ -8,7 +8,7 @@ interface ChatRepository {
   fun getCurrentUserId(): String?
 
   fun subscribeOnConversations(): Flow<Unit>
-  val conversations: Flow<List<Conversation>>
+  val conversations: Flow<List<Conversation>?>
 
   fun treadMessages(peerId: String): Flow<ChatMessage>
 

@@ -22,4 +22,9 @@ class BasicScreenNode(private val screen: WiredComposableScreen) : BaseScreenNod
   override fun Content(modifier: Modifier) {
     screen.Content(modifier)
   }
+
+  override fun onExit(event: Event) {
+    super.onExit(event)
+    screen.destroy()
+  }
 }

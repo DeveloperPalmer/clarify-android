@@ -13,7 +13,6 @@ import ru.sla.clarify.core.ui.mapper.toAppUiError
 import ru.sla.clarify.feature.login.domain.LoginModel
 import ru.sla.clarify.feature.login.ui.routing.FlowEvent
 import javax.inject.Inject
-import kotlin.to
 
 class SplashIntroViewModel @Inject constructor(
   private val eventSink: FlowEventSink,

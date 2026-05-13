@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chat.routing
 
 import kotlinx.coroutines.CoroutineScope
 import ru.kode.way.Event
+import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
 import ru.kode.way.Ignore
 import ru.kode.way.NavigateTo
@@ -28,6 +29,9 @@ class ChatFlowNode @Inject constructor(
 
   override fun transition(event: Event): FlowTransition<Unit> {
     return when (event) {
+      is FlowEvent.ChatListDismissed -> {
+        Finish(Unit)
+      }
       is ChatFlowChildFinishRequest.ChronologyFlow -> {
         NavigateTo(Target.chatFlow.chatThread(chatModel.requirePeerId()))
       }
