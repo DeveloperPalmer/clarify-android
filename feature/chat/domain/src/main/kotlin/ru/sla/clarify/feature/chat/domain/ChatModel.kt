@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.domain.di.ChatScope
@@ -45,10 +46,12 @@ class ChatModel @Inject constructor(
     )
   }
 
-  val markRead = task<Unit>(name = "markRead") {
-    chatRepository.markConversationRead(
-      peerId = requireNotNull(stateFlow.value.peerId)
-    )
+  fun markReadTreadMessages() {
+    scope.launch {
+      chatRepository.markConversationRead(
+        peerId = requireNotNull(stateFlow.value.peerId)
+      )
+    }
   }
 
   fun setPeerId(id: String) {
@@ -59,7 +62,7 @@ class ChatModel @Inject constructor(
     return requireNotNull(stateFlow.value.peerId)
   }
 
-  fun treadMessages(peerId: String): Flow<ChatMessage> {
+  fun treadMessage(peerId: String): Flow<ChatMessage> {
     return chatRepository.treadMessages(peerId)
   }
 

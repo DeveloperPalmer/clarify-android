@@ -22,6 +22,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -56,9 +60,7 @@ fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
       ChatThreadReadyContent(
         peerId = state.peerId,
         messages = state.messages,
-        inputValue = state.inputValue,
         isSending = state.isSending,
-        onValueChange = intents.changeMessageQuery,
         onBack = intents.navigateBack,
         onSend = intents.sendMessage,
         onChronology = intents.openChronology
@@ -71,12 +73,10 @@ fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
 internal fun ChatThreadReadyContent(
   peerId: String,
   messages: List<ChatMessage>,
-  inputValue: String,
   isSending: Boolean,
   onBack: () -> Unit,
   onChronology: () -> Unit,
-  onValueChange: (String) -> Unit,
-  onSend: () -> Unit,
+  onSend: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
   Column(
@@ -103,9 +103,7 @@ internal fun ChatThreadReadyContent(
       )
       HorizontalDivider()
       ChatThreadInputRow(
-        value = inputValue,
         isSending = isSending,
-        onValueChange = onValueChange,
         onSend = onSend,
         modifier = Modifier
           .fillMaxWidth()
@@ -161,12 +159,13 @@ private fun ChatThreadMessages(
   val listState = rememberLazyListState()
   LaunchedEffect(messages.size) {
     if (messages.isNotEmpty()) {
-      listState.animateScrollToItem(messages.lastIndex)
+      listState.animateScrollToItem(0)
     }
   }
   LazyColumn(
     modifier = modifier,
     state = listState,
+    reverseLayout = true,
     verticalArrangement = Arrangement.spacedBy(4.dp),
     contentPadding = PaddingValues(8.dp)
   ) {
@@ -239,12 +238,11 @@ private fun MessageBubble(message: ChatMessage) {
 
 @Composable
 private fun ChatThreadInputRow(
-  value: String,
   isSending: Boolean,
-  onValueChange: (String) -> Unit,
-  onSend: () -> Unit,
+  onSend: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
+  var inputValue by rememberSaveable { mutableStateOf("") }
   Row(
     modifier = modifier
       .padding(horizontal = 8.dp, vertical = 8.dp),
@@ -252,14 +250,20 @@ private fun ChatThreadInputRow(
     horizontalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     OutlinedTextField(
-      value = value,
-      onValueChange = onValueChange,
+      value = inputValue,
+      onValueChange = { inputValue = it },
       modifier = Modifier.weight(1f),
       placeholder = { Text("Message") }
     )
     Button(
-      onClick = onSend,
-      enabled = value.isNotBlank() && !isSending
+      onClick = {
+        val text = inputValue.trim()
+        if (text.isNotEmpty()) {
+          onSend(text)
+          inputValue = ""
+        }
+      },
+      enabled = inputValue.isNotBlank() && !isSending
     ) {
       Text("Send")
     }

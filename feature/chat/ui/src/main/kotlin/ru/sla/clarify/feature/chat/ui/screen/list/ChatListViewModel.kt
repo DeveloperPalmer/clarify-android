@@ -19,7 +19,7 @@ class ChatListViewModel @Inject constructor(
 ) : ViewModel<ViewState, ViewIntents>() {
 
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState(myUserId = chatModel.currentUserId) to {
+    initial = ViewState() to {
       chatModel.fetchConversations.startOnSubscribe()
     }
 
@@ -80,7 +80,10 @@ class ChatListViewModel @Inject constructor(
   private fun MachineDsl<ViewState>.configureConversationTransitions() {
     onEach(chatModel.conversations) {
       transitionTo { state, conversations ->
-        state.copy(conversations = conversations)
+        state.copy(
+          myUserId = chatModel.currentUserId,
+          conversations = conversations
+        )
       }
     }
 

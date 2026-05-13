@@ -7,7 +7,6 @@ class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
   val dismissSnackbarError = intent(name = "dismissSnackbarError")
   val dismissDialogError = intent<DialogDismissReason>(name = "dismissDialogError")
-  val changeMessageQuery = intent<String>(name = "changeMessage")
   val openChronology = intent(name = "openChronology")
-  val sendMessage = intent(name = "sendMessage")
+  val sendMessage = intent<String>(name = "sendMessage")
 }

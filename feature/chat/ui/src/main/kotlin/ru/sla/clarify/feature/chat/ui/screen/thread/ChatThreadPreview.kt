@@ -28,10 +28,8 @@ private fun ChatThreadReadyContentPreview(
       ChatThreadReadyContent(
         peerId = state.peerId,
         messages = state.messages,
-        inputValue = state.inputValue,
         isSending = state.isSending,
         onBack = {},
-        onValueChange = {},
         onSend = {},
         onChronology = {}
       )
@@ -44,7 +42,6 @@ internal data class ChatThreadPreviewState(
   val theme: ColorTheme,
   val peerId: String,
   val messages: List<ChatMessage>,
-  val inputValue: String,
   val isSending: Boolean
 ) {
   // Compose tooling использует toString() как заголовок для каждого варианта,
@@ -59,7 +56,6 @@ internal class ChatThreadPreviewProvider : PreviewParameterProvider<ChatThreadPr
       theme = ColorTheme.Light,
       peerId = "Алиса",
       messages = sampleMessages(),
-      inputValue = "Печатаю ответ…",
       isSending = false
     ),
     ChatThreadPreviewState(
@@ -67,7 +63,6 @@ internal class ChatThreadPreviewProvider : PreviewParameterProvider<ChatThreadPr
       theme = ColorTheme.Dark,
       peerId = "Алиса",
       messages = sampleMessages(),
-      inputValue = "",
       isSending = true
     ),
     ChatThreadPreviewState(
@@ -75,7 +70,6 @@ internal class ChatThreadPreviewProvider : PreviewParameterProvider<ChatThreadPr
       theme = ColorTheme.Light,
       peerId = "Боб",
       messages = emptyList(),
-      inputValue = "",
       isSending = false
     ),
     ChatThreadPreviewState(
@@ -83,7 +77,6 @@ internal class ChatThreadPreviewProvider : PreviewParameterProvider<ChatThreadPr
       theme = ColorTheme.Light,
       peerId = "Кейт",
       messages = longSampleMessages(),
-      inputValue = "Готовлю апдейт",
       isSending = false
     )
   )

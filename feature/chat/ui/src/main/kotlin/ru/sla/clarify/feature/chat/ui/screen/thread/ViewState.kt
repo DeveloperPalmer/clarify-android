@@ -9,7 +9,6 @@ import ru.sla.clarify.feature.chat.domain.entity.ChatMessage
 data class ViewState(
   val peerId: String,
   val messages: List<ChatMessage> = emptyList(),
-  val inputValue: String = "",
   val isSending: Boolean = false,
   val contentLoadState: ContentLoadState = ContentLoadState.Loading,
   val dialogError: UiError? = null,
