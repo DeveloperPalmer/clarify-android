@@ -46,6 +46,7 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
     intents = rememberViewIntents()
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
+    scaffoldState.contentLoadState = state.contentLoadState
     scaffoldState.dialogError = state.dialogError
     scaffoldState.snackbarError = state.snackbarError
     ScreenScaffold(

@@ -64,8 +64,7 @@ class ChatRepositoryImpl @Inject constructor(
         }
       }
       try {
-        val initial = getAllConversations()
-        initial.forEach(::saveConversation)
+        fetchAllConversations()
       } catch (sdkError: ChatSdkException) {
         log { "Chat: failed to load initial conversations: $sdkError" }
       }
@@ -205,7 +204,7 @@ class ChatRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun getAllConversations(): List<V2TIMConversation> {
+  private suspend fun fetchAllConversations() {
     val collected = mutableListOf<V2TIMConversation>()
     var nextSeq = 0L
     while (true) {
@@ -215,7 +214,7 @@ class ChatRepositoryImpl @Inject constructor(
       if (conversationResult.isFinished) break
       nextSeq = conversationResult.nextSeq
     }
-    return collected
+    collected.forEach(::saveConversation)
   }
 
   private suspend fun getConversationResultByPage(page: Long): V2TIMConversationResult {

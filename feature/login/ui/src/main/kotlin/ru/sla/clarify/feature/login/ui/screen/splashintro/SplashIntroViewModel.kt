@@ -8,13 +8,15 @@ import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.kode.way.Back
 import ru.kode.way.Event
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.mapper.toAppUiError
 import ru.sla.clarify.feature.login.domain.LoginModel
+import ru.sla.clarify.feature.login.domain.LoginScope
 import ru.sla.clarify.feature.login.ui.routing.FlowEvent
 import javax.inject.Inject
-import kotlin.to
 
+@SingleIn(LoginScope::class)
 class SplashIntroViewModel @Inject constructor(
   private val eventSink: FlowEventSink,
   private val loginModel: LoginModel
