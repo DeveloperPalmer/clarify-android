@@ -12,7 +12,8 @@ data class ChatMessage(
   val text: String,
   val timestamp: LocalDateTime,
   val isSelf: Boolean,
-  val status: Status
+  val status: Status,
+  val colorHex: String? = null
 ) {
 
   @JvmInline

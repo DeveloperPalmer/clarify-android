@@ -6,6 +6,7 @@ CREATE TABLE ChatMessage(
   peerId TEXT NOT NULL,
   senderId TEXT NOT NULL,
   text TEXT NOT NULL,
+  colorHex TEXT,
   timestamp INTEGER NOT NULL,
   isSelf INTEGER NOT NULL,
   status TEXT NOT NULL,
@@ -14,8 +15,8 @@ CREATE TABLE ChatMessage(
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO ChatMessage(id, parentId, peerId, senderId, text, timestamp, isSelf, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INTO ChatMessage(id, parentId, peerId, senderId, text, colorHex, timestamp, isSelf, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectById:
 SELECT
@@ -24,6 +25,7 @@ SELECT
   peerId,
   senderId,
   text,
+  colorHex,
   timestamp,
   isSelf,
   status
@@ -37,6 +39,7 @@ SELECT
   peerId,
   senderId,
   text,
+  colorHex,
   timestamp,
   isSelf,
   status
@@ -52,6 +55,7 @@ SELECT
   peerId,
   senderId,
   text,
+  colorHex,
   timestamp,
   isSelf,
   status
@@ -68,6 +72,7 @@ SELECT
   peerId,
   senderId,
   text,
+  colorHex,
   timestamp,
   isSelf,
   status

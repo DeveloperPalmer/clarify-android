@@ -16,30 +16,31 @@ import javax.inject.Inject
 
 @SingleIn(ChatScope::class)
 class ChatModel @Inject constructor(
-  private val chatRepository: ChatRepository
+  private val conversationRepository: ConversationRepository,
+  private val messageRepository: MessageRepository
 ) : ReactiveModel() {
 
   private val stateFlow = MutableStateFlow(State())
 
   override fun onPostStart() {
     super.onPostStart()
-    chatRepository.subscribeOnConversations()
+    conversationRepository.subscribeOnConversations()
       .launchIn(scope)
   }
 
   val fetchConversations = task<Unit>(name = "fetchConversations") {
-    chatRepository.conversations.first()
+    conversationRepository.conversations.first()
   }
 
   val loadHistory = task<List<ChatMessage>>(name = "loadHistory") {
-    chatRepository.loadHistory(
+    messageRepository.history(
       count = DEFAULT_HISTORY_PAGE_SIZE,
       peerId = requireNotNull(stateFlow.value.peerId)
     )
   }
 
   val sendText = task<String, ChatMessage>(name = "sendText") { text ->
-    chatRepository.sendText(
+    messageRepository.send(
       text = text,
       peerId = requireNotNull(stateFlow.value.peerId),
       parentId = null
@@ -47,12 +48,12 @@ class ChatModel @Inject constructor(
   }
 
   val deleteConversation = task<Conversation.Id, Unit>(name = "deleteConversation") { id ->
-    chatRepository.deleteConversation(id = id)
+    conversationRepository.deleteConversation(id = id)
   }
 
   fun markReadTreadMessages() {
     scope.launch {
-      chatRepository.markConversationRead(
+      messageRepository.markAsRead(
         peerId = requireNotNull(stateFlow.value.peerId)
       )
     }
@@ -67,13 +68,13 @@ class ChatModel @Inject constructor(
   }
 
   fun treadMessage(peerId: String): Flow<ChatMessage> {
-    return chatRepository.treadMessages(peerId)
+    return messageRepository.peerMessages(peerId)
   }
 
   val currentUserId: String?
-    get() = chatRepository.getCurrentUserId()
+    get() = conversationRepository.getCurrentUserId()
 
-  val conversations: Flow<List<Conversation>> = chatRepository.conversations
+  val conversations: Flow<List<Conversation>> = conversationRepository.conversations
     .filterNotNull()
 
   private data class State(

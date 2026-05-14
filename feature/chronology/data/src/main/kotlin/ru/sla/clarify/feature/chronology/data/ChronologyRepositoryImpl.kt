@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.InMemoryDB
-import ru.sla.clarify.feature.chat.data.mapper.Mappers
+import ru.sla.clarify.feature.chat.data.mapper.MessageMappers
 import ru.sla.clarify.feature.chat.domain.entity.ChatMessage
 import ru.sla.clarify.feature.chronology.domain.ChronologyEdge
 import ru.sla.clarify.feature.chronology.domain.ChronologyGraph
@@ -25,7 +25,7 @@ class ChronologyRepositoryImpl @Inject constructor(
 
   override fun graphForPeer(peerId: String): Flow<ChronologyGraph> {
     return inMemoryDB.messageQueries
-      .selectChronologyByPeer(peerId, Mappers::mapToChatMessage)
+      .selectChronologyByPeer(peerId, MessageMappers::mapToChatMessage)
       .asFlow()
       .mapToList(Dispatchers.IO)
       .map(::buildGraph)
