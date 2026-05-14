@@ -160,7 +160,8 @@ private fun sampleMessage(
       .atZone(ZoneId.systemDefault())
       .toLocalDateTime(),
     isSelf = isSelf,
-    status = ChatMessage.Status.Sent
+    status = ChatMessage.Status.Sent,
+    colorHex = ""
   ) to offsetSeconds
 }
 

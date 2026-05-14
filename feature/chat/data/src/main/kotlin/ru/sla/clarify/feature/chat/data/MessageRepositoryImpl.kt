@@ -15,10 +15,9 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.feature.chat.data.mapper.MILLIS_PER_SECOND
 import ru.sla.clarify.feature.chat.data.mapper.MessageMappers
-import ru.sla.clarify.feature.chat.data.mapper.content
-import ru.sla.clarify.feature.chat.data.mapper.createColoredTextPayload
+import ru.sla.clarify.feature.chat.data.mapper.createCustomMessagePayload
 import ru.sla.clarify.feature.chat.data.mapper.mapStatus
-import ru.sla.clarify.feature.chat.data.mapper.randomMessageColorHex
+import ru.sla.clarify.feature.chat.data.mapper.toCustomMessagePayload
 import ru.sla.clarify.feature.chat.domain.MessageRepository
 import ru.sla.clarify.feature.chat.domain.di.ChatScope
 import ru.sla.clarify.feature.chat.domain.entity.ChatMessage
@@ -109,18 +108,14 @@ class MessageRepositoryImpl @Inject constructor(
   override suspend fun send(
     text: String,
     peerId: String,
-    parentId: ChatMessage.Id?
+    parentMessage: ChatMessage?
   ): ChatMessage {
-    val colorHex = randomMessageColorHex()
     val outgoing = messageManager.createCustomMessage(
-      createColoredTextPayload(
+      createCustomMessagePayload(
         text = text,
-        colorHex = colorHex
+        parentMessage = parentMessage
       )
     )
-    if (!parentId?.value.isNullOrBlank()) {
-      outgoing.cloudCustomData = parentId.value
-    }
     return suspendCancellableCoroutine { cont ->
       messageManager.sendMessage(
         outgoing,
@@ -132,8 +127,6 @@ class MessageRepositoryImpl @Inject constructor(
         object : V2TIMSendCallback<V2TIMMessage> {
           override fun onSuccess(value: V2TIMMessage) {
             insertOrReplaceMessage(
-              text = text,
-              colorHex = colorHex,
               peerId = peerId,
               message = value
             )
@@ -169,10 +162,10 @@ class MessageRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun findRawMessage(msgId: ChatMessage.Id): V2TIMMessage? {
+  private suspend fun findRawMessage(id: ChatMessage.Id): V2TIMMessage? {
     return suspendCancellableCoroutine { cont ->
       V2TIMManager.getMessageManager().findMessages(
-        /* msgIds */ listOf(msgId.value),
+        /* msgIds */ listOf(id.value),
         /* listener */ object : V2TIMValueCallback<List<V2TIMMessage>> {
           override fun onSuccess(value: List<V2TIMMessage>) {
             cont.resumeContinuation(value.firstOrNull())
@@ -215,18 +208,21 @@ class MessageRepositoryImpl @Inject constructor(
 
   private fun insertOrReplaceMessage(
     message: V2TIMMessage,
-    peerId: String,
-    text: String? = null,
-    colorHex: String? = null
+    peerId: String
   ) {
-    if (message.msgID.isBlank()) return
-    val messageContent = message.content(
-      fallbackText = text,
-      fallbackColorHex = colorHex
-    ) ?: return
-    val senderId = message.sender ?: return
+    val customMessagePayload = message.customElem
+      ?.data
+      ?.decodeToString()
+      ?.toCustomMessagePayload()
+      ?: error("custom message payload not found")
+
+    val parentId = customMessagePayload.parentId
+      ?.takeIf { it.isNotBlank() }
+      ?.let(ChatMessage::Id)
+
+    val senderId = message.sender
     val peerId = if (message.isSelf) peerId else senderId
-    val parentMsgId = message.cloudCustomData?.takeIf { it.isNotBlank() }
+
     inMemoryDB.transaction {
       inMemoryDB.peerQueries.insertIfAbsent(
         id = peerId,
@@ -235,11 +231,11 @@ class MessageRepositoryImpl @Inject constructor(
       )
       inMemoryDB.messageQueries.insertOrReplace(
         id = ChatMessage.Id(message.msgID),
-        parentId = parentMsgId?.let(ChatMessage::Id),
-        peerId = if (message.isSelf) peerId else senderId,
+        parentId = parentId,
+        peerId = peerId,
         senderId = senderId,
-        text = messageContent.text,
-        colorHex = messageContent.colorHex,
+        text = customMessagePayload.text,
+        colorHex = customMessagePayload.colorHex,
         timestamp = message.timestamp * MILLIS_PER_SECOND,
         isSelf = if (message.isSelf) 1L else 0L,
         status = mapStatus(message.status).name

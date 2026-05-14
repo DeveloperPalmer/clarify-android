@@ -39,11 +39,13 @@ class ChatModel @Inject constructor(
     )
   }
 
-  val sendText = task<String, ChatMessage>(name = "sendText") { text ->
+  val sendText = task<String, ChatMessage?, ChatMessage>(
+    name = "sendText"
+  ) { text, parentMessage ->
     messageRepository.send(
       text = text,
       peerId = requireNotNull(stateFlow.value.peerId),
-      parentId = null
+      parentMessage = parentMessage
     )
   }
 

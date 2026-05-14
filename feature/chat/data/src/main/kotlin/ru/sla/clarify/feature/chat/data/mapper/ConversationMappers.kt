@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.data.mapper
 
+import com.tencent.imsdk.v2.V2TIMMessage
 import ru.sla.clarify.feature.chat.domain.entity.Conversation
 
 object ConversationMappers {
@@ -23,5 +24,21 @@ object ConversationMappers {
       lastMessageTimestamp = lastMessageTimestamp,
       unreadCount = unreadCount
     )
+  }
+}
+
+internal fun V2TIMMessage.previewText(): String? {
+  return when (elemType) {
+    V2TIMMessage.V2TIM_ELEM_TYPE_TEXT -> {
+      textElem?.text
+    }
+    V2TIMMessage.V2TIM_ELEM_TYPE_CUSTOM -> {
+      customElem
+        ?.data
+        ?.decodeToString()
+        ?.toCustomMessagePayload()
+        ?.text
+    }
+    else -> null
   }
 }

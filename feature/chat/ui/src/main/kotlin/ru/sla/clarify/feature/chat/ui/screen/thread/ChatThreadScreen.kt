@@ -28,8 +28,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.core.ui.text.TIME_FORMATTER_HOUR_MINUTE
@@ -201,11 +203,7 @@ private fun MessageBubble(message: ChatMessage) {
       modifier = Modifier
         .surface(
           shape = AppTheme.shapes.round12,
-          backgroundColor = if (message.isSelf) {
-            AppTheme.colors.backgroundSecondary
-          } else {
-            AppTheme.colors.textPrimary
-          }
+          backgroundColor = Color(message.colorHex.toColorInt())
         )
         .padding(
           vertical = 8.dp,
@@ -215,11 +213,7 @@ private fun MessageBubble(message: ChatMessage) {
       Text(
         text = message.text,
         style = AppTheme.typography.body1,
-        color = if (message.isSelf) {
-          AppTheme.colors.textPrimary
-        } else {
-          AppTheme.colors.backgroundSecondary
-        }
+        color = AppTheme.colors.textPrimary
       )
     }
     Text(

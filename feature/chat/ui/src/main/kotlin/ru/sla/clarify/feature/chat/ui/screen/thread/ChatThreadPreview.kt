@@ -95,6 +95,7 @@ private fun sampleMessages(): List<ChatMessage> {
       text = "Привет! Как дела?",
       timestamp = now.minusSeconds(MIN_30),
       isSelf = false,
+      colorHex = "",
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
@@ -105,6 +106,7 @@ private fun sampleMessages(): List<ChatMessage> {
       text = "Привет! Всё отлично, спасибо.",
       timestamp = now.minusSeconds(MIN_28),
       isSelf = true,
+      colorHex = "",
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
@@ -115,6 +117,7 @@ private fun sampleMessages(): List<ChatMessage> {
       text = "Чем сейчас занимаешься?",
       timestamp = now.minusSeconds(MIN_5),
       isSelf = false,
+      colorHex = "",
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
@@ -125,6 +128,7 @@ private fun sampleMessages(): List<ChatMessage> {
       text = "Делаю превью экранов в Compose. Подбираю пастельные тона.",
       timestamp = now.minusSeconds(MIN_2),
       isSelf = true,
+      colorHex = "",
       status = ChatMessage.Status.Sending
     ),
     ChatMessage(
@@ -135,6 +139,7 @@ private fun sampleMessages(): List<ChatMessage> {
       text = "Кажется, отправка зависла…",
       timestamp = now.minusSeconds(SEC_30),
       isSelf = true,
+      colorHex = "",
       status = ChatMessage.Status.Failed
     )
   )
@@ -154,6 +159,7 @@ private fun longSampleMessages(): List<ChatMessage> {
       text = "Покажи скрин, когда будет готово",
       timestamp = now.minusSeconds(SEC_20),
       isSelf = false,
+      colorHex = "",
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
@@ -164,6 +170,7 @@ private fun longSampleMessages(): List<ChatMessage> {
       text = "Конечно, скоро пришлю",
       timestamp = now.minusSeconds(SEC_10),
       isSelf = true,
+      colorHex = "",
       status = ChatMessage.Status.Sent
     ),
     ChatMessage(
@@ -174,6 +181,7 @@ private fun longSampleMessages(): List<ChatMessage> {
       text = "Спасибо!",
       timestamp = now.minusSeconds(SEC_5),
       isSelf = false,
+      colorHex = "",
       status = ChatMessage.Status.Sent
     )
   )

@@ -6,7 +6,7 @@ CREATE TABLE ChatMessage(
   peerId TEXT NOT NULL,
   senderId TEXT NOT NULL,
   text TEXT NOT NULL,
-  colorHex TEXT,
+  colorHex TEXT NOT NULL,
   timestamp INTEGER NOT NULL,
   isSelf INTEGER NOT NULL,
   status TEXT NOT NULL,

@@ -13,7 +13,7 @@ data class ChatMessage(
   val timestamp: LocalDateTime,
   val isSelf: Boolean,
   val status: Status,
-  val colorHex: String? = null
+  val colorHex: String
 ) {
 
   @JvmInline

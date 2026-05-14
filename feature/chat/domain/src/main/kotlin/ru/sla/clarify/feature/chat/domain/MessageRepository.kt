@@ -15,7 +15,7 @@ interface MessageRepository {
   suspend fun send(
     text: String,
     peerId: String,
-    parentId: ChatMessage.Id?
+    parentMessage: ChatMessage?
   ): ChatMessage
 
   suspend fun markAsRead(peerId: String)

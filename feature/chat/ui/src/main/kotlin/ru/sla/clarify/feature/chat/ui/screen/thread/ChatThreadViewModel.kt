@@ -49,10 +49,13 @@ class ChatThreadViewModel @AssistedInject constructor(
 
   private fun MachineDsl<ViewState>.configureSenderMessageTransitions() {
     onEach(intent(ViewIntents::sendMessage)) {
-      action { _, _, text ->
+      action { state, _, text ->
         val trimmed = text.trim()
         if (trimmed.isNotEmpty()) {
-          chatModel.sendText.start(trimmed)
+          chatModel.sendText.start(
+            argument1 = trimmed,
+            argument2 = state.messages.lastOrNull()
+          )
         }
       }
     }

@@ -16,7 +16,7 @@ object MessageMappers {
     peerId: String,
     senderId: String,
     text: String,
-    colorHex: String?,
+    colorHex: String,
     timestamp: Long,
     isSelf: Long,
     status: String
@@ -52,14 +52,6 @@ internal fun ChatMessageDB.toDomain(): ChatMessageDomain {
   )
 }
 
-internal fun V2TIMMessage.previewText(): String? {
-  return when (elemType) {
-    V2TIMMessage.V2TIM_ELEM_TYPE_TEXT -> textElem?.text
-    V2TIMMessage.V2TIM_ELEM_TYPE_CUSTOM -> customElem?.data?.decodeToString()?.toCustomMessageText()
-    else -> null
-  }
-}
-
 fun mapStatus(rawStatus: Int): ChatMessageDomain.Status {
   return when (rawStatus) {
     V2TIMMessage.V2TIM_MSG_STATUS_SENDING -> ChatMessageDomain.Status.Sending
@@ -73,74 +65,54 @@ private fun String.toMessageStatus(): ChatMessageDomain.Status {
   return ChatMessageDomain.Status.entries.firstOrNull { it.name == this } ?: ChatMessageDomain.Status.Sent
 }
 
-internal fun String.toCustomMessageText(): String? {
-  return runCatching {
-    org.json.JSONObject(this).optString("text").takeIf { it.isNotBlank() }
-  }.getOrNull()
-}
-
-internal data class MessageContent(
+internal data class CustomMessagePayload(
   val text: String,
-  val colorHex: String?
+  val colorHex: String,
+  val parentId: String?
 )
 
-internal fun createColoredTextPayload(
+internal fun createCustomMessagePayload(
   text: String,
-  colorHex: String
+  parentMessage: ChatMessage?
 ): ByteArray {
   return JSONObject()
-    .put(CUSTOM_MESSAGE_TYPE_KEY, CUSTOM_MESSAGE_TYPE)
     .put(CUSTOM_MESSAGE_TEXT_KEY, text)
-    .put(CUSTOM_MESSAGE_COLOR_HEX_KEY, colorHex)
+    .put(CUSTOM_MESSAGE_COLOR_HEX_KEY, parentMessage?.colorHex ?: generateColorHex())
+    .tryPut(CUSTOM_MESSAGE_PARENT_ID_KEY, parentMessage?.id?.value)
     .toString()
     .toByteArray(Charsets.UTF_8)
 }
 
-internal fun V2TIMMessage.content(
-  fallbackText: String?,
-  fallbackColorHex: String?
-): MessageContent? {
-  val customContent = customElem
-    ?.data
-    ?.decodeToString()
-    ?.toCustomMessageContent()
-  if (customContent != null) {
-    return customContent
-  }
-  val text = textElem?.text ?: fallbackText ?: return null
-  return MessageContent(
-    text = text,
-    colorHex = fallbackColorHex
-  )
-}
-
-internal fun String.toCustomMessageContent(): MessageContent? {
+internal fun String.toCustomMessagePayload(): CustomMessagePayload? {
   return runCatching {
     val json = JSONObject(this)
-    val type = json.optString(CUSTOM_MESSAGE_TYPE_KEY).takeIf { it.isNotBlank() }
-    if (type != null && type != CUSTOM_MESSAGE_TYPE) {
-      return@runCatching null
-    }
-    val text = json.optString(CUSTOM_MESSAGE_TEXT_KEY).takeIf { it.isNotBlank() }
-      ?: return@runCatching null
-    val colorHex = json.optString(CUSTOM_MESSAGE_COLOR_HEX_KEY).takeIf { it.isNotBlank() }
-      ?: json.optString(CUSTOM_MESSAGE_COLOR_KEY).takeIf { it.isNotBlank() }
-    MessageContent(
-      text = text,
-      colorHex = colorHex
+    CustomMessagePayload(
+      text = json.getOptString(CUSTOM_MESSAGE_TEXT_KEY) ?: return null,
+      parentId = json.getOptString(CUSTOM_MESSAGE_PARENT_ID_KEY),
+      colorHex = json.getOptString(CUSTOM_MESSAGE_COLOR_HEX_KEY) ?: return null
     )
   }.getOrNull()
 }
 
-internal fun randomMessageColorHex(): String {
+private fun JSONObject.getOptString(key: String): String? {
+  return optString(key).takeIf { it.isNotBlank() }
+}
+
+private fun JSONObject.tryPut(key: String, value: Any?): JSONObject {
+  if (value != null) {
+    put(key, value)
+  }
+  return this
+}
+
+internal fun generateColorHex(): String {
   val rgb = Random.nextInt(0x1000000)
   return "#$OPAQUE_ALPHA_HEX${rgb.toString(radix = 16).padStart(6, '0').uppercase()}"
 }
 
 const val MILLIS_PER_SECOND = 1000L
-private const val CUSTOM_MESSAGE_TYPE = "colored_text"
-private const val CUSTOM_MESSAGE_TYPE_KEY = "type"
-private const val CUSTOM_MESSAGE_TEXT_KEY = "text"
-private const val CUSTOM_MESSAGE_COLOR_HEX_KEY = "colorHex"
-private const val CUSTOM_MESSAGE_COLOR_KEY = "color"
 private const val OPAQUE_ALPHA_HEX = "FF"
+
+private const val CUSTOM_MESSAGE_TEXT_KEY = "custom_message_text_key"
+private const val CUSTOM_MESSAGE_PARENT_ID_KEY = "custom_message_parent_id_key"
+private const val CUSTOM_MESSAGE_COLOR_HEX_KEY = "custom_message_color_hex_key"
