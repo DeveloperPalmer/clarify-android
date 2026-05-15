@@ -5,10 +5,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellableContinuation
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import ru.sla.clarify.core.domain.logError
 
@@ -17,51 +15,45 @@ import ru.sla.clarify.core.domain.logError
  * Check out those classes if you'll need to add support for queueing (using mutex) etc
  */
 @Composable
-fun BottomSheetHost(hostState: BottomSheetHostState) {
-  val coroutineScope = rememberCoroutineScope()
-  val currentBottomSheetData = hostState.currentBottomSheetData
-  if (currentBottomSheetData != null) {
-    val scope = remember(currentBottomSheetData) {
-      ViewEventHostScope {
-        coroutineScope.launch {
-          currentBottomSheetData.component.sheetState.value?.hide()
-          currentBottomSheetData.dismiss()
-        }
-      }
+fun DropdownMenuHost(hostState: DropdownMenuHostState) {
+  val currentDropdownMenuData = hostState.currentDropdownMenuData
+  if (currentDropdownMenuData != null) {
+    val scope = remember(currentDropdownMenuData) {
+      ViewEventHostScope { currentDropdownMenuData.dismiss() }
     }
     @Suppress("UnnecessaryApply") // apply actually cannot be replaced here without context receivers
-    currentBottomSheetData.component.apply { scope.Content() }
+    currentDropdownMenuData.component.apply { scope.Content() }
   }
 }
 
 @Stable
-class BottomSheetHostState {
-  internal var currentBottomSheetData by mutableStateOf<BottomSheetData?>(null)
+class DropdownMenuHostState {
+  internal var currentDropdownMenuData by mutableStateOf<DropdownMenuData?>(null)
 
-  suspend fun showBottomSheet(configuration: ViewEvent.BottomSheet) {
-    val data = currentBottomSheetData
+  suspend fun showDropdownMenu(configuration: ViewEvent.DropdownMenu) {
+    val data = currentDropdownMenuData
     if (data != null) {
       logError {
-        "Already showing a modal sheet for event: $data. New event $configuration will be ignored."
+        "Already showing a dropdown menu for event: $data. New event $configuration will be ignored."
       }
     } else {
       try {
         return suspendCancellableCoroutine { continuation ->
-          currentBottomSheetData = BottomSheetData(
+          currentDropdownMenuData = DropdownMenuData(
             component = configuration,
             continuation = continuation
           )
         }
       } finally {
-        currentBottomSheetData = null
+        currentDropdownMenuData = null
       }
     }
   }
 }
 
 @Stable
-internal class BottomSheetData(
-  val component: ViewEvent.BottomSheet,
+internal class DropdownMenuData(
+  val component: ViewEvent.DropdownMenu,
   private val continuation: CancellableContinuation<Unit>
 ) {
   fun dismiss() {

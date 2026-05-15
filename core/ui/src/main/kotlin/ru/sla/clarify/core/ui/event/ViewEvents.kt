@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import ru.sla.resourcerefs.TextRef
 
 /**
  * One time UI event presentation, requested by screens or flows and handled by
@@ -32,6 +33,26 @@ sealed interface ViewEvent {
       val duration: SnackbarDuration = SnackbarDuration.Short,
       // presence of action could affect duration by means of accessibility manager, see [SnackbarHost]
       val hasActions: Boolean = false
+    )
+  }
+
+  /**
+   * Anchor-less popup menu rendered by [ru.sla.clarify.core.ui.event.DropdownMenuHost].
+   *
+   * Since the menu is presented from the root host (i.e. has no Composable anchor in the
+   * caller's tree), concrete implementations are expected to provide their own positioning
+   * via the underlying Material3 `DropdownMenu` `offset` parameter inside [Content].
+   * Dismiss happens by calling [ViewEventHostScope.dismissEventPresentation] from inside
+   * menu item actions or from `onDismissRequest`.
+   */
+  @Immutable
+  interface DropdownMenu : ViewEvent {
+    @Immutable
+    data class Item(
+      val title: TextRef,
+      val onClick: () -> Unit,
+      val isEnabled: Boolean = true,
+      val isDestructive: Boolean = false
     )
   }
 

@@ -8,6 +8,7 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -31,6 +32,8 @@ import ru.sla.clarify.core.routing.FlowEventMediator
 import ru.sla.clarify.core.routing.noTransition
 import ru.sla.clarify.core.routing.pushTransition
 import ru.sla.clarify.core.routing.rememberTransitionSpec
+import ru.sla.clarify.core.ui.event.DropdownMenuAnchorState
+import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.LocalViewEventsHostMediator
 import ru.sla.clarify.uikit.event.ViewEventsHost
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -74,6 +77,7 @@ class MainActivity : ComponentActivity() {
         currentTheme = ColorTheme.Light
       ) {
         CompositionLocalProvider(
+          LocalDropdownMenuAnchor provides remember { DropdownMenuAnchorState() },
           LocalViewEventsHostMediator provides component.viewEventsHostMediator()
         ) {
           Box(modifier = Modifier.fillMaxSize()) {

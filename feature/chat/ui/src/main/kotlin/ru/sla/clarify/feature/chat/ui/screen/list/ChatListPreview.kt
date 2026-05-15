@@ -27,14 +27,14 @@ private fun ChatListReadyContentPreview(
         myUserId = state.myUserId,
         conversations = state.conversations,
         newChatDialogVisible = state.newChatDialogVisible,
+        editModeEnabled = false,
         onConversationClick = {},
         onConversationLongPress = {},
-        onDismissDeleteMenu = {},
         onShowNewChatDialog = {},
         onDismissNewChatDialog = {},
-        conversationDeletionId = null,
-        onDeleteConfirmation = {},
-        onAddConversation = {}
+        onAddConversation = {},
+        onOpenSettings = {},
+        selectedConversationsIds = emptyList()
       )
     }
   }

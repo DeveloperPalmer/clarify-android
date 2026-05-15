@@ -9,8 +9,8 @@ class ViewIntents : BaseViewIntents() {
   val showNewChatDialog = intent(name = "showNewChatDialog")
   val dismissNewChatDialog = intent(name = "dismissNewChatDialog")
   val confirmNewChat = intent<String>(name = "confirmNewChat")
-  val dismissDeleteMenu = intent(name = "dismissDeleteMenu")
-  val showDeleteMenu = intent<Conversation.Id>(name = "showDeleteMenu")
-  val showDeleteConfirmation = intent(name = "requestDeleteConfirmation")
-  val confirmDeleteConversation = intent<Conversation.Id>(name = "confirmDeleteConversation")
+  val handleConversationLongPress = intent<Conversation.Id>(name = "handleConversationLongPress")
+  val showDeleteConfirmation = intent(name = "showDeleteConfirmation")
+  val confirmDeleteConversation = intent(name = "confirmDeleteConversation")
+  val openSettings = intent(name = "openSettings")
 }

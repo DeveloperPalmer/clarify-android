@@ -104,6 +104,6 @@ internal class ContentData(
   private val continuation: CancellableContinuation<Unit>
 ) {
   fun dismiss() {
-    if (continuation.isActive) continuation.resume(Unit, onCancellation = null)
+    if (continuation.isActive) continuation.resume(Unit) { _, _, _ -> }
   }
 }

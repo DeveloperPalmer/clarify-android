@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.map
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
+import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.startOnSubscribe
 import ru.sla.clarify.core.ui.FlowEventSink
@@ -24,8 +25,16 @@ class ChatListViewModel @Inject constructor(
     }
 
     onEach(intent(ViewIntents::navigateBack)) {
-      action { _, _, _ ->
-        eventSink.sendEvent(FlowEvent.ChatListDismissed)
+      transitionTo { state, _ ->
+        state.copy(
+          editModeEnabled = false,
+          selectedConversationIds = emptyList()
+        )
+      }
+      action { state, _, _ ->
+        if (!state.editModeEnabled) {
+          eventSink.sendEvent(FlowEvent.ChatListDismissed)
+        }
       }
     }
 
@@ -60,40 +69,44 @@ class ChatListViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureDeleteConversationTransitions() {
-    onEach(intent(ViewIntents::showDeleteMenu)) {
-      transitionTo { state, conversationDeletionId ->
-        state.copy(conversationDeletionId = conversationDeletionId)
+    onEach(intent(ViewIntents::openSettings)) {
+      action { _, _, _ ->
+        sendViewEvent(showConversationOptions())
       }
     }
 
-    onEach(intent(ViewIntents::dismissDeleteMenu)) {
-      transitionTo { state, _ ->
+    onEach(intent(ViewIntents::handleConversationLongPress)) {
+      transitionTo { state, conversationId ->
+        val updated = if (state.selectedConversationIds.contains(conversationId)) {
+          state.selectedConversationIds.minus(conversationId)
+        } else {
+          state.selectedConversationIds.plus(conversationId)
+        }
         state.copy(
-          conversationDeletionId = null
+          editModeEnabled = !state.editModeEnabled || updated.any { it != conversationId },
+          selectedConversationIds = updated
         )
       }
     }
 
     onEach(intent(ViewIntents::showDeleteConfirmation)) {
-      transitionTo { state, _ ->
-        state.copy(
-          conversationDeletionId = null
-        )
-      }
-      action { state, _, _ ->
-        val target = state.conversations.first { it.id == state.conversationDeletionId }
-        sendViewEvent(
-          showDeleteConversationDialog(
-            peerLabel = target.peer.id,
-            conversationId = target.id
-          )
-        )
+      action { _, _, _ ->
+        sendViewEvent(showDeleteConversationDialog())
       }
     }
 
     onEach(intent(ViewIntents::confirmDeleteConversation)) {
-      action { state, _, id ->
-        chatModel.deleteConversation.start(id)
+      action { state, _, _ ->
+        chatModel.deleteConversations.start(state.selectedConversationIds)
+      }
+    }
+
+    onEach(chatModel.deleteConversations.jobFlow.successResults()) {
+      transitionTo { state, _ ->
+        state.copy(
+          editModeEnabled = false,
+          selectedConversationIds = emptyList()
+        )
       }
     }
   }

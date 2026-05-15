@@ -3,9 +3,12 @@ package ru.sla.clarify.uikit.event
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -14,6 +17,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
+import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent.Snackbar.Duration
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
@@ -74,6 +79,57 @@ data class Snackbar(
           color = contentColor,
           style = AppTheme.typography.body2
         )
+      }
+    }
+  }
+}
+
+@Immutable
+data class DropdownMenu(
+  val items: List<ViewEvent.DropdownMenu.Item>,
+  val properties: PopupProperties = PopupProperties(focusable = true),
+  val onDismissRequest: (() -> Unit)? = null
+) : ViewEvent.DropdownMenu {
+
+  @Composable
+  override fun ViewEventHostScope.Content() {
+    BackHandler {
+      onDismissRequest?.invoke()
+      dismissEventPresentation()
+    }
+    val anchor = LocalDropdownMenuAnchor.current.offset
+    // Position the popup's layout parent at the anchor point, so Material3's
+    // DropdownMenuPositionProvider sees a zero-sized anchor at (anchor.x, anchor.y) and places
+    // the menu's top-left exactly there (with the standard out-of-screen fallbacks).
+    Box(modifier = Modifier.offset(x = anchor.x, y = anchor.y)) {
+      DropdownMenu(
+        expanded = true,
+        properties = properties,
+        onDismissRequest = {
+          onDismissRequest?.invoke()
+          dismissEventPresentation()
+        }
+      ) {
+        items.forEach { item ->
+          DropdownMenuItem(
+            enabled = item.isEnabled,
+            text = {
+              Text(
+                text = resolveTextRef(item.title),
+                style = AppTheme.typography.button,
+                color = if (item.isDestructive) {
+                  AppTheme.colors.errorPrimary
+                } else {
+                  AppTheme.colors.textPrimary
+                }
+              )
+            },
+            onClick = {
+              item.onClick()
+              dismissEventPresentation()
+            }
+          )
+        }
       }
     }
   }

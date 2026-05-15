@@ -3,9 +3,9 @@ package ru.sla.clarify.feature.chat.data
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import com.squareup.anvil.annotations.ContributesBinding
-import com.tencent.imsdk.v2.V2TIMCallback
 import com.tencent.imsdk.v2.V2TIMConversation
 import com.tencent.imsdk.v2.V2TIMConversationListener
+import com.tencent.imsdk.v2.V2TIMConversationOperationResult
 import com.tencent.imsdk.v2.V2TIMConversationResult
 import com.tencent.imsdk.v2.V2TIMManager
 import com.tencent.imsdk.v2.V2TIMValueCallback
@@ -69,13 +69,20 @@ class ConversationRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun deleteConversation(id: Conversation.Id) {
+  override suspend fun deleteConversations(ids: List<Conversation.Id>) {
     return suspendCancellableCoroutine { cont ->
-      V2TIMManager.getConversationManager().deleteConversation(
-        /* id */ id.value,
-        /* listener */ object : V2TIMCallback {
-          override fun onSuccess() {
-            cont.resumeContinuation(Unit)
+      conversationManager.deleteConversationList(
+        /* ids = */ ids.map { it.value },
+        /* clearMessage = */ true,
+        /* listener = */ object : V2TIMValueCallback<MutableList<V2TIMConversationOperationResult>> {
+          override fun onSuccess(results: MutableList<V2TIMConversationOperationResult>) {
+            val failures = results.filter { it.resultCode != 0 }
+            if (failures.isNotEmpty()) {
+              val first = failures.first()
+              cont.resumeWithException(ChatSdkException(first.resultCode, first.resultInfo))
+            } else {
+              cont.resumeContinuation(Unit)
+            }
           }
           override fun onError(code: Int, desc: String?) {
             cont.resumeWithException(ChatSdkException(code, desc))

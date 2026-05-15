@@ -18,6 +18,8 @@ import ru.sla.clarify.core.ui.event.BottomSheetHost
 import ru.sla.clarify.core.ui.event.BottomSheetHostState
 import ru.sla.clarify.core.ui.event.ContentHost
 import ru.sla.clarify.core.ui.event.ContentHostState
+import ru.sla.clarify.core.ui.event.DropdownMenuHost
+import ru.sla.clarify.core.ui.event.DropdownMenuHostState
 import ru.sla.clarify.core.ui.event.LocalViewEventsHostMediator
 import ru.sla.clarify.core.ui.event.SnackbarHost
 import ru.sla.clarify.core.ui.event.SnackbarHostState
@@ -34,14 +36,16 @@ import ru.sla.clarify.core.ui.event.ViewEvent
 fun ViewEventsHost(modifier: Modifier = Modifier) {
   val configurationsFlow = LocalViewEventsHostMediator.current.events
 
+  val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
   val errorSnackbarHostState = remember { SnackbarHostState() }
   val contentHostState = remember { ContentHostState() }
   val bottomSheetHostState = remember { BottomSheetHostState() }
-  val scope = rememberCoroutineScope()
+  val dropdownMenuHostState = remember { DropdownMenuHostState() }
 
   LaunchedEffect(Unit) {
-    configurationsFlow.filterIsInstance<ViewEvent.Snackbar>()
+    configurationsFlow
+      .filterIsInstance<ViewEvent.Snackbar>()
       .onEach { snackbarConfiguration ->
         if (snackbarConfiguration.isError) {
           errorSnackbarHostState.showSnackbar(snackbarConfiguration)
@@ -51,20 +55,29 @@ fun ViewEventsHost(modifier: Modifier = Modifier) {
       }
       .launchIn(scope)
 
-    configurationsFlow.filterIsInstance<ViewEvent.Content>()
-      .onEach { dialogConfiguration ->
-        contentHostState.showContent(dialogConfiguration)
-      }
+    configurationsFlow
+      .filterIsInstance<ViewEvent.Content>()
+      .onEach { event -> contentHostState.showContent(event) }
       .launchIn(scope)
 
-    configurationsFlow.filterIsInstance<ViewEvent.BottomSheet>()
-      .onEach { bottomSheetConfiguration ->
-        bottomSheetHostState.showBottomSheet(bottomSheetConfiguration)
-      }
+    configurationsFlow
+      .filterIsInstance<ViewEvent.BottomSheet>()
+      .onEach { event -> bottomSheetHostState.showBottomSheet(event) }
+      .launchIn(scope)
+
+    configurationsFlow
+      .filterIsInstance<ViewEvent.DropdownMenu>()
+      .onEach { event -> dropdownMenuHostState.showDropdownMenu(event) }
       .launchIn(scope)
   }
 
-  ContentHost(hostState = contentHostState)
+  ContentHost(
+    hostState = contentHostState
+  )
+
+  DropdownMenuHost(
+    hostState = dropdownMenuHostState
+  )
 
   Box(
     modifier = modifier

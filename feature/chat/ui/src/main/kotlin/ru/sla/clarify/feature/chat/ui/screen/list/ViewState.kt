@@ -10,5 +10,6 @@ data class ViewState(
   val myUserId: String? = null,
   val conversations: List<Conversation> = emptyList(),
   val newChatDialogVisible: Boolean = false,
-  val conversationDeletionId: Conversation.Id? = null
+  val editModeEnabled: Boolean = false,
+  val selectedConversationIds: List<Conversation.Id> = emptyList()
 )

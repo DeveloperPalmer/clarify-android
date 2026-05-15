@@ -18,8 +18,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
@@ -40,6 +38,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.kode.amvi.component.compose.rememberViewIntents
+import ru.sla.clarify.core.ui.event.captureDropdownMenuAnchor
+import ru.sla.clarify.core.ui.event.rememberDropdownMenuAnchorScope
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.feature.chat.domain.entity.Conversation
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
@@ -60,16 +60,22 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
     ScreenScaffold(state = scaffoldState) {
       ChatListReadyContent(
         myUserId = state.myUserId,
+        editModeEnabled = state.editModeEnabled,
         conversations = state.conversations,
+        selectedConversationsIds = state.selectedConversationIds,
         newChatDialogVisible = state.newChatDialogVisible,
-        onConversationClick = intents.openChat,
-        conversationDeletionId = state.conversationDeletionId,
-        onConversationLongPress = intents.showDeleteMenu,
-        onDismissDeleteMenu = intents.dismissDeleteMenu,
+        onConversationClick = {
+          if (state.editModeEnabled) {
+            intents.handleConversationLongPress(it.id)
+          } else {
+            intents.openChat(it.peer.id)
+          }
+        },
+        onConversationLongPress = intents.handleConversationLongPress,
         onShowNewChatDialog = intents.showNewChatDialog,
         onDismissNewChatDialog = intents.dismissNewChatDialog,
         onAddConversation = intents.confirmNewChat,
-        onDeleteConfirmation = intents.showDeleteConfirmation
+        onOpenSettings = intents.openSettings
       )
     }
   }
@@ -79,12 +85,12 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
 internal fun ChatListReadyContent(
   myUserId: String?,
   conversations: List<Conversation>,
+  selectedConversationsIds: List<Conversation.Id>,
+  editModeEnabled: Boolean,
   newChatDialogVisible: Boolean,
-  conversationDeletionId: Conversation.Id?,
-  onConversationClick: (String) -> Unit,
+  onConversationClick: (Conversation) -> Unit,
   onConversationLongPress: (Conversation.Id) -> Unit,
-  onDismissDeleteMenu: () -> Unit,
-  onDeleteConfirmation: () -> Unit,
+  onOpenSettings: () -> Unit,
   onShowNewChatDialog: () -> Unit,
   onDismissNewChatDialog: () -> Unit,
   onAddConversation: (String) -> Unit,
@@ -96,16 +102,18 @@ internal fun ChatListReadyContent(
       .systemBarsPadding()
   ) {
     Column(modifier = Modifier.fillMaxSize()) {
-      Header(myUserId = myUserId)
+      Header(
+        myUserId = myUserId,
+        editModeEnabled = editModeEnabled,
+        onOpenSettings = onOpenSettings
+      )
       HorizontalDivider()
       ChatListBody(
         modifier = Modifier.fillMaxSize(),
         conversations = conversations,
-        conversationDeletionId = conversationDeletionId,
+        selectedConversationsIds = selectedConversationsIds,
         onConversationClick = onConversationClick,
-        onConversationLongPress = onConversationLongPress,
-        onDismissDeleteMenu = onDismissDeleteMenu,
-        onDeleteConfirmation = onDeleteConfirmation
+        onConversationLongPress = onConversationLongPress
       )
     }
     ExtendedFloatingActionButton(
@@ -126,9 +134,14 @@ internal fun ChatListReadyContent(
 }
 
 @Composable
-private fun Header(myUserId: String?) {
+private fun Header(
+  myUserId: String?,
+  editModeEnabled: Boolean,
+  onOpenSettings: () -> Unit
+) {
   val clipboard = LocalClipboard.current
   val scope = rememberCoroutineScope()
+  val dropdownMenuAnchorScope = rememberDropdownMenuAnchorScope()
   Row(
     modifier = Modifier
       .fillMaxWidth()
@@ -149,7 +162,17 @@ private fun Header(myUserId: String?) {
         overflow = TextOverflow.Ellipsis
       )
     }
-    if (myUserId != null) {
+    if (editModeEnabled) {
+      TextButton(
+        modifier = Modifier.captureDropdownMenuAnchor(dropdownMenuAnchorScope),
+        onClick = {
+          dropdownMenuAnchorScope.anchor()
+          onOpenSettings()
+        }
+      ) {
+        Text("Settings")
+      }
+    } else if (myUserId != null) {
       TextButton(
         onClick = {
           scope.launch {
@@ -166,11 +189,9 @@ private fun Header(myUserId: String?) {
 @Composable
 private fun ChatListBody(
   conversations: List<Conversation>,
-  conversationDeletionId: Conversation.Id?,
-  onConversationClick: (String) -> Unit,
+  selectedConversationsIds: List<Conversation.Id>,
+  onConversationClick: (Conversation) -> Unit,
   onConversationLongPress: (Conversation.Id) -> Unit,
-  onDismissDeleteMenu: () -> Unit,
-  onDeleteConfirmation: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   if (conversations.isEmpty()) {
@@ -189,14 +210,12 @@ private fun ChatListBody(
     items(
       items = conversations,
       key = { it.peer.id }
-    ) { conversation ->
+    ) { item ->
       ConversationItem(
-        conversation = conversation,
-        showDeleteMenu = conversationDeletionId != null,
-        onClick = { onConversationClick(conversation.peer.id) },
-        onLongClick = { onConversationLongPress(conversation.id) },
-        onDeleteClick = onDeleteConfirmation,
-        onDismissDeleteMenu = onDismissDeleteMenu
+        conversation = item,
+        selected = selectedConversationsIds.contains(item.id),
+        onClick = { onConversationClick(item) },
+        onLongClick = { onConversationLongPress(item.id) }
       )
       HorizontalDivider()
     }
@@ -206,11 +225,9 @@ private fun ChatListBody(
 @Composable
 private fun ConversationItem(
   conversation: Conversation,
-  showDeleteMenu: Boolean,
+  selected: Boolean,
   onClick: () -> Unit,
-  onLongClick: () -> Unit,
-  onDismissDeleteMenu: () -> Unit,
-  onDeleteClick: () -> Unit
+  onLongClick: () -> Unit
 ) {
   Box(modifier = Modifier.fillMaxWidth()) {
     Row(
@@ -220,14 +237,19 @@ private fun ConversationItem(
           onClick = onClick,
           onLongClick = onLongClick
         )
-        .padding(horizontal = 16.dp, vertical = 12.dp),
+        .padding(
+          vertical = 12.dp,
+          horizontal = 16.dp
+        ),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(
         modifier = Modifier
           .size(40.dp)
           .clip(CircleShape)
-          .background(AppTheme.colors.textPrimary),
+          .background(
+            if (selected) AppTheme.colors.errorPrimary else AppTheme.colors.textPrimary
+          ),
         contentAlignment = Alignment.Center
       ) {
         Text(
@@ -273,21 +295,6 @@ private fun ConversationItem(
           )
         }
       }
-    }
-    DropdownMenu(
-      expanded = showDeleteMenu,
-      onDismissRequest = onDismissDeleteMenu
-    ) {
-      DropdownMenuItem(
-        text = {
-          Text(
-            text = "Delete chat",
-            color = AppTheme.colors.errorPrimary,
-            style = AppTheme.typography.button
-          )
-        },
-        onClick = onDeleteClick
-      )
     }
   }
 }

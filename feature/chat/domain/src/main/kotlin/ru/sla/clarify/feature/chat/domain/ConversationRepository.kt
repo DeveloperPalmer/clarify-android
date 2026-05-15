@@ -9,5 +9,5 @@ interface ConversationRepository {
   fun subscribeOnConversations(): Flow<Unit>
   val conversations: Flow<List<Conversation>?>
 
-  suspend fun deleteConversation(id: Conversation.Id)
+  suspend fun deleteConversations(ids: List<Conversation.Id>)
 }

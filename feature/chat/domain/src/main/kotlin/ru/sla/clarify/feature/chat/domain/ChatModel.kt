@@ -49,8 +49,8 @@ class ChatModel @Inject constructor(
     )
   }
 
-  val deleteConversation = task<Conversation.Id, Unit>(name = "deleteConversation") { id ->
-    conversationRepository.deleteConversation(id = id)
+  val deleteConversations = task<List<Conversation.Id>, Unit>(name = "deleteConversation") { ids ->
+    conversationRepository.deleteConversations(ids = ids)
   }
 
   fun markReadTreadMessages() {
