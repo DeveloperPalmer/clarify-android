@@ -45,14 +45,8 @@ class ChatListViewModel @Inject constructor(
     }
 
     onEach(intent(ViewIntents::showNewChatDialog)) {
-      transitionTo { state, _ ->
-        state.copy(newChatDialogVisible = true)
-      }
-    }
-
-    onEach(intent(ViewIntents::dismissNewChatDialog)) {
-      transitionTo { state, _ ->
-        state.copy(newChatDialogVisible = false)
+      action { _, _, _ ->
+        sendViewEvent(showNewChatDialog())
       }
     }
 

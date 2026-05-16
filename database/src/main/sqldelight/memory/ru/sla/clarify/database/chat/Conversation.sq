@@ -3,12 +3,16 @@ CREATE TABLE Conversation(
   peerId TEXT NOT NULL,
   lastMessage TEXT,
   lastMessageTimestamp INTEGER NOT NULL,
-  unreadCount INTEGER NOT NULL,
-  FOREIGN KEY(peerId) REFERENCES Peer(id) ON DELETE CASCADE ON UPDATE CASCADE
+  unreadCount INTEGER NOT NULL
 );
 
 insertOrReplace:
 INSERT OR REPLACE
+INTO Conversation(id, peerId, lastMessage, lastMessageTimestamp, unreadCount)
+VALUES (?, ?, ?, ?, ?);
+
+insertIfAbsent:
+INSERT OR IGNORE
 INTO Conversation(id, peerId, lastMessage, lastMessageTimestamp, unreadCount)
 VALUES (?, ?, ?, ?, ?);
 
@@ -19,7 +23,6 @@ SELECT
   Conversation.lastMessage,
   Conversation.lastMessageTimestamp,
   Conversation.unreadCount,
-  Peer.name AS peerName,
   Peer.faceUrl AS peerFaceUrl
 FROM Conversation
 JOIN Peer ON Peer.id = Conversation.peerId

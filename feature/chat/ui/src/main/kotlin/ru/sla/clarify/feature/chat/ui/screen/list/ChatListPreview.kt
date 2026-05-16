@@ -26,13 +26,10 @@ private fun ChatListReadyContentPreview(
       ChatListReadyContent(
         myUserId = state.myUserId,
         conversations = state.conversations,
-        newChatDialogVisible = state.newChatDialogVisible,
         editModeEnabled = false,
         onConversationClick = {},
         onConversationLongPress = {},
         onShowNewChatDialog = {},
-        onDismissNewChatDialog = {},
-        onAddConversation = {},
         onOpenSettings = {},
         selectedConversationsIds = emptyList()
       )
@@ -45,7 +42,6 @@ internal data class ChatListPreviewState(
   val theme: ColorTheme,
   val myUserId: String?,
   val conversations: List<Conversation>,
-  val newChatDialogVisible: Boolean,
   val pendingDelete: Conversation? = null,
   val deleteConfirmVisible: Boolean = false
 ) {
@@ -60,50 +56,37 @@ internal class ChatListPreviewProvider : PreviewParameterProvider<ChatListPrevie
       label = "Light",
       theme = ColorTheme.Light,
       myUserId = "user-12345",
-      conversations = sampleConversations(),
-      newChatDialogVisible = false
+      conversations = sampleConversations()
     ),
     ChatListPreviewState(
       label = "Dark",
       theme = ColorTheme.Dark,
       myUserId = "user-12345",
-      conversations = sampleConversations(),
-      newChatDialogVisible = false
+      conversations = sampleConversations()
     ),
     ChatListPreviewState(
       label = "Empty",
       theme = ColorTheme.Light,
       myUserId = "user-12345",
-      conversations = emptyList(),
-      newChatDialogVisible = false
+      conversations = emptyList()
     ),
     ChatListPreviewState(
       label = "Not signed in",
       theme = ColorTheme.Light,
       myUserId = null,
-      conversations = emptyList(),
-      newChatDialogVisible = false
-    ),
-    ChatListPreviewState(
-      label = "New chat dialog",
-      theme = ColorTheme.Light,
-      myUserId = "user-12345",
-      conversations = sampleConversations(),
-      newChatDialogVisible = true
+      conversations = emptyList()
     ),
     ChatListPreviewState(
       label = "Long list",
       theme = ColorTheme.Light,
       myUserId = "user-12345",
-      conversations = longSampleConversations(),
-      newChatDialogVisible = false
+      conversations = longSampleConversations()
     ),
     ChatListPreviewState(
       label = "Delete confirmation",
       theme = ColorTheme.Light,
       myUserId = "user-12345",
       conversations = sampleConversations(),
-      newChatDialogVisible = false,
       pendingDelete = sampleConversations().first(),
       deleteConfirmVisible = true
     )
@@ -113,21 +96,21 @@ internal class ChatListPreviewProvider : PreviewParameterProvider<ChatListPrevie
 private fun sampleConversations(): List<Conversation> = listOf(
   Conversation(
     id = Conversation.Id("c-1"),
-    peer = Conversation.Peer(id = "alice", name = "Алиса", faceUrl = null),
+    peer = Conversation.Peer(id = "alice", faceUrl = null),
     lastMessage = "Привет! Как дела?",
     lastMessageTimestamp = PREVIEW_NOW_EPOCH_MILLIS - MIN_5,
     unreadCount = 2
   ),
   Conversation(
     id = Conversation.Id("c-2"),
-    peer = Conversation.Peer(id = "bob", name = "Боб", faceUrl = null),
+    peer = Conversation.Peer(id = "bob", faceUrl = null),
     lastMessage = null,
     lastMessageTimestamp = PREVIEW_NOW_EPOCH_MILLIS - HOUR_1,
     unreadCount = 0
   ),
   Conversation(
     id = Conversation.Id("c-3"),
-    peer = Conversation.Peer(id = "kate", name = "Кейт", faceUrl = null),
+    peer = Conversation.Peer(id = "kate", faceUrl = null),
     lastMessage = "Готовлю апдейт, скоро пришлю длинный текст для проверки эллипсиса",
     lastMessageTimestamp = PREVIEW_NOW_EPOCH_MILLIS - DAY_1,
     unreadCount = 105
@@ -141,7 +124,6 @@ private fun longSampleConversations(): List<Conversation> {
       id = Conversation.Id("c-extra-$idx"),
       peer = Conversation.Peer(
         id = "peer-$idx",
-        name = "Контакт №$idx",
         faceUrl = null
       ),
       lastMessage = "Сообщение из истории #$idx",

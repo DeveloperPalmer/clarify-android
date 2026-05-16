@@ -4,7 +4,6 @@ import android.content.ClipData
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,19 +15,12 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,7 +55,6 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
         editModeEnabled = state.editModeEnabled,
         conversations = state.conversations,
         selectedConversationsIds = state.selectedConversationIds,
-        newChatDialogVisible = state.newChatDialogVisible,
         onConversationClick = {
           if (state.editModeEnabled) {
             intents.handleConversationLongPress(it.id)
@@ -73,8 +64,6 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
         },
         onConversationLongPress = intents.handleConversationLongPress,
         onShowNewChatDialog = intents.showNewChatDialog,
-        onDismissNewChatDialog = intents.dismissNewChatDialog,
-        onAddConversation = intents.confirmNewChat,
         onOpenSettings = intents.openSettings
       )
     }
@@ -87,13 +76,10 @@ internal fun ChatListReadyContent(
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,
   editModeEnabled: Boolean,
-  newChatDialogVisible: Boolean,
   onConversationClick: (Conversation) -> Unit,
   onConversationLongPress: (Conversation.Id) -> Unit,
   onOpenSettings: () -> Unit,
   onShowNewChatDialog: () -> Unit,
-  onDismissNewChatDialog: () -> Unit,
-  onAddConversation: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
   Box(
@@ -123,12 +109,6 @@ internal fun ChatListReadyContent(
       onClick = onShowNewChatDialog,
       text = { Text("New chat") },
       icon = {}
-    )
-  }
-  if (newChatDialogVisible) {
-    NewChatDialog(
-      onConfirm = onAddConversation,
-      onDismiss = onDismissNewChatDialog
     )
   }
 }
@@ -253,7 +233,7 @@ private fun ConversationItem(
         contentAlignment = Alignment.Center
       ) {
         Text(
-          text = (conversation.peer.name ?: conversation.peer.id).take(1).uppercase(),
+          text = conversation.peer.id.take(1).uppercase(),
           style = AppTheme.typography.button,
           color = AppTheme.colors.backgroundSecondary
         )
@@ -264,7 +244,7 @@ private fun ConversationItem(
           .weight(1f)
       ) {
         Text(
-          text = conversation.peer.name?.takeIf { it.isNotBlank() } ?: conversation.peer.id,
+          text = conversation.peer.id,
           style = AppTheme.typography.button,
           color = AppTheme.colors.textPrimary,
           maxLines = 1,
@@ -297,42 +277,6 @@ private fun ConversationItem(
       }
     }
   }
-}
-
-@Composable
-private fun NewChatDialog(
-  onConfirm: (String) -> Unit,
-  onDismiss: () -> Unit
-) {
-  var inputValue by rememberSaveable { mutableStateOf("") }
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("New chat") },
-    text = {
-      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Enter the peer userId to chat with:")
-        OutlinedTextField(
-          modifier = Modifier.fillMaxWidth(),
-          value = inputValue,
-          onValueChange = { inputValue = it },
-          singleLine = true
-        )
-      }
-    },
-    confirmButton = {
-      Button(
-        onClick = { onConfirm(inputValue) },
-        enabled = inputValue.isNotBlank()
-      ) {
-        Text("Start")
-      }
-    },
-    dismissButton = {
-      TextButton(onClick = onDismiss) {
-        Text("Cancel")
-      }
-    }
-  )
 }
 
 private const val MAX_UNREAD_BADGE = 99

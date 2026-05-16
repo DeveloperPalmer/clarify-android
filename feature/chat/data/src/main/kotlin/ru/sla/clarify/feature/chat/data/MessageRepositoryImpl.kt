@@ -221,25 +221,41 @@ class MessageRepositoryImpl @Inject constructor(
       ?.let(ChatMessage::Id)
 
     val senderId = message.sender
-    val peerId = if (message.isSelf) peerId else senderId
+    val resolvedPeerId = if (message.isSelf) peerId else senderId
+    val conversationId = c2cConversationId(resolvedPeerId)
 
     inMemoryDB.transaction {
       inMemoryDB.peerQueries.insertIfAbsent(
-        id = peerId,
+        id = resolvedPeerId,
         name = null,
         faceUrl = null
+      )
+      inMemoryDB.conversationQueries.insertIfAbsent(
+        id = conversationId,
+        peerId = resolvedPeerId,
+        lastMessage = null,
+        lastMessageTimestamp = 0L,
+        unreadCount = 0L
       )
       inMemoryDB.messageQueries.insertOrReplace(
         id = ChatMessage.Id(message.msgID),
         parentId = parentId,
-        peerId = peerId,
+        conversationId = conversationId,
+        peerId = resolvedPeerId,
         senderId = senderId,
         text = customMessagePayload.text,
         colorHex = customMessagePayload.colorHex,
         timestamp = message.timestamp * MILLIS_PER_SECOND,
-        isSelf = if (message.isSelf) 1L else 0L,
+        isSelf = message.isSelf,
         status = mapStatus(message.status).name
       )
     }
   }
 }
+
+// Формат conversation ID, который использует Tencent IM SDK для C2C-чатов.
+// Совпадает со значением V2TIMConversation.conversationID, сохраняемым в
+// ConversationRepositoryImpl.saveConversation.
+private const val C2C_CONVERSATION_PREFIX = "c2c_"
+
+private fun c2cConversationId(peerId: String): String = "$C2C_CONVERSATION_PREFIX$peerId"

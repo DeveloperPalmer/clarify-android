@@ -1,27 +1,33 @@
+import kotlin.Boolean;
 import ru.sla.clarify.feature.chat.domain.entity.ChatMessage.Id;
 
 CREATE TABLE ChatMessage(
   id TEXT AS Id PRIMARY KEY NOT NULL,
   parentId TEXT AS Id,
+  conversationId TEXT NOT NULL,
   peerId TEXT NOT NULL,
   senderId TEXT NOT NULL,
   text TEXT NOT NULL,
   colorHex TEXT NOT NULL,
   timestamp INTEGER NOT NULL,
-  isSelf INTEGER NOT NULL,
+  isSelf INTEGER AS Boolean NOT NULL,
   status TEXT NOT NULL,
-  FOREIGN KEY(peerId) REFERENCES Peer(id) ON DELETE CASCADE ON UPDATE CASCADE
+  FOREIGN KEY(conversationId) REFERENCES Conversation(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+CREATE INDEX ChatMessage_conversationId ON ChatMessage(conversationId);
+CREATE INDEX ChatMessage_peerId ON ChatMessage(peerId);
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO ChatMessage(id, parentId, peerId, senderId, text, colorHex, timestamp, isSelf, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INTO ChatMessage(id, parentId, conversationId, peerId, senderId, text, colorHex, timestamp, isSelf, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectById:
 SELECT
   id,
   parentId,
+  conversationId,
   peerId,
   senderId,
   text,
@@ -36,6 +42,7 @@ selectByPeer:
 SELECT
   id,
   parentId,
+  conversationId,
   peerId,
   senderId,
   text,
@@ -52,6 +59,7 @@ selectByPeerBefore:
 SELECT
   id,
   parentId,
+  conversationId,
   peerId,
   senderId,
   text,
@@ -69,6 +77,7 @@ selectChronologyByPeer:
 SELECT
   id,
   parentId,
+  conversationId,
   peerId,
   senderId,
   text,
@@ -80,9 +89,9 @@ FROM ChatMessage
 WHERE peerId = :peerId
 ORDER BY timestamp ASC;
 
-deleteByPeer:
+deleteByConversation:
 DELETE FROM ChatMessage
-WHERE peerId = :peerId;
+WHERE conversationId = :conversationId;
 
 deleteAll:
 DELETE FROM ChatMessage;

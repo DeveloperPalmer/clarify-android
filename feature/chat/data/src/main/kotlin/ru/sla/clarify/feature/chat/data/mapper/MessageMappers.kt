@@ -10,20 +10,23 @@ import ru.sla.clarify.database.chat.ChatMessage as ChatMessageDB
 import ru.sla.clarify.feature.chat.domain.entity.ChatMessage as ChatMessageDomain
 
 object MessageMappers {
+  @Suppress("LongParameterList")
   fun mapToChatMessage(
     id: ChatMessage.Id,
     parentId: ChatMessage.Id?,
+    conversationId: String,
     peerId: String,
     senderId: String,
     text: String,
     colorHex: String,
     timestamp: Long,
-    isSelf: Long,
+    isSelf: Boolean,
     status: String
   ): ChatMessageDomain {
     return ChatMessageDB(
       id = id,
       parentId = parentId,
+      conversationId = conversationId,
       peerId = peerId,
       senderId = senderId,
       text = text,
@@ -47,7 +50,7 @@ internal fun ChatMessageDB.toDomain(): ChatMessageDomain {
     text = text,
     colorHex = colorHex,
     timestamp = timestamp,
-    isSelf = isSelf != 0L,
+    isSelf = isSelf,
     status = status.toMessageStatus()
   )
 }

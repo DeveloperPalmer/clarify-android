@@ -16,7 +16,6 @@ data class Conversation(
   @Immutable
   data class Peer(
     val id: String,
-    val name: String?,
     val faceUrl: String?
   )
 }
