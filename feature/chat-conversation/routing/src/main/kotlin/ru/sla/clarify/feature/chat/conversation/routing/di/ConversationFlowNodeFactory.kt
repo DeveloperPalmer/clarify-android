@@ -1,0 +1,38 @@
+package ru.sla.clarify.feature.chat.conversation.routing.di
+
+import ru.kode.way.FlowNode
+import ru.kode.way.NodeBuilder
+import ru.kode.way.ScreenNode
+import ru.sla.clarify.core.routing.BasicScreenNode
+import ru.sla.clarify.core.ui.WiredComposableScreen
+import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlowNode
+import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlowNodeBuilder
+import ru.sla.clarify.feature.chat.conversation.ui.di.Screen
+import ru.sla.clarify.feature.chat.conversation.ui.di.WiredScreen
+import ru.sla.clarify.feature.chat.thread.routing.ThreadFlow
+import ru.sla.clarify.feature.entity.chat.Peer
+import javax.inject.Inject
+import javax.inject.Provider
+
+class ConversationFlowNodeFactory @Inject constructor(
+  private val flowNode: Provider<ConversationFlowNode>,
+  private val component: ConversationFlowComponent,
+  @param:WiredScreen(Screen.Main)
+  private val mainScreen: Provider<WiredComposableScreen>
+) : ConversationFlowNodeBuilder.Factory {
+
+  override fun createRootNode(): FlowNode<*> {
+    return flowNode.get()
+  }
+
+  override fun createMainNode(): ScreenNode {
+    return BasicScreenNode(mainScreen.get())
+  }
+
+  override fun createThreadFlowNodeBuilder(id: Peer.Id): NodeBuilder {
+    val component = component.threadFlowComponent()
+      .peerId(id)
+      .build()
+    return ThreadFlow.nodeBuilder(component)
+  }
+}

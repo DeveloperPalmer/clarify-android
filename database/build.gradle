@@ -49,12 +49,12 @@ afterEvaluate {
 
 dependencies {
   api project(":core:domain")
+  api project(":feature-entity")
+  api project(":auth-session:domain")
   api libs.sqldelight.coroutines
 
-  implementation project(":auth-session:domain")
+  implementation project(":feature:chat-conversation:domain")
   implementation libs.firebase.auth
   implementation libs.firebase.firestore
   implementation libs.sqldelight.android.driver
-
-  implementation project(":feature:chat:domain")
 }

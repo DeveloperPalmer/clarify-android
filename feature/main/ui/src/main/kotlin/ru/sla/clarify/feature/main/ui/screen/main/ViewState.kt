@@ -5,5 +5,5 @@ import ru.sla.clarify.core.ui.entity.ContentLoadState
 
 @Immutable
 data class ViewState(
-  val contentLoadState: ContentLoadState = ContentLoadState.NotStarted
+  val contentLoadState: ContentLoadState = ContentLoadState.Ready
 )

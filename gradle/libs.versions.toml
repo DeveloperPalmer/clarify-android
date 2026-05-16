@@ -28,13 +28,17 @@ detekt = "1.23.8"
 detekt-rules-compose = "1.4.0"
 coil = "2.7.0"
 cachefix = "3.0.3"
-# Chat versions
-chat = "8.9.7540"
 # Firebase
 googleid = "1.2.0"
 google-services = "4.4.4"
 fairebase-auth = "24.0.1"
 fairebase-firestore = "26.2.0"
+androidBuiltInKotlin = "9.2.1"
+junit = "4.13.2"
+junitVersion = "1.3.0"
+espressoCore = "3.7.0"
+appcompat = "1.7.1"
+material = "1.14.0"
 
 [libraries]
 kotlin-result = { module = "com.michael-bull.kotlin-result:kotlin-result", version.ref = "kotlin-result" }
@@ -78,8 +82,6 @@ amvi-viewmodel = { module = "ru.kode:amvi-viewmodel", version.ref = "amvi" }
 way = { module = "ru.kode:way", version.ref = "way" }
 way-compose = { module = "ru.kode:way-compose", version.ref = "way" }
 
-chat-sdk = { module = "com.tencent.imsdk:imsdk-plus", version.ref = "chat" }
-
 detekt-rules-compose = { module = "ru.kode:detekt-rules-compose", version.ref = "detekt-rules-compose" }
 spotless-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 anvil-plugin = { module = "dev.zacsweers.anvil:gradle-plugin", version.ref = "anvil" }
@@ -87,6 +89,11 @@ kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.
 detekt-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 cachefix-plugin = { module = "org.gradle.android.cache-fix:org.gradle.android.cache-fix.gradle.plugin", version.ref = "cachefix" }
 ksp-plugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 [bundles]
 core = [
@@ -125,3 +132,5 @@ detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 way = { id = "ru.kode.way", version.ref = "way" }
 google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+android-built-in1-kotlin = { id = "com.android.built-in-kotlin", version.ref = "androidBuiltInKotlin" }

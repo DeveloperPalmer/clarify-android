@@ -9,7 +9,6 @@ import dagger.Provides
 import ru.sla.clarify.app.android.Application
 import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
 import ru.sla.clarify.app.routing.di.AppFlowComponent
-import ru.sla.clarify.chat.ChatManager
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
@@ -18,8 +17,6 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 @MergeComponent(AppScope::class)
 interface AppComponent {
   fun appFlowComponentBuilder(): AppFlowComponent.Builder
-
-  fun chatManager(): ChatManager
 
   @MergeComponent.Builder
   interface Builder {

@@ -5,9 +5,9 @@ digraph MainFlow {
     type = "flow"
   ]
 
-  chatFlow [
+  conversationFlow [
     type = "schema"
   ]
 
-  mainFlow -> main -> chatFlow
+  mainFlow -> main -> conversationFlow
 }

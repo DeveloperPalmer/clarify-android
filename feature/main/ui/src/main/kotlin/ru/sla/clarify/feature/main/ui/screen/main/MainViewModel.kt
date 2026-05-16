@@ -18,7 +18,7 @@ class MainViewModel @Inject constructor(
   private val mainModel: MainModel
 ) : ViewModel<ViewState, ViewIntents>() {
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState() to { mainModel.chatSignIn.start() }
+    initial = ViewState() to null
 
     onEach(intent(ViewIntents::navigateBack)) {
       action { _, _, _ ->
@@ -32,20 +32,7 @@ class MainViewModel @Inject constructor(
       }
     }
 
-    configureLoginTransitions()
     configureLogoutTransitions()
-  }
-
-  private fun MachineDsl<ViewState>.configureLoginTransitions() {
-    onEach(
-      mainModel.chatSignIn.jobFlow
-        .asLceState()
-        .map { it.toUiLceState() }
-    ) {
-      transitionTo { state, contentLoadState ->
-        state.copy(contentLoadState = contentLoadState)
-      }
-    }
   }
 
   private fun MachineDsl<ViewState>.configureLogoutTransitions() {

@@ -1,0 +1,15 @@
+digraph ConversationFlow {
+  package = "ru.sla.clarify.feature.chat.conversation.routing"
+
+  conversationFlow [
+    type = "flow"
+  ]
+
+  threadFlow [
+    type = "schema"
+    parameterName = "id"
+    parameterType = "ru.sla.clarify.feature.entity.chat.Peer.Id"
+  ]
+
+  conversationFlow -> main -> threadFlow
+}

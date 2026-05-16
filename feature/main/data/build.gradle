@@ -6,9 +6,3 @@ plugins {
 android {
   namespace "ru.sla.clarify.feature.main.data"
 }
-
-dependencies {
-  implementation project(":lib:chat")
-  implementation project(":database")
-  implementation project(":feature:main:domain")
-}

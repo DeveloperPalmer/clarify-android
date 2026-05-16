@@ -109,8 +109,7 @@ dependencies {
 
   implementation project(":uikit")
   implementation project(":app:routing")
-
-  implementation project(":lib:chat")
+  implementation project(":lib:google:firestore")
 }
 
 spotless {

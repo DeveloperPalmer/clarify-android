@@ -2,7 +2,7 @@ package ru.sla.clarify.feature.main.routing.di
 
 import com.squareup.anvil.annotations.MergeSubcomponent
 import ru.sla.clarify.core.domain.di.scope.SingleIn
-import ru.sla.clarify.feature.chat.routing.di.ChatFlowComponent
+import ru.sla.clarify.feature.chat.conversation.routing.di.ConversationFlowComponent
 import ru.sla.clarify.feature.main.domain.di.MainScope
 
 @MergeSubcomponent(MainScope::class)
@@ -10,5 +10,5 @@ import ru.sla.clarify.feature.main.domain.di.MainScope
 interface MainFlowComponent {
   fun nodeFactory(): MainFlowNodeFactory
 
-  fun chatFlowComponent(): ChatFlowComponent
+  fun chatFlowComponent(): ConversationFlowComponent
 }

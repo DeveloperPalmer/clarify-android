@@ -4,6 +4,8 @@ plugins {
   alias(libs.plugins.cachefix) apply false
   alias(libs.plugins.google.services) apply false
   alias(libs.plugins.spotless) apply false
+  alias(libs.plugins.android.library) apply false
+  alias(libs.plugins.android.built.in1.kotlin) apply false
   // NOTE do not add plugins used in *-convention.gradle here
   //   They must be added as deps to build-conventions/build.gradle!
 }

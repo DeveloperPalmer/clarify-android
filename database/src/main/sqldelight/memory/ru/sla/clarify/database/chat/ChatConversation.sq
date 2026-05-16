@@ -1,0 +1,36 @@
+CREATE TABLE ChatConversation(
+  id TEXT PRIMARY KEY NOT NULL,
+  peerId TEXT NOT NULL,
+  lastCommit TEXT,
+  lastCommitTimestamp INTEGER NOT NULL,
+  unreadCount INTEGER NOT NULL
+);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO ChatConversation(id, peerId, lastCommit, lastCommitTimestamp, unreadCount)
+VALUES (?, ?, ?, ?, ?);
+
+insertIfAbsent:
+INSERT OR IGNORE
+INTO ChatConversation(id, peerId, lastCommit, lastCommitTimestamp, unreadCount)
+VALUES (?, ?, ?, ?, ?);
+
+selectAll:
+SELECT
+  ChatConversation.id,
+  ChatConversation.peerId,
+  ChatConversation.lastCommit,
+  ChatConversation.lastCommitTimestamp,
+  ChatConversation.unreadCount,
+  Peer.faceUrl AS peerFaceUrl
+FROM ChatConversation
+JOIN Peer ON Peer.id = ChatConversation.peerId
+ORDER BY ChatConversation.lastCommitTimestamp DESC;
+
+delete:
+DELETE FROM ChatConversation
+WHERE id = ?;
+
+deleteAll:
+DELETE FROM ChatConversation;

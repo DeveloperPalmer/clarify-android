@@ -2,31 +2,28 @@ package ru.sla.clarify.feature.login.data
 
 import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.tasks.await
-import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.UserId
-import ru.sla.clarify.chat.UserSigGenerator
 import ru.sla.clarify.core.domain.di.scope.SingleIn
-import ru.sla.clarify.database.firestore.Firestore
 import ru.sla.clarify.feature.login.domain.LoginRepository
 import ru.sla.clarify.feature.login.domain.LoginScope
-import ru.sla.clarify.google.authenticator.GoogleAuthenticator
-import ru.sla.clarify.google.authenticator.SignInResult
+import ru.sla.clarify.feature.login.entity.AuthResult
+import ru.sla.clarify.lib.google.authenticator.GoogleAuthenticator
+import ru.sla.clarify.lib.google.authenticator.SignInResult
+import ru.sla.clarify.lib.google.firestore.Firestore
 import javax.inject.Inject
-import kotlin.math.abs
 
 @SingleIn(LoginScope::class)
 @ContributesBinding(LoginScope::class)
 class LoginRepositoryImpl @Inject constructor(
   private val firestore: Firestore,
-  private val googleAuthenticator: GoogleAuthenticator,
-  private val authSessionRepository: AuthSessionRepository
+  private val googleAuthenticator: GoogleAuthenticator
 ) : LoginRepository {
 
-  override suspend fun signIn() {
-    when (val signInResult = googleAuthenticator.auth()) {
+  override suspend fun signIn(): AuthResult {
+    return when (val signInResult = googleAuthenticator.auth()) {
       is SignInResult.Success -> {
         val user = signInResult.authResult
           .user
@@ -37,15 +34,14 @@ class LoginRepositoryImpl @Inject constructor(
           .token
           ?: error("FirebaseAuth returned null ID token after Google sign-in")
 
-        val userId = user.uid.stableUserIdValue()
-
-        firestore.signIn(
-          userId = userId,
-          chatSignature = UserSigGenerator.generate(userId.toString())
+        firestore.mergeUser(
+          uid = user.uid,
+          displayName = user.displayName,
+          photoUrl = user.photoUrl?.toString()
         )
-        // Temporary token mapping until backend-issued auth tokens are introduced.
-        authSessionRepository.startNew(
-          userId = UserId(userId),
+
+        AuthResult(
+          userId = UserId(user.uid),
           tokens = AuthTokens(
             updatedAt = System.currentTimeMillis(),
             accessToken = AccessToken(firebaseIdToken),
@@ -60,10 +56,5 @@ class LoginRepositoryImpl @Inject constructor(
         error("cancel by user")
       }
     }
-  }
-
-  private fun String.stableUserIdValue(): Int {
-    val hash = hashCode()
-    return if (hash == Int.MIN_VALUE) 0 else abs(hash)
   }
 }

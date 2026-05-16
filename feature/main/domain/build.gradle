@@ -9,7 +9,6 @@ android {
 
 dependencies {
   api project(":core:domain")
-  implementation project(":lib:chat")
   implementation project(":auth-session:domain")
   implementation project(":lib:google:authenticator")
 }

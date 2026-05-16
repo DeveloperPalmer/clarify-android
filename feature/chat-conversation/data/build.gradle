@@ -1,0 +1,15 @@
+plugins {
+  id 'android-library-convention'
+  id 'dagger-convention'
+}
+
+android {
+  namespace "ru.sla.clarify.feature.chat.conversation.data"
+}
+
+dependencies {
+  implementation project(":lib:google:firestore")
+  implementation project(":database")
+  implementation project(":auth-session:data")
+  implementation project(":feature:chat-conversation:domain")
+}

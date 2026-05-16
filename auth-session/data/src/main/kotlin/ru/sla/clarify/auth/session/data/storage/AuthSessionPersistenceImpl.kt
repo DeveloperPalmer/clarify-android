@@ -66,17 +66,17 @@ class AuthSessionPersistenceImpl @Inject constructor(
     withContext(Dispatchers.IO) {
       database.settingsQueries.save(
         buildUserIdSettingsKey(key),
-        userId.value.toString()
+        userId.value
       )
     }
   }
 
   override suspend fun readUserId(key: SessionKey): UserId? {
     return withContext(Dispatchers.IO) {
-      val dbRecord = database.settingsQueries
+      database.settingsQueries
         .get(buildUserIdSettingsKey(key))
         .executeAsOneOrNull()
-      dbRecord?.let { UserId(it.toInt()) }
+        ?.let(::UserId)
     }
   }
 

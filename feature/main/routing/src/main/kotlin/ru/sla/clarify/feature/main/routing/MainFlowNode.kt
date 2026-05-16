@@ -33,9 +33,9 @@ class MainFlowNode @Inject constructor(
         Finish(Unit)
       }
       is FlowEvent.OpenChats -> {
-        NavigateTo(Target.mainFlow.chatFlow)
+        NavigateTo(Target.mainFlow.conversationFlow)
       }
-      is MainFlowChildFinishRequest.ChatFlow -> {
+      is MainFlowChildFinishRequest.ConversationFlow -> {
         NavigateTo(Target.mainFlow.main)
       }
       else -> Ignore

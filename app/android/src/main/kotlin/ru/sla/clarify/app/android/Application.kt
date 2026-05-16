@@ -25,8 +25,6 @@ class Application : android.app.Application(), AppComponentHolder, BuildConfigPr
     configureLogging()
 
     _appComponent = buildAppComponent()
-
-    _appComponent.chatManager().initialize()
   }
 
   private fun buildAppComponent(): AppComponent {

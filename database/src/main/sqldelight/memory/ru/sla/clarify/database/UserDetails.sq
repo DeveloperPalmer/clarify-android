@@ -1,11 +1,13 @@
+import ru.sla.clarify.auth.session.domain.entity.UserId;
+
 CREATE TABLE UserDetails (
   key INTEGER NOT NULL PRIMARY KEY DEFAULT 0,
-  chatSignature TEXT NOT NULL
+  uid TEXT AS UserId NOT NULL
 );
 
 insert:
 INSERT OR REPLACE
-INTO UserDetails(chatSignature)
+INTO UserDetails(uid)
 VALUES (?);
 
 select:

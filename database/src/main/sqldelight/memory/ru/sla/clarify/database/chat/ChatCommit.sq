@@ -1,0 +1,78 @@
+import kotlin.Boolean;
+import ru.sla.clarify.feature.entity.chat.Commit.Id;
+
+CREATE TABLE ChatCommit(
+  id TEXT AS Id PRIMARY KEY NOT NULL,
+  parentId TEXT AS Id,
+  conversationId TEXT NOT NULL,
+  peerId TEXT NOT NULL,
+  senderId TEXT NOT NULL,
+  text TEXT NOT NULL,
+  colorHex TEXT NOT NULL,
+  timestamp INTEGER NOT NULL,
+  isSelf INTEGER AS Boolean NOT NULL,
+  status TEXT NOT NULL,
+  FOREIGN KEY(conversationId) REFERENCES ChatConversation(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX ChatCommit_conversationId ON ChatCommit(conversationId);
+CREATE INDEX ChatCommit_peerId ON ChatCommit(peerId);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO ChatCommit(id, parentId, conversationId, peerId, senderId, text, colorHex, timestamp, isSelf, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectById:
+SELECT
+  id,
+  parentId,
+  peerId,
+  senderId,
+  text,
+  colorHex,
+  timestamp,
+  isSelf,
+  status
+FROM ChatCommit
+WHERE id = :id;
+
+selectByPeer:
+SELECT
+  id,
+  parentId,
+  peerId,
+  senderId,
+  text,
+  colorHex,
+  timestamp,
+  isSelf,
+  status
+FROM ChatCommit
+WHERE peerId = :peerId
+ORDER BY timestamp DESC
+LIMIT :commitLimit;
+
+selectByPeerBefore:
+SELECT
+  id,
+  parentId,
+  peerId,
+  senderId,
+  text,
+  colorHex,
+  timestamp,
+  isSelf,
+  status
+FROM ChatCommit
+WHERE peerId = :peerId
+  AND timestamp < :timestamp
+ORDER BY timestamp DESC
+LIMIT :commitLimit;
+
+deleteByConversationId:
+DELETE FROM ChatCommit
+WHERE conversationId = :conversationId;
+
+deleteAll:
+DELETE FROM ChatCommit;

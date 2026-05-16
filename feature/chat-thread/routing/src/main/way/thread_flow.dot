@@ -1,0 +1,11 @@
+digraph ThreadFlow {
+  package = "ru.sla.clarify.feature.chat.thread.routing"
+
+  threadFlow [
+    type = "flow"
+    parameterName = "id"
+    parameterType = "ru.sla.clarify.feature.entity.chat.Peer.Id"
+  ]
+
+  threadFlow -> main
+}

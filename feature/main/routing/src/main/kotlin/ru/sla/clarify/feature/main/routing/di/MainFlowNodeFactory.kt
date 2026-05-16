@@ -5,7 +5,7 @@ import ru.kode.way.NodeBuilder
 import ru.kode.way.ScreenNode
 import ru.sla.clarify.core.routing.BasicScreenNode
 import ru.sla.clarify.core.ui.WiredComposableScreen
-import ru.sla.clarify.feature.chat.routing.ChatFlow
+import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow
 import ru.sla.clarify.feature.main.routing.MainFlowNode
 import ru.sla.clarify.feature.main.routing.MainFlowNodeBuilder
 import ru.sla.clarify.feature.main.ui.di.Screen
@@ -15,7 +15,7 @@ import javax.inject.Provider
 
 class MainFlowNodeFactory @Inject constructor(
   private val flowNode: Provider<MainFlowNode>,
-  @WiredScreen(Screen.Main)
+  @param:WiredScreen(Screen.Main)
   private val mainScreenNode: Provider<WiredComposableScreen>,
   private val component: MainFlowComponent
 ) : MainFlowNodeBuilder.Factory {
@@ -28,7 +28,7 @@ class MainFlowNodeFactory @Inject constructor(
     return BasicScreenNode(mainScreenNode.get())
   }
 
-  override fun createChatFlowNodeBuilder(): NodeBuilder {
-    return ChatFlow.nodeBuilder(component.chatFlowComponent())
+  override fun createConversationFlowNodeBuilder(): NodeBuilder {
+    return ConversationFlow.nodeBuilder(component.chatFlowComponent())
   }
 }

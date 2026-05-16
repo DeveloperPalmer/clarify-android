@@ -14,8 +14,8 @@ import ru.sla.log.log
 fun InMemoryDB.cleanupBySessionKey(key: String) {
   transaction {
     log { "cleaning up data for session key=$key" }
-    conversationQueries.deleteAll()
-    messageQueries.deleteAll()
+    chatConversationQueries.deleteAll()
+    chatCommitQueries.deleteAll()
     peerQueries.delete()
     userDetailsQueries.delete()
   }
