@@ -36,12 +36,6 @@ class ChatThreadViewModel @AssistedInject constructor(
       }
     }
 
-    onEach(intent(ViewIntents::openChronology)) {
-      action { _, _, _ ->
-        eventSink.sendEvent(FlowEvent.ChronologyRequested)
-      }
-    }
-
     configurePeerMessageTransitions()
     configureSenderMessageTransitions()
     configureHistoryMessagesTransitions()

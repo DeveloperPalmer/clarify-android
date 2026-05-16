@@ -5,14 +5,10 @@ digraph ChatFlow {
     type = "flow"
   ]
 
-  chronologyFlow [
-    type = "schema"
-  ]
-
   chatThread [
     parameterName = "peerId",
     parameterType = "kotlin.String"
   ]
 
-  chatFlow -> chatList -> chatThread -> chronologyFlow
+  chatFlow -> chatList -> chatThread
 }

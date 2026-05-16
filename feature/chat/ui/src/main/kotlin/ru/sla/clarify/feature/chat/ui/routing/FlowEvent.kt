@@ -6,5 +6,4 @@ sealed interface FlowEvent : Event {
   data object ChatListDismissed : FlowEvent
   data class ChatThreadRequested(val peerId: String) : FlowEvent
   data object ChatThreadDismissed : FlowEvent
-  data object ChronologyRequested : FlowEvent
 }

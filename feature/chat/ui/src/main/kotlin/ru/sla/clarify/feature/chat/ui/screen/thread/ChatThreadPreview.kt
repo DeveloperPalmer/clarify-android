@@ -30,8 +30,7 @@ private fun ChatThreadReadyContentPreview(
         messages = state.messages,
         isSending = state.isSending,
         onBack = {},
-        onSend = {},
-        onChronology = {}
+        onSend = {}
       )
     }
   }

@@ -41,9 +41,6 @@ class ChatFlowNode @Inject constructor(
       is FlowEvent.ChatThreadDismissed -> {
         NavigateTo(Target.chatFlow.chatList)
       }
-      is FlowEvent.ChronologyRequested -> {
-        NavigateTo(Target.chatFlow.chronologyFlow)
-      }
       else -> Ignore
     }
   }

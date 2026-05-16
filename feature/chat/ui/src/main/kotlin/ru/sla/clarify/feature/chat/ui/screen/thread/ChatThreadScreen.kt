@@ -58,8 +58,7 @@ fun ChatThreadScreen(viewModel: ChatThreadViewModel) {
         messages = state.messages,
         isSending = state.isSending,
         onBack = intents.navigateBack,
-        onSend = intents.sendMessage,
-        onChronology = intents.openChronology
+        onSend = intents.sendMessage
       )
     }
   }
@@ -71,7 +70,6 @@ internal fun ChatThreadReadyContent(
   messages: List<ChatMessage>,
   isSending: Boolean,
   onBack: () -> Unit,
-  onChronology: () -> Unit,
   onSend: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -82,8 +80,7 @@ internal fun ChatThreadReadyContent(
   ) {
     ChatThreadTopBar(
       peerId = peerId,
-      onBack = onBack,
-      onChronology = onChronology
+      onBack = onBack
     )
     if (messages.isEmpty()) {
       TreadEmptyState(
@@ -113,8 +110,7 @@ internal fun ChatThreadReadyContent(
 @Composable
 private fun ChatThreadTopBar(
   peerId: String,
-  onBack: () -> Unit,
-  onChronology: () -> Unit
+  onBack: () -> Unit
 ) {
   Row(
     modifier = Modifier
@@ -138,12 +134,6 @@ private fun ChatThreadTopBar(
       style = AppTheme.typography.title1,
       fontWeight = FontWeight.SemiBold
     )
-    IconButton(onClick = onChronology) {
-      Text(
-        text = "H",
-        style = AppTheme.typography.h2
-      )
-    }
   }
   HorizontalDivider()
 }
