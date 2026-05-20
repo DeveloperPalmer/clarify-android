@@ -13,9 +13,9 @@ import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
-import ru.sla.clarify.auth.session.domain.entity.UserId
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.mapDistinctNotNullChanges
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.database.PersistedDB

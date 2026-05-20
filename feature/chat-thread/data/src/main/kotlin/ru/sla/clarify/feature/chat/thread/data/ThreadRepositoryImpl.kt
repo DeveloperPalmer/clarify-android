@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
-import ru.sla.clarify.auth.session.domain.entity.UserId
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.feature.chat.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.thread.domain.ThreadRepository
@@ -111,7 +111,7 @@ class ThreadRepositoryImpl @Inject constructor(
     }
     Commit.Message(
       id = Commit.Id(item.commitId.value),
-      senderId = item.senderId.value,
+      senderId = item.senderId,
       text = item.text,
       colorHex = item.colorHex,
       timestamp = Instant

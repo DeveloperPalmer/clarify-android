@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
-import ru.sla.clarify.auth.session.domain.entity.UserId
+import ru.sla.clarify.core.domain.entity.UserId
 
 interface AuthSessionRepository {
   suspend fun refresh(refreshToken: RefreshToken)

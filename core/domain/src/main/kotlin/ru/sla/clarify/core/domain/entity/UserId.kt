@@ -1,4 +1,4 @@
-package ru.sla.clarify.auth.session.domain.entity
+package ru.sla.clarify.core.domain.entity
 
 @JvmInline
 value class UserId(val value: String)

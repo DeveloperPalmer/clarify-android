@@ -162,7 +162,7 @@ private fun Commits(
   ) {
     items(
       items = commits,
-      key = { it.id.value.ifEmpty { "${it.senderId}_${it.timestamp}_${it.text.hashCode()}" } }
+      key = { it.id.value.ifEmpty { "${it.senderId.value}_${it.timestamp}_${it.text.hashCode()}" } }
     ) { commit ->
       CommitBubble(commit)
     }

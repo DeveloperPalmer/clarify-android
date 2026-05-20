@@ -1,6 +1,6 @@
 package ru.sla.clarify.lib.google.firestore.entity
 
-import ru.sla.clarify.auth.session.domain.entity.UserId
+import ru.sla.clarify.core.domain.entity.UserId
 
 data class FirestoreCommit(
   val commitId: Id,

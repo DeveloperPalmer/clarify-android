@@ -8,8 +8,8 @@ import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
-import ru.sla.clarify.auth.session.domain.entity.UserId
 import ru.sla.clarify.core.domain.di.scope.AppScope
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.cleanupBySessionKey
 import javax.inject.Inject

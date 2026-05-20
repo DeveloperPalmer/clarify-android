@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
-import ru.sla.clarify.auth.session.domain.entity.UserId
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.feature.chat.conversation.data.mapper.ConversationMappers
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository

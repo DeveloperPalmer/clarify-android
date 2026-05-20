@@ -3,7 +3,7 @@ package ru.sla.clarify.lib.google.firestore.mapper
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
-import ru.sla.clarify.auth.session.domain.entity.UserId
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_COLOR_HEX
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_CREATED_AT
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_SENDER_UID

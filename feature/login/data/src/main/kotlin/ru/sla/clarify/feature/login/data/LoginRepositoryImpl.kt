@@ -5,8 +5,8 @@ import kotlinx.coroutines.tasks.await
 import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
-import ru.sla.clarify.auth.session.domain.entity.UserId
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.login.domain.LoginRepository
 import ru.sla.clarify.feature.login.domain.LoginScope
 import ru.sla.clarify.feature.login.entity.AuthResult

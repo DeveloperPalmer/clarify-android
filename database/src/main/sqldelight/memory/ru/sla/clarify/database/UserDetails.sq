@@ -1,4 +1,4 @@
-import ru.sla.clarify.auth.session.domain.entity.UserId;
+import ru.sla.clarify.core.domain.entity.UserId;
 
 CREATE TABLE UserDetails (
   key INTEGER NOT NULL PRIMARY KEY DEFAULT 0,
