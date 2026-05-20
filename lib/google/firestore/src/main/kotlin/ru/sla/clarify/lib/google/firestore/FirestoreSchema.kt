@@ -36,7 +36,14 @@ object FirestoreSchema {
   const val STATE_UNREAD_COUNT = "unreadCount"
 
   enum class ConversationType(val value: String) {
-    Direct("direct")
+    Direct("direct"),
+    Group("group");
+
+    companion object {
+      fun fromValue(value: String): ConversationType? {
+        return entries.firstOrNull { it.value == value }
+      }
+    }
   }
 
   enum class CommitType(val value: String) {

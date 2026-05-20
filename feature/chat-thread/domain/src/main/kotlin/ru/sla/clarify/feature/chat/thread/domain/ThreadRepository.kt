@@ -1,9 +1,12 @@
 package ru.sla.clarify.feature.chat.thread.domain
 
 import kotlinx.coroutines.flow.Flow
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.entity.chat.Commit
 
 interface ThreadRepository {
+  suspend fun getConversation(): Conversation?
+
   fun peerCommits(): Flow<Commit>
 
   suspend fun getCommitHistory(

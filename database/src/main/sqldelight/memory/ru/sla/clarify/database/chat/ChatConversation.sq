@@ -26,6 +26,16 @@ SELECT
 FROM ChatConversation
 ORDER BY ChatConversation.lastCommitTimestamp DESC;
 
+selectById:
+SELECT
+  ChatConversation.id,
+  ChatConversation.peerId,
+  ChatConversation.lastCommit,
+  ChatConversation.lastCommitTimestamp,
+  ChatConversation.unreadCount
+FROM ChatConversation
+WHERE ChatConversation.id = :id;
+
 delete:
 DELETE FROM ChatConversation
 WHERE id = ?;

@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.entity.chat.Commit
 import javax.inject.Inject
@@ -30,6 +31,10 @@ class ThreadModel @Inject constructor(
 
   fun markReadCommits() {
     scope.launch { threadRepository.markAsRead() }
+  }
+
+  suspend fun getConversation(): Conversation? {
+    return threadRepository.getConversation()
   }
 
   fun peerCommits(): Flow<Commit> {

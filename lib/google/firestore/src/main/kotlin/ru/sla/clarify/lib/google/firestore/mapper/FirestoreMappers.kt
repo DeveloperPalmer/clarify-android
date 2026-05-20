@@ -11,6 +11,8 @@ import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_TEXT
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_LAST_COMMIT_AT
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_LAST_COMMIT_TEXT
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_TYPE
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
@@ -22,6 +24,9 @@ fun extractConversationFB(
 ): FirestoreConversation {
   return FirestoreConversation(
     id = document.id,
+    type = document
+      .getString(CONVERSATION_TYPE)
+      ?.let(ConversationType::fromValue),
     changeType = type
       ?.toDomainModel(),
     participantUids = document

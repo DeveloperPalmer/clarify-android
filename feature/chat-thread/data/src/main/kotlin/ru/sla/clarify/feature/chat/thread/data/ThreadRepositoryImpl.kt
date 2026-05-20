@@ -9,6 +9,7 @@ import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.thread.domain.ThreadRepository
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
@@ -29,6 +30,14 @@ class ThreadRepositoryImpl @Inject constructor(
   private val inMemoryDB: InMemoryDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : ThreadRepository {
+
+  override suspend fun getConversation(): Conversation? = withContext(Dispatchers.IO) {
+    val conversation = firestore.directConversation(peerId)
+      ?: return@withContext null
+    inMemoryDB.chatConversationQueries
+      .selectById(conversation.id, ::mapToConversation)
+      .executeAsOneOrNull()
+  }
 
   override fun peerCommits(): Flow<Commit> {
     return channelFlow {
@@ -88,11 +97,13 @@ class ThreadRepositoryImpl @Inject constructor(
     status: Commit.Status = Commit.Status.Sent
   ): Commit.Message = withContext(Dispatchers.IO) {
     val userId = requireUserId()
-    val conversationId = firestore.conversationId(peerId)
+    val conversation = requireNotNull(firestore.directConversation(peerId)) {
+      "Direct conversation not found for peer ${peerId.value}"
+    }
 
     inMemoryDB.transaction {
       inMemoryDB.chatConversationQueries.insertIfAbsent(
-        id = conversationId,
+        id = conversation.id,
         peerId = peerId.value,
         lastCommit = null,
         lastCommitTimestamp = 0L,
@@ -100,7 +111,7 @@ class ThreadRepositoryImpl @Inject constructor(
       )
       inMemoryDB.chatCommitQueries.insertOrReplace(
         id = item.commitId.value,
-        conversationId = conversationId,
+        conversationId = conversation.id,
         senderId = item.senderId.value,
         text = item.text,
         colorHex = item.colorHex,
@@ -125,6 +136,25 @@ class ThreadRepositoryImpl @Inject constructor(
 
   private suspend fun requireUserId(): UserId {
     return requireNotNull(authSessionPersistence.withKey { readUserId(it) })
+  }
+
+  private fun mapToConversation(
+    id: String,
+    peerId: String,
+    lastMessage: String?,
+    lastMessageTimestamp: Long,
+    unreadCount: Long
+  ): Conversation {
+    return Conversation(
+      id = Conversation.Id(id),
+      peer = Peer(
+        id = Peer.Id(peerId),
+        faceUrl = null
+      ),
+      lastMessage = lastMessage,
+      lastMessageTimestamp = lastMessageTimestamp,
+      unreadCount = unreadCount
+    )
   }
 }
 
