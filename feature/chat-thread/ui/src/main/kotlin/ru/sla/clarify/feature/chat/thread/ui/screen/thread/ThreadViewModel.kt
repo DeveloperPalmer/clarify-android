@@ -13,6 +13,7 @@ import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.thread.domain.ThreadModel
 import ru.sla.clarify.feature.chat.thread.ui.routing.FlowEvent
+import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
 import javax.inject.Inject
 
@@ -44,13 +45,18 @@ class ThreadViewModel @Inject constructor(
       action { state, _, text ->
         val trimmed = text.trim()
         if (trimmed.isNotEmpty()) {
-          threadModel.sendCommit.start(trimmed)
+          threadModel.sendMessage.start(
+            argument1 = trimmed,
+            argument2 = state.commits
+              .filterIsInstance<Commit.Message>()
+              .lastOrNull()
+          )
         }
       }
     }
 
     onEach(
-      threadModel.sendCommit.jobFlow
+      threadModel.sendMessage.jobFlow
         .asLceState()
         .map { it.toUiLceState() }
     ) {
@@ -61,7 +67,7 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(threadModel.sendCommit.jobFlow.successResults()) {
+    onEach(threadModel.sendMessage.jobFlow.successResults()) {
       transitionTo { state, sent ->
         if (state.commits.any { it.id.value.isNotEmpty() && it.id == sent.id }) {
           return@transitionTo state

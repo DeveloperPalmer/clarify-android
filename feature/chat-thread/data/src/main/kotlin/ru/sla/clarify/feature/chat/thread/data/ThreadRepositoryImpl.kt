@@ -40,7 +40,7 @@ class ThreadRepositoryImpl @Inject constructor(
           if (message.changeType == FirestoreDocumentResult.Removed) {
             return@forEach
           }
-          val commit = saveCommit(message)
+          val commit = saveMessage(message)
           if (!commit.isSelf) {
             trySend(commit)
           }
@@ -58,19 +58,22 @@ class ThreadRepositoryImpl @Inject constructor(
       count = count,
       before = before?.timestamp
     ).map { item ->
-      saveCommit(
+      saveMessage(
         item = item
       )
     }
   }
 
-  override suspend fun sendMessage(text: String): Commit {
+  override suspend fun sendMessage(
+    text: String,
+    parentMessage: Commit.Message?
+  ): Commit.Message {
     val item = firestore.sendCommit(
       peerId = peerId,
       text = text,
-      colorHex = generateColorHex()
+      colorHex = parentMessage?.colorHex ?: generateColorHex()
     )
-    return saveCommit(
+    return saveMessage(
       item = item,
       status = Commit.Status.Sent
     )
@@ -80,10 +83,10 @@ class ThreadRepositoryImpl @Inject constructor(
     firestore.markConversationAsRead(peerId)
   }
 
-  private suspend fun saveCommit(
+  private suspend fun saveMessage(
     item: FirestoreCommit,
     status: Commit.Status = Commit.Status.Sent
-  ): Commit = withContext(Dispatchers.IO) {
+  ): Commit.Message = withContext(Dispatchers.IO) {
     val userId = requireUserId()
     val conversationId = firestore.conversationId(peerId)
 

@@ -19,10 +19,13 @@ class ThreadModel @Inject constructor(
     threadRepository.getCommitHistory(count = DEFAULT_HISTORY_PAGE_SIZE)
   }
 
-  val sendCommit = task<String, Commit>(
-    name = "sendCommit"
-  ) { text ->
-    threadRepository.sendMessage(text = text)
+  val sendMessage = task<String, Commit.Message?, Commit.Message>(
+    name = "sendMessage"
+  ) { text, parentMessage ->
+    threadRepository.sendMessage(
+      text = text,
+      parentMessage = parentMessage
+    )
   }
 
   fun markReadCommits() {

@@ -11,7 +11,10 @@ interface ThreadRepository {
     before: Commit? = null
   ): List<Commit>
 
-  suspend fun sendMessage(text: String): Commit
+  suspend fun sendMessage(
+    text: String,
+    parentMessage: Commit.Message?
+  ): Commit.Message
 
   suspend fun markAsRead()
 }
