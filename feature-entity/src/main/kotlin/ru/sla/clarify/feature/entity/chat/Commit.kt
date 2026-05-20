@@ -11,7 +11,6 @@ sealed interface Commit {
 
   val id: Id
   val parentId: Id?
-  val peerId: String
   val senderId: String
   val text: String
   val timestamp: LocalDateTime
@@ -25,7 +24,6 @@ sealed interface Commit {
     override val timestamp: LocalDateTime,
     override val colorHex: String,
     override val parentId: Id?,
-    override val peerId: String,
     override val senderId: String,
     override val text: String,
     override val isSelf: Boolean,

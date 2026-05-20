@@ -90,17 +90,12 @@ class ThreadRepositoryImpl @Inject constructor(
   ): Commit = withContext(Dispatchers.IO) {
     val userId = requireUserId()
     val parentId = item.parentCommitId
-    val resolvedPeerId = if (item.senderId == userId) {
-      peerId.value
-    } else {
-      item.senderId.value
-    }
     val conversationId = firestore.conversationId(peerId)
 
     inMemoryDB.transaction {
       inMemoryDB.chatConversationQueries.insertIfAbsent(
         id = conversationId,
-        peerId = resolvedPeerId,
+        peerId = peerId.value,
         lastCommit = null,
         lastCommitTimestamp = 0L,
         unreadCount = 0L
@@ -109,7 +104,6 @@ class ThreadRepositoryImpl @Inject constructor(
         id = Commit.Id(item.commitId.value),
         parentId = parentId?.value?.let(Commit::Id),
         conversationId = conversationId,
-        peerId = resolvedPeerId,
         senderId = item.senderId.value,
         text = item.text,
         colorHex = item.colorHex,
@@ -121,7 +115,6 @@ class ThreadRepositoryImpl @Inject constructor(
     Commit.Message(
       id = Commit.Id(item.commitId.value),
       parentId = parentId?.value?.let(Commit::Id),
-      peerId = resolvedPeerId,
       senderId = item.senderId.value,
       text = item.text,
       colorHex = item.colorHex,
