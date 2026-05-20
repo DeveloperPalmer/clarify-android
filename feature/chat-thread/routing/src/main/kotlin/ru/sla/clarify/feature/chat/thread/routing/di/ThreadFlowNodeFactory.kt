@@ -15,14 +15,20 @@ import javax.inject.Provider
 class ThreadFlowNodeFactory @Inject constructor(
   private val flowNode: Provider<ThreadFlowNode>,
   @param:WiredScreen(Screen.Thread)
-  private val threadScreenNode: Provider<WiredComposableScreen>
+  private val threadScreenNode: Provider<WiredComposableScreen>,
+  @param:WiredScreen(Screen.Branch)
+  private val branchScreenNode: Provider<WiredComposableScreen>
 ) : ThreadFlowNodeBuilder.Factory {
 
   override fun createRootNode(peerId: Peer.Id): FlowNode<*> {
     return flowNode.get()
   }
 
-  override fun createMainNode(): ScreenNode {
+  override fun createThreadNode(): ScreenNode {
     return BasicScreenNode(threadScreenNode.get())
+  }
+
+  override fun createBranchNode(): ScreenNode {
+    return BasicScreenNode(branchScreenNode.get())
   }
 }

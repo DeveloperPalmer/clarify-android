@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
+import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.kode.way.whenFlowEvent
@@ -19,7 +20,7 @@ class ThreadFlowNode @Inject constructor(
   private val scope: CoroutineScope by FlowNodeCoroutineScopeHook()
 
   override val dismissResult = Unit
-  override val initial = Target.threadFlow.main
+  override val initial = Target.threadFlow.thread
 
   override fun onEntry(event: Event) {
     super.onEntry(event)
@@ -30,6 +31,8 @@ class ThreadFlowNode @Inject constructor(
     return event.whenFlowEvent { e: FlowEvent ->
       when (e) {
         is FlowEvent.ThreadDismissed -> Finish(Unit)
+        is FlowEvent.BranchDismissed -> NavigateTo(Target.threadFlow.thread)
+        is FlowEvent.BranchRequested -> NavigateTo(Target.threadFlow.branch)
       }
     }
   }

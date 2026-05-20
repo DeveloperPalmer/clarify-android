@@ -5,4 +5,5 @@ import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents
 class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
   val sendCommit = intent<String>(name = "sendCommit")
+  val openBranch = intent(name = "openBranch")
 }

@@ -59,6 +59,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
         commits = state.commits,
         isSending = state.isSending,
         onBack = intents.navigateBack,
+        onOpenBranch = intents.openBranch,
         onSend = intents.sendCommit
       )
     }
@@ -71,6 +72,7 @@ internal fun ThreadReadyContent(
   commits: List<Commit>,
   isSending: Boolean,
   onBack: () -> Unit,
+  onOpenBranch: () -> Unit,
   onSend: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -81,7 +83,8 @@ internal fun ThreadReadyContent(
   ) {
     TopBar(
       peerId = peerId,
-      onBack = onBack
+      onBack = onBack,
+      onOpenBranch = onOpenBranch
     )
     if (commits.isEmpty()) {
       TreadEmptyState(
@@ -111,7 +114,8 @@ internal fun ThreadReadyContent(
 @Composable
 private fun TopBar(
   peerId: Peer.Id,
-  onBack: () -> Unit
+  onBack: () -> Unit,
+  onOpenBranch: () -> Unit
 ) {
   Row(
     modifier = Modifier
@@ -135,6 +139,12 @@ private fun TopBar(
       style = AppTheme.typography.title1,
       fontWeight = FontWeight.SemiBold
     )
+    IconButton(onClick = onOpenBranch) {
+      Text(
+        text = "B",
+        style = AppTheme.typography.h2
+      )
+    }
   }
   HorizontalDivider()
 }

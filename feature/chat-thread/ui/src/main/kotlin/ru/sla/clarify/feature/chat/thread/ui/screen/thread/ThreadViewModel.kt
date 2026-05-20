@@ -38,6 +38,15 @@ class ThreadViewModel @Inject constructor(
     configurePeerMessageTransitions()
     configureSenderMessageTransitions()
     configureHistoryMessagesTransitions()
+    configureBranchTransitions()
+  }
+
+  private fun MachineDsl<ViewState>.configureBranchTransitions() {
+    onEach(intent(ViewIntents::openBranch)) {
+      action { _, _, _ ->
+        eventSink.sendEvent(FlowEvent.BranchRequested)
+      }
+    }
   }
 
   private fun MachineDsl<ViewState>.configureSenderMessageTransitions() {
