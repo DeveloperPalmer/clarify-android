@@ -9,14 +9,13 @@ object ConversationMappers {
     peerId: String,
     lastMessage: String?,
     lastMessageTimestamp: Long,
-    unreadCount: Long,
-    peerFaceUrl: String?
+    unreadCount: Long
   ): Conversation {
     return Conversation(
       id = Conversation.Id(id),
       peer = Peer(
         id = Peer.Id(peerId),
-        faceUrl = peerFaceUrl
+        faceUrl = null
       ),
       lastMessage = lastMessage,
       lastMessageTimestamp = lastMessageTimestamp,

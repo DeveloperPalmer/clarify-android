@@ -22,10 +22,8 @@ SELECT
   ChatConversation.peerId,
   ChatConversation.lastCommit,
   ChatConversation.lastCommitTimestamp,
-  ChatConversation.unreadCount,
-  Peer.faceUrl AS peerFaceUrl
+  ChatConversation.unreadCount
 FROM ChatConversation
-JOIN Peer ON Peer.id = ChatConversation.peerId
 ORDER BY ChatConversation.lastCommitTimestamp DESC;
 
 delete:

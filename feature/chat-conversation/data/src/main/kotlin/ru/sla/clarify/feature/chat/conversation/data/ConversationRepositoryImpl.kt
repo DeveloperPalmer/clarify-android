@@ -76,19 +76,12 @@ class ConversationRepositoryImpl @Inject constructor(
       log { "Chat: skip conversation ${item.id} without peer uid" }
       return
     }
-    inMemoryDB.transaction {
-      inMemoryDB.peerQueries.insertOrReplace(
-        id = peerId,
-        name = null,
-        faceUrl = null
-      )
-      inMemoryDB.chatConversationQueries.insertOrReplace(
-        id = item.id,
-        peerId = peerId,
-        unreadCount = 0L,
-        lastCommit = item.lastCommitText,
-        lastCommitTimestamp = item.lastCommitAtEpochSeconds
-      )
-    }
+    inMemoryDB.chatConversationQueries.insertOrReplace(
+      id = item.id,
+      peerId = peerId,
+      unreadCount = 0L,
+      lastCommit = item.lastCommitText,
+      lastCommitTimestamp = item.lastCommitAtEpochSeconds
+    )
   }
 }

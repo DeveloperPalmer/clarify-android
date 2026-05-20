@@ -98,11 +98,6 @@ class ThreadRepositoryImpl @Inject constructor(
     val conversationId = firestore.conversationId(peerId)
 
     inMemoryDB.transaction {
-      inMemoryDB.peerQueries.insertIfAbsent(
-        id = resolvedPeerId,
-        name = null,
-        faceUrl = null
-      )
       inMemoryDB.chatConversationQueries.insertIfAbsent(
         id = conversationId,
         peerId = resolvedPeerId,
