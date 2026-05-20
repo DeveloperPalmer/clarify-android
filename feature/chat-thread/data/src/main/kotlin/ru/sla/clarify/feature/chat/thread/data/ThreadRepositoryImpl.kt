@@ -64,15 +64,11 @@ class ThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun sendMessage(
-    text: String,
-    parentMessage: Commit?
-  ): Commit {
+  override suspend fun sendMessage(text: String): Commit {
     val item = firestore.sendCommit(
       peerId = peerId,
       text = text,
-      parentCommitId = parentMessage?.id?.value,
-      colorHex = parentMessage?.colorHex ?: generateColorHex()
+      colorHex = generateColorHex()
     )
     return saveCommit(
       item = item,
@@ -89,7 +85,6 @@ class ThreadRepositoryImpl @Inject constructor(
     status: Commit.Status = Commit.Status.Sent
   ): Commit = withContext(Dispatchers.IO) {
     val userId = requireUserId()
-    val parentId = item.parentCommitId
     val conversationId = firestore.conversationId(peerId)
 
     inMemoryDB.transaction {
@@ -101,8 +96,7 @@ class ThreadRepositoryImpl @Inject constructor(
         unreadCount = 0L
       )
       inMemoryDB.chatCommitQueries.insertOrReplace(
-        id = Commit.Id(item.commitId.value),
-        parentId = parentId?.value?.let(Commit::Id),
+        id = item.commitId.value,
         conversationId = conversationId,
         senderId = item.senderId.value,
         text = item.text,
@@ -114,7 +108,6 @@ class ThreadRepositoryImpl @Inject constructor(
     }
     Commit.Message(
       id = Commit.Id(item.commitId.value),
-      parentId = parentId?.value?.let(Commit::Id),
       senderId = item.senderId.value,
       text = item.text,
       colorHex = item.colorHex,

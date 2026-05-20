@@ -1,9 +1,6 @@
 import kotlin.Boolean;
-import ru.sla.clarify.feature.entity.chat.Commit.Id;
-
 CREATE TABLE ChatCommit(
-  id TEXT AS Id PRIMARY KEY NOT NULL,
-  parentId TEXT AS Id,
+  id TEXT NOT NULL PRIMARY KEY,
   conversationId TEXT NOT NULL,
   senderId TEXT NOT NULL,
   text TEXT NOT NULL,
@@ -18,13 +15,12 @@ CREATE INDEX ChatCommit_conversationId ON ChatCommit(conversationId);
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO ChatCommit(id, parentId, conversationId, senderId, text, colorHex, timestamp, isSelf, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INTO ChatCommit(id, conversationId, senderId, text, colorHex, timestamp, isSelf, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 selectById:
 SELECT
   id,
-  parentId,
   senderId,
   text,
   colorHex,

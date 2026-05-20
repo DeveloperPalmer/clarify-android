@@ -11,9 +11,7 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.UserDetails
-import ru.sla.clarify.database.adapter.CommitIdAdapter
 import ru.sla.clarify.database.adapter.UserIdAdapter
-import ru.sla.clarify.database.chat.ChatCommit
 
 @ContributesTo(AppScope::class)
 @Module
@@ -24,10 +22,6 @@ object DatabaseModule {
     val driver = AndroidSqliteDriver(InMemoryDB.Schema, context, name = null)
     return InMemoryDB(
       driver = driver,
-      ChatCommitAdapter = ChatCommit.Adapter(
-        idAdapter = CommitIdAdapter,
-        parentIdAdapter = CommitIdAdapter
-      ),
       UserDetailsAdapter = UserDetails.Adapter(
         uidAdapter = UserIdAdapter
       )

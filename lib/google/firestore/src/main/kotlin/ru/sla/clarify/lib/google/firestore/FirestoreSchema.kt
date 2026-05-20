@@ -30,7 +30,6 @@ object FirestoreSchema {
   const val COMMIT_CREATED_AT = "createdAt"
   const val COMMIT_SERVER_CREATED_AT = "serverCreatedAt"
   const val COMMIT_READ_BY = "readBy"
-  const val COMMIT_PARENT_ID = "parentId"
   const val COMMIT_COLOR_HEX = "colorHex"
 
   const val STATE_LAST_READ_AT = "lastReadAt"

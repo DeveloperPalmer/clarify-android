@@ -19,13 +19,11 @@ import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.feature.entity.chat.Peer
-import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_PARENT_ID
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import ru.sla.clarify.lib.google.firestore.mapper.extractCommitFB
 import ru.sla.clarify.lib.google.firestore.mapper.extractConversationFB
 import ru.sla.clarify.lib.google.firestore.mapper.mapChanges
-import ru.sla.clarify.lib.google.firestore.mapper.putIfNotNull
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -162,8 +160,7 @@ class Firestore @Inject constructor(
   suspend fun sendCommit(
     peerId: Peer.Id,
     text: String,
-    colorHex: String,
-    parentCommitId: String?
+    colorHex: String
   ): FirestoreCommit {
     val senderId = requireUserId()
     val conversationId = conversationId(peerId)
@@ -180,7 +177,6 @@ class Firestore @Inject constructor(
       put(FirestoreSchema.COMMIT_SERVER_CREATED_AT, FieldValue.serverTimestamp())
       put(FirestoreSchema.COMMIT_READ_BY, listOf(senderId.value))
       put(FirestoreSchema.COMMIT_COLOR_HEX, colorHex)
-      putIfNotNull(COMMIT_PARENT_ID, parentCommitId)
     }
 
     val conversationData = buildMap {
@@ -223,7 +219,6 @@ class Firestore @Inject constructor(
     batch.commit().await()
     val message = FirestoreCommit(
       commitId = FirestoreCommit.Id(commitId),
-      parentCommitId = parentCommitId?.let(FirestoreCommit::Id),
       senderId = senderId,
       text = text,
       colorHex = colorHex,

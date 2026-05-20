@@ -44,10 +44,7 @@ class ThreadViewModel @Inject constructor(
       action { state, _, text ->
         val trimmed = text.trim()
         if (trimmed.isNotEmpty()) {
-          threadModel.sendCommit.start(
-            argument1 = trimmed,
-            argument2 = state.commits.lastOrNull()
-          )
+          threadModel.sendCommit.start(trimmed)
         }
       }
     }

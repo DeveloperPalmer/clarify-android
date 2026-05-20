@@ -6,7 +6,6 @@ import com.google.firebase.firestore.DocumentSnapshot
 import ru.sla.clarify.auth.session.domain.entity.UserId
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_COLOR_HEX
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_CREATED_AT
-import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_PARENT_ID
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_SENDER_UID
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_TEXT
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_LAST_COMMIT_AT
@@ -46,9 +45,6 @@ internal fun extractCommitFB(
   val senderId = document.requireField(COMMIT_SENDER_UID)
   return FirestoreCommit(
     commitId = FirestoreCommit.Id(document.id),
-    parentCommitId = document
-      .field(COMMIT_PARENT_ID)
-      ?.let(FirestoreCommit::Id),
     senderId = UserId(senderId),
     changeType = type
       ?.toDomainModel(),
