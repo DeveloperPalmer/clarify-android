@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,14 +28,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.core.ui.text.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.uikit.component.IconAction
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
@@ -125,12 +127,10 @@ private fun TopBar(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    IconButton(onClick = onBack) {
-      Text(
-        text = "<",
-        style = AppTheme.typography.h2
-      )
-    }
+    IconAction(
+      iconResId = R.drawable.ic_back_24,
+      onClick = onBack
+    )
     Text(
       modifier = Modifier
         .weight(1f)
@@ -139,12 +139,10 @@ private fun TopBar(
       style = AppTheme.typography.title1,
       fontWeight = FontWeight.SemiBold
     )
-    IconButton(onClick = onOpenBranch) {
-      Text(
-        text = "B",
-        style = AppTheme.typography.h2
-      )
-    }
+    IconAction(
+      iconResId = R.drawable.baseline_stars_24,
+      onClick = onOpenBranch
+    )
   }
   HorizontalDivider()
 }
@@ -217,11 +215,12 @@ private fun CommitBubble(commit: Commit) {
         color = AppTheme.colors.textPrimary
       )
     }
+    val date = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE)
     Text(
-      text = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE) + when (commit.status) {
-        Commit.Status.Sending -> "  •  sending"
-        Commit.Status.Failed -> "  •  failed"
-        Commit.Status.Sent -> ""
+      text = when (commit.status) {
+        Commit.Status.Sending -> stringResource(R.string.thread_commit_status_sending, date)
+        Commit.Status.Failed -> stringResource(R.string.thread_commit_status_failed, date)
+        Commit.Status.Sent -> date
       },
       color = AppTheme.colors.textPrimary,
       style = AppTheme.typography.caption2,
