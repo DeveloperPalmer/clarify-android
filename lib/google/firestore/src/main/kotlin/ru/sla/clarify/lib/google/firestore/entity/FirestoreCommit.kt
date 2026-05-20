@@ -4,6 +4,7 @@ import ru.sla.clarify.core.domain.entity.UserId
 
 data class FirestoreCommit(
   val commitId: Id,
+  val conversationId: FirestoreConversation.Id,
   val senderId: UserId,
   val text: String,
   val colorHex: String,

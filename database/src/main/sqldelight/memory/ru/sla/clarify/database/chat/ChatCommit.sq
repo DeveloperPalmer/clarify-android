@@ -30,6 +30,19 @@ SELECT
 FROM ChatCommit
 WHERE id = :id;
 
+selectByConversationId:
+SELECT
+  id,
+  senderId,
+  text,
+  colorHex,
+  timestamp,
+  isSelf,
+  status
+FROM ChatCommit
+WHERE conversationId = :conversationId
+ORDER BY timestamp ASC;
+
 deleteByConversationId:
 DELETE FROM ChatCommit
 WHERE conversationId = :conversationId;

@@ -5,19 +5,20 @@ import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.entity.chat.Commit
 
 interface ThreadRepository {
-  suspend fun getConversation(): Conversation?
+  suspend fun conversation(): Conversation?
 
-  fun peerCommits(): Flow<Commit>
+  fun subscribeOnCommits(): Flow<Unit>
+  val commits: Flow<Commit>
 
-  suspend fun getCommitHistory(
+  suspend fun fetchHistoryCommits(
     count: Int,
     before: Commit? = null
-  ): List<Commit>
+  )
 
-  suspend fun sendMessage(
+  suspend fun sendCommit(
     text: String,
-    parentMessage: Commit.Message?
-  ): Commit.Message
+    parent: Commit?
+  )
 
   suspend fun markAsRead()
 }

@@ -6,6 +6,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
@@ -22,6 +23,14 @@ fun <T, S> Flow<T>.mapDistinctChanges(transform: suspend (T) -> S): Flow<S> {
 
 fun <T, S : Any> Flow<T>.mapDistinctNotNullChanges(transform: suspend (T) -> S?): Flow<S> {
   return this.mapNotNull(transform).distinctUntilChanged()
+}
+
+fun <T> Flow<List<T>>.flattenItems(): Flow<T> {
+  return flow {
+    collect { items ->
+      items.forEach { emit(it) }
+    }
+  }
 }
 
 /**

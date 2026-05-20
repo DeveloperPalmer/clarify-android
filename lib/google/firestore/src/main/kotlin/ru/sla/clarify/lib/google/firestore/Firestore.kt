@@ -3,17 +3,16 @@
 package ru.sla.clarify.lib.google.firestore
 
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreSettings
-import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.AppScope
@@ -32,15 +31,12 @@ import javax.inject.Inject
 
 @SingleIn(AppScope::class)
 class Firestore @Inject constructor(
+  firestoreWrapper: FirestoreWrapper,
   private val authSessionPersistence: AuthSessionPersistence
-) {
-  private val remoteDB = FirebaseFirestore.getInstance().apply {
-    firestoreSettings = FirebaseFirestoreSettings.Builder()
-      .build()
-  }
+) : FirestoreWrapperProvider by firestoreWrapper {
 
   suspend fun mergeUser(
-    uid: String,
+    id: UserId,
     photoUrl: String?,
     displayName: String?
   ) {
@@ -50,126 +46,106 @@ class Firestore @Inject constructor(
       FirestoreSchema.USER_CREATED_AT to FieldValue.serverTimestamp(),
       FirestoreSchema.USER_UPDATED_AT to FieldValue.serverTimestamp()
     )
-    remoteDB.collection(FirestoreSchema.USERS_COLLECTION)
-      .document(uid)
+    userDocumentRef(id)
       .set(params, SetOptions.merge())
       .await()
   }
 
   suspend fun directConversation(peerId: Peer.Id): FirestoreConversation? {
-    val currentUid = requireUserId()
-    val participantUids = directParticipantUids(currentUid, peerId)
-    val querySnapshot = directConversationsQuery(currentUid)
+    val senderId = requireUserId()
+    val query = conversationsQuery(
+      whereEqualTo = ConversationType.Direct,
+      whereArrayContains = senderId
+    )
+    return query
       .get()
       .await()
-    return querySnapshot.findDirectConversation(participantUids)
+      .findDirectConversation(directParticipantIds(senderId, peerId))
   }
 
   fun observeConversations(): Flow<List<FirestoreConversation>> {
     return callbackFlow {
       val userId = requireUserId()
-      val registration = remoteDB
-        .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-        .whereArrayContains(FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS, userId.value)
-        .addSnapshotListener { snapshot, error ->
-          if (error != null) {
-            close(error)
-            return@addSnapshotListener
-          }
-          trySend(
-            element = snapshot.mapChanges { extractConversationFB(it.document, it.type) }
-          )
+      val query = conversationsQuery(
+        whereArrayContains = userId
+      )
+      val listener = query.addSnapshotListener { snapshot, error ->
+        if (error != null) {
+          close(error)
+          return@addSnapshotListener
         }
-      awaitClose { registration.remove() }
+        trySend(
+          element = snapshot.mapChanges { extractConversationFB(it.document, it.type) }
+        )
+      }
+      awaitClose { listener.remove() }
     }
   }
 
-  suspend fun hasConversation(peerId: Peer.Id): Boolean {
-    return directConversation(peerId) != null
+  suspend fun markConversationAsRead(peerId: Peer.Id) {
+    val conversationId = directConversation(peerId) ?: return
+    markConversationAsRead(conversationId = conversationId.id)
   }
 
-  suspend fun markConversationAsRead(peerId: Peer.Id) {
+  suspend fun markConversationAsRead(conversationId: FirestoreConversation.Id) {
     val currentUid = requireUserId()
-    val conversationId = directConversation(peerId) ?: return
-
+    val reference = conversationStateDocumentRef(
+      userId = currentUid,
+      conversationId = conversationId
+    )
     val updated = buildMap {
       put(FirestoreSchema.STATE_LAST_READ_AT, FieldValue.serverTimestamp())
       put(FirestoreSchema.STATE_UNREAD_COUNT, 0L)
     }
-    remoteDB
-      .collection(FirestoreSchema.USERS_COLLECTION)
-      .document(currentUid.value)
-      .collection(FirestoreSchema.CONVERSATION_STATES_COLLECTION)
-      .document(conversationId.id)
+    reference
       .set(updated, SetOptions.merge())
       .await()
   }
 
   suspend fun deleteConversations(ids: List<String>) {
     val batch = remoteDB.batch()
-    ids.forEach { id -> batch.delete(conversationCollection().document(id)) }
+    val reference = conversationCollectionRef()
+    ids.forEach { id -> batch.delete(reference.document(id)) }
     batch.commit().await()
   }
 
-  fun observeMessages(
+  fun observeDirectCommits(
     peerId: Peer.Id,
     limit: Long
   ): Flow<List<FirestoreCommit>> {
-    return callbackFlow {
-      val currentUid = requireUserId()
-      val participantUids = directParticipantUids(currentUid, peerId)
-      var observedConversationId: String? = null
-      var messagesRegistration: ListenerRegistration? = null
-      val conversationsRegistration = directConversationsQuery(currentUid)
-        .addSnapshotListener { snapshot, error ->
-          if (error != null) {
-            close(error)
-            return@addSnapshotListener
-          }
-          val conversation = snapshot?.findDirectConversation(participantUids)
-
-          if (conversation == null) {
-            observedConversationId = null
-            messagesRegistration?.remove()
-            messagesRegistration = null
-            trySend(emptyList())
-            return@addSnapshotListener
-          }
-
-          if (observedConversationId == conversation.id) {
-            return@addSnapshotListener
-          }
-
-          observedConversationId = conversation.id
-          messagesRegistration?.remove()
-          messagesRegistration = messagesCollection(conversation.id)
-            .orderBy(FirestoreSchema.COMMIT_CREATED_AT, Query.Direction.DESCENDING)
-            .limit(limit)
-            .addSnapshotListener { messagesSnapshot, messagesError ->
-              if (messagesError != null) {
-                close(messagesError)
-                return@addSnapshotListener
-              }
-              trySend(
-                element = messagesSnapshot.mapChanges { extractCommitFB(it.document, it.type) }
-              )
-            }
+    return observeDirectConversationId(peerId)
+      .distinctUntilChanged()
+      .flatMapLatest { conversationId ->
+        if (conversationId == null) {
+          flowOf(emptyList())
+        } else {
+          observeConversationMessages(
+            id = conversationId,
+            limit = limit
+          )
         }
-      awaitClose {
-        conversationsRegistration.remove()
-        messagesRegistration?.remove()
       }
-    }
   }
 
-  suspend fun loadMessageHistory(
+  suspend fun directCommitHistory(
     peerId: Peer.Id,
     count: Int,
     before: LocalDateTime?
   ): List<FirestoreCommit> {
     val conversation = directConversation(peerId) ?: return emptyList()
+    return historyCommits(
+      conversationId = conversation.id,
+      count = count,
+      before = before
+    )
+  }
 
-    var query = messagesCollection(conversation.id)
+  suspend fun historyCommits(
+    conversationId: FirestoreConversation.Id,
+    count: Int,
+    before: LocalDateTime?
+  ): List<FirestoreCommit> {
+    var query = commitsCollectionRef(conversationId)
       .orderBy(FirestoreSchema.COMMIT_CREATED_AT, Query.Direction.DESCENDING)
       .limit(count.toLong())
 
@@ -181,7 +157,7 @@ class Firestore @Inject constructor(
       .get()
       .await()
       .documents
-      .map(::extractCommitFB)
+      .map { extractCommitFB(it, conversationId) }
   }
 
   suspend fun sendCommit(
@@ -190,8 +166,8 @@ class Firestore @Inject constructor(
     colorHex: String
   ): FirestoreCommit {
     val senderId = requireUserId()
-    val participantUids = listOf(senderId.value, peerId.value)
-    val conversationId = directConversation(peerId)?.id ?: randomUuid()
+    val conversationId = directConversation(peerId)?.id
+      ?: FirestoreConversation.Id(randomUuid())
 
     val commitId = randomUuid()
     val createdAt = Timestamp.now()
@@ -211,7 +187,7 @@ class Firestore @Inject constructor(
       put(FirestoreSchema.CONVERSATION_TYPE, ConversationType.Direct.value)
       put(
         FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS,
-        participantUids.sorted()
+        directParticipantIds(senderId, peerId)
       )
       put(FirestoreSchema.CONVERSATION_LAST_COMMIT_TEXT, text)
       put(FirestoreSchema.CONVERSATION_LAST_COMMIT_SENDER_UID, senderId.value)
@@ -221,9 +197,7 @@ class Firestore @Inject constructor(
 
     val batch = remoteDB.batch()
 
-    val conversationRef = remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .document(conversationId)
+    val conversationRef = conversationDocumentRef(conversationId)
 
     val messageRef = conversationRef
       .collection(FirestoreSchema.COMMITS_COLLECTION)
@@ -232,11 +206,10 @@ class Firestore @Inject constructor(
     batch.set(conversationRef, conversationData, SetOptions.merge())
     batch.set(messageRef, messageData)
 
-    val collectionPath = remoteDB
-      .collection(FirestoreSchema.USERS_COLLECTION)
-      .document(senderId.value)
-      .collection(FirestoreSchema.CONVERSATION_STATES_COLLECTION)
-      .document(conversationId)
+    val collectionPath = conversationStateDocumentRef(
+      userId = senderId,
+      conversationId = conversationId
+    )
 
     val collectionStateUpdate = buildMap {
       put(FirestoreSchema.STATE_LAST_READ_AT, createdAt)
@@ -247,6 +220,7 @@ class Firestore @Inject constructor(
     batch.commit().await()
     val message = FirestoreCommit(
       commitId = FirestoreCommit.Id(commitId),
+      conversationId = conversationId,
       senderId = senderId,
       text = text,
       colorHex = colorHex,
@@ -256,38 +230,54 @@ class Firestore @Inject constructor(
     return message
   }
 
-  private fun directConversationsQuery(currentUid: UserId): Query {
-    return conversationCollection()
-      .whereEqualTo(
-        FirestoreSchema.CONVERSATION_TYPE,
-        ConversationType.Direct.value
+  private fun observeDirectConversationId(peerId: Peer.Id): Flow<FirestoreConversation.Id?> {
+    return callbackFlow {
+      val currentUid = requireUserId()
+      val directParticipantIds = directParticipantIds(currentUid, peerId)
+
+      val query = conversationsQuery(
+        whereEqualTo = ConversationType.Direct,
+        whereArrayContains = currentUid
       )
-      .whereArrayContains(
-        FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS,
-        currentUid.value
-      )
+
+      val listener = query.addSnapshotListener { snapshot, error ->
+        if (error != null) {
+          close(error)
+          return@addSnapshotListener
+        }
+        trySend(snapshot?.findDirectConversation(directParticipantIds)?.id)
+      }
+      awaitClose { listener.remove() }
+    }
   }
 
-  private fun directParticipantUids(currentUid: UserId, peerId: Peer.Id): Set<String> {
-    return setOf(currentUid.value, peerId.value)
+  private fun observeConversationMessages(
+    id: FirestoreConversation.Id,
+    limit: Long
+  ): Flow<List<FirestoreCommit>> {
+    return callbackFlow {
+      val listener = commitsCollectionRef(id)
+        .orderBy(FirestoreSchema.COMMIT_CREATED_AT, Query.Direction.DESCENDING)
+        .limit(limit)
+        .addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            close(error)
+            return@addSnapshotListener
+          }
+          trySend(snapshot.mapChanges { extractCommitFB(it.document, id, it.type) })
+        }
+      awaitClose { listener.remove() }
+    }
   }
 
-  private fun QuerySnapshot?.findDirectConversation(ids: Set<String>): FirestoreConversation? {
+  private fun directParticipantIds(userId: UserId, peerId: Peer.Id): List<String> {
+    return setOf(userId.value, peerId.value).sorted()
+  }
+
+  private fun QuerySnapshot?.findDirectConversation(ids: List<String>): FirestoreConversation? {
     return this?.documents
       ?.map(::extractConversationFB)
-      ?.firstOrNull { ids.toSet() == ids }
-  }
-
-  private fun conversationCollection(): CollectionReference {
-    return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-  }
-
-  private fun messagesCollection(conversationId: String): CollectionReference {
-    return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .document(conversationId)
-      .collection(FirestoreSchema.COMMITS_COLLECTION)
+      ?.firstOrNull { it.participantUids == ids }
   }
 
   private suspend fun requireUserId(): UserId {

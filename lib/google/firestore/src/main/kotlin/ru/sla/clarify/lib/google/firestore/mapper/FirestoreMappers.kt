@@ -23,7 +23,7 @@ fun extractConversationFB(
   type: DocumentChange.Type? = null
 ): FirestoreConversation {
   return FirestoreConversation(
-    id = document.id,
+    id = FirestoreConversation.Id(document.id),
     type = document
       .getString(CONVERSATION_TYPE)
       ?.let(ConversationType::fromValue),
@@ -42,6 +42,7 @@ fun extractConversationFB(
 
 internal fun extractCommitFB(
   document: DocumentSnapshot,
+  conversationId: FirestoreConversation.Id,
   type: DocumentChange.Type? = null
 ): FirestoreCommit {
   val createdAt = document
@@ -50,6 +51,7 @@ internal fun extractCommitFB(
   val senderId = document.requireField(COMMIT_SENDER_UID)
   return FirestoreCommit(
     commitId = FirestoreCommit.Id(document.id),
+    conversationId = conversationId,
     senderId = UserId(senderId),
     changeType = type
       ?.toDomainModel(),

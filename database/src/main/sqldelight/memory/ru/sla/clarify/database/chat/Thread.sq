@@ -1,0 +1,17 @@
+CREATE TABLE Thread(
+  peerId TEXT PRIMARY KEY NOT NULL,
+  conversationId TEXT NOT NULL
+);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO Thread(peerId, conversationId)
+VALUES (?, ?);
+
+selectConversationId:
+SELECT conversationId
+FROM Thread
+WHERE peerId = :peerId;
+
+deleteAll:
+DELETE FROM Thread;

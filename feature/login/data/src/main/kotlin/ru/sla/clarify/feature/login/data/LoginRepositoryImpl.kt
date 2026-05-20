@@ -34,14 +34,16 @@ class LoginRepositoryImpl @Inject constructor(
           .token
           ?: error("FirebaseAuth returned null ID token after Google sign-in")
 
+        val userId = UserId(user.uid)
+
         firestore.mergeUser(
-          uid = user.uid,
+          id = userId,
           displayName = user.displayName,
           photoUrl = user.photoUrl?.toString()
         )
 
         AuthResult(
-          userId = UserId(user.uid),
+          userId = userId,
           tokens = AuthTokens(
             updatedAt = System.currentTimeMillis(),
             accessToken = AccessToken(firebaseIdToken),
