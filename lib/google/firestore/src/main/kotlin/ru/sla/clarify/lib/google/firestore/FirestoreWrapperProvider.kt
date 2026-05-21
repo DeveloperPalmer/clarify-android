@@ -28,12 +28,12 @@ interface FirestoreWrapperProvider {
     conversationId: FirestoreConversation.Id
   ): DocumentReference
 
-  fun conversationStateDocumentRef(
-    userId: UserId,
-    conversationId: FirestoreConversation.Id
-  ): DocumentReference
-
   fun commitsCollectionRef(
     conversationId: FirestoreConversation.Id
   ): CollectionReference
+
+  fun unreadCommitsDocumentRef(
+    conversationId: FirestoreConversation.Id,
+    userId: UserId
+  ): DocumentReference
 }

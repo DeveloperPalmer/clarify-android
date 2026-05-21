@@ -66,17 +66,6 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .document(conversationId.value)
   }
 
-  override fun conversationStateDocumentRef(
-    userId: UserId,
-    conversationId: FirestoreConversation.Id
-  ): DocumentReference {
-    return remoteDB
-      .collection(FirestoreSchema.USERS_COLLECTION)
-      .document(userId.value)
-      .collection(FirestoreSchema.CONVERSATION_STATES_COLLECTION)
-      .document(conversationId.value)
-  }
-
   override fun commitsCollectionRef(
     conversationId: FirestoreConversation.Id
   ): CollectionReference {
@@ -84,5 +73,16 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
       .document(conversationId.value)
       .collection(FirestoreSchema.COMMITS_COLLECTION)
+  }
+
+  override fun unreadCommitsDocumentRef(
+    conversationId: FirestoreConversation.Id,
+    userId: UserId
+  ): DocumentReference {
+    return remoteDB
+      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .document(conversationId.value)
+      .collection(FirestoreSchema.UNREAD_COMMITS_COLLECTION)
+      .document(userId.value)
   }
 }

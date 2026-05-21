@@ -6,18 +6,25 @@ CREATE TABLE ChatConversation(
   participantUids TEXT AS StringList NOT NULL,
   lastCommit TEXT,
   lastCommitTimestamp INTEGER NOT NULL,
-  unreadCount INTEGER NOT NULL
+  unreadCount INTEGER NOT NULL DEFAULT 0
 );
 
-insertOrReplace:
+upsertMeta:
 INSERT OR REPLACE
 INTO ChatConversation(id, type, participantUids, lastCommit, lastCommitTimestamp, unreadCount)
-VALUES (?, ?, ?, ?, ?, ?);
+VALUES (
+  :id,
+  :type,
+  :participantUids,
+  :lastCommit,
+  :lastCommitTimestamp,
+  COALESCE((SELECT unreadCount FROM ChatConversation WHERE id = :id), 0)
+);
 
-insertIfAbsent:
-INSERT OR IGNORE
-INTO ChatConversation(id, type, participantUids, lastCommit, lastCommitTimestamp, unreadCount)
-VALUES (?, ?, ?, ?, ?, ?);
+updateUnreadCount:
+UPDATE ChatConversation
+SET unreadCount = :unreadCount
+WHERE id = :id;
 
 selectAll:
 SELECT
@@ -29,6 +36,10 @@ SELECT
   ChatConversation.unreadCount
 FROM ChatConversation
 ORDER BY ChatConversation.lastCommitTimestamp DESC;
+
+selectAllIds:
+SELECT ChatConversation.id
+FROM ChatConversation;
 
 selectById:
 SELECT

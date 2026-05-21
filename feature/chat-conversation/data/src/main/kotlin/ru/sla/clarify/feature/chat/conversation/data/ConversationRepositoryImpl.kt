@@ -5,9 +5,11 @@ import app.cash.sqldelight.coroutines.mapToList
 import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.SingleIn
@@ -44,16 +46,37 @@ class ConversationRepositoryImpl @Inject constructor(
       }
   }
 
+  override fun subscribeOnUnreadCounts(): Flow<Unit> {
+    return inMemoryDB.chatConversationQueries
+      .selectAllIds()
+      .asFlow()
+      .mapToList(Dispatchers.IO)
+      .distinctUntilChanged()
+      .flatMapLatest { conversationIds ->
+        conversationIds
+          .map { id -> subscribeOnUnreadCount(FirestoreConversation.Id(id)) }
+          .merge()
+      }
+  }
+
+  private fun subscribeOnUnreadCount(id: FirestoreConversation.Id): Flow<Unit> {
+    return firestore.observeUnreadCount(id).map { unreadCount ->
+      inMemoryDB.chatConversationQueries.updateUnreadCount(
+        id = id.value,
+        unreadCount = unreadCount
+      )
+    }
+  }
+
   private fun changeConversation(conversation: FirestoreConversation) {
     when (conversation.changeType) {
       null -> Unit
       FirestoreDocumentResult.Added,
       FirestoreDocumentResult.Modified -> {
-        inMemoryDB.chatConversationQueries.insertOrReplace(
+        inMemoryDB.chatConversationQueries.upsertMeta(
           id = conversation.id.value,
           type = conversation.type.value,
           participantUids = conversation.participantUids,
-          unreadCount = 0L,
           lastCommit = conversation.lastCommitText,
           lastCommitTimestamp = conversation.lastCommitAtEpochSeconds
         )

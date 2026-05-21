@@ -20,6 +20,8 @@ class ChatModel @Inject constructor(
     super.onPostStart()
     conversationRepository.subscribeOnConversations()
       .launchIn(scope)
+    conversationRepository.subscribeOnUnreadCounts()
+      .launchIn(scope)
   }
 
   val fetchConversations = task<Unit>(name = "fetchConversations") {

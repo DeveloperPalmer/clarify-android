@@ -56,7 +56,7 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
         editModeEnabled = state.editModeEnabled,
         conversations = state.conversations,
         selectedConversationsIds = state.selectedConversationIds,
-        onOpenChat = intents.openChat,
+        onDirectConversation = intents.openChat,
         onConversationLongPress = intents.handleConversationLongPress,
         onShowNewChatDialog = intents.showNewChatDialog,
         onOpenSettings = intents.openSettings
@@ -71,7 +71,7 @@ internal fun ChatListReadyContent(
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,
   editModeEnabled: Boolean,
-  onOpenChat: (Peer.Id) -> Unit,
+  onDirectConversation: (Peer.Id) -> Unit,
   onConversationLongPress: (Conversation.Id) -> Unit,
   onOpenSettings: () -> Unit,
   onShowNewChatDialog: () -> Unit,
@@ -91,9 +91,10 @@ internal fun ChatListReadyContent(
       HorizontalDivider()
       Conversations(
         modifier = Modifier.fillMaxSize(),
+        editModeEnabled = editModeEnabled,
         conversations = conversations,
         selectedConversationsIds = selectedConversationsIds,
-        onOpenChat = onOpenChat,
+        onDirectConversation = onDirectConversation,
         onConversationLongPress = onConversationLongPress
       )
     }
@@ -163,9 +164,10 @@ private fun Header(
 
 @Composable
 private fun Conversations(
+  editModeEnabled: Boolean,
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,
-  onOpenChat: (Peer.Id) -> Unit,
+  onDirectConversation: (Peer.Id) -> Unit,
   onConversationLongPress: (Conversation.Id) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -191,8 +193,16 @@ private fun Conversations(
           DirectConversationItem(
             direct = item,
             selected = selectedConversationsIds.contains(item.id),
-            onClick = { onOpenChat(item.peer.id) },
-            onLongClick = { onConversationLongPress(item.id) }
+            onClick = {
+              if (editModeEnabled) {
+                onConversationLongPress(item.id)
+              } else {
+                onDirectConversation(item.peer.id)
+              }
+            },
+            onLongClick = {
+              onConversationLongPress(item.id)
+            }
           )
         }
       }

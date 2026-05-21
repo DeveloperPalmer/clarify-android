@@ -9,7 +9,9 @@ object FirestoreSchema {
   const val USERS_COLLECTION = "users"
   const val CONVERSATIONS_COLLECTION = "conversations"
   const val COMMITS_COLLECTION = "commits"
-  const val CONVERSATION_STATES_COLLECTION = "conversationStates"
+  const val UNREAD_COMMITS_COLLECTION = "unreadCommits"
+
+  const val UNREAD_COMMITS_COUNT = "count"
 
   const val USER_DISPLAY_NAME = "displayName"
   const val USER_PHOTO_URL = "photoUrl"
@@ -31,9 +33,6 @@ object FirestoreSchema {
   const val COMMIT_SERVER_CREATED_AT = "serverCreatedAt"
   const val COMMIT_READ_BY = "readBy"
   const val COMMIT_COLOR_HEX = "colorHex"
-
-  const val STATE_LAST_READ_AT = "lastReadAt"
-  const val STATE_UNREAD_COUNT = "unreadCount"
 
   enum class ConversationType(val value: String) {
     Direct("direct"),

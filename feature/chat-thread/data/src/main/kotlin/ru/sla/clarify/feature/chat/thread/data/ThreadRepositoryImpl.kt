@@ -88,7 +88,9 @@ class ThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun sendCommit(text: String, parent: Commit?) {
+    val conversationId = conversationId()
     firestore.sendCommit(
+      conversationId = conversationId,
       text = text,
       peerId = peerId,
       colorHex = parent?.colorHex ?: generateColorHex()

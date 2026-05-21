@@ -74,32 +74,35 @@ class Firestore @Inject constructor(
           close(error)
           return@addSnapshotListener
         }
-        trySend(
-          element = snapshot.mapChanges { extractConversationFB(it.document, it.type) }
-        )
+        trySend(snapshot.mapChanges { extractConversationFB(it.document, it.type) })
       }
       awaitClose { listener.remove() }
     }
   }
 
-  suspend fun markConversationAsRead(peerId: Peer.Id) {
-    val conversationId = directConversation(peerId) ?: return
-    markConversationAsRead(conversationId = conversationId.id)
+  suspend fun markConversationAsRead(conversationId: FirestoreConversation.Id) {
+    val userId = requireUserId()
+    unreadCommitsDocumentRef(conversationId, userId)
+      .set(
+        mapOf(FirestoreSchema.UNREAD_COMMITS_COUNT to 0L),
+        SetOptions.merge()
+      )
+      .await()
   }
 
-  suspend fun markConversationAsRead(conversationId: FirestoreConversation.Id) {
-    val currentUid = requireUserId()
-    val reference = conversationStateDocumentRef(
-      userId = currentUid,
-      conversationId = conversationId
-    )
-    val updated = buildMap {
-      put(FirestoreSchema.STATE_LAST_READ_AT, FieldValue.serverTimestamp())
-      put(FirestoreSchema.STATE_UNREAD_COUNT, 0L)
+  fun observeUnreadCount(conversationId: FirestoreConversation.Id): Flow<Long> {
+    return callbackFlow {
+      val userId = requireUserId()
+      val listener = unreadCommitsDocumentRef(conversationId, userId)
+        .addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            close(error)
+            return@addSnapshotListener
+          }
+          trySend(snapshot?.getLong(FirestoreSchema.UNREAD_COMMITS_COUNT) ?: 0L)
+        }
+      awaitClose { listener.remove() }
     }
-    reference
-      .set(updated, SetOptions.merge())
-      .await()
   }
 
   suspend fun deleteConversations(ids: List<String>) {
@@ -127,19 +130,6 @@ class Firestore @Inject constructor(
       }
   }
 
-  suspend fun directCommitHistory(
-    peerId: Peer.Id,
-    count: Int,
-    before: LocalDateTime?
-  ): List<FirestoreCommit> {
-    val conversation = directConversation(peerId) ?: return emptyList()
-    return historyCommits(
-      conversationId = conversation.id,
-      count = count,
-      before = before
-    )
-  }
-
   suspend fun historyCommits(
     conversationId: FirestoreConversation.Id,
     count: Int,
@@ -161,16 +151,17 @@ class Firestore @Inject constructor(
   }
 
   suspend fun sendCommit(
+    conversationId: FirestoreConversation.Id?,
     peerId: Peer.Id,
     text: String,
     colorHex: String
   ): FirestoreCommit {
+    val conversationId = conversationId ?: FirestoreConversation.Id(randomUuid())
     val senderId = requireUserId()
-    val conversationId = directConversation(peerId)?.id
-      ?: FirestoreConversation.Id(randomUuid())
 
     val commitId = randomUuid()
     val createdAt = Timestamp.now()
+    val participantIds = directParticipantIds(senderId, peerId)
 
     val messageData = buildMap {
       put(FirestoreSchema.COMMIT_CLIENT_COMMIT_ID, commitId)
@@ -185,10 +176,7 @@ class Firestore @Inject constructor(
 
     val conversationData = buildMap {
       put(FirestoreSchema.CONVERSATION_TYPE, ConversationType.Direct.value)
-      put(
-        FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS,
-        directParticipantIds(senderId, peerId)
-      )
+      put(FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS, participantIds)
       put(FirestoreSchema.CONVERSATION_LAST_COMMIT_TEXT, text)
       put(FirestoreSchema.CONVERSATION_LAST_COMMIT_SENDER_UID, senderId.value)
       put(FirestoreSchema.CONVERSATION_LAST_COMMIT_AT, createdAt)
@@ -206,18 +194,18 @@ class Firestore @Inject constructor(
     batch.set(conversationRef, conversationData, SetOptions.merge())
     batch.set(messageRef, messageData)
 
-    val collectionPath = conversationStateDocumentRef(
-      userId = senderId,
-      conversationId = conversationId
-    )
+    participantIds
+      .filter { it != senderId.value }
+      .forEach { peerId ->
+        batch.set(
+          unreadCommitsDocumentRef(conversationId, UserId(peerId)),
+          mapOf(FirestoreSchema.UNREAD_COMMITS_COUNT to FieldValue.increment(1)),
+          SetOptions.merge()
+        )
+      }
 
-    val collectionStateUpdate = buildMap {
-      put(FirestoreSchema.STATE_LAST_READ_AT, createdAt)
-      put(FirestoreSchema.STATE_UNREAD_COUNT, 0L)
-    }
-
-    batch.set(collectionPath, collectionStateUpdate, SetOptions.merge())
     batch.commit().await()
+
     val message = FirestoreCommit(
       commitId = FirestoreCommit.Id(commitId),
       conversationId = conversationId,

@@ -8,6 +8,7 @@ interface ConversationRepository {
   fun userId(): Flow<UserId>
 
   fun subscribeOnConversations(): Flow<Unit>
+  fun subscribeOnUnreadCounts(): Flow<Unit>
   suspend fun deleteConversations(ids: List<Conversation.Id>)
 
   val conversations: Flow<List<Conversation>?>
