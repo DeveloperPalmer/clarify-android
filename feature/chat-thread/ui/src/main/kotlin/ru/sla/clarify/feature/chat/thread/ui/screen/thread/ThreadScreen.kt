@@ -1,6 +1,8 @@
 package ru.sla.clarify.feature.chat.thread.ui.screen.thread
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,9 +62,11 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
       ThreadReadyContent(
         peerId = state.peerId,
         commits = state.commits,
+        branchesCount = state.branches.size,
         isSending = state.isSending,
         onBack = intents.navigateBack,
-        onOpenBranch = intents.openBranch,
+        onShowBranchesList = intents.showBranchesList,
+        onCommitLongPress = intents.showBranchSheet,
         onSend = intents.sendCommit
       )
     }
@@ -72,9 +77,11 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
 internal fun ThreadReadyContent(
   peerId: Peer.Id,
   commits: List<Commit>,
+  branchesCount: Int,
   isSending: Boolean,
   onBack: () -> Unit,
-  onOpenBranch: () -> Unit,
+  onShowBranchesList: () -> Unit,
+  onCommitLongPress: (Commit.Message) -> Unit,
   onSend: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -85,8 +92,9 @@ internal fun ThreadReadyContent(
   ) {
     TopBar(
       peerId = peerId,
+      branchesCount = branchesCount,
       onBack = onBack,
-      onOpenBranch = onOpenBranch
+      onShowBranchesList = onShowBranchesList
     )
     if (commits.isEmpty()) {
       TreadEmptyState(
@@ -97,6 +105,7 @@ internal fun ThreadReadyContent(
     } else {
       Commits(
         commits = commits,
+        onCommitLongPress = onCommitLongPress,
         modifier = Modifier
           .weight(1f)
           .fillMaxWidth()
@@ -116,8 +125,9 @@ internal fun ThreadReadyContent(
 @Composable
 private fun TopBar(
   peerId: Peer.Id,
+  branchesCount: Int,
   onBack: () -> Unit,
-  onOpenBranch: () -> Unit
+  onShowBranchesList: () -> Unit
 ) {
   Row(
     modifier = Modifier
@@ -139,10 +149,9 @@ private fun TopBar(
       style = AppTheme.typography.title1,
       fontWeight = FontWeight.SemiBold
     )
-    IconAction(
-      iconResId = R.drawable.baseline_stars_24,
-      onClick = onOpenBranch
-    )
+    TextButton(onClick = onShowBranchesList) {
+      Text("Branches ($branchesCount)")
+    }
   }
   HorizontalDivider()
 }
@@ -150,6 +159,7 @@ private fun TopBar(
 @Composable
 private fun Commits(
   commits: List<Commit>,
+  onCommitLongPress: (Commit.Message) -> Unit,
   modifier: Modifier = Modifier
 ) {
   val listState = rememberLazyListState()
@@ -172,7 +182,14 @@ private fun Commits(
       items = commits,
       key = { it.id.value.ifEmpty { "${it.senderId.value}_${it.timestamp}_${it.text.hashCode()}" } }
     ) { commit ->
-      CommitBubble(commit)
+      when (commit) {
+        is Commit.Message -> {
+          CommitMessageBubble(
+            commit = commit,
+            onLongPress = { onCommitLongPress(commit) }
+          )
+        }
+      }
     }
   }
 }
@@ -191,8 +208,12 @@ private fun TreadEmptyState(modifier: Modifier = Modifier) {
   return
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CommitBubble(commit: Commit) {
+private fun CommitMessageBubble(
+  commit: Commit,
+  onLongPress: () -> Unit
+) {
   val alignment = if (commit.isSelf) Alignment.End else Alignment.Start
   Column(
     modifier = Modifier.fillMaxWidth(),
@@ -203,6 +224,10 @@ private fun CommitBubble(commit: Commit) {
         .surface(
           shape = AppTheme.shapes.round12,
           backgroundColor = Color(commit.colorHex.toColorInt())
+        )
+        .combinedClickable(
+          onClick = {},
+          onLongClick = onLongPress
         )
         .padding(
           vertical = 8.dp,

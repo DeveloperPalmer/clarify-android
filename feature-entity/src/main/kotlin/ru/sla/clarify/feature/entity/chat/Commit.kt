@@ -29,9 +29,16 @@ sealed interface Commit {
     override val status: Status
   ) : Commit
 
-  enum class Status {
-    Sending,
-    Sent,
-    Failed
+  enum class Status(val value: String) {
+    Sending("sending"),
+    Sent("sent"),
+    Failed("failed");
+
+    companion object {
+      fun fromValue(value: String): Status {
+        return entries.firstOrNull { it.value == value }
+          ?: error("unexpected commit status: $value")
+      }
+    }
   }
 }

@@ -4,6 +4,14 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_BRANCHED_FROM_COMMIT_ID
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_CREATED_AT
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_CREATED_BY_UID
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_NAME
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_PARENT_ID
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_STATUS
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BranchStatus
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_BRANCH_ID
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_COLOR_HEX
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_CREATED_AT
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_SENDER_UID
@@ -13,6 +21,7 @@ import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_LAST_COM
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_TYPE
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
+import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
@@ -50,6 +59,7 @@ internal fun extractCommitFB(
   return FirestoreCommit(
     commitId = FirestoreCommit.Id(document.id),
     conversationId = conversationId,
+    branchId = FirestoreBranch.Id(document.requireField(COMMIT_BRANCH_ID)),
     senderId = UserId(senderId),
     changeType = type
       ?.toDomainModel(),
@@ -60,6 +70,29 @@ internal fun extractCommitFB(
       .requireField(COMMIT_COLOR_HEX),
     createdAtEpochSeconds = createdAt
       .toEpochSeconds()
+  )
+}
+
+internal fun extractBranchFB(
+  document: DocumentSnapshot,
+  conversationId: FirestoreConversation.Id,
+  type: DocumentChange.Type? = null
+): FirestoreBranch {
+  val parentBranchId = document.requireField(BRANCH_PARENT_ID)
+  val branchedFromCommitId = document.requireField(BRANCH_BRANCHED_FROM_COMMIT_ID)
+
+  val createdAt = document.getTimestamp(BRANCH_CREATED_AT) ?: Timestamp.now()
+
+  return FirestoreBranch(
+    id = FirestoreBranch.Id(document.id),
+    conversationId = conversationId,
+    parentBranchId = FirestoreBranch.Id(parentBranchId),
+    branchedFromCommitId = FirestoreCommit.Id(branchedFromCommitId),
+    name = document.requireField(BRANCH_NAME),
+    status = BranchStatus.fromValue(document.requireField(BRANCH_STATUS)),
+    createdAtEpochSeconds = createdAt.toEpochSeconds(),
+    createdByUid = UserId(document.requireField(BRANCH_CREATED_BY_UID)),
+    changeType = type?.toDomainModel()
   )
 }
 

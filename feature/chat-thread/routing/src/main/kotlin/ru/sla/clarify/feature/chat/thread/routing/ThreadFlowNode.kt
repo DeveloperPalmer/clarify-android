@@ -32,7 +32,7 @@ class ThreadFlowNode @Inject constructor(
       when (e) {
         is FlowEvent.ThreadDismissed -> Finish(Unit)
         is FlowEvent.BranchDismissed -> NavigateTo(Target.threadFlow.thread)
-        is FlowEvent.BranchRequested -> NavigateTo(Target.threadFlow.branch)
+        is FlowEvent.BranchRequested -> NavigateTo(Target.threadFlow.branch(e.branchId))
       }
     }
   }

@@ -1,31 +1,28 @@
 package ru.sla.clarify.feature.chat.thread.data
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
-import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.core.domain.flattenItems
 import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.chat.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.thread.data.mapper.mapToCommit
 import ru.sla.clarify.feature.chat.thread.data.mapper.selectById
 import ru.sla.clarify.feature.chat.thread.domain.ThreadRepository
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
+import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.Firestore
+import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import javax.inject.Inject
 
@@ -35,25 +32,12 @@ class ThreadRepositoryImpl @Inject constructor(
   private val peerId: Peer.Id,
   private val firestore: Firestore,
   private val inMemoryDB: InMemoryDB,
-  private val authSessionPersistence: AuthSessionPersistence
+  private val threadMediator: ThreadMediator
 ) : ThreadRepository {
 
-  override val commits: Flow<Commit> = inMemoryDB.threadQueries
-    .selectConversationId(peerId.value)
-    .asFlow()
-    .mapToOneOrNull(Dispatchers.IO)
-    .filterNotNull()
-    .flatMapLatest { conversationId ->
-      inMemoryDB.chatCommitQueries
-        .selectByConversationId(conversationId, ::mapToCommit)
-        .asFlow()
-        .mapToList(Dispatchers.IO)
-        .flattenItems()
-    }
-
   override suspend fun conversation(): Conversation? {
-    val conversationId = conversationId() ?: return null
-    val currentUserId = requireUserId()
+    val conversationId = threadMediator.conversationId() ?: return null
+    val currentUserId = threadMediator.requireUserId()
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatConversationQueries
         .selectById(conversationId, currentUserId)
@@ -61,117 +45,125 @@ class ThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  override fun subscribeOnCommits(): Flow<Unit> {
-    return firestore.observeDirectCommits(
-      peerId = peerId,
-      limit = LIVE_COMMIT_LIMIT
-    )
-      .flattenItems()
-      .map { commit ->
-        if (commit.changeType != FirestoreDocumentResult.Removed) {
-          saveCommit(commit)
-        }
-      }
+  override fun commits(branchId: Branch.Id?): Flow<List<Commit>> = flow {
+    val conversationId = threadMediator.awaitConversationId()
+    val effectiveBranchId = branchId?.value ?: conversationId.value
+    val commitsFlow = inMemoryDB.chatCommitQueries
+      .selectByBranchId(
+        conversationId = conversationId.value,
+        branchId = effectiveBranchId,
+        mapper = ::mapToCommit
+      )
+      .observeList()
+
+    emitAll(commitsFlow)
   }
 
-  override suspend fun fetchHistoryCommits(count: Int, before: Commit?) {
-    val conversationId = conversationId() ?: return
+  override fun observeCommitsChanges(branchId: Branch.Id?): Flow<Unit> = flow {
+    val conversationId = threadMediator.awaitConversationId()
+    val userId = threadMediator.requireUserId()
+    val rootBranchId = FirestoreBranch.Id(conversationId.value)
+    val resolvedBranchId = branchId?.value?.let(FirestoreBranch::Id) ?: rootBranchId
+
+    firestore.observeDirectCommits(
+      peerId = peerId,
+      branchId = resolvedBranchId,
+      limit = LIVE_COMMIT_LIMIT
+    ).collect { changes ->
+      applyCommitChanges(
+        userId = userId,
+        changes = changes
+      )
+      emit(Unit)
+    }
+  }
+
+  override suspend fun fetchHistoryCommits(
+    branchId: Branch.Id?,
+    count: Int,
+    before: Commit?
+  ) {
+    val conversationId = threadMediator.conversationId() ?: return
+    val effectiveBranchId = branchId?.value ?: conversationId.value
     val historyCommits = firestore.historyCommits(
       conversationId = conversationId,
+      branchId = FirestoreBranch.Id(effectiveBranchId),
       count = count,
       before = before?.timestamp
     )
-    saveHistoryCommits(
-      conversationId = conversationId,
-      commits = historyCommits
-    )
+    saveHistoryCommits(historyCommits)
   }
 
-  override suspend fun sendCommit(text: String, parent: Commit?) {
-    val conversationId = conversationId()
+  override suspend fun sendCommit(
+    branchId: Branch.Id?,
+    colorHex: String?,
+    text: String
+  ) {
     firestore.sendCommit(
-      conversationId = conversationId,
+      conversationId = threadMediator.conversationId(),
       text = text,
       peerId = peerId,
-      colorHex = parent?.colorHex ?: generateColorHex()
+      branchId = branchId?.value?.let(FirestoreBranch::Id),
+      colorHex = colorHex ?: generateColorHex()
     )
   }
 
   override suspend fun markAsRead() {
-    val conversationId = conversationId() ?: return
+    val conversationId = threadMediator.conversationId() ?: return
     firestore.markConversationAsRead(conversationId)
   }
 
   private suspend fun saveHistoryCommits(
-    conversationId: FirestoreConversation.Id,
     commits: List<FirestoreCommit>
   ): Unit = withContext(Dispatchers.IO) {
-    val userId = requireUserId()
+    val userId = threadMediator.requireUserId()
     inMemoryDB.transaction {
-      inMemoryDB.threadQueries.insertOrReplace(
-        peerId = peerId.value,
-        conversationId = conversationId.value
-      )
       commits.forEach { item ->
         inMemoryDB.chatCommitQueries.insertOrReplace(
           id = item.commitId.value,
           conversationId = item.conversationId.value,
+          branchId = item.branchId.value,
           senderId = item.senderId.value,
           text = item.text,
           colorHex = item.colorHex,
           timestamp = item.createdAtEpochSeconds,
           isSelf = item.senderId == userId,
-          status = Commit.Status.Sent.name
+          status = Commit.Status.Sent.value
         )
       }
     }
   }
 
-  private suspend fun saveCommit(
-    item: FirestoreCommit,
-    status: Commit.Status = Commit.Status.Sent
+  private suspend fun applyCommitChanges(
+    userId: UserId,
+    changes: List<FirestoreCommit>
   ): Unit = withContext(Dispatchers.IO) {
-    val userId = requireUserId()
     inMemoryDB.transaction {
-      inMemoryDB.threadQueries.insertOrReplace(
-        peerId = peerId.value,
-        conversationId = item.conversationId.value
-      )
-      inMemoryDB.chatCommitQueries.insertOrReplace(
-        id = item.commitId.value,
-        conversationId = item.conversationId.value,
-        senderId = item.senderId.value,
-        text = item.text,
-        colorHex = item.colorHex,
-        timestamp = item.createdAtEpochSeconds,
-        isSelf = item.senderId == userId,
-        status = status.name
-      )
+      changes.forEach { item ->
+        when (item.changeType) {
+          FirestoreDocumentResult.Removed -> {
+            inMemoryDB.chatCommitQueries.deleteById(
+              id = item.commitId.value
+            )
+          }
+          null,
+          FirestoreDocumentResult.Added,
+          FirestoreDocumentResult.Modified -> {
+            inMemoryDB.chatCommitQueries.insertOrReplace(
+              id = item.commitId.value,
+              conversationId = item.conversationId.value,
+              branchId = item.branchId.value,
+              senderId = item.senderId.value,
+              text = item.text,
+              colorHex = item.colorHex,
+              timestamp = item.createdAtEpochSeconds,
+              isSelf = item.senderId == userId,
+              status = Commit.Status.Sent.value
+            )
+          }
+        }
+      }
     }
-  }
-
-  private suspend fun conversationId(): FirestoreConversation.Id? = withContext(Dispatchers.IO) {
-    val cachedId = inMemoryDB.threadQueries
-      .selectConversationId(peerId.value)
-      .executeAsOneOrNull()
-
-    if (cachedId != null) {
-      return@withContext FirestoreConversation.Id(cachedId)
-    }
-
-    val remoteConversation = firestore.directConversation(peerId)
-      ?: return@withContext null
-
-    inMemoryDB.threadQueries.insertOrReplace(
-      peerId = peerId.value,
-      conversationId = remoteConversation.id.value
-    )
-
-    return@withContext remoteConversation.id
-  }
-
-  private suspend fun requireUserId(): UserId {
-    return requireNotNull(authSessionPersistence.withKey { readUserId(it) })
   }
 }
 

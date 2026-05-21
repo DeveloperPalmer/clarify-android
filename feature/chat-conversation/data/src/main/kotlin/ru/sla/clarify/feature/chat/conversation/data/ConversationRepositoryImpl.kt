@@ -1,11 +1,8 @@
 package ru.sla.clarify.feature.chat.conversation.data
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
 import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -15,6 +12,7 @@ import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAll
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
@@ -49,9 +47,7 @@ class ConversationRepositoryImpl @Inject constructor(
   override fun subscribeOnUnreadCounts(): Flow<Unit> {
     return inMemoryDB.chatConversationQueries
       .selectAllIds()
-      .asFlow()
-      .mapToList(Dispatchers.IO)
-      .distinctUntilChanged()
+      .observeList()
       .flatMapLatest { conversationIds ->
         conversationIds
           .map { id -> subscribeOnUnreadCount(FirestoreConversation.Id(id)) }
@@ -101,7 +97,6 @@ class ConversationRepositoryImpl @Inject constructor(
   override val conversations: Flow<List<Conversation>> = userId().flatMapLatest { userId ->
     inMemoryDB.chatConversationQueries
       .selectAll(userId)
-      .asFlow()
-      .mapToList(Dispatchers.IO)
+      .observeList()
   }
 }

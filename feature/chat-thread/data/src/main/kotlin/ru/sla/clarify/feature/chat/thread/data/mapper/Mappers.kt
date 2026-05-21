@@ -32,7 +32,7 @@ internal fun mapToCommit(
       .atZone(ZoneId.systemDefault())
       .toLocalDateTime(),
     isSelf = isSelf,
-    status = Commit.Status.valueOf(status)
+    status = Commit.Status.fromValue(status)
   )
 }
 

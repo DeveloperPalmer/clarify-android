@@ -1,15 +1,17 @@
 package ru.sla.clarify.lib.google.firestore.entity
 
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BranchStatus
 
-data class FirestoreCommit(
-  val commitId: Id,
+data class FirestoreBranch(
+  val id: Id,
   val conversationId: FirestoreConversation.Id,
-  val branchId: FirestoreBranch.Id,
-  val senderId: UserId,
-  val text: String,
-  val colorHex: String,
+  val parentBranchId: Id,
+  val branchedFromCommitId: FirestoreCommit.Id,
+  val name: String,
+  val status: BranchStatus,
   val createdAtEpochSeconds: Long,
+  val createdByUid: UserId,
   val changeType: FirestoreDocumentResult?
 ) {
   @JvmInline

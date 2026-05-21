@@ -4,4 +4,6 @@ import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents
 
 class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
+  val sendCommit = intent<String>(name = "sendCommit")
+  val requestMerge = intent(name = "requestMerge")
 }

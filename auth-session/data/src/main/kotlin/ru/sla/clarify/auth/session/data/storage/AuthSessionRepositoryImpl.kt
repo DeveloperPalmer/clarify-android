@@ -51,8 +51,8 @@ class AuthSessionRepositoryImpl @Inject constructor(
   }
 
   override suspend fun refresh(refreshToken: RefreshToken) {
-    // nothing to do
-    // Add refresh method
+    // Пока ничего не делаем
+    // Добавить метод обновления токена
   }
 
   override suspend fun startNew(tokens: AuthTokens, userId: UserId) {
@@ -63,13 +63,14 @@ class AuthSessionRepositoryImpl @Inject constructor(
 
   override suspend fun reset(cleanupStorage: Boolean) {
     val key = authSessionPersistence.readKey() ?: return
-    // nothing to do
-    // Add post logout method
+    // Пока ничего не делаем
+    // Добавить метод пост-логаута
     authSessionPersistence.deleteTokens(key)
     authSessionPersistence.deleteUserId(key)
-    // TODO @sla @DB @Cleanup is cleanup actually needed?
-    //   If our tables all contained and referenced "sessionKey", then logging in with a new user would simply
-    //   use values related to a new key, no intersections, and no cleanup needed (only if data is really sensitive)
+    // TODO @sla @DB @Cleanup нужен ли вообще cleanup?
+    //   Если бы все наши таблицы содержали и ссылались на "sessionKey", то логин под новым пользователем
+    //   просто использовал бы значения, привязанные к новому ключу — никаких пересечений, никакой очистки
+    //   не требуется (разве что если данные действительно чувствительные)
     if (cleanupStorage) {
       cleanupStorage(key)
     }

@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-  namespace "ru.sla.clarify.feature.chat.thread.data"
+  namespace "ru.sla.clarify.feature.chat.thread.data.common"
 }
 
 dependencies {
   implementation project(":lib:google:firestore")
   implementation project(":database")
-  implementation project(":feature:chat-thread:data:common")
+  implementation project(":auth-session:data")
   implementation project(":feature:chat-thread:domain")
 }

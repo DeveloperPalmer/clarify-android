@@ -52,6 +52,11 @@ SELECT
 FROM ChatConversation
 WHERE ChatConversation.id = :id;
 
+selectIdByParticipants:
+SELECT id
+FROM ChatConversation
+WHERE type = :type AND participantUids = :participantUids;
+
 delete:
 DELETE FROM ChatConversation
 WHERE id = ?;

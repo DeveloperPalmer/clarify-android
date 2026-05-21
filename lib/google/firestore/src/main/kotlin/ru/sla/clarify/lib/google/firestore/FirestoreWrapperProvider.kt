@@ -6,6 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
+import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 
 interface FirestoreWrapperProvider {
@@ -35,5 +36,14 @@ interface FirestoreWrapperProvider {
   fun unreadCommitsDocumentRef(
     conversationId: FirestoreConversation.Id,
     userId: UserId
+  ): DocumentReference
+
+  fun branchesCollectionRef(
+    conversationId: FirestoreConversation.Id
+  ): CollectionReference
+
+  fun branchDocumentRef(
+    conversationId: FirestoreConversation.Id,
+    branchId: FirestoreBranch.Id
   ): DocumentReference
 }

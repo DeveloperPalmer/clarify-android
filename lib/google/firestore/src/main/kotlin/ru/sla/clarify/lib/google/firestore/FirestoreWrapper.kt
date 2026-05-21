@@ -9,6 +9,7 @@ import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
+import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import javax.inject.Inject
 
@@ -84,5 +85,25 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .document(conversationId.value)
       .collection(FirestoreSchema.UNREAD_COMMITS_COLLECTION)
       .document(userId.value)
+  }
+
+  override fun branchesCollectionRef(
+    conversationId: FirestoreConversation.Id
+  ): CollectionReference {
+    return remoteDB
+      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .document(conversationId.value)
+      .collection(FirestoreSchema.BRANCHES_COLLECTION)
+  }
+
+  override fun branchDocumentRef(
+    conversationId: FirestoreConversation.Id,
+    branchId: FirestoreBranch.Id
+  ): DocumentReference {
+    return remoteDB
+      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .document(conversationId.value)
+      .collection(FirestoreSchema.BRANCHES_COLLECTION)
+      .document(branchId.value)
   }
 }

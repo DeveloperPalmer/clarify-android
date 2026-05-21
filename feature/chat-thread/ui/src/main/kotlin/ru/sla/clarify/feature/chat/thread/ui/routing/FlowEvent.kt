@@ -1,9 +1,10 @@
 package ru.sla.clarify.feature.chat.thread.ui.routing
 
 import ru.kode.way.Event
+import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 
 sealed interface FlowEvent : Event {
   data object ThreadDismissed : FlowEvent
-  data object BranchRequested : FlowEvent
+  data class BranchRequested(val branchId: Branch.Id) : FlowEvent
   data object BranchDismissed : FlowEvent
 }

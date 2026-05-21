@@ -2,6 +2,7 @@ import kotlin.Boolean;
 CREATE TABLE ChatCommit(
   id TEXT NOT NULL PRIMARY KEY,
   conversationId TEXT NOT NULL,
+  branchId TEXT NOT NULL,
   senderId TEXT NOT NULL,
   text TEXT NOT NULL,
   colorHex TEXT NOT NULL,
@@ -12,11 +13,12 @@ CREATE TABLE ChatCommit(
 );
 
 CREATE INDEX ChatCommit_conversationId ON ChatCommit(conversationId);
+CREATE INDEX ChatCommit_branchId ON ChatCommit(conversationId, branchId);
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO ChatCommit(id, conversationId, senderId, text, colorHex, timestamp, isSelf, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INTO ChatCommit(id, conversationId, branchId, senderId, text, colorHex, timestamp, isSelf, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectById:
 SELECT
@@ -30,7 +32,7 @@ SELECT
 FROM ChatCommit
 WHERE id = :id;
 
-selectByConversationId:
+selectByBranchId:
 SELECT
   id,
   senderId,
@@ -40,8 +42,12 @@ SELECT
   isSelf,
   status
 FROM ChatCommit
-WHERE conversationId = :conversationId
+WHERE conversationId = :conversationId AND branchId = :branchId
 ORDER BY timestamp ASC;
+
+deleteById:
+DELETE FROM ChatCommit
+WHERE id = :id;
 
 deleteByConversationId:
 DELETE FROM ChatCommit

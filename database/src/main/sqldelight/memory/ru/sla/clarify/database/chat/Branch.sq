@@ -1,0 +1,52 @@
+CREATE TABLE Branch(
+  id TEXT NOT NULL PRIMARY KEY,
+  conversationId TEXT NOT NULL,
+  parentBranchId TEXT NOT NULL,
+  branchedFromCommitId TEXT NOT NULL,
+  name TEXT NOT NULL,
+  status TEXT NOT NULL,
+  createdAt INTEGER NOT NULL,
+  createdByUid TEXT NOT NULL,
+  FOREIGN KEY(conversationId) REFERENCES ChatConversation(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX Branch_conversationId ON Branch(conversationId);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO Branch(id, conversationId, parentBranchId, branchedFromCommitId, name, status, createdAt, createdByUid)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+selectByConversationId:
+SELECT
+  id,
+  conversationId,
+  parentBranchId,
+  branchedFromCommitId,
+  name,
+  status,
+  createdAt,
+  createdByUid
+FROM Branch
+WHERE conversationId = :conversationId
+ORDER BY createdAt ASC;
+
+selectById:
+SELECT
+  id,
+  conversationId,
+  parentBranchId,
+  branchedFromCommitId,
+  name,
+  status,
+  createdAt,
+  createdByUid
+FROM Branch
+WHERE id = :id;
+
+delete:
+DELETE FROM Branch
+WHERE id = ?;
+
+deleteAll:
+DELETE FROM Branch;

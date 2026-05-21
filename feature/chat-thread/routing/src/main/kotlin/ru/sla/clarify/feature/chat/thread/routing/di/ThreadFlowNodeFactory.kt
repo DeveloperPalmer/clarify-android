@@ -4,8 +4,10 @@ import ru.kode.way.FlowNode
 import ru.kode.way.ScreenNode
 import ru.sla.clarify.core.routing.BasicScreenNode
 import ru.sla.clarify.core.ui.WiredComposableScreen
+import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.routing.ThreadFlowNode
 import ru.sla.clarify.feature.chat.thread.routing.ThreadFlowNodeBuilder
+import ru.sla.clarify.feature.chat.thread.ui.di.BranchWiredScreenFactory
 import ru.sla.clarify.feature.chat.thread.ui.di.Screen
 import ru.sla.clarify.feature.chat.thread.ui.di.WiredScreen
 import ru.sla.clarify.feature.entity.chat.Peer
@@ -17,7 +19,7 @@ class ThreadFlowNodeFactory @Inject constructor(
   @param:WiredScreen(Screen.Thread)
   private val threadScreenNode: Provider<WiredComposableScreen>,
   @param:WiredScreen(Screen.Branch)
-  private val branchScreenNode: Provider<WiredComposableScreen>
+  private val branchScreenFactory: Provider<BranchWiredScreenFactory>
 ) : ThreadFlowNodeBuilder.Factory {
 
   override fun createRootNode(peerId: Peer.Id): FlowNode<*> {
@@ -28,7 +30,7 @@ class ThreadFlowNodeFactory @Inject constructor(
     return BasicScreenNode(threadScreenNode.get())
   }
 
-  override fun createBranchNode(): ScreenNode {
-    return BasicScreenNode(branchScreenNode.get())
+  override fun createBranchNode(id: Branch.Id): ScreenNode {
+    return BasicScreenNode(branchScreenFactory.get().create(branchId = id))
   }
 }

@@ -10,6 +10,7 @@ object FirestoreSchema {
   const val CONVERSATIONS_COLLECTION = "conversations"
   const val COMMITS_COLLECTION = "commits"
   const val UNREAD_COMMITS_COLLECTION = "unreadCommits"
+  const val BRANCHES_COLLECTION = "branches"
 
   const val UNREAD_COMMITS_COUNT = "count"
 
@@ -33,6 +34,14 @@ object FirestoreSchema {
   const val COMMIT_SERVER_CREATED_AT = "serverCreatedAt"
   const val COMMIT_READ_BY = "readBy"
   const val COMMIT_COLOR_HEX = "colorHex"
+  const val COMMIT_BRANCH_ID = "branchId"
+
+  const val BRANCH_PARENT_ID = "parentBranchId"
+  const val BRANCH_BRANCHED_FROM_COMMIT_ID = "branchedFromCommitId"
+  const val BRANCH_NAME = "name"
+  const val BRANCH_STATUS = "status"
+  const val BRANCH_CREATED_AT = "createdAt"
+  const val BRANCH_CREATED_BY_UID = "createdByUid"
 
   enum class ConversationType(val value: String) {
     Direct("direct"),
@@ -47,6 +56,19 @@ object FirestoreSchema {
 
   enum class CommitType(val value: String) {
     Text("text")
+  }
+
+  enum class BranchStatus(val value: String) {
+    Active("active"),
+    MergeInProgress("mergeInProgress"),
+    Merged("merged");
+
+    companion object {
+      fun fromValue(value: String): BranchStatus {
+        return entries.firstOrNull { it.value == value }
+          ?: error("unexpected branch status: $value")
+      }
+    }
   }
 }
 
