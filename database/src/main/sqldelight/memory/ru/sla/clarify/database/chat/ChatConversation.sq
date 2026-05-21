@@ -1,6 +1,9 @@
+import ru.sla.clarify.database.adapter.StringList;
+
 CREATE TABLE ChatConversation(
   id TEXT PRIMARY KEY NOT NULL,
-  peerId TEXT NOT NULL,
+  type TEXT NOT NULL,
+  participantUids TEXT AS StringList NOT NULL,
   lastCommit TEXT,
   lastCommitTimestamp INTEGER NOT NULL,
   unreadCount INTEGER NOT NULL
@@ -8,18 +11,19 @@ CREATE TABLE ChatConversation(
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO ChatConversation(id, peerId, lastCommit, lastCommitTimestamp, unreadCount)
-VALUES (?, ?, ?, ?, ?);
+INTO ChatConversation(id, type, participantUids, lastCommit, lastCommitTimestamp, unreadCount)
+VALUES (?, ?, ?, ?, ?, ?);
 
 insertIfAbsent:
 INSERT OR IGNORE
-INTO ChatConversation(id, peerId, lastCommit, lastCommitTimestamp, unreadCount)
-VALUES (?, ?, ?, ?, ?);
+INTO ChatConversation(id, type, participantUids, lastCommit, lastCommitTimestamp, unreadCount)
+VALUES (?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT
   ChatConversation.id,
-  ChatConversation.peerId,
+  ChatConversation.type,
+  ChatConversation.participantUids,
   ChatConversation.lastCommit,
   ChatConversation.lastCommitTimestamp,
   ChatConversation.unreadCount
@@ -29,7 +33,8 @@ ORDER BY ChatConversation.lastCommitTimestamp DESC;
 selectById:
 SELECT
   ChatConversation.id,
-  ChatConversation.peerId,
+  ChatConversation.type,
+  ChatConversation.participantUids,
   ChatConversation.lastCommit,
   ChatConversation.lastCommitTimestamp,
   ChatConversation.unreadCount

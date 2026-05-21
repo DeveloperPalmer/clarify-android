@@ -13,7 +13,6 @@ import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.conversation.domain.ChatModel
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
-import ru.sla.clarify.feature.entity.chat.Peer
 import javax.inject.Inject
 
 class ChatListViewModel @Inject constructor(
@@ -53,10 +52,9 @@ class ChatListViewModel @Inject constructor(
     }
 
     onEach(intent(ViewIntents::confirmNewChat)) {
-      action { _, _, value ->
-        if (value.isNotBlank()) {
-          val id = Peer.Id(value.trim())
-          eventSink.sendEvent(FlowEvent.ThreadRequested(id))
+      action { _, _, peerId ->
+        if (peerId.value.isNotBlank()) {
+          eventSink.sendEvent(FlowEvent.ThreadRequested(peerId))
         }
       }
     }
@@ -118,7 +116,7 @@ class ChatListViewModel @Inject constructor(
     ) {
       transitionTo { state, (userId, conversations) ->
         state.copy(
-          userId = userId,
+          userId = userId.value,
           conversations = conversations
         )
       }

@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.entity.chat
 import androidx.compose.runtime.Immutable
 
 @Immutable
-data class Peer(
+data class Participant(
   val id: Id
 ) {
   @Immutable

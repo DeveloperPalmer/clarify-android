@@ -34,6 +34,7 @@ import ru.sla.clarify.core.ui.event.captureDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.rememberDropdownMenuAnchorScope
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -55,13 +56,7 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
         editModeEnabled = state.editModeEnabled,
         conversations = state.conversations,
         selectedConversationsIds = state.selectedConversationIds,
-        onConversationClick = {
-          if (state.editModeEnabled) {
-            intents.handleConversationLongPress(it.id)
-          } else {
-            intents.openChat(it.peer.id)
-          }
-        },
+        onOpenChat = intents.openChat,
         onConversationLongPress = intents.handleConversationLongPress,
         onShowNewChatDialog = intents.showNewChatDialog,
         onOpenSettings = intents.openSettings
@@ -76,7 +71,7 @@ internal fun ChatListReadyContent(
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,
   editModeEnabled: Boolean,
-  onConversationClick: (Conversation) -> Unit,
+  onOpenChat: (Peer.Id) -> Unit,
   onConversationLongPress: (Conversation.Id) -> Unit,
   onOpenSettings: () -> Unit,
   onShowNewChatDialog: () -> Unit,
@@ -98,7 +93,7 @@ internal fun ChatListReadyContent(
         modifier = Modifier.fillMaxSize(),
         conversations = conversations,
         selectedConversationsIds = selectedConversationsIds,
-        onConversationClick = onConversationClick,
+        onOpenChat = onOpenChat,
         onConversationLongPress = onConversationLongPress
       )
     }
@@ -170,7 +165,7 @@ private fun Header(
 private fun Conversations(
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,
-  onConversationClick: (Conversation) -> Unit,
+  onOpenChat: (Peer.Id) -> Unit,
   onConversationLongPress: (Conversation.Id) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -189,22 +184,26 @@ private fun Conversations(
   LazyColumn(modifier = modifier) {
     items(
       items = conversations,
-      key = { it.peer.id.value }
+      key = { it.id.value }
     ) { item ->
-      ConversationItem(
-        conversation = item,
-        selected = selectedConversationsIds.contains(item.id),
-        onClick = { onConversationClick(item) },
-        onLongClick = { onConversationLongPress(item.id) }
-      )
+      when (item) {
+        is Conversation.Direct -> {
+          DirectConversationItem(
+            direct = item,
+            selected = selectedConversationsIds.contains(item.id),
+            onClick = { onOpenChat(item.peer.id) },
+            onLongClick = { onConversationLongPress(item.id) }
+          )
+        }
+      }
       HorizontalDivider()
     }
   }
 }
 
 @Composable
-private fun ConversationItem(
-  conversation: Conversation,
+private fun DirectConversationItem(
+  direct: Conversation.Direct,
   selected: Boolean,
   onClick: () -> Unit,
   onLongClick: () -> Unit
@@ -233,7 +232,7 @@ private fun ConversationItem(
         contentAlignment = Alignment.Center
       ) {
         Text(
-          text = conversation.peer.id.value.take(1).uppercase(),
+          text = direct.peer.id.value.take(1).uppercase(),
           style = AppTheme.typography.button,
           color = AppTheme.colors.backgroundSecondary
         )
@@ -244,13 +243,13 @@ private fun ConversationItem(
           .weight(1f)
       ) {
         Text(
-          text = conversation.peer.id.value,
+          text = direct.peer.id.value,
           style = AppTheme.typography.button,
           color = AppTheme.colors.textPrimary,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis
         )
-        val preview = conversation.lastMessage?.takeIf { it.isNotBlank() } ?: "(no messages yet)"
+        val preview = direct.lastMessage?.takeIf { it.isNotBlank() } ?: "(no messages yet)"
         Text(
           text = preview,
           style = AppTheme.typography.body2,
@@ -259,7 +258,7 @@ private fun ConversationItem(
           overflow = TextOverflow.Ellipsis
         )
       }
-      if (conversation.unreadCount > 0) {
+      if (direct.unreadCount > 0) {
         Box(
           modifier = Modifier
             .padding(start = 8.dp)
@@ -269,7 +268,7 @@ private fun ConversationItem(
           contentAlignment = Alignment.Center
         ) {
           Text(
-            text = conversation.unreadCount.coerceAtMost(MAX_UNREAD_BADGE.toLong()).toString(),
+            text = direct.unreadCount.coerceAtMost(MAX_UNREAD_BADGE.toLong()).toString(),
             style = AppTheme.typography.body2,
             color = AppTheme.colors.backgroundPrimary
           )

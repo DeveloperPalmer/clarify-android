@@ -40,8 +40,8 @@ object FirestoreSchema {
     Group("group");
 
     companion object {
-      fun fromValue(value: String): ConversationType? {
-        return entries.firstOrNull { it.value == value }
+      fun fromValue(value: String): ConversationType {
+        return entries.first { it.value == value }
       }
     }
   }

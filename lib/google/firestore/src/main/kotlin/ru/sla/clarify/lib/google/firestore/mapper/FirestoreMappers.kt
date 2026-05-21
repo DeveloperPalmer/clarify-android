@@ -24,9 +24,7 @@ fun extractConversationFB(
 ): FirestoreConversation {
   return FirestoreConversation(
     id = FirestoreConversation.Id(document.id),
-    type = document
-      .getString(CONVERSATION_TYPE)
-      ?.let(ConversationType::fromValue),
+    type = ConversationType.fromValue(document.requireField(CONVERSATION_TYPE)),
     changeType = type
       ?.toDomainModel(),
     participantUids = document

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
+import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.event.Dialog
 import ru.sla.clarify.uikit.event.DropdownMenu
 import ru.sla.resourcerefs.strRef
@@ -71,7 +72,7 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
         confirmButton = {
           Button(
             onClick = {
-              intents.confirmNewChat(inputValue)
+              intents.confirmNewChat(Peer.Id(inputValue))
               dismissEventPresentation()
             },
             enabled = inputValue.isNotBlank()

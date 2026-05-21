@@ -16,8 +16,9 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.flattenItems
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
-import ru.sla.clarify.feature.chat.thread.data.mapper.Mappers
 import ru.sla.clarify.feature.chat.thread.data.mapper.generateColorHex
+import ru.sla.clarify.feature.chat.thread.data.mapper.mapToCommit
+import ru.sla.clarify.feature.chat.thread.data.mapper.selectById
 import ru.sla.clarify.feature.chat.thread.domain.ThreadRepository
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.entity.chat.Commit
@@ -44,7 +45,7 @@ class ThreadRepositoryImpl @Inject constructor(
     .filterNotNull()
     .flatMapLatest { conversationId ->
       inMemoryDB.chatCommitQueries
-        .selectByConversationId(conversationId, Mappers::mapToCommit)
+        .selectByConversationId(conversationId, ::mapToCommit)
         .asFlow()
         .mapToList(Dispatchers.IO)
         .flattenItems()
@@ -52,9 +53,10 @@ class ThreadRepositoryImpl @Inject constructor(
 
   override suspend fun conversation(): Conversation? {
     val conversationId = conversationId() ?: return null
+    val currentUserId = requireUserId()
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatConversationQueries
-        .selectById(conversationId.value, Mappers::mapToConversation)
+        .selectById(conversationId, currentUserId)
         .executeAsOneOrNull()
     }
   }

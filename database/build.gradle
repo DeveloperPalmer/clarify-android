@@ -56,5 +56,6 @@ dependencies {
   implementation project(":feature:chat-conversation:domain")
   implementation libs.firebase.auth
   implementation libs.firebase.firestore
+  implementation libs.kotlinx.serialization.json
   implementation libs.sqldelight.android.driver
 }
