@@ -109,8 +109,8 @@ class GoogleAuthenticator @Inject constructor(
 private val BuildType.googleClientId: String
   get() = when (this) {
     BuildType.Dev,
-    BuildType.Internal -> "875404594316-80e040u6aujsvmja5ermohge93bj5qvo.apps.googleusercontent.com"
-    BuildType.Release -> "875404594316-80e040u6aujsvmja5ermohge93bj5qvo.apps.googleusercontent.com"
+    BuildType.Internal -> "471058294257-mgmobmac0fbh6c7odif0emqpeqvb2vu2.apps.googleusercontent.com"
+    BuildType.Release -> "471058294257-mgmobmac0fbh6c7odif0emqpeqvb2vu2.apps.googleusercontent.com"
   }
 
 sealed interface SignInResult {

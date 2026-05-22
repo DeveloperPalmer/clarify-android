@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "875404594316",
-    "project_id": "clarify-d6e81",
-    "storage_bucket": "clarify-d6e81.firebasestorage.app"
+    "project_number": "471058294257",
+    "project_id": "clarify-ba6ae",
+    "storage_bucket": "clarify-ba6ae.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:875404594316:android:e2cc29dc483fcdc1fdffa9",
+        "mobilesdk_app_id": "1:471058294257:android:3bd26b054686e764149050",
         "android_client_info": {
           "package_name": "ru.sla.clarify.dev"
         }
       },
       "oauth_client": [
         {
-          "client_id": "875404594316-o4fe26ig012qd76i7sgonc4atev37t82.apps.googleusercontent.com",
+          "client_id": "471058294257-j9mdfu9harmqnviefj1kegv35grbvvtm.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "ru.sla.clarify.dev",
-            "certificate_hash": "eed0fbe14d9f47a9bfaef8995fbd3a5d531e46c2"
+            "certificate_hash": "c0da2c6836907349dc68c62598a47793e59b8200"
           }
         },
         {
-          "client_id": "875404594316-80e040u6aujsvmja5ermohge93bj5qvo.apps.googleusercontent.com",
+          "client_id": "471058294257-mgmobmac0fbh6c7odif0emqpeqvb2vu2.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBkHZnECKbePFeEzMfHnxtMqrtQNbO1goI"
+          "current_key": "AIzaSyDM2m9o8zAqCY0oLld_Yj6mljDzPBwJrJg"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "875404594316-80e040u6aujsvmja5ermohge93bj5qvo.apps.googleusercontent.com",
+              "client_id": "471058294257-ktr1tlh55k17ak4jqgni17pshpobvsho.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
