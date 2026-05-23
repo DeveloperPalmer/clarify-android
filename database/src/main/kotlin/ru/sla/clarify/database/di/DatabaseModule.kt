@@ -10,9 +10,7 @@ import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.PersistedDB
-import ru.sla.clarify.database.UserDetails
 import ru.sla.clarify.database.adapter.StringListAdapter
-import ru.sla.clarify.database.adapter.UserIdAdapter
 import ru.sla.clarify.database.chat.Branch
 import ru.sla.clarify.database.chat.ChatConversation
 
@@ -30,9 +28,6 @@ object DatabaseModule {
       ),
       BranchAdapter = Branch.Adapter(
         mergeRequestApprovedByUidsAdapter = StringListAdapter
-      ),
-      UserDetailsAdapter = UserDetails.Adapter(
-        uidAdapter = UserIdAdapter
       )
     )
   }

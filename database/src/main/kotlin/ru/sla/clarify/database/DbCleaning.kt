@@ -16,6 +16,5 @@ fun InMemoryDB.cleanupBySessionKey(key: String) {
     log { "cleaning up data for session key=$key" }
     chatConversationQueries.deleteAll()
     chatCommitQueries.deleteAll()
-    userDetailsQueries.deleteAll()
   }
 }
