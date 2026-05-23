@@ -18,8 +18,7 @@ import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
+import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import javax.inject.Inject
 
@@ -36,7 +35,7 @@ class BranchRepositoryImpl @Inject constructor(
     firestore.branchesLive(conversationId)
       .flowOn(Dispatchers.IO)
       .collect { changes ->
-        handleBranchChanges(changes)
+        handleBranchChanges(conversationId, changes)
         emit(Unit)
       }
   }
@@ -44,7 +43,7 @@ class BranchRepositoryImpl @Inject constructor(
   override fun branches(): Flow<List<Branch>> = flow {
     val conversationId = threadMediator.awaitConversationId()
     inMemoryDB.branchQueries
-      .selectByConversationId(conversationId.value, ::mapToBranch)
+      .selectByConversationId(conversationId, ::mapToBranch)
       .observeList()
       .collect { emit(it) }
   }
@@ -60,13 +59,14 @@ class BranchRepositoryImpl @Inject constructor(
     branchedFrom: Commit.Id,
     name: String
   ): Branch = withContext(Dispatchers.IO) {
+    val conversationId = threadMediator.requireConversationId()
     val remote = firestore.postBranch(
-      conversationId = threadMediator.requireConversationId(),
+      conversationId = conversationId,
       parentBranchId = resolveBranchId(parentId),
-      branchedFromCommitId = FirestoreCommit.Id(branchedFrom.value),
+      branchedFromCommitId = branchedFrom.value,
       name = name
     )
-    val branch = remote.toDomain()
+    val branch = remote.toDomain(conversationId)
     insertOrReplace(branch)
     branch
   }
@@ -74,14 +74,14 @@ class BranchRepositoryImpl @Inject constructor(
   override suspend fun openMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
     firestore.postMergeRequest(
       conversationId = threadMediator.requireConversationId(),
-      branchId = FirestoreBranch.Id(branchId.value)
+      branchId = branchId.value
     )
   }
 
   override suspend fun approveMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
     firestore.patchMergeApproval(
       conversationId = threadMediator.requireConversationId(),
-      branchId = FirestoreBranch.Id(branchId.value),
+      branchId = branchId.value,
       participantUids = threadMediator.directParticipantIds()
     )
   }
@@ -89,30 +89,31 @@ class BranchRepositoryImpl @Inject constructor(
   override suspend fun revokeApprovalMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
     firestore.deleteMergeApproval(
       conversationId = threadMediator.requireConversationId(),
-      branchId = FirestoreBranch.Id(branchId.value)
+      branchId = branchId.value
     )
   }
 
   override suspend fun cancelMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
     firestore.deleteMergeRequest(
       conversationId = threadMediator.requireConversationId(),
-      branchId = FirestoreBranch.Id(branchId.value)
+      branchId = branchId.value
     )
   }
 
-  private fun handleBranchChanges(branches: List<FirestoreBranch>) {
+  private fun handleBranchChanges(
+    conversationId: String,
+    changes: List<FirestoreChange<ru.sla.clarify.lib.google.firestore.entity.BranchNM>>
+  ) {
     inMemoryDB.transaction {
-      branches.forEach { branch ->
-        when (branch.changeType) {
+      changes.forEach { change ->
+        val branch = change.data
+        when (change.changeType) {
           FirestoreDocumentResult.Removed -> {
-            inMemoryDB.branchQueries.deleteById(
-              id = branch.id.value
-            )
+            inMemoryDB.branchQueries.deleteById(id = branch.id)
           }
-          null,
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
-            insertOrReplace(branch.toDomain())
+            insertOrReplace(branch.toDomain(conversationId))
           }
         }
       }
@@ -137,10 +138,10 @@ class BranchRepositoryImpl @Inject constructor(
     )
   }
 
-  private suspend fun resolveBranchId(branchId: Branch.Id?): FirestoreBranch.Id {
-    if (branchId != null) return FirestoreBranch.Id(branchId.value)
+  private suspend fun resolveBranchId(branchId: Branch.Id?): String {
+    if (branchId != null) return branchId.value
     val conversation = threadMediator.conversationId()
       ?: error("conversationId not found")
-    return FirestoreBranch.Id(conversation.value)
+    return conversation
   }
 }

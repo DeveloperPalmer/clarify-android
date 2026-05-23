@@ -9,8 +9,7 @@ import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.entity.chat.Peer
-import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
+import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 import javax.inject.Inject
 
 @SingleIn(ThreadScope::class)
@@ -20,32 +19,30 @@ class ThreadMediator @Inject constructor(
   private val authSessionPersistence: AuthSessionPersistence
 ) {
 
-  suspend fun awaitConversationId(): FirestoreConversation.Id {
+  suspend fun awaitConversationId(): String {
     conversationId()?.let { return it }
 
-    val firstAppearance = inMemoryDB.chatConversationQueries
+    return inMemoryDB.chatConversationQueries
       .selectIdByParticipants(
-        type = ConversationType.Direct.value,
+        type = Type.Direct.value,
         participantUids = directParticipantIds()
       )
       .observeOneOrNull()
       .filterNotNull()
       .first()
-    return FirestoreConversation.Id(firstAppearance)
   }
 
-  suspend fun conversationId(): FirestoreConversation.Id? {
+  suspend fun conversationId(): String? {
     val participants = directParticipantIds()
     return inMemoryDB.chatConversationQueries
       .selectIdByParticipants(
-        type = ConversationType.Direct.value,
+        type = Type.Direct.value,
         participantUids = participants
       )
       .executeAsOneOrNull()
-      ?.let(FirestoreConversation::Id)
   }
 
-  suspend fun requireConversationId(): FirestoreConversation.Id {
+  suspend fun requireConversationId(): String {
     return requireNotNull(conversationId()) {
       "conversationId is null. A branch can only be created for an existing conversation."
     }

@@ -3,8 +3,6 @@
 package ru.sla.clarify.lib.google.firestore
 
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
@@ -22,19 +20,29 @@ import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.feature.entity.chat.Peer
-import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BranchStatus
-import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreParticipant
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreUser
-import ru.sla.clarify.lib.google.firestore.mapper.extractBranchFB
-import ru.sla.clarify.lib.google.firestore.mapper.extractCommitFB
-import ru.sla.clarify.lib.google.firestore.mapper.extractConversationFB
-import ru.sla.clarify.lib.google.firestore.mapper.extractParticipantFB
-import ru.sla.clarify.lib.google.firestore.mapper.extractUserFB
-import ru.sla.clarify.lib.google.firestore.mapper.mapChanges
+import ru.sla.clarify.lib.google.firestore.codec.FirestoreFormat
+import ru.sla.clarify.lib.google.firestore.codec.decodeFromSnapshot
+import ru.sla.clarify.lib.google.firestore.codec.encodeToMap
+import ru.sla.clarify.lib.google.firestore.entity.BranchNM
+import ru.sla.clarify.lib.google.firestore.entity.BranchNM.Status
+import ru.sla.clarify.lib.google.firestore.entity.CommitNM
+import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
+import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
+import ru.sla.clarify.lib.google.firestore.entity.ParticipantNM
+import ru.sla.clarify.lib.google.firestore.entity.UserNM
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchCancelMergeParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchFinalizeMergeParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchOpenMergeParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadCountParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadIncrementParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchUserParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PostBranchParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PostCommitParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PostConversationParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PostParticipantParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PostUserParams
+import ru.sla.clarify.lib.google.firestore.mapper.mapDocumentChanges
+import ru.sla.clarify.lib.google.firestore.mapper.toFirestoreDocumentResult
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -48,25 +56,56 @@ class Firestore @Inject constructor(
   // Перед добавлением новых методов — прочитай соглашение об именовании.
   // root dir -> docs/firestore-naming-rules.md
 
-  suspend fun patchUser(
+  private val codec: FirestoreFormat = FirestoreFormat.Default
+
+  suspend fun postUser(
     id: UserId,
-    photoUrl: String?,
     displayName: String?,
+    photoUrl: String?,
     email: String?
   ) {
-    val params = buildMap {
-      put(FirestoreSchema.USER_DISPLAY_NAME, displayName)
-      put(FirestoreSchema.USER_PHOTO_URL, photoUrl)
-      put(FirestoreSchema.USER_EMAIL, email)
-      put(FirestoreSchema.USER_CREATED_AT, FieldValue.serverTimestamp())
-      put(FirestoreSchema.USER_UPDATED_AT, FieldValue.serverTimestamp())
-    }
+    val payload = codec.encodeToMap(
+      PostUserParams(
+        displayName = displayName,
+        photoUrl = photoUrl,
+        email = email
+      )
+    )
     userDocumentRef(id)
-      .set(params, SetOptions.merge())
+      .set(payload)
       .await()
   }
 
-  suspend fun getCurrentUser(): FirestoreUser {
+  suspend fun patchUser(
+    id: UserId,
+    displayName: String?,
+    photoUrl: String?,
+    email: String?
+  ) {
+    // Если на вход пришли только null'ы, в map'е остался бы один updatedAt —
+    // нет смысла дергать сеть ради одного timestamp'а.
+    if (displayName == null && photoUrl == null && email == null) return
+
+    val payload = codec.encodeToMap(
+      PatchUserParams(
+        displayName = displayName,
+        photoUrl = photoUrl,
+        email = email
+      )
+    )
+    userDocumentRef(id)
+      .set(payload, SetOptions.merge())
+      .await()
+  }
+
+  suspend fun isUserExists(id: UserId): Boolean {
+    return userDocumentRef(id)
+      .get()
+      .await()
+      .exists()
+  }
+
+  suspend fun getCurrentUser(): UserNM {
     val userId = requireUserId()
     val document = userDocumentRef(userId)
       .get()
@@ -76,7 +115,7 @@ class Firestore @Inject constructor(
       error("User by id: ${userId.value} not found in Firestore")
     }
 
-    return extractUserFB(document)
+    return codec.decodeFromSnapshot<UserNM>(document)
   }
 
   suspend fun getPeerIdByEmail(email: Email): Peer.Id? {
@@ -89,7 +128,7 @@ class Firestore @Inject constructor(
       ?.let(Peer::Id)
   }
 
-  fun conversationsLive(): Flow<List<FirestoreConversation>> {
+  fun conversationsLive(): Flow<List<FirestoreChange<ConversationNM>>> {
     return callbackFlow {
       val userId = requireUserId()
       listenerGuard.trackOpen("conversationsLive:${userId.value}")
@@ -101,27 +140,33 @@ class Firestore @Inject constructor(
           close(error)
           return@addSnapshotListener
         }
-        trySend(snapshot.mapChanges { extractConversationFB(it.document, it.type) })
+        val response = snapshot.mapDocumentChanges { change ->
+          FirestoreChange(
+            data = codec.decodeFromSnapshot<ConversationNM>(change.document),
+            changeType = change.type.toFirestoreDocumentResult()
+          )
+        }
+        trySend(response)
       }
 
       awaitClose { listener.remove() }
     }
   }
 
-  suspend fun patchUnreadCount(conversationId: FirestoreConversation.Id) {
+  suspend fun patchUnreadCount(conversationId: String) {
     val userId = requireUserId()
     unreadCommitsDocumentRef(conversationId, userId)
       .set(
-        buildMap { put(FirestoreSchema.UNREAD_COMMITS_COUNT, 0L) },
+        codec.encodeToMap(PatchUnreadCountParams(count = 0L)),
         SetOptions.merge()
       )
       .await()
   }
 
-  fun unreadCountLive(conversationId: FirestoreConversation.Id): Flow<Long> {
+  fun unreadCountLive(conversationId: String): Flow<Long> {
     return callbackFlow {
       val userId = requireUserId()
-      listenerGuard.trackOpen("unreadCountLive:${conversationId.value}:${userId.value}")
+      listenerGuard.trackOpen("unreadCountLive:$conversationId:${userId.value}")
 
       val listener = unreadCommitsDocumentRef(
         conversationId = conversationId,
@@ -146,20 +191,20 @@ class Firestore @Inject constructor(
   }
 
   suspend fun getParticipants(
-    conversationId: FirestoreConversation.Id
-  ): List<FirestoreParticipant> {
+    conversationId: String
+  ): List<ParticipantNM> {
     return participantsCollectionRef(conversationId)
       .get()
       .await()
       .documents
-      .map(::extractParticipantFB)
+      .map { codec.decodeFromSnapshot<ParticipantNM>(it) }
   }
 
   fun directCommitsLive(
     peerId: Peer.Id,
-    branchId: FirestoreBranch.Id,
+    branchId: String,
     limit: Long
-  ): Flow<List<FirestoreCommit>> {
+  ): Flow<List<FirestoreChange<CommitNM>>> {
     return directConversationIdLive(peerId)
       .distinctUntilChanged()
       .flatMapLatest { conversationId ->
@@ -176,13 +221,13 @@ class Firestore @Inject constructor(
   }
 
   suspend fun getCommits(
-    conversationId: FirestoreConversation.Id,
-    branchId: FirestoreBranch.Id,
+    conversationId: String,
+    branchId: String,
     count: Int,
     before: LocalDateTime?
-  ): List<FirestoreCommit> {
+  ): List<CommitNM> {
     var query = commitsCollectionRef(conversationId)
-      .whereEqualTo(FirestoreSchema.COMMIT_BRANCH_ID, branchId.value)
+      .whereEqualTo(FirestoreSchema.COMMIT_BRANCH_ID, branchId)
       .orderBy(FirestoreSchema.COMMIT_CREATED_AT, Query.Direction.DESCENDING)
       .limit(count.toLong())
 
@@ -194,54 +239,54 @@ class Firestore @Inject constructor(
       .get()
       .await()
       .documents
-      .map { extractCommitFB(it, conversationId) }
+      .map { codec.decodeFromSnapshot<CommitNM>(it) }
   }
 
   suspend fun postCommit(
     peerId: Peer.Id,
-    branchId: FirestoreBranch.Id?,
-    conversationId: FirestoreConversation.Id?,
+    branchId: String?,
+    conversationId: String?,
     text: String,
     colorHex: String
-  ): FirestoreCommit {
+  ) {
     val senderId = requireUserId()
     val isNewConversation = conversationId == null
-    val conversationId = conversationId ?: FirestoreConversation.Id(randomUuid())
+    val conversationId = conversationId ?: randomUuid()
     // null branchId означает «писать в корень conversation» (master-ветка). У master-ветки
     // нет своего документа — её id совпадает с conversationId, — поэтому резолвим лениво
     // здесь, уже после того как conversationId мог быть сгенерирован.
-    val resolvedBranchId = branchId ?: FirestoreBranch.Id(conversationId.value)
+    val resolvedBranchId = branchId ?: conversationId
 
     val commitId = randomUuid()
     val createdAt = Timestamp.now()
     val participantIds = directParticipantIds(senderId, peerId)
-    val isRoot = resolvedBranchId.value == conversationId.value
+    val isRoot = resolvedBranchId == conversationId
 
     val batch = writeBatch()
     val conversationRef = conversationDocumentRef(conversationId)
 
-    val messageData = buildMap {
-      put(FirestoreSchema.COMMIT_CLIENT_COMMIT_ID, commitId)
-      put(FirestoreSchema.COMMIT_SENDER_UID, senderId.value)
-      put(FirestoreSchema.COMMIT_TEXT, text)
-      put(FirestoreSchema.COMMIT_TYPE, FirestoreSchema.CommitType.Text.value)
-      put(FirestoreSchema.COMMIT_CREATED_AT, createdAt)
-      put(FirestoreSchema.COMMIT_SERVER_CREATED_AT, FieldValue.serverTimestamp())
-      put(FirestoreSchema.COMMIT_READ_BY, listOf(senderId.value))
-      put(FirestoreSchema.COMMIT_COLOR_HEX, colorHex)
-      put(FirestoreSchema.COMMIT_BRANCH_ID, resolvedBranchId.value)
-    }
+    val messageData = codec.encodeToMap(
+      PostCommitParams(
+        clientCommitId = commitId,
+        senderUid = senderId,
+        text = text,
+        type = CommitNM.Type.Text,
+        createdAt = createdAt,
+        readBy = listOf(senderId.value),
+        colorHex = colorHex,
+        branchId = resolvedBranchId
+      )
+    )
 
-    val conversationData = buildMap {
-      put(FirestoreSchema.CONVERSATION_TYPE, ConversationType.Direct.value)
-      put(FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS, participantIds)
-      if (isRoot) {
-        put(FirestoreSchema.CONVERSATION_LAST_COMMIT_TEXT, text)
-        put(FirestoreSchema.CONVERSATION_LAST_COMMIT_SENDER_UID, senderId.value)
-        put(FirestoreSchema.CONVERSATION_LAST_COMMIT_AT, createdAt)
-      }
-      put(FirestoreSchema.CONVERSATION_UPDATED_AT, FieldValue.serverTimestamp())
-    }
+    val conversationData = codec.encodeToMap(
+      PostConversationParams(
+        type = ConversationNM.Type.Direct,
+        participantUids = participantIds,
+        lastCommitText = text.takeIf { isRoot },
+        lastCommitSenderUid = senderId.value.takeIf { isRoot },
+        lastCommitAt = createdAt.takeIf { isRoot }
+      )
+    )
 
     val messageRef = conversationRef
       .collection(FirestoreSchema.COMMITS_COLLECTION)
@@ -256,11 +301,12 @@ class Firestore @Inject constructor(
         val userSnapshot = userDocumentRef(userId)
           .get()
           .await()
-        val participantData = buildMap {
-          put(FirestoreSchema.PARTICIPANT_ID, uid)
-          put(FirestoreSchema.PARTICIPANT_DISPLAY_NAME, userSnapshot.getString(FirestoreSchema.USER_DISPLAY_NAME))
-          put(FirestoreSchema.PARTICIPANT_PHOTO_URL, userSnapshot.getString(FirestoreSchema.USER_PHOTO_URL))
-        }
+        val participantData = codec.encodeToMap(
+          PostParticipantParams(
+            displayName = userSnapshot.getString(FirestoreSchema.USER_DISPLAY_NAME),
+            photoUrl = userSnapshot.getString(FirestoreSchema.USER_PHOTO_URL)
+          )
+        )
         batch.set(
           participantDocumentRef(conversationId, userId),
           participantData
@@ -274,32 +320,20 @@ class Firestore @Inject constructor(
         .forEach { peerId ->
           batch.set(
             unreadCommitsDocumentRef(conversationId, UserId(peerId)),
-            buildMap { put(FirestoreSchema.UNREAD_COMMITS_COUNT, FieldValue.increment(1)) },
+            codec.encodeToMap(PatchUnreadIncrementParams()),
             SetOptions.merge()
           )
         }
     }
 
     batch.commit().await()
-
-    val message = FirestoreCommit(
-      commitId = FirestoreCommit.Id(commitId),
-      conversationId = conversationId,
-      branchId = resolvedBranchId,
-      senderId = senderId,
-      text = text,
-      colorHex = colorHex,
-      createdAtEpochSeconds = createdAt.toEpochSeconds(),
-      changeType = null
-    )
-    return message
   }
 
   fun branchesLive(
-    conversationId: FirestoreConversation.Id
-  ): Flow<List<FirestoreBranch>> {
+    conversationId: String
+  ): Flow<List<FirestoreChange<BranchNM>>> {
     return callbackFlow {
-      listenerGuard.trackOpen("branchesLive:${conversationId.value}")
+      listenerGuard.trackOpen("branchesLive:$conversationId")
 
       val listener = branchesCollectionRef(
         conversationId = conversationId
@@ -308,7 +342,13 @@ class Firestore @Inject constructor(
           close(error)
           return@addSnapshotListener
         }
-        trySend(snapshot.mapChanges { extractBranchFB(it.document, conversationId, it.type) })
+        val response = snapshot.mapDocumentChanges { change ->
+          FirestoreChange(
+            changeType = change.type.toFirestoreDocumentResult(),
+            data = codec.decodeFromSnapshot<BranchNM>(change.document)
+          )
+        }
+        trySend(response)
       }
 
       awaitClose { listener.remove() }
@@ -316,77 +356,74 @@ class Firestore @Inject constructor(
   }
 
   suspend fun postBranch(
-    conversationId: FirestoreConversation.Id,
-    parentBranchId: FirestoreBranch.Id,
-    branchedFromCommitId: FirestoreCommit.Id,
+    conversationId: String,
+    parentBranchId: String,
+    branchedFromCommitId: String,
     name: String
-  ): FirestoreBranch {
+  ): BranchNM {
     val createdAt = Timestamp.now()
     val createdByUserId = requireUserId()
 
-    val branchId = FirestoreBranch.Id(randomUuid())
+    val branchId = randomUuid()
 
-    val branchData = buildMap {
-      put(FirestoreSchema.BRANCH_PARENT_ID, parentBranchId.value)
-      put(FirestoreSchema.BRANCH_BRANCHED_FROM_COMMIT_ID, branchedFromCommitId.value)
-      put(FirestoreSchema.BRANCH_NAME, name)
-      put(FirestoreSchema.BRANCH_STATUS, BranchStatus.Active.value)
-      put(FirestoreSchema.BRANCH_CREATED_AT, createdAt)
-      put(FirestoreSchema.BRANCH_CREATED_BY_UID, createdByUserId.value)
-    }
+    val branchData = codec.encodeToMap(
+      PostBranchParams(
+        parentBranchId = parentBranchId,
+        branchedFromCommitId = branchedFromCommitId,
+        name = name,
+        status = Status.Active,
+        createdAt = createdAt,
+        createdByUid = createdByUserId
+      )
+    )
 
     branchDocumentRef(conversationId, branchId)
       .set(branchData)
       .await()
 
-    return FirestoreBranch(
+    return BranchNM(
       id = branchId,
-      conversationId = conversationId,
       parentBranchId = parentBranchId,
       branchedFromCommitId = branchedFromCommitId,
       name = name,
-      status = BranchStatus.Active,
-      createdAtEpochSeconds = createdAt.toEpochSeconds(),
-      createdByUid = createdByUserId,
+      status = Status.Active,
+      createdAt = createdAt,
+      createdByUid = createdByUserId.value,
       mergeRequest = null,
-      mergedAtEpochSeconds = null,
-      mergedIntoBranchId = null,
-      changeType = null
+      mergedAt = null,
+      mergedIntoBranchId = null
     )
   }
 
   /**
    * Открывает merge request для ветки. Атомарно: проходит только если ветка сейчас
-   * в статусе [BranchStatus.Active]. Записывает `mergeRequest = { initiator, requestedAt,
-   * approvedByUids: [initiator] }` и переводит статус в [BranchStatus.MergeInProgress].
+   * в статусе [Status.Active]. Записывает `mergeRequest = { initiator, requestedAt,
+   * approvedByUids: [initiator] }` и переводит статус в [Status.MergeInProgress].
    */
   suspend fun postMergeRequest(
-    conversationId: FirestoreConversation.Id,
-    branchId: FirestoreBranch.Id
+    conversationId: String,
+    branchId: String
   ) {
     val initiator = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
     val requestedAt = Timestamp.now()
 
     val transaction = runTransaction { txn ->
-      val snapshot = txn.get(branchRef)
-      val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
-        ?: error("branch has no status")
-      check(currentStatus == BranchStatus.Active.value) {
-        "Cannot request merge: branch status is $currentStatus, expected ${BranchStatus.Active.value}"
+      val current = codec.decodeFromSnapshot<BranchNM>(txn.get(branchRef))
+      check(current.status == Status.Active) {
+        "Cannot request merge: branch status is ${current.status}, expected ${Status.Active}"
       }
-      val mergeRequestData = buildMap {
-        put(FirestoreSchema.BRANCH_MERGE_REQUEST_INITIATOR_UID, initiator.value)
-        put(FirestoreSchema.BRANCH_MERGE_REQUEST_REQUESTED_AT, requestedAt)
-        put(FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS, listOf(initiator.value))
-      }
-      txn.update(
-        branchRef,
-        buildMap {
-          put(FirestoreSchema.BRANCH_STATUS, BranchStatus.MergeInProgress.value)
-          put(FirestoreSchema.BRANCH_MERGE_REQUEST, mergeRequestData)
-        }
+      val update = codec.encodeToMap(
+        PatchBranchOpenMergeParams(
+          status = Status.MergeInProgress,
+          mergeRequest = MergeRequestNM(
+            initiatorUid = initiator.value,
+            requestedAt = requestedAt,
+            approvedByUids = listOf(initiator.value)
+          )
+        )
       )
+      txn.update(branchRef, update)
     }
 
     transaction.await()
@@ -396,28 +433,24 @@ class Firestore @Inject constructor(
    * Добавляет текущего пользователя в список approvers активного merge request'а. Атомарно.
    *
    * Если с учётом текущего пользователя [participantUids] покрыт полностью, ветка финализируется
-   * в той же транзакции: status -> [BranchStatus.Merged], `mergedAt = now`,
+   * в той же транзакции: status -> [Status.Merged], `mergedAt = now`,
    * `mergedIntoBranchId = parentBranchId`, `mergeRequest` удаляется.
    */
   suspend fun patchMergeApproval(
-    conversationId: FirestoreConversation.Id,
-    branchId: FirestoreBranch.Id,
+    conversationId: String,
+    branchId: String,
     participantUids: List<String>
   ) {
     val approver = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
     val now = Timestamp.now()
     val transaction = runTransaction { txn ->
-      val snapshot = txn.get(branchRef)
-      val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
-        ?: error("branch has no status")
-      check(currentStatus == BranchStatus.MergeInProgress.value) {
-        "Cannot approve merge: branch status is $currentStatus"
+      val current = codec.decodeFromSnapshot<BranchNM>(txn.get(branchRef))
+      check(current.status == Status.MergeInProgress) {
+        "Cannot approve merge: branch status is ${current.status}"
       }
-      val approvedRaw = snapshot.mergeRequestApprovedUids().orEmpty()
+      val approvedRaw = current.mergeRequest?.approvedByUids.orEmpty()
       val updatedApproved = (approvedRaw + approver.value).distinct()
-      val parentBranchId = snapshot.getString(FirestoreSchema.BRANCH_PARENT_ID)
-        ?: error("branch has no parentBranchId")
 
       val finalize = participantUids
         .toSet()
@@ -425,24 +458,24 @@ class Firestore @Inject constructor(
         .isEmpty() && participantUids.isNotEmpty()
 
       if (finalize) {
-        txn.update(
-          branchRef,
-          buildMap {
-            put(FirestoreSchema.BRANCH_STATUS, BranchStatus.Merged.value)
-            put(FirestoreSchema.BRANCH_MERGED_AT, now)
-            put(FirestoreSchema.BRANCH_MERGED_INTO_BRANCH_ID, parentBranchId)
-            put(FirestoreSchema.BRANCH_MERGE_REQUEST, FieldValue.delete())
-          }
+        val update = codec.encodeToMap(
+          PatchBranchFinalizeMergeParams(
+            status = Status.Merged,
+            mergedAt = now,
+            mergedIntoBranchId = current.parentBranchId
+          )
         )
+        txn.update(branchRef, update)
       } else {
+        // Partial field-path update: дописываем только approvedByUids внутри mergeRequest,
+        // не трогая initiatorUid/requestedAt. NM-payload здесь не годится — нужно
+        // именно "dot-path" обращение, которое Firestore разворачивает по месту.
         txn.update(
           branchRef,
-          buildMap {
-            put(
-              "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}",
-              updatedApproved
-            )
-          }
+          mapOf(
+            "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}"
+              to updatedApproved
+          )
         )
       }
     }
@@ -452,42 +485,33 @@ class Firestore @Inject constructor(
 
   /**
    * Убирает текущего пользователя из списка approvers. Если текущий пользователь — инициатор,
-   * весь merge request отменяется (status -> [BranchStatus.Active]).
+   * весь merge request отменяется (status -> [Status.Active]).
    */
   suspend fun deleteMergeApproval(
-    conversationId: FirestoreConversation.Id,
-    branchId: FirestoreBranch.Id
+    conversationId: String,
+    branchId: String
   ) {
     val approver = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
     val transaction = runTransaction { txn ->
-      val snapshot = txn.get(branchRef)
-      val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
-        ?: error("branch has no status")
-      check(currentStatus == BranchStatus.MergeInProgress.value) {
-        "Cannot revoke approval: branch status is $currentStatus"
+      val current = codec.decodeFromSnapshot<BranchNM>(txn.get(branchRef))
+      check(current.status == Status.MergeInProgress) {
+        "Cannot revoke approval: branch status is ${current.status}"
       }
-      val initiator = snapshot.mergeRequestInitiatorUid()
-      if (initiator == approver.value) {
+      val mergeRequest = current.mergeRequest
+        ?: error("branch in MergeInProgress has no mergeRequest")
+      if (mergeRequest.initiatorUid == approver.value) {
         // Отзыв со стороны инициатора означает отмену всего merge request'а.
-        txn.update(
-          branchRef,
-          buildMap {
-            put(FirestoreSchema.BRANCH_STATUS, BranchStatus.Active.value)
-            put(FirestoreSchema.BRANCH_MERGE_REQUEST, FieldValue.delete())
-          }
-        )
+        txn.update(branchRef, cancelMergePayload())
       } else {
-        val approvedRaw = snapshot.mergeRequestApprovedUids().orEmpty()
-        val updatedApproved = approvedRaw.filter { it != approver.value }
+        val updatedApproved = mergeRequest.approvedByUids.filter { it != approver.value }
+        // Partial field-path update — см. комментарий в patchMergeApproval.
         txn.update(
           branchRef,
-          buildMap {
-            put(
-              "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}",
-              updatedApproved
-            )
-          }
+          mapOf(
+            "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}"
+              to updatedApproved
+          )
         )
       }
     }
@@ -496,38 +520,35 @@ class Firestore @Inject constructor(
   }
 
   /**
-   * Инициатор отменяет merge request. Ветка возвращается в [BranchStatus.Active].
+   * Инициатор отменяет merge request. Ветка возвращается в [Status.Active].
    */
   suspend fun deleteMergeRequest(
-    conversationId: FirestoreConversation.Id,
-    branchId: FirestoreBranch.Id
+    conversationId: String,
+    branchId: String
   ) {
     val canceller = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
     val transaction = runTransaction { txn ->
-      val snapshot = txn.get(branchRef)
-      val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
-        ?: error("branch has no status")
-      check(currentStatus == BranchStatus.MergeInProgress.value) {
-        "Cannot cancel merge: branch status is $currentStatus"
+      val current = codec.decodeFromSnapshot<BranchNM>(txn.get(branchRef))
+      check(current.status == Status.MergeInProgress) {
+        "Cannot cancel merge: branch status is ${current.status}"
       }
-      val initiator = snapshot.mergeRequestInitiatorUid()
+      val initiator = current.mergeRequest?.initiatorUid
+        ?: error("branch in MergeInProgress has no mergeRequest")
       check(initiator == canceller.value) {
         "Only the merge initiator can cancel the merge request"
       }
-      txn.update(
-        branchRef,
-        buildMap {
-          put(FirestoreSchema.BRANCH_STATUS, BranchStatus.Active.value)
-          put(FirestoreSchema.BRANCH_MERGE_REQUEST, FieldValue.delete())
-        }
-      )
+      txn.update(branchRef, cancelMergePayload())
     }
 
     transaction.await()
   }
 
-  private fun directConversationIdLive(peerId: Peer.Id): Flow<FirestoreConversation.Id?> {
+  private fun cancelMergePayload(): Map<String, Any?> = codec.encodeToMap(
+    PatchBranchCancelMergeParams(status = Status.Active)
+  )
+
+  private fun directConversationIdLive(peerId: Peer.Id): Flow<String?> {
     return callbackFlow {
       val currentUid = requireUserId()
       listenerGuard.trackOpen("directConversationIdLive:${currentUid.value}:${peerId.value}")
@@ -535,14 +556,14 @@ class Firestore @Inject constructor(
       val directParticipantIds = directParticipantIds(currentUid, peerId)
 
       val listener = conversationsQuery(
-        whereEqualTo = ConversationType.Direct,
+        whereEqualTo = ConversationNM.Type.Direct,
         whereArrayContains = currentUid
       ).addSnapshotListener { snapshot, error ->
         if (error != null) {
           close(error)
           return@addSnapshotListener
         }
-        trySend(snapshot?.findDirectConversation(directParticipantIds)?.id)
+        trySend(snapshot?.findDirectConversationId(directParticipantIds))
       }
 
       awaitClose { listener.remove() }
@@ -550,15 +571,15 @@ class Firestore @Inject constructor(
   }
 
   private fun conversationMessagesLive(
-    id: FirestoreConversation.Id,
-    branchId: FirestoreBranch.Id,
+    id: String,
+    branchId: String,
     limit: Long
-  ): Flow<List<FirestoreCommit>> {
+  ): Flow<List<FirestoreChange<CommitNM>>> {
     return callbackFlow {
-      listenerGuard.trackOpen("conversationMessagesLive:${id.value}:${branchId.value}")
+      listenerGuard.trackOpen("conversationMessagesLive:$id:$branchId")
 
       val listener = commitsCollectionRef(id)
-        .whereEqualTo(FirestoreSchema.COMMIT_BRANCH_ID, branchId.value)
+        .whereEqualTo(FirestoreSchema.COMMIT_BRANCH_ID, branchId)
         .orderBy(FirestoreSchema.COMMIT_CREATED_AT, Query.Direction.DESCENDING)
         .limit(limit)
         .addSnapshotListener { snapshot, error ->
@@ -566,8 +587,13 @@ class Firestore @Inject constructor(
             close(error)
             return@addSnapshotListener
           }
-          val changes = snapshot.mapChanges { extractCommitFB(it.document, id, it.type) }
-          trySend(changes)
+          val response = snapshot.mapDocumentChanges { change ->
+            FirestoreChange(
+              changeType = change.type.toFirestoreDocumentResult(),
+              data = codec.decodeFromSnapshot<CommitNM>(change.document)
+            )
+          }
+          trySend(response)
         }
 
       awaitClose { listener.remove() }
@@ -578,23 +604,14 @@ class Firestore @Inject constructor(
     return setOf(userId.value, peerId.value).sorted()
   }
 
-  @Suppress("UNCHECKED_CAST")
-  private fun DocumentSnapshot.mergeRequestApprovedUids(): List<String>? {
-    val raw = get(FirestoreSchema.BRANCH_MERGE_REQUEST) as? Map<String, Any?> ?: return null
-    return (raw[FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS] as? List<*>)
-      ?.mapNotNull { it as? String }
-  }
-
-  @Suppress("UNCHECKED_CAST")
-  private fun DocumentSnapshot.mergeRequestInitiatorUid(): String? {
-    val raw = get(FirestoreSchema.BRANCH_MERGE_REQUEST) as? Map<String, Any?> ?: return null
-    return raw[FirestoreSchema.BRANCH_MERGE_REQUEST_INITIATOR_UID] as? String
-  }
-
-  private fun QuerySnapshot?.findDirectConversation(ids: List<String>): FirestoreConversation? {
+  private fun QuerySnapshot?.findDirectConversationId(
+    participantIds: List<String>
+  ): String? {
     return this?.documents
-      ?.map(::extractConversationFB)
-      ?.firstOrNull { it.participantUids == ids }
+      ?.firstOrNull { document ->
+        codec.decodeFromSnapshot<ConversationNM>(document).participantUids == participantIds
+      }
+      ?.id
   }
 
   private suspend fun requireUserId(): UserId {

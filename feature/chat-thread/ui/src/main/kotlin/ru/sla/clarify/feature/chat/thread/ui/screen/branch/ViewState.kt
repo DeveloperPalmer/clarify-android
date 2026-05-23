@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.thread.domain.entity.MergeRequest
 import ru.sla.clarify.feature.entity.chat.Commit
 
 @Immutable
@@ -12,7 +13,7 @@ data class ViewState(
   val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
   val branchName: String? = null,
   val branchStatus: Branch.Status = Branch.Status.Active,
-  val mergeRequest: Branch.MergeRequest? = null,
+  val mergeRequest: MergeRequest? = null,
   val initiatorName: String? = null,
   val currentUserId: UserId? = null,
   val commits: List<Commit> = emptyList(),

@@ -7,9 +7,7 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Transaction
 import com.google.firebase.firestore.WriteBatch
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
+import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 
 interface FirestoreWrapperProvider {
 
@@ -27,38 +25,38 @@ interface FirestoreWrapperProvider {
   ): Query
 
   fun conversationsQuery(
-    whereEqualTo: ConversationType,
+    whereEqualTo: Type,
     whereArrayContains: UserId
   ): Query
 
   fun conversationDocumentRef(
-    conversationId: FirestoreConversation.Id
+    conversationId: String
   ): DocumentReference
 
   fun commitsCollectionRef(
-    conversationId: FirestoreConversation.Id
+    conversationId: String
   ): CollectionReference
 
   fun unreadCommitsDocumentRef(
-    conversationId: FirestoreConversation.Id,
+    conversationId: String,
     userId: UserId
   ): DocumentReference
 
   fun branchesCollectionRef(
-    conversationId: FirestoreConversation.Id
+    conversationId: String
   ): CollectionReference
 
   fun branchDocumentRef(
-    conversationId: FirestoreConversation.Id,
-    branchId: FirestoreBranch.Id
+    conversationId: String,
+    branchId: String
   ): DocumentReference
 
   fun participantsCollectionRef(
-    conversationId: FirestoreConversation.Id
+    conversationId: String
   ): CollectionReference
 
   fun participantDocumentRef(
-    conversationId: FirestoreConversation.Id,
+    conversationId: String,
     userId: UserId
   ): DocumentReference
 }

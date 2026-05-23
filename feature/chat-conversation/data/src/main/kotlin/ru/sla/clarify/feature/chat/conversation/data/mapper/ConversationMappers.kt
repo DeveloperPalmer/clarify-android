@@ -5,7 +5,7 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.chat.ChatConversationQueries
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.entity.chat.Peer
-import ru.sla.clarify.lib.google.firestore.FirestoreSchema
+import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 
 internal fun ChatConversationQueries.selectAll(userId: UserId): Query<Conversation> {
   return selectAllWithPeer(currentUserId = userId.value) {
@@ -20,7 +20,7 @@ internal fun ChatConversationQueries.selectAll(userId: UserId): Query<Conversati
     ->
 
     when (type) {
-      FirestoreSchema.ConversationType.Direct.value -> {
+      Type.Direct.value -> {
         Conversation.Direct(
           id = Conversation.Id(id),
           peer = Peer(

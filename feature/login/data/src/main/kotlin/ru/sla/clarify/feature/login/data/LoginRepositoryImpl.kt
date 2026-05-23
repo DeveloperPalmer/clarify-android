@@ -36,12 +36,21 @@ class LoginRepositoryImpl @Inject constructor(
 
         val userId = UserId(user.uid)
 
-        firestore.patchUser(
-          id = userId,
-          displayName = user.displayName,
-          photoUrl = user.photoUrl?.toString(),
-          email = user.email?.lowercase()
-        )
+        if (firestore.isUserExists(userId)) {
+          firestore.patchUser(
+            id = userId,
+            displayName = user.displayName,
+            photoUrl = user.photoUrl?.toString(),
+            email = user.email?.lowercase()
+          )
+        } else {
+          firestore.postUser(
+            id = userId,
+            displayName = user.displayName,
+            photoUrl = user.photoUrl?.toString(),
+            email = user.email?.lowercase()
+          )
+        }
 
         AuthResult(
           userId = userId,

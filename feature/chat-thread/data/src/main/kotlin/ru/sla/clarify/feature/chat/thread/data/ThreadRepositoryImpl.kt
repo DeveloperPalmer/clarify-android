@@ -19,9 +19,10 @@ import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
+import ru.sla.clarify.lib.google.firestore.FirestoreChange
+import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
+import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import javax.inject.Inject
 
 @SingleIn(ThreadScope::class)
@@ -35,10 +36,10 @@ class ThreadRepositoryImpl @Inject constructor(
 
   override fun commits(branchId: Branch.Id?): Flow<List<Commit>> = flow {
     val conversationId = threadMediator.awaitConversationId()
-    val effectiveBranchId = branchId?.value ?: conversationId.value
+    val effectiveBranchId = branchId?.value ?: conversationId
     val commitsFlow = inMemoryDB.chatCommitQueries
       .selectByBranchId(
-        conversationId = conversationId.value,
+        conversationId = conversationId,
         branchId = effectiveBranchId,
         mapper = ::mapToCommit
       )
@@ -50,8 +51,7 @@ class ThreadRepositoryImpl @Inject constructor(
   override fun observeCommitsChanges(branchId: Branch.Id?): Flow<Unit> = flow {
     val conversationId = threadMediator.awaitConversationId()
     val userId = threadMediator.requireUserId()
-    val rootBranchId = FirestoreBranch.Id(conversationId.value)
-    val resolvedBranchId = branchId?.value?.let(FirestoreBranch::Id) ?: rootBranchId
+    val resolvedBranchId = branchId?.value ?: conversationId
 
     firestore.directCommitsLive(
       peerId = peerId,
@@ -59,6 +59,7 @@ class ThreadRepositoryImpl @Inject constructor(
       limit = LIVE_COMMIT_LIMIT
     ).collect { changes ->
       applyCommitChanges(
+        conversationId = conversationId,
         userId = userId,
         changes = changes
       )
@@ -72,14 +73,14 @@ class ThreadRepositoryImpl @Inject constructor(
     before: Commit?
   ) {
     val conversationId = threadMediator.conversationId() ?: return
-    val effectiveBranchId = branchId?.value ?: conversationId.value
+    val effectiveBranchId = branchId?.value ?: conversationId
     val historyCommits = firestore.getCommits(
       conversationId = conversationId,
-      branchId = FirestoreBranch.Id(effectiveBranchId),
+      branchId = effectiveBranchId,
       count = count,
       before = before?.timestamp
     )
-    saveHistoryCommits(historyCommits)
+    saveHistoryCommits(conversationId, historyCommits)
   }
 
   override suspend fun sendCommit(
@@ -91,7 +92,7 @@ class ThreadRepositoryImpl @Inject constructor(
       conversationId = threadMediator.conversationId(),
       text = text,
       peerId = peerId,
-      branchId = branchId?.value?.let(FirestoreBranch::Id),
+      branchId = branchId?.value,
       colorHex = colorHex ?: generateColorHex()
     )
   }
@@ -102,56 +103,52 @@ class ThreadRepositoryImpl @Inject constructor(
   }
 
   private suspend fun saveHistoryCommits(
-    commits: List<FirestoreCommit>
+    conversationId: String,
+    commitNMS: List<CommitNM>
   ): Unit = withContext(Dispatchers.IO) {
     val userId = threadMediator.requireUserId()
     inMemoryDB.transaction {
-      commits.forEach { item ->
-        inMemoryDB.chatCommitQueries.insertOrReplace(
-          id = item.commitId.value,
-          conversationId = item.conversationId.value,
-          branchId = item.branchId.value,
-          senderId = item.senderId.value,
-          text = item.text,
-          colorHex = item.colorHex,
-          timestamp = item.createdAtEpochSeconds,
-          isSelf = item.senderId == userId,
-          status = Commit.Status.Sent.value
-        )
-      }
+      commitNMS.forEach { item -> insertOrReplaceCommit(conversationId, item, userId) }
     }
   }
 
   private suspend fun applyCommitChanges(
+    conversationId: String,
     userId: UserId,
-    changes: List<FirestoreCommit>
+    changes: List<FirestoreChange<CommitNM>>
   ): Unit = withContext(Dispatchers.IO) {
     inMemoryDB.transaction {
-      changes.forEach { item ->
-        when (item.changeType) {
+      changes.forEach { change ->
+        val commit = change.data
+        when (change.changeType) {
           FirestoreDocumentResult.Removed -> {
-            inMemoryDB.chatCommitQueries.deleteById(
-              id = item.commitId.value
-            )
+            inMemoryDB.chatCommitQueries.deleteById(id = commit.id)
           }
-          null,
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
-            inMemoryDB.chatCommitQueries.insertOrReplace(
-              id = item.commitId.value,
-              conversationId = item.conversationId.value,
-              branchId = item.branchId.value,
-              senderId = item.senderId.value,
-              text = item.text,
-              colorHex = item.colorHex,
-              timestamp = item.createdAtEpochSeconds,
-              isSelf = item.senderId == userId,
-              status = Commit.Status.Sent.value
-            )
+            insertOrReplaceCommit(conversationId, commit, userId)
           }
         }
       }
     }
+  }
+
+  private fun insertOrReplaceCommit(
+    conversationId: String,
+    commitNM: CommitNM,
+    currentUserId: UserId
+  ) {
+    inMemoryDB.chatCommitQueries.insertOrReplace(
+      id = commitNM.id,
+      conversationId = conversationId,
+      branchId = commitNM.branchId,
+      senderId = commitNM.senderUid,
+      text = commitNM.text.orEmpty(),
+      colorHex = commitNM.colorHex,
+      timestamp = commitNM.createdAt?.toEpochSeconds() ?: 0L,
+      isSelf = commitNM.senderUid == currentUserId.value,
+      status = Commit.Status.Sent.value
+    )
   }
 }
 

@@ -5,6 +5,18 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 
+/**
+ * Имена коллекций и тех полей документа, к которым нужно обращаться **снаружи**
+ * NM — query whereEqualTo/orderBy, dot-path update'ы и денормализационные чтения
+ * через `snapshot.getString/getLong(...)`. Поля, имена которых фигурируют только
+ * внутри NM (`UserNM.email`, `BranchNM.status`, ...), сюда не входят — single
+ * source of truth там @Serializable property name (или @SerialName).
+ *
+ * Sentinel-поля (`updatedAt`, `serverCreatedAt`, ...) тоже не нужны здесь как
+ * константы — они живут как обычные типизированные поля внутри `*Params`
+ * (`ServerTimestamp`, `Delete`, `Increment`); подменяются на `FieldValue.*`
+ * через свои атомарные @Contextual-сериализаторы в [FirestoreFormat].
+ */
 object FirestoreSchema {
   const val USERS_COLLECTION = "users"
   const val PARTICIPANTS_COLLECTION = "participants"
@@ -13,75 +25,32 @@ object FirestoreSchema {
   const val UNREAD_COMMITS_COLLECTION = "unreadCommits"
   const val BRANCHES_COLLECTION = "branches"
 
+  // Поле документа unreadCommits/{uid} — нужно для getLong-чтения в listener'е.
+  // NM для документа смысла не имеет — в нём ровно одно поле, обращаемся точечно.
   const val UNREAD_COMMITS_COUNT = "count"
 
+  // users/{uid} денормализация: в postCommit при создании conversation мы вытаскиваем
+  // displayName/photoUrl из user-документа sender'а одним вызовом getString —
+  // полный decode<UserNM> здесь оверкилл (нужны два поля из трёх).
   const val USER_DISPLAY_NAME = "displayName"
   const val USER_PHOTO_URL = "photoUrl"
+
+  // usersQuery whereEqualTo(USER_EMAIL, ...) — точечный query.
   const val USER_EMAIL = "email"
-  const val USER_CREATED_AT = "createdAt"
-  const val USER_UPDATED_AT = "updatedAt"
 
-  const val PARTICIPANT_ID = "id"
-  const val PARTICIPANT_DISPLAY_NAME = "displayName"
-  const val PARTICIPANT_PHOTO_URL = "photoUrl"
-
+  // conversationsQuery whereEqualTo/whereArrayContains.
   const val CONVERSATION_TYPE = "type"
   const val CONVERSATION_PARTICIPANT_UIDS = "participantUids"
-  const val CONVERSATION_LAST_COMMIT_TEXT = "lastCommitText"
-  const val CONVERSATION_LAST_COMMIT_SENDER_UID = "lastCommitSenderUid"
-  const val CONVERSATION_LAST_COMMIT_AT = "lastCommitAt"
-  const val CONVERSATION_UPDATED_AT = "updatedAt"
 
-  const val COMMIT_CLIENT_COMMIT_ID = "clientCommitId"
-  const val COMMIT_SENDER_UID = "senderUid"
-  const val COMMIT_TEXT = "text"
-  const val COMMIT_TYPE = "type"
+  // commitsCollectionRef-query: orderBy + whereLessThan + whereEqualTo по branchId.
   const val COMMIT_CREATED_AT = "createdAt"
-  const val COMMIT_SERVER_CREATED_AT = "serverCreatedAt"
-  const val COMMIT_READ_BY = "readBy"
-  const val COMMIT_COLOR_HEX = "colorHex"
   const val COMMIT_BRANCH_ID = "branchId"
 
-  const val BRANCH_PARENT_ID = "parentBranchId"
-  const val BRANCH_BRANCHED_FROM_COMMIT_ID = "branchedFromCommitId"
-  const val BRANCH_NAME = "name"
-  const val BRANCH_STATUS = "status"
-  const val BRANCH_CREATED_AT = "createdAt"
-  const val BRANCH_CREATED_BY_UID = "createdByUid"
+  // Merge-транзакции: dot-path update вложенного `mergeRequest.approvedByUids`.
+  // Точечная операция на вложенное поле — NM-payload здесь не годится, нужно
+  // именно "dot-path" обращение, которое Firestore разворачивает по месту.
   const val BRANCH_MERGE_REQUEST = "mergeRequest"
-  const val BRANCH_MERGE_REQUEST_INITIATOR_UID = "initiatorUid"
-  const val BRANCH_MERGE_REQUEST_REQUESTED_AT = "requestedAt"
   const val BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS = "approvedByUids"
-  const val BRANCH_MERGED_AT = "mergedAt"
-  const val BRANCH_MERGED_INTO_BRANCH_ID = "mergedIntoBranchId"
-
-  enum class ConversationType(val value: String) {
-    Direct("direct"),
-    Group("group");
-
-    companion object {
-      fun fromValue(value: String): ConversationType {
-        return entries.first { it.value == value }
-      }
-    }
-  }
-
-  enum class CommitType(val value: String) {
-    Text("text")
-  }
-
-  enum class BranchStatus(val value: String) {
-    Active("active"),
-    MergeInProgress("mergeInProgress"),
-    Merged("merged");
-
-    companion object {
-      fun fromValue(value: String): BranchStatus {
-        return entries.firstOrNull { it.value == value }
-          ?: error("unexpected branch status: $value")
-      }
-    }
-  }
 }
 
 fun Timestamp.toEpochSeconds(): Long {

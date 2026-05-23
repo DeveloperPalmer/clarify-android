@@ -40,6 +40,7 @@ import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.core.ui.text.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.thread.domain.entity.MergeRequest
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.uikit.component.IconAction
 import ru.sla.clarify.uikit.modifier.surface
@@ -181,7 +182,7 @@ private fun MergeBanner(
   isMergeActionPending: Boolean,
   isCurrentUserApprover: Boolean,
   isCurrentUserInitiator: Boolean,
-  mergeRequest: Branch.MergeRequest,
+  mergeRequest: MergeRequest,
   initiatorName: String?,
   onApprove: () -> Unit,
   onRevoke: () -> Unit

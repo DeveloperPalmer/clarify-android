@@ -34,16 +34,4 @@ data class Branch(
       }
     }
   }
-
-  /**
-   * Активное предложение merge'а для ветки. Пока оно есть, ветка в [Status.MergeInProgress]
-   * и не принимает новые commit'ы. Как только [approvedByUids] покроет всех участников
-   * conversation — ветка переходит в [Status.Merged].
-   */
-  @Immutable
-  data class MergeRequest(
-    val initiatorUid: UserId,
-    val requestedAt: Long,
-    val approvedByUids: Set<UserId>
-  )
 }

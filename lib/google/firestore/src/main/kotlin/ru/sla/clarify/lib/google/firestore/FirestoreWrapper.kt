@@ -11,9 +11,7 @@ import com.google.firebase.firestore.WriteBatch
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
+import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 import javax.inject.Inject
 
 @SingleIn(AppScope::class)
@@ -61,7 +59,7 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
   }
 
   override fun conversationsQuery(
-    whereEqualTo: ConversationType,
+    whereEqualTo: Type,
     whereArrayContains: UserId
   ): Query {
     return remoteDB
@@ -77,69 +75,69 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
   }
 
   override fun conversationDocumentRef(
-    conversationId: FirestoreConversation.Id
+    conversationId: String
   ): DocumentReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .document(conversationId.value)
+      .document(conversationId)
   }
 
   override fun commitsCollectionRef(
-    conversationId: FirestoreConversation.Id
+    conversationId: String
   ): CollectionReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .document(conversationId.value)
+      .document(conversationId)
       .collection(FirestoreSchema.COMMITS_COLLECTION)
   }
 
   override fun unreadCommitsDocumentRef(
-    conversationId: FirestoreConversation.Id,
+    conversationId: String,
     userId: UserId
   ): DocumentReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .document(conversationId.value)
+      .document(conversationId)
       .collection(FirestoreSchema.UNREAD_COMMITS_COLLECTION)
       .document(userId.value)
   }
 
   override fun branchesCollectionRef(
-    conversationId: FirestoreConversation.Id
+    conversationId: String
   ): CollectionReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .document(conversationId.value)
+      .document(conversationId)
       .collection(FirestoreSchema.BRANCHES_COLLECTION)
   }
 
   override fun branchDocumentRef(
-    conversationId: FirestoreConversation.Id,
-    branchId: FirestoreBranch.Id
+    conversationId: String,
+    branchId: String
   ): DocumentReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .document(conversationId.value)
+      .document(conversationId)
       .collection(FirestoreSchema.BRANCHES_COLLECTION)
-      .document(branchId.value)
+      .document(branchId)
   }
 
   override fun participantsCollectionRef(
-    conversationId: FirestoreConversation.Id
+    conversationId: String
   ): CollectionReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .document(conversationId.value)
+      .document(conversationId)
       .collection(FirestoreSchema.PARTICIPANTS_COLLECTION)
   }
 
   override fun participantDocumentRef(
-    conversationId: FirestoreConversation.Id,
+    conversationId: String,
     userId: UserId
   ): DocumentReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .document(conversationId.value)
+      .document(conversationId)
       .collection(FirestoreSchema.PARTICIPANTS_COLLECTION)
       .document(userId.value)
   }

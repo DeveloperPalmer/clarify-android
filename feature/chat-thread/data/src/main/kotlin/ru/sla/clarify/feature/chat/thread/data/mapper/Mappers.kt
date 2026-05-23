@@ -1,14 +1,7 @@
 package ru.sla.clarify.feature.chat.thread.data.mapper
 
-import app.cash.sqldelight.Query
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.adapter.StringList
-import ru.sla.clarify.database.chat.ChatConversationQueries
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Peer
-import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.random.Random
@@ -33,41 +26,6 @@ internal fun mapToCommit(
       .toLocalDateTime(),
     isSelf = isSelf,
     status = Commit.Status.fromValue(status)
-  )
-}
-
-internal fun ChatConversationQueries.selectById(
-  conversationId: FirestoreConversation.Id,
-  userId: UserId
-): Query<Conversation> {
-  return selectById(
-    id = conversationId.value,
-    mapper = {
-        id: String,
-        type: String,
-        participantUids: StringList,
-        lastCommit: String?,
-        lastCommitTimestamp: Long,
-        unreadCount: Long
-      ->
-      when (type) {
-        ConversationType.Direct.value -> {
-          val peerId = participantUids.first { it != userId.value }
-          Conversation.Direct(
-            id = Conversation.Id(id),
-            peer = Peer(
-              id = Peer.Id(peerId),
-              displayName = null,
-              photoUrl = null
-            ),
-            lastMessage = lastCommit,
-            lastMessageTimestamp = lastCommitTimestamp,
-            unreadCount = unreadCount
-          )
-        }
-        else -> error("unexpected conversation type: $type")
-      }
-    }
   )
 }
 

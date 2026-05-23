@@ -26,8 +26,10 @@ import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
+import ru.sla.clarify.lib.google.firestore.FirestoreChange
+import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
+import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import javax.inject.Inject
 
 @SingleIn(ConversationScope::class)
@@ -48,8 +50,8 @@ class ConversationRepositoryImpl @Inject constructor(
   override suspend fun fetchCurrentUser(): Unit = withContext(Dispatchers.IO) {
     val firestoreUser = firestore.getCurrentUser()
     inMemoryDB.userQueries.insertOrReplace(
-      id = firestoreUser.id.value,
-      email = firestoreUser.email?.value,
+      id = firestoreUser.id,
+      email = firestoreUser.email,
       displayName = firestoreUser.displayName,
       photoUrl = firestoreUser.photoUrl
     )
@@ -90,7 +92,7 @@ class ConversationRepositoryImpl @Inject constructor(
       .observeList()
       .flatMapLatest { conversationIds ->
         conversationIds
-          .map { id -> subscribeOnUnreadCount(FirestoreConversation.Id(id)) }
+          .map { id -> subscribeOnUnreadCount(id) }
           .merge()
       }
       .flowOn(Dispatchers.IO)
@@ -115,9 +117,9 @@ class ConversationRepositoryImpl @Inject constructor(
       }
   }
 
-  private suspend fun applyChange(conversation: FirestoreConversation) {
-    when (conversation.changeType) {
-      null -> Unit
+  private suspend fun applyChange(change: FirestoreChange<ConversationNM>) {
+    val conversation = change.data
+    when (change.changeType) {
       FirestoreDocumentResult.Added -> {
         addConversation(conversation)
       }
@@ -126,50 +128,50 @@ class ConversationRepositoryImpl @Inject constructor(
       }
       FirestoreDocumentResult.Removed -> {
         inMemoryDB.transaction {
-          inMemoryDB.conversationParticipantQueries.deleteByConversation(conversation.id.value)
-          inMemoryDB.chatConversationQueries.deleteById(id = conversation.id.value)
+          inMemoryDB.conversationParticipantQueries.deleteByConversation(conversation.id)
+          inMemoryDB.chatConversationQueries.deleteById(id = conversation.id)
         }
       }
     }
   }
 
-  private suspend fun addConversation(conversation: FirestoreConversation) {
+  private suspend fun addConversation(conversation: ConversationNM) {
     // Participants подтягиваем ДО локального upsert'а, чтобы SQL никогда не отдал
     // conversation без peer'а в join'е (иначе mapper падает на requireNotNull(peerId)).
     val participants = firestore.getParticipants(conversation.id)
     inMemoryDB.transaction {
       participants.forEach { participant ->
         inMemoryDB.conversationParticipantQueries.insertOrReplace(
-          conversationId = conversation.id.value,
-          id = participant.id.value,
+          conversationId = conversation.id,
+          id = participant.id,
           displayName = participant.displayName,
           photoUrl = participant.photoUrl
         )
       }
       inMemoryDB.chatConversationQueries.insertOrReplaceMeta(
-        id = conversation.id.value,
+        id = conversation.id,
         type = conversation.type.value,
         participantUids = conversation.participantUids,
         lastCommit = conversation.lastCommitText,
-        lastCommitTimestamp = conversation.lastCommitAtEpochSeconds
+        lastCommitTimestamp = conversation.lastCommitAt?.toEpochSeconds() ?: 0L
       )
     }
   }
 
-  private fun upsertConversation(conversation: FirestoreConversation) {
+  private fun upsertConversation(conversationNM: ConversationNM) {
     inMemoryDB.chatConversationQueries.insertOrReplaceMeta(
-      id = conversation.id.value,
-      type = conversation.type.value,
-      participantUids = conversation.participantUids,
-      lastCommit = conversation.lastCommitText,
-      lastCommitTimestamp = conversation.lastCommitAtEpochSeconds
+      id = conversationNM.id,
+      type = conversationNM.type.value,
+      participantUids = conversationNM.participantUids,
+      lastCommit = conversationNM.lastCommitText,
+      lastCommitTimestamp = conversationNM.lastCommitAt?.toEpochSeconds() ?: 0L
     )
   }
 
-  private fun subscribeOnUnreadCount(id: FirestoreConversation.Id): Flow<Unit> {
+  private fun subscribeOnUnreadCount(id: String): Flow<Unit> {
     return firestore.unreadCountLive(id).map { unreadCount ->
       inMemoryDB.chatConversationQueries.updateUnreadCount(
-        id = id.value,
+        id = id,
         unreadCount = unreadCount
       )
     }

@@ -1,6 +1,7 @@
 plugins {
   id 'android-library-convention'
   id 'dagger-convention'
+  alias(libs.plugins.kotlinx.serialization)
 }
 
 android {
@@ -9,5 +10,14 @@ android {
 
 dependencies {
   implementation project(":auth-session:data")
-  implementation libs.firebase.firestore
+  // api — Firebase Timestamp / FieldValue / DocumentReference выходят как часть
+  // публичного API через NM-классы (например ConversationNM.lastCommitAt) и
+  // WriteSpec / FieldOp. Consumer'ам нужен прямой доступ к этим типам.
+  api libs.firebase.firestore
+  implementation libs.kotlinx.serialization.core
+
+  testImplementation libs.junit.jupiter.api
+  testImplementation libs.junit.jupiter.params
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.platform.launcher
 }

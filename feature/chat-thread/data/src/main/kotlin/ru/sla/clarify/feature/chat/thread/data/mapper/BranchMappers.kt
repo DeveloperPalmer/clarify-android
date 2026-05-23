@@ -4,8 +4,10 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.adapter.StringList
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.thread.domain.entity.MergeRequest
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
+import ru.sla.clarify.lib.google.firestore.entity.BranchNM
+import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 
 @Suppress("LongParameterList")
 internal fun mapToBranch(
@@ -42,25 +44,25 @@ internal fun mapToBranch(
   )
 }
 
-internal fun FirestoreBranch.toDomain(): Branch {
+internal fun BranchNM.toDomain(conversationId: String): Branch {
   return Branch(
-    id = Branch.Id(id.value),
-    conversationId = Conversation.Id(conversationId.value),
-    parentBranchId = Branch.Id(parentBranchId.value),
-    branchedFromCommitId = Commit.Id(branchedFromCommitId.value),
+    id = Branch.Id(id),
+    conversationId = Conversation.Id(conversationId),
+    parentBranchId = Branch.Id(parentBranchId),
+    branchedFromCommitId = Commit.Id(branchedFromCommitId),
     name = name,
     status = Branch.Status.fromValue(status.value),
-    createdAt = createdAtEpochSeconds,
-    createdByUid = createdByUid,
+    createdAt = createdAt?.toEpochSeconds() ?: 0L,
+    createdByUid = UserId(createdByUid),
     mergeRequest = mergeRequest?.let {
-      Branch.MergeRequest(
-        initiatorUid = it.initiatorUid,
-        requestedAt = it.requestedAtEpochSeconds,
-        approvedByUids = it.approvedByUids.toSet()
+      MergeRequest(
+        initiatorUid = UserId(it.initiatorUid),
+        requestedAt = it.requestedAt.toEpochSeconds(),
+        approvedByUids = it.approvedByUids.map(::UserId).toSet()
       )
     },
-    mergedAt = mergedAtEpochSeconds,
-    mergedIntoBranchId = mergedIntoBranchId?.let { Branch.Id(it.value) }
+    mergedAt = mergedAt?.toEpochSeconds(),
+    mergedIntoBranchId = mergedIntoBranchId?.let(Branch::Id)
   )
 }
 
@@ -68,9 +70,11 @@ private fun buildMergeRequest(
   initiatorUid: String?,
   requestedAt: Long?,
   approvedByUids: StringList?
-): Branch.MergeRequest? {
-  if (initiatorUid == null || requestedAt == null) return null
-  return Branch.MergeRequest(
+): MergeRequest? {
+  if (initiatorUid == null || requestedAt == null) {
+    return null
+  }
+  return MergeRequest(
     initiatorUid = UserId(initiatorUid),
     requestedAt = requestedAt,
     approvedByUids = approvedByUids.orEmpty().map(::UserId).toSet()
