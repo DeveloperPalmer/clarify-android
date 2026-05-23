@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.kode.amvi.component.compose.rememberViewIntents
+import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.event.captureDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.rememberDropdownMenuAnchorScope
@@ -55,7 +56,7 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
     )
     ScreenScaffold(state = scaffoldState) {
       ChatListReadyContent(
-        myUserId = state.userId,
+        email = state.email,
         editModeEnabled = state.editModeEnabled,
         conversations = state.conversations,
         selectedConversationsIds = state.selectedConversationIds,
@@ -70,7 +71,7 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
 
 @Composable
 internal fun ChatListReadyContent(
-  myUserId: String?,
+  email: Email?,
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,
   editModeEnabled: Boolean,
@@ -87,7 +88,7 @@ internal fun ChatListReadyContent(
   ) {
     Column(modifier = Modifier.fillMaxSize()) {
       Header(
-        myUserId = myUserId,
+        email = email,
         editModeEnabled = editModeEnabled,
         onOpenSettings = onOpenSettings
       )
@@ -114,7 +115,7 @@ internal fun ChatListReadyContent(
 
 @Composable
 private fun Header(
-  myUserId: String?,
+  email: Email?,
   editModeEnabled: Boolean,
   onOpenSettings: () -> Unit
 ) {
@@ -129,12 +130,12 @@ private fun Header(
   ) {
     Column(modifier = Modifier.weight(1f)) {
       Text(
-        text = stringResource(R.string.conversation_header_user_id_label),
+        text = stringResource(R.string.conversation_header_email_label),
         style = AppTheme.typography.caption2,
         color = AppTheme.colors.textPrimary
       )
       Text(
-        text = myUserId ?: stringResource(R.string.conversation_header_not_signed_in),
+        text = email?.value ?: stringResource(R.string.conversation_header_not_signed_in),
         style = AppTheme.typography.title3,
         color = AppTheme.colors.textPrimary,
         maxLines = 1,
@@ -151,11 +152,11 @@ private fun Header(
       ) {
         Text(stringResource(R.string.conversation_header_settings_button))
       }
-    } else if (myUserId != null) {
+    } else if (email != null) {
       TextButton(
         onClick = {
           scope.launch {
-            clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", myUserId)))
+            clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", email.value)))
           }
         }
       ) {

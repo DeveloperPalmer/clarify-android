@@ -61,12 +61,6 @@ class BranchViewModel @AssistedInject constructor(
       // нечего делать
     }
 
-    onEach(threadModel.userId()) {
-      transitionTo { state, userId ->
-        state.copy(currentUserId = userId)
-      }
-    }
-
     onEach(threadModel.branch(branchId).filterNotNull()) {
       transitionTo { state, branch ->
         state.copy(
@@ -128,20 +122,20 @@ class BranchViewModel @AssistedInject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureMergeRequestTransitions() {
-    onEach(intent(ViewIntents::requestMerge)) {
+    onEach(intent(ViewIntents::openMergeRequest)) {
       action { state, _, _ ->
         if (state.branchStatus != Branch.Status.Active) return@action
         threadModel.openMergeRequest.start(branchId)
       }
     }
-    onEach(intent(ViewIntents::approveMerge)) {
+    onEach(intent(ViewIntents::approveMergeRequest)) {
       action { state, _, _ ->
         if (state.branchStatus != Branch.Status.MergeInProgress) return@action
         if (state.isCurrentUserApprover) return@action
         threadModel.approveMergeRequest.start(branchId)
       }
     }
-    onEach(intent(ViewIntents::revokeApproval)) {
+    onEach(intent(ViewIntents::revokeApprovalMergeRequest)) {
       action { state, _, _ ->
         if (state.branchStatus != Branch.Status.MergeInProgress) return@action
         threadModel.revokeApprovalMergeRequest.start(branchId)

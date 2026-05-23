@@ -11,15 +11,18 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAll
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
+import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
+import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
@@ -33,17 +36,68 @@ class ConversationRepositoryImpl @Inject constructor(
   private val authSessionPersistence: AuthSessionPersistence
 ) : ConversationRepository {
 
-  override fun userId(): Flow<UserId> {
-    return flow {
-      val userId = authSessionPersistence.withKey { readUserId(it) }
-      emit(requireNotNull(userId))
-    }
+  override fun email(): Flow<Email?> {
+    return flow { emit(firestore.getCurrentUserEmail()) }
+      .flowOn(Dispatchers.IO)
+  }
+
+  override suspend fun getPeerByEmail(email: Email): Peer.Id = withContext(Dispatchers.IO) {
+    firestore.getPeerIdByEmail(email) ?: throw PeerNotFoundException(email)
+  }
+
+  override val conversations: Flow<List<Conversation>> = userId().flatMapLatest { userId ->
+    inMemoryDB.chatConversationQueries
+      .selectAll(userId)
+      .observeList()
   }
 
   override fun subscribeOnConversations(): Flow<Unit> {
     return firestore.conversationsLive()
       .map { changes -> changes.forEach { applyChange(it) } }
       .flowOn(Dispatchers.IO)
+  }
+
+  override suspend fun deleteConversations(
+    ids: List<Conversation.Id>
+  ) = withContext(Dispatchers.IO) {
+    val idValues = ids.map { it.value }
+    firestore.deleteConversations(idValues)
+    inMemoryDB.transaction {
+      idValues.forEach {
+        inMemoryDB.conversationParticipantQueries.deleteByConversation(it)
+        inMemoryDB.chatConversationQueries.deleteById(it)
+      }
+    }
+  }
+
+  override fun subscribeOnUnreadCounts(): Flow<Unit> {
+    return inMemoryDB.chatConversationQueries
+      .selectAllIds()
+      .observeList()
+      .flatMapLatest { conversationIds ->
+        conversationIds
+          .map { id -> subscribeOnUnreadCount(FirestoreConversation.Id(id)) }
+          .merge()
+      }
+      .flowOn(Dispatchers.IO)
+  }
+
+  override fun participant(
+    conversationId: Conversation.Id,
+    userId: UserId
+  ): Flow<Participant?> {
+    return inMemoryDB.conversationParticipantQueries
+      .selectByConversationAndId(conversationId.value, userId.value)
+      .observeOneOrNull()
+      .map { row ->
+        row?.let {
+          Participant(
+            id = Participant.Id(it.id),
+            displayName = it.displayName,
+            photoUrl = it.photoUrl
+          )
+        }
+      }
   }
 
   private suspend fun applyChange(conversation: FirestoreConversation) {
@@ -97,17 +151,6 @@ class ConversationRepositoryImpl @Inject constructor(
     )
   }
 
-  override fun subscribeOnUnreadCounts(): Flow<Unit> {
-    return inMemoryDB.chatConversationQueries
-      .selectAllIds()
-      .observeList()
-      .flatMapLatest { conversationIds ->
-        conversationIds
-          .map { id -> subscribeOnUnreadCount(FirestoreConversation.Id(id)) }
-          .merge()
-      }
-  }
-
   private fun subscribeOnUnreadCount(id: FirestoreConversation.Id): Flow<Unit> {
     return firestore.unreadCountLive(id).map { unreadCount ->
       inMemoryDB.chatConversationQueries.updateUnreadCount(
@@ -117,40 +160,10 @@ class ConversationRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun deleteConversations(
-    ids: List<Conversation.Id>
-  ) = withContext(Dispatchers.IO) {
-    val idValues = ids.map { it.value }
-    firestore.deleteConversations(idValues)
-    inMemoryDB.transaction {
-      idValues.forEach {
-        inMemoryDB.conversationParticipantQueries.deleteByConversation(it)
-        inMemoryDB.chatConversationQueries.deleteById(it)
-      }
+  private fun userId(): Flow<UserId> {
+    return flow {
+      val userId = authSessionPersistence.withKey { readUserId(it) }
+      emit(requireNotNull(userId))
     }
-  }
-
-  override val conversations: Flow<List<Conversation>> = userId().flatMapLatest { userId ->
-    inMemoryDB.chatConversationQueries
-      .selectAll(userId)
-      .observeList()
-  }
-
-  override fun participant(
-    conversationId: Conversation.Id,
-    userId: UserId
-  ): Flow<Participant?> {
-    return inMemoryDB.conversationParticipantQueries
-      .selectByConversationAndId(conversationId.value, userId.value)
-      .observeOneOrNull()
-      .map { row ->
-        row?.let {
-          Participant(
-            id = Participant.Id(it.id),
-            displayName = it.displayName,
-            photoUrl = it.photoUrl
-          )
-        }
-      }
   }
 }

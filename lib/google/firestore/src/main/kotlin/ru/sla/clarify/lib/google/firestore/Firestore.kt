@@ -18,6 +18,7 @@ import kotlinx.coroutines.tasks.await
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.feature.entity.chat.Peer
@@ -43,22 +44,43 @@ class Firestore @Inject constructor(
 ) : FirestoreWrapperProvider by firestoreWrapper {
 
   // Перед добавлением новых методов — прочитай соглашение об именовании.
-  // root dir -> docs/firestore-naming.md
+  // root dir -> docs/firestore-naming-rules.md
 
   suspend fun patchUser(
     id: UserId,
     photoUrl: String?,
-    displayName: String?
+    displayName: String?,
+    email: String?
   ) {
     val params = buildMap {
       put(FirestoreSchema.USER_DISPLAY_NAME, displayName)
       put(FirestoreSchema.USER_PHOTO_URL, photoUrl)
+      put(FirestoreSchema.USER_EMAIL, email)
       put(FirestoreSchema.USER_CREATED_AT, FieldValue.serverTimestamp())
       put(FirestoreSchema.USER_UPDATED_AT, FieldValue.serverTimestamp())
     }
     userDocumentRef(id)
       .set(params, SetOptions.merge())
       .await()
+  }
+
+  suspend fun getCurrentUserEmail(): Email? {
+    val userId = requireUserId()
+    val email = userDocumentRef(userId)
+      .get()
+      .await()
+      .getString(FirestoreSchema.USER_EMAIL)
+    return email?.let(::Email)
+  }
+
+  suspend fun getPeerIdByEmail(email: Email): Peer.Id? {
+    val snapshot = usersQuery(whereEqualTo = email.value.lowercase())
+      .limit(1)
+      .get()
+      .await()
+    return snapshot.documents.firstOrNull()
+      ?.id
+      ?.let(Peer::Id)
   }
 
   fun conversationsLive(): Flow<List<FirestoreConversation>> {

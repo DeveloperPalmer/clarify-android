@@ -11,7 +11,7 @@
 
     <!-- Conversation (chat list) screen -->
     <string name="conversation_new_chat_button">New chat</string>
-    <string name="conversation_header_user_id_label">Your userId</string>
+    <string name="conversation_header_email_label">Your email</string>
     <string name="conversation_header_not_signed_in">(not signed in)</string>
     <string name="conversation_header_settings_button">Settings</string>
     <string name="conversation_header_copy_button">Copy</string>
@@ -20,8 +20,11 @@
 
     <!-- Conversation: new chat dialog -->
     <string name="conversation_new_chat_dialog_title">New chat</string>
-    <string name="conversation_new_chat_dialog_text">Enter the peer userId to chat with:</string>
+    <string name="conversation_new_chat_dialog_text">Enter the email of the person you want to chat with:</string>
+    <string name="conversation_new_chat_dialog_email_placeholder">name@example.com</string>
     <string name="conversation_new_chat_dialog_start">Start</string>
+    <string name="conversation_new_chat_error_user_not_found">No user with this email</string>
+    <string name="conversation_new_chat_error_lookup_failed">Could not look up user, try again</string>
 
     <!-- Conversation: delete dialog -->
     <string name="conversation_delete_dialog_title">Delete chat</string>

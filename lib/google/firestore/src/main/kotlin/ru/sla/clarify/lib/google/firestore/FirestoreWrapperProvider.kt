@@ -14,6 +14,8 @@ interface FirestoreWrapperProvider {
 
   fun userDocumentRef(userId: UserId): DocumentReference
 
+  fun usersQuery(whereEqualTo: String): Query
+
   fun conversationCollectionRef(): CollectionReference
 
   fun conversationsQuery(

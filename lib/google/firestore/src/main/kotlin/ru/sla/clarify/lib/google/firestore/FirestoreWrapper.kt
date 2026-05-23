@@ -27,6 +27,12 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .document(userId.value)
   }
 
+  override fun usersQuery(whereEqualTo: String): Query {
+    return remoteDB
+      .collection(FirestoreSchema.USERS_COLLECTION)
+      .whereEqualTo(FirestoreSchema.USER_EMAIL, whereEqualTo)
+  }
+
   override fun conversationCollectionRef(): CollectionReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)

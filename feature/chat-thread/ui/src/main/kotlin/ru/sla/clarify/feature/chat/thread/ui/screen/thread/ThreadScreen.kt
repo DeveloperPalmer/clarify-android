@@ -1,6 +1,10 @@
 package ru.sla.clarify.feature.chat.thread.ui.screen.thread
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,12 +39,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
+import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.core.ui.text.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.component.IconAction
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
@@ -60,7 +64,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
     )
     ScreenScaffold(state = scaffoldState) {
       ThreadReadyContent(
-        peerId = state.peerId,
+        email = state.email,
         commits = state.commits,
         branchesCount = state.branches.size,
         isSending = state.isSending,
@@ -75,7 +79,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
 
 @Composable
 internal fun ThreadReadyContent(
-  peerId: Peer.Id,
+  email: Email?,
   commits: List<Commit>,
   branchesCount: Int,
   isSending: Boolean,
@@ -91,7 +95,7 @@ internal fun ThreadReadyContent(
       .imePadding()
   ) {
     TopBar(
-      peerId = peerId,
+      email = email,
       branchesCount = branchesCount,
       onBack = onBack,
       onShowBranchesList = onShowBranchesList
@@ -124,7 +128,7 @@ internal fun ThreadReadyContent(
 
 @Composable
 private fun TopBar(
-  peerId: Peer.Id,
+  email: Email?,
   branchesCount: Int,
   onBack: () -> Unit,
   onShowBranchesList: () -> Unit
@@ -141,16 +145,26 @@ private fun TopBar(
       iconResId = R.drawable.ic_back_24,
       onClick = onBack
     )
-    Text(
+    AnimatedContent(
       modifier = Modifier
         .weight(1f)
         .padding(start = 4.dp),
-      text = peerId.value,
-      style = AppTheme.typography.title1,
-      fontWeight = FontWeight.SemiBold
-    )
-    TextButton(onClick = onShowBranchesList) {
-      Text(stringResource(R.string.thread_branches_count, branchesCount))
+      targetState = email,
+      transitionSpec = { fadeIn() togetherWith fadeOut() }
+    ) { email ->
+      if (email != null) {
+        Text(
+
+          text = email.value,
+          style = AppTheme.typography.title1,
+          fontWeight = FontWeight.SemiBold
+        )
+      }
+    }
+    TextButton(onShowBranchesList) {
+      Text(
+        text = stringResource(R.string.thread_branches_count, branchesCount)
+      )
     }
   }
   HorizontalDivider()

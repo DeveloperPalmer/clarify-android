@@ -16,19 +16,17 @@ import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.thread.domain.ThreadModel
 import ru.sla.clarify.feature.chat.thread.ui.routing.FlowEvent
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
 
 class ThreadViewModel @Inject constructor(
   private val eventSink: FlowEventSink,
-  private val threadModel: ThreadModel,
-  private val peerId: Peer.Id
+  private val threadModel: ThreadModel
 ) : ViewModel<ViewState, ViewIntents>() {
 
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState(peerId = peerId) to {
+    initial = ViewState() to {
       threadModel.markReadCommits()
       threadModel.fetchHistoryCommits.startOnSubscribe()
     }
@@ -36,6 +34,12 @@ class ThreadViewModel @Inject constructor(
     onEach(intent(ViewIntents::navigateBack)) {
       action { _, _, _ ->
         eventSink.sendEvent(FlowEvent.ThreadDismissed)
+      }
+    }
+
+    onEach(threadModel.email()) {
+      transitionTo { state, email ->
+        state.copy(email = email)
       }
     }
 

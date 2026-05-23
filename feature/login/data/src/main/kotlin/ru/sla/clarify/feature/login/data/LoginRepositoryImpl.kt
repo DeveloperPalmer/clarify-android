@@ -39,7 +39,8 @@ class LoginRepositoryImpl @Inject constructor(
         firestore.patchUser(
           id = userId,
           displayName = user.displayName,
-          photoUrl = user.photoUrl?.toString()
+          photoUrl = user.photoUrl?.toString(),
+          email = user.email?.lowercase()
         )
 
         AuthResult(

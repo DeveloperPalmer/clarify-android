@@ -119,6 +119,8 @@ class BranchRepositoryImpl @Inject constructor(
 
 ## Связанные документы
 
-- [`firestore-naming.md`](firestore-naming.md) — REST-нейминг для `Firestore.kt`.
-- [`sqldelight-naming.md`](sqldelight-naming.md) — имя `.sq`-запроса = SQL-операция.
+- [`firestore-naming-rules.md`](firestore-naming-rules.md) — REST-нейминг для `Firestore.kt`.
+- [`firestore-wrapper-rules.md`](firestore-wrapper-rules.md) — как `Firestore.kt` обращается к `FirestoreWrapper`.
+- [`reactive-model-tasks-rules.md`](reactive-model-tasks-rules.md) — `task<I, O>` требует non-null O; «не нашли» — через exception.
+- [`sqldelight-naming-rules.md`](sqldelight-naming-rules.md) — имя `.sq`-запроса = SQL-операция.
 - [`docs-template.md`](template/docs-template.md) — скелет, по которому пишутся документы в `docs/`.

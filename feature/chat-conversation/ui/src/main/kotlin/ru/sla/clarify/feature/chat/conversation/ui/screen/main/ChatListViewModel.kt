@@ -4,14 +4,20 @@ import kotlinx.coroutines.flow.map
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
+import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
+import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.startOnSubscribe
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.conversation.domain.ChatModel
+import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
+import ru.sla.clarify.uikit.event.Snackbar
+import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
 
 class ChatListViewModel @Inject constructor(
@@ -51,10 +57,29 @@ class ChatListViewModel @Inject constructor(
     }
 
     onEach(intent(ViewIntents::confirmNewChat)) {
+      action { _, _, value ->
+        chatModel.getPeerByEmail.start(Email(value))
+      }
+    }
+
+    onEach(chatModel.getPeerByEmail.jobFlow.successResults()) {
       action { _, _, peerId ->
-        if (peerId.value.isNotBlank()) {
-          eventSink.sendEvent(FlowEvent.ThreadRequested(peerId))
+        eventSink.sendEvent(FlowEvent.ThreadRequested(peerId))
+      }
+    }
+
+    onEach(chatModel.getPeerByEmail.jobFlow.errors()) {
+      action { _, _, error ->
+        val messageId = when (error) {
+          is PeerNotFoundException -> R.string.conversation_new_chat_error_user_not_found
+          else -> R.string.conversation_new_chat_error_lookup_failed
         }
+        sendViewEvent(
+          Snackbar(
+            isError = true,
+            message = resRef(messageId)
+          )
+        )
       }
     }
 
@@ -106,9 +131,9 @@ class ChatListViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureFetchConversationTransitions() {
-    onEach(chatModel.userId) {
-      transitionTo { state, userId ->
-        state.copy(userId = userId.value)
+    onEach(chatModel.email) {
+      transitionTo { state, email ->
+        state.copy(email = email)
       }
     }
 

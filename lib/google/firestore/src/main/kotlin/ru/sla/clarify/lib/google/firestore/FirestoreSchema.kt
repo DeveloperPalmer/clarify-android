@@ -17,6 +17,7 @@ object FirestoreSchema {
 
   const val USER_DISPLAY_NAME = "displayName"
   const val USER_PHOTO_URL = "photoUrl"
+  const val USER_EMAIL = "email"
   const val USER_CREATED_AT = "createdAt"
   const val USER_UPDATED_AT = "updatedAt"
 

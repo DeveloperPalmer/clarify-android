@@ -1,15 +1,14 @@
 package ru.sla.clarify.feature.chat.thread.domain
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
-import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
-import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.mapDistinctChanges
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
@@ -22,8 +21,7 @@ import javax.inject.Inject
 class ThreadModel @Inject constructor(
   private val threadRepository: ThreadRepository,
   private val branchRepository: BranchRepository,
-  private val conversationRepository: ConversationRepository,
-  private val authSessionRepository: AuthSessionRepository
+  private val conversationRepository: ConversationRepository
 ) : ReactiveModel() {
 
   override fun onPostStart() {
@@ -34,10 +32,9 @@ class ThreadModel @Inject constructor(
       .launchIn(scope)
   }
 
-  fun userId(): Flow<UserId> = flow {
-    val userId = authSessionRepository.withKey { readUserId(it) }
-    emit(requireNotNull(userId))
-  }
+  fun email(): Flow<Email> = conversationRepository
+    .email()
+    .filterNotNull()
 
   fun subscribeOnCommits(branchId: Branch.Id): Flow<Unit> {
     return threadRepository.observeCommitsChanges(branchId)

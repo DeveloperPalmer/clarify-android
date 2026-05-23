@@ -5,7 +5,6 @@ plugins {
 
 dependencies {
   api project(":core:domain")
-  api project(":auth-session:domain")
   api project(":feature-entity")
   api project(":feature:chat-conversation:domain")
   implementation libs.compose.runtime

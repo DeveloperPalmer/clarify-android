@@ -118,6 +118,7 @@ override suspend fun approveMerge(branchId: Branch.Id) = withContext(Dispatchers
 
 ## Связанные документы
 
-- [`architecture-layers.md`](architecture-layers.md) — слои и доступ к Repository.
-- [`sqldelight-naming.md`](sqldelight-naming.md) — имя `.sq`-запроса = SQL-операция.
+- [`firestore-wrapper-rules.md`](firestore-wrapper-rules.md) — как `Firestore.kt` обращается к `FirestoreWrapper` (пути, queries, naming параметров).
+- [`architecture-layers-rules.md`](architecture-layers-rules.md) — слои и доступ к Repository.
+- [`sqldelight-naming-rules.md`](sqldelight-naming-rules.md) — имя `.sq`-запроса = SQL-операция.
 - [`docs-template.md`](template/docs-template.md) — скелет, по которому пишутся документы в `docs/`.

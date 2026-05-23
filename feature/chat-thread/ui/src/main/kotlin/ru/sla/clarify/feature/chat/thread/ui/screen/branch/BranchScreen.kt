@@ -84,7 +84,7 @@ internal fun BranchReadyContent(
       branchStatus = state.branchStatus,
       isMergeActionPending = state.isMergeActionPending,
       onBack = intents.navigateBack,
-      onRequestMerge = intents.requestMerge
+      onRequestMerge = intents.openMergeRequest
     )
     if (state.mergeRequest != null && state.branchStatus == Branch.Status.MergeInProgress) {
       MergeBanner(
@@ -93,8 +93,8 @@ internal fun BranchReadyContent(
         isCurrentUserInitiator = state.isCurrentUserInitiator,
         mergeRequest = state.mergeRequest,
         initiatorName = state.initiatorName,
-        onApprove = intents.approveMerge,
-        onRevoke = intents.revokeApproval
+        onApprove = intents.approveMergeRequest,
+        onRevoke = intents.revokeApprovalMergeRequest
       )
     }
     if (state.commits.isEmpty()) {
