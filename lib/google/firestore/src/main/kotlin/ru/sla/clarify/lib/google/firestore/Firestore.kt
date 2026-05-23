@@ -286,8 +286,175 @@ class Firestore @Inject constructor(
       status = BranchStatus.Active,
       createdAtEpochSeconds = createdAt.toEpochSeconds(),
       createdByUid = createdByUserId,
+      mergeRequest = null,
+      mergedAtEpochSeconds = null,
+      mergedIntoBranchId = null,
       changeType = null
     )
+  }
+
+  /**
+   * Initiate a merge request for a branch. Atomic: only succeeds if the branch is currently
+   * [BranchStatus.Active]. Sets `mergeRequest = { initiator, requestedAt, approvedByUids: [initiator] }`
+   * and flips status to [BranchStatus.MergeInProgress].
+   */
+  suspend fun requestMerge(
+    conversationId: FirestoreConversation.Id,
+    branchId: FirestoreBranch.Id
+  ) {
+    val initiator = requireUserId()
+    val branchRef = branchDocumentRef(conversationId, branchId)
+    val requestedAt = Timestamp.now()
+
+    val transaction = remoteDB.runTransaction { txn ->
+      val snapshot = txn.get(branchRef)
+      val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
+        ?: error("branch has no status")
+      check(currentStatus == BranchStatus.Active.value) {
+        "Cannot request merge: branch status is $currentStatus, expected ${BranchStatus.Active.value}"
+      }
+      val mergeRequestData = mapOf(
+        FirestoreSchema.BRANCH_MERGE_REQUEST_INITIATOR_UID to initiator.value,
+        FirestoreSchema.BRANCH_MERGE_REQUEST_REQUESTED_AT to requestedAt,
+        FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS to listOf(initiator.value)
+      )
+      txn.update(
+        branchRef,
+        mapOf(
+          FirestoreSchema.BRANCH_STATUS to BranchStatus.MergeInProgress.value,
+          FirestoreSchema.BRANCH_MERGE_REQUEST to mergeRequestData
+        )
+      )
+    }
+
+    transaction.await()
+  }
+
+  /**
+   * Add the current user to the approver list of an in-progress merge request. Atomic.
+   *
+   * If, with the current user added, [participantUids] is fully covered, the branch is
+   * finalized in the same transaction: status -> [BranchStatus.Merged], `mergedAt = now`,
+   * `mergedIntoBranchId = parentBranchId`, `mergeRequest` removed.
+   */
+  suspend fun approveMerge(
+    conversationId: FirestoreConversation.Id,
+    branchId: FirestoreBranch.Id,
+    participantUids: List<String>
+  ) {
+    val approver = requireUserId()
+    val branchRef = branchDocumentRef(conversationId, branchId)
+    val now = Timestamp.now()
+    val transaction = remoteDB.runTransaction { txn ->
+      val snapshot = txn.get(branchRef)
+      val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
+        ?: error("branch has no status")
+      check(currentStatus == BranchStatus.MergeInProgress.value) {
+        "Cannot approve merge: branch status is $currentStatus"
+      }
+      val approvedRaw = snapshot.mergeRequestApprovedUids().orEmpty()
+      val updatedApproved = (approvedRaw + approver.value).distinct()
+      val parentBranchId = snapshot.getString(FirestoreSchema.BRANCH_PARENT_ID)
+        ?: error("branch has no parentBranchId")
+      val finalize = participantUids.toSet().subtract(updatedApproved.toSet()).isEmpty() &&
+        participantUids.isNotEmpty()
+      if (finalize) {
+        txn.update(
+          branchRef,
+          mapOf(
+            FirestoreSchema.BRANCH_STATUS to BranchStatus.Merged.value,
+            FirestoreSchema.BRANCH_MERGED_AT to now,
+            FirestoreSchema.BRANCH_MERGED_INTO_BRANCH_ID to parentBranchId,
+            FirestoreSchema.BRANCH_MERGE_REQUEST to FieldValue.delete()
+          )
+        )
+      } else {
+        txn.update(
+          branchRef,
+          mapOf(
+            "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}"
+              to updatedApproved
+          )
+        )
+      }
+    }
+
+    transaction.await()
+  }
+
+  /**
+   * Remove the current user from the approver list. If the current user is the initiator,
+   * the entire merge request is cancelled (status -> [BranchStatus.Active]).
+   */
+  suspend fun revokeApproval(
+    conversationId: FirestoreConversation.Id,
+    branchId: FirestoreBranch.Id
+  ) {
+    val approver = requireUserId()
+    val branchRef = branchDocumentRef(conversationId, branchId)
+    val transaction = remoteDB.runTransaction { txn ->
+      val snapshot = txn.get(branchRef)
+      val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
+        ?: error("branch has no status")
+      check(currentStatus == BranchStatus.MergeInProgress.value) {
+        "Cannot revoke approval: branch status is $currentStatus"
+      }
+      val initiator = snapshot.mergeRequestInitiatorUid()
+      if (initiator == approver.value) {
+        // The initiator revoking means cancelling the whole request.
+        txn.update(
+          branchRef,
+          mapOf(
+            FirestoreSchema.BRANCH_STATUS to BranchStatus.Active.value,
+            FirestoreSchema.BRANCH_MERGE_REQUEST to FieldValue.delete()
+          )
+        )
+      } else {
+        val approvedRaw = snapshot.mergeRequestApprovedUids().orEmpty()
+        val updatedApproved = approvedRaw.filter { it != approver.value }
+        txn.update(
+          branchRef,
+          mapOf(
+            "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}"
+              to updatedApproved
+          )
+        )
+      }
+    }
+
+    transaction.await()
+  }
+
+  /**
+   * Initiator cancels the merge request. Branch returns to [BranchStatus.Active].
+   */
+  suspend fun cancelMergeRequest(
+    conversationId: FirestoreConversation.Id,
+    branchId: FirestoreBranch.Id
+  ) {
+    val canceller = requireUserId()
+    val branchRef = branchDocumentRef(conversationId, branchId)
+    val transaction = remoteDB.runTransaction { txn ->
+      val snapshot = txn.get(branchRef)
+      val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
+        ?: error("branch has no status")
+      check(currentStatus == BranchStatus.MergeInProgress.value) {
+        "Cannot cancel merge: branch status is $currentStatus"
+      }
+      val initiator = snapshot.mergeRequestInitiatorUid()
+      check(initiator == canceller.value) {
+        "Only the merge initiator can cancel the merge request"
+      }
+      txn.update(
+        branchRef,
+        mapOf(
+          FirestoreSchema.BRANCH_STATUS to BranchStatus.Active.value,
+          FirestoreSchema.BRANCH_MERGE_REQUEST to FieldValue.delete()
+        )
+      )
+    }
+
+    transaction.await()
   }
 
   private fun observeDirectConversationId(peerId: Peer.Id): Flow<FirestoreConversation.Id?> {
@@ -339,6 +506,19 @@ class Firestore @Inject constructor(
 
   private fun directParticipantIds(userId: UserId, peerId: Peer.Id): List<String> {
     return setOf(userId.value, peerId.value).sorted()
+  }
+
+  @Suppress("UNCHECKED_CAST")
+  private fun com.google.firebase.firestore.DocumentSnapshot.mergeRequestApprovedUids(): List<String>? {
+    val raw = get(FirestoreSchema.BRANCH_MERGE_REQUEST) as? Map<String, Any?> ?: return null
+    return (raw[FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS] as? List<*>)
+      ?.mapNotNull { it as? String }
+  }
+
+  @Suppress("UNCHECKED_CAST")
+  private fun com.google.firebase.firestore.DocumentSnapshot.mergeRequestInitiatorUid(): String? {
+    val raw = get(FirestoreSchema.BRANCH_MERGE_REQUEST) as? Map<String, Any?> ?: return null
+    return raw[FirestoreSchema.BRANCH_MERGE_REQUEST_INITIATOR_UID] as? String
   }
 
   private fun QuerySnapshot?.findDirectConversation(ids: List<String>): FirestoreConversation? {

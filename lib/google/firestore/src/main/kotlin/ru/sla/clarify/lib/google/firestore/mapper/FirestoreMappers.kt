@@ -7,6 +7,12 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_BRANCHED_FROM_COMMIT_ID
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_CREATED_AT
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_CREATED_BY_UID
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_MERGED_AT
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_MERGED_INTO_BRANCH_ID
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_MERGE_REQUEST
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_MERGE_REQUEST_INITIATOR_UID
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_MERGE_REQUEST_REQUESTED_AT
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_NAME
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_PARENT_ID
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_STATUS
@@ -92,7 +98,26 @@ internal fun extractBranchFB(
     status = BranchStatus.fromValue(document.requireField(BRANCH_STATUS)),
     createdAtEpochSeconds = createdAt.toEpochSeconds(),
     createdByUid = UserId(document.requireField(BRANCH_CREATED_BY_UID)),
+    mergeRequest = extractMergeRequest(document),
+    mergedAtEpochSeconds = document.getTimestamp(BRANCH_MERGED_AT)?.toEpochSeconds(),
+    mergedIntoBranchId = document.getString(BRANCH_MERGED_INTO_BRANCH_ID)
+      ?.let(FirestoreBranch::Id),
     changeType = type?.toDomainModel()
+  )
+}
+
+private fun extractMergeRequest(document: DocumentSnapshot): FirestoreBranch.MergeRequest? {
+  @Suppress("UNCHECKED_CAST")
+  val raw = document.get(BRANCH_MERGE_REQUEST) as? Map<String, Any?> ?: return null
+  val initiatorUid = raw[BRANCH_MERGE_REQUEST_INITIATOR_UID] as? String ?: return null
+  val requestedAt = raw[BRANCH_MERGE_REQUEST_REQUESTED_AT] as? Timestamp ?: return null
+  val approved = (raw[BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS] as? List<*>)
+    ?.mapNotNull { it as? String }
+    .orEmpty()
+  return FirestoreBranch.MergeRequest(
+    initiatorUid = UserId(initiatorUid),
+    requestedAtEpochSeconds = requestedAt.toEpochSeconds(),
+    approvedByUids = approved.map(::UserId)
   )
 }
 

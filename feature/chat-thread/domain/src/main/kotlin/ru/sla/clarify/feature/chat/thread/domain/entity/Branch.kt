@@ -14,7 +14,10 @@ data class Branch(
   val name: String,
   val status: Status,
   val createdAt: Long,
-  val createdByUid: UserId
+  val createdByUid: UserId,
+  val mergeRequest: MergeRequest? = null,
+  val mergedAt: Long? = null,
+  val mergedIntoBranchId: Id? = null
 ) {
   @JvmInline
   value class Id(val value: String)
@@ -31,4 +34,16 @@ data class Branch(
       }
     }
   }
+
+  /**
+   * Active merge proposal for a branch. While present, the branch is in [Status.MergeInProgress]
+   * and accepts no new commits. Once [approvedByUids] covers all conversation participants,
+   * the branch transitions to [Status.Merged].
+   */
+  @Immutable
+  data class MergeRequest(
+    val initiatorUid: UserId,
+    val requestedAt: Long,
+    val approvedByUids: Set<UserId>
+  )
 }

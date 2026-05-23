@@ -42,6 +42,12 @@ object FirestoreSchema {
   const val BRANCH_STATUS = "status"
   const val BRANCH_CREATED_AT = "createdAt"
   const val BRANCH_CREATED_BY_UID = "createdByUid"
+  const val BRANCH_MERGE_REQUEST = "mergeRequest"
+  const val BRANCH_MERGE_REQUEST_INITIATOR_UID = "initiatorUid"
+  const val BRANCH_MERGE_REQUEST_REQUESTED_AT = "requestedAt"
+  const val BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS = "approvedByUids"
+  const val BRANCH_MERGED_AT = "mergedAt"
+  const val BRANCH_MERGED_INTO_BRANCH_ID = "mergedIntoBranchId"
 
   enum class ConversationType(val value: String) {
     Direct("direct"),

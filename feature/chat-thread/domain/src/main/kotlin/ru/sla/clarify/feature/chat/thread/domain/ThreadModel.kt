@@ -1,10 +1,13 @@
 package ru.sla.clarify.feature.chat.thread.domain
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
+import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
@@ -13,7 +16,8 @@ import javax.inject.Inject
 @SingleIn(ThreadScope::class)
 class ThreadModel @Inject constructor(
   private val threadRepository: ThreadRepository,
-  private val branchRepository: BranchRepository
+  private val branchRepository: BranchRepository,
+  private val authSessionRepository: AuthSessionRepository
 ) : ReactiveModel() {
 
   override fun onPostStart() {
@@ -24,6 +28,15 @@ class ThreadModel @Inject constructor(
     // sibling tasks like sendMessage.
     threadRepository.observeCommitsChanges(null).launchIn(scope)
     branchRepository.observeBranchChanges().launchIn(scope)
+  }
+
+  /**
+   * One-shot stream of the current user's id, used by UI to determine "am I the initiator?"
+   * of a merge request.
+   */
+  fun userId(): Flow<UserId> = flow {
+    val userId = authSessionRepository.withKey { readUserId(it) }
+    emit(requireNotNull(userId))
   }
 
   fun subscribeOnCommits(branchId: Branch.Id): Flow<Unit> {
@@ -74,17 +87,34 @@ class ThreadModel @Inject constructor(
     name = "createBranch"
   ) { parentBranchId, branchedFromCommitId, name ->
     branchRepository.createBranch(
-      parentBranchId = resolveBranchId(parentBranchId),
+      parentBranchId = parentBranchId,
       branchedFromCommitId = branchedFromCommitId.id,
       name = name
     )
   }
 
-  private suspend fun resolveBranchId(branchId: Branch.Id?): Branch.Id {
-    if (branchId != null) return branchId
-    val conversation = threadRepository.conversation()
-      ?: error("conversationId not found")
-    return Branch.Id(conversation.id.value)
+  val requestMerge = task<Branch.Id, Unit>(
+    name = "requestMerge"
+  ) { branchId ->
+    branchRepository.requestMerge(branchId)
+  }
+
+  val approveMerge = task<Branch.Id, Unit>(
+    name = "approveMerge"
+  ) { branchId ->
+    branchRepository.approveMerge(branchId)
+  }
+
+  val revokeApproval = task<Branch.Id, Unit>(
+    name = "revokeApproval"
+  ) { branchId ->
+    branchRepository.revokeApproval(branchId)
+  }
+
+  val cancelMergeRequest = task<Branch.Id, Unit>(
+    name = "cancelMergeRequest"
+  ) { branchId ->
+    branchRepository.cancelMergeRequest(branchId)
   }
 }
 

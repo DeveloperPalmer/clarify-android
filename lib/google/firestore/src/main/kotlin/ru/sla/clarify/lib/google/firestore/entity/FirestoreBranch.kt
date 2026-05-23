@@ -12,8 +12,17 @@ data class FirestoreBranch(
   val status: BranchStatus,
   val createdAtEpochSeconds: Long,
   val createdByUid: UserId,
+  val mergeRequest: MergeRequest?,
+  val mergedAtEpochSeconds: Long?,
+  val mergedIntoBranchId: Id?,
   val changeType: FirestoreDocumentResult?
 ) {
   @JvmInline
   value class Id(val value: String)
+
+  data class MergeRequest(
+    val initiatorUid: UserId,
+    val requestedAtEpochSeconds: Long,
+    val approvedByUids: List<UserId>
+  )
 }

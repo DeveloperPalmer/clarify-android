@@ -11,14 +11,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +47,8 @@ import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
 
+private val MergeProgressIndicatorSize = 24.dp
+
 @Composable
 fun BranchScreen(viewModel: BranchViewModel) {
   MviComponent(
@@ -57,13 +62,8 @@ fun BranchScreen(viewModel: BranchViewModel) {
     )
     ScreenScaffold(state = scaffoldState) {
       BranchReadyContent(
-        branchName = state.branchName,
-        branchStatus = state.branchStatus,
-        commits = state.commits,
-        isSending = state.isSending,
-        onBack = intents.navigateBack,
-        onRequestMerge = intents.requestMerge,
-        onSend = intents.sendCommit
+        state = state,
+        intents = intents
       )
     }
   }
@@ -71,27 +71,32 @@ fun BranchScreen(viewModel: BranchViewModel) {
 
 @Composable
 internal fun BranchReadyContent(
-  branchName: String,
-  branchStatus: Branch.Status,
-  commits: List<Commit>,
-  isSending: Boolean,
-  onBack: () -> Unit,
-  onRequestMerge: () -> Unit,
-  onSend: (String) -> Unit,
-  modifier: Modifier = Modifier
+  state: ViewState,
+  intents: ViewIntents,
 ) {
   Column(
-    modifier = modifier
+    modifier = Modifier
       .fillMaxSize()
       .imePadding()
   ) {
     TopBar(
-      branchName = branchName,
-      branchStatus = branchStatus,
-      onBack = onBack,
-      onRequestMerge = onRequestMerge
+      branchName = state.branchName,
+      branchStatus = state.branchStatus,
+      isMergeActionPending = state.isMergeActionPending,
+      onBack = intents.navigateBack,
+      onRequestMerge = intents.requestMerge
     )
-    if (commits.isEmpty()) {
+    if (state.mergeRequest != null && state.branchStatus != Branch.Status.MergeInProgress) {
+      MergeBanner(
+        isMergeActionPending = state.isMergeActionPending,
+        isCurrentUserApprover = state.isCurrentUserApprover,
+        isCurrentUserInitiator = state.isCurrentUserInitiator,
+        mergeRequest = state.mergeRequest,
+        onApprove = intents.approveMerge,
+        onRevoke = intents.revokeApproval
+      )
+    }
+    if (state.commits.isEmpty()) {
       BranchEmptyState(
         modifier = Modifier
           .weight(1f)
@@ -99,28 +104,18 @@ internal fun BranchReadyContent(
       )
     } else {
       Commits(
-        commits = commits,
+        commits = state.commits,
         modifier = Modifier
           .weight(1f)
           .fillMaxWidth()
       )
     }
     HorizontalDivider()
-    if (branchStatus == Branch.Status.Merged) {
-      MergedBanner(
-        modifier = Modifier
-          .fillMaxWidth()
-          .navigationBarsPadding()
-      )
-    } else {
-      InputRow(
-        isSending = isSending,
-        onSend = onSend,
-        modifier = Modifier
-          .fillMaxWidth()
-          .navigationBarsPadding()
-      )
-    }
+    BottomArea(
+      branchStatus = state.branchStatus,
+      isSending = state.isSending,
+      onSend = intents.sendCommit
+    )
   }
 }
 
@@ -128,6 +123,7 @@ internal fun BranchReadyContent(
 private fun TopBar(
   branchName: String,
   branchStatus: Branch.Status,
+  isMergeActionPending: Boolean,
   onBack: () -> Unit,
   onRequestMerge: () -> Unit
 ) {
@@ -151,13 +147,119 @@ private fun TopBar(
       style = AppTheme.typography.title1,
       fontWeight = FontWeight.SemiBold
     )
-    if (branchStatus == Branch.Status.Active) {
-      Button(onClick = onRequestMerge) {
+    when (branchStatus) {
+      Branch.Status.Active -> Button(
+        onClick = onRequestMerge,
+        enabled = !isMergeActionPending
+      ) {
         Text("Merge")
+      }
+      Branch.Status.MergeInProgress -> Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        Text(
+          text = "Merging...",
+          style = AppTheme.typography.body2,
+          color = AppTheme.colors.textPrimary
+        )
+        CircularProgressIndicator(
+          modifier = Modifier.size(MergeProgressIndicatorSize)
+        )
+      }
+      Branch.Status.Merged -> Unit
+    }
+  }
+  HorizontalDivider()
+}
+
+@Composable
+private fun MergeBanner(
+  isMergeActionPending: Boolean,
+  isCurrentUserApprover: Boolean,
+  isCurrentUserInitiator: Boolean,
+  mergeRequest: Branch.MergeRequest,
+  onApprove: () -> Unit,
+  onRevoke: () -> Unit
+) {
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(horizontal = 16.dp, vertical = 12.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp)
+  ) {
+    when {
+      isCurrentUserInitiator -> {
+        Text(
+          text = "Waiting for peer to approve the merge.",
+          style = AppTheme.typography.body2,
+          color = AppTheme.colors.textPrimary
+        )
+        TextButton(
+          onClick = onRevoke,
+          enabled = !isMergeActionPending
+        ) {
+          Text("Cancel merge request")
+        }
+      }
+      isCurrentUserApprover -> {
+        Text(
+          text = "You approved. Waiting for the request to finalize.",
+          style = AppTheme.typography.body2,
+          color = AppTheme.colors.textPrimary
+        )
+        TextButton(
+          onClick = onRevoke,
+          enabled = !isMergeActionPending
+        ) {
+          Text("Revoke approval")
+        }
+      }
+      else -> {
+        Text(
+          text = "${mergeRequest.initiatorUid.value} requested to merge this branch.",
+          style = AppTheme.typography.body2,
+          color = AppTheme.colors.textPrimary
+        )
+        Button(
+          onClick = onApprove,
+          enabled = !isMergeActionPending
+        ) {
+          Text("Approve merge")
+        }
       }
     }
   }
   HorizontalDivider()
+}
+
+@Composable
+private fun BottomArea(
+  branchStatus: Branch.Status,
+  isSending: Boolean,
+  onSend: (String) -> Unit
+) {
+  when (branchStatus) {
+    Branch.Status.Active -> InputRow(
+      isSending = isSending,
+      onSend = onSend,
+      modifier = Modifier
+        .fillMaxWidth()
+        .navigationBarsPadding()
+    )
+    Branch.Status.MergeInProgress -> LockedBanner(
+      text = "Branch is locked while merge is in progress",
+      modifier = Modifier
+        .fillMaxWidth()
+        .navigationBarsPadding()
+    )
+    Branch.Status.Merged -> LockedBanner(
+      text = "This branch is merged (read-only)",
+      modifier = Modifier
+        .fillMaxWidth()
+        .navigationBarsPadding()
+    )
+  }
 }
 
 @Composable
@@ -242,13 +344,16 @@ private fun CommitBubble(commit: Commit) {
 }
 
 @Composable
-private fun MergedBanner(modifier: Modifier = Modifier) {
+private fun LockedBanner(
+  text: String,
+  modifier: Modifier = Modifier
+) {
   Box(
     modifier = modifier.padding(16.dp),
     contentAlignment = Alignment.Center
   ) {
     Text(
-      text = "This branch is merged (read-only)",
+      text = text,
       style = AppTheme.typography.body2,
       color = AppTheme.colors.textPrimary
     )

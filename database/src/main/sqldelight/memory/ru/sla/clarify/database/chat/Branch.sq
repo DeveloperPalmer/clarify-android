@@ -1,3 +1,5 @@
+import ru.sla.clarify.database.adapter.StringList;
+
 CREATE TABLE Branch(
   id TEXT NOT NULL PRIMARY KEY,
   conversationId TEXT NOT NULL,
@@ -7,6 +9,11 @@ CREATE TABLE Branch(
   status TEXT NOT NULL,
   createdAt INTEGER NOT NULL,
   createdByUid TEXT NOT NULL,
+  mergeRequestInitiatorUid TEXT,
+  mergeRequestRequestedAt INTEGER,
+  mergeRequestApprovedByUids TEXT AS StringList,
+  mergedAt INTEGER,
+  mergedIntoBranchId TEXT,
   FOREIGN KEY(conversationId) REFERENCES ChatConversation(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -14,8 +21,13 @@ CREATE INDEX Branch_conversationId ON Branch(conversationId);
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO Branch(id, conversationId, parentBranchId, branchedFromCommitId, name, status, createdAt, createdByUid)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INTO Branch(
+  id, conversationId, parentBranchId, branchedFromCommitId, name, status,
+  createdAt, createdByUid,
+  mergeRequestInitiatorUid, mergeRequestRequestedAt, mergeRequestApprovedByUids,
+  mergedAt, mergedIntoBranchId
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectByConversationId:
 SELECT
@@ -26,7 +38,12 @@ SELECT
   name,
   status,
   createdAt,
-  createdByUid
+  createdByUid,
+  mergeRequestInitiatorUid,
+  mergeRequestRequestedAt,
+  mergeRequestApprovedByUids,
+  mergedAt,
+  mergedIntoBranchId
 FROM Branch
 WHERE conversationId = :conversationId
 ORDER BY createdAt ASC;
@@ -40,7 +57,12 @@ SELECT
   name,
   status,
   createdAt,
-  createdByUid
+  createdByUid,
+  mergeRequestInitiatorUid,
+  mergeRequestRequestedAt,
+  mergeRequestApprovedByUids,
+  mergedAt,
+  mergedIntoBranchId
 FROM Branch
 WHERE id = :id;
 

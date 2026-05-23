@@ -13,6 +13,7 @@ import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.UserDetails
 import ru.sla.clarify.database.adapter.StringListAdapter
 import ru.sla.clarify.database.adapter.UserIdAdapter
+import ru.sla.clarify.database.chat.Branch
 import ru.sla.clarify.database.chat.ChatConversation
 
 @ContributesTo(AppScope::class)
@@ -26,6 +27,9 @@ object DatabaseModule {
       driver = driver,
       ChatConversationAdapter = ChatConversation.Adapter(
         participantUidsAdapter = StringListAdapter
+      ),
+      BranchAdapter = Branch.Adapter(
+        mergeRequestApprovedByUidsAdapter = StringListAdapter
       ),
       UserDetailsAdapter = UserDetails.Adapter(
         uidAdapter = UserIdAdapter

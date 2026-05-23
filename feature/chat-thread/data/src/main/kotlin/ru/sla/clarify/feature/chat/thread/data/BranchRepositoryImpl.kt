@@ -56,28 +56,49 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   override suspend fun createBranch(
-    parentBranchId: Branch.Id,
+    parentBranchId: Branch.Id?,
     branchedFromCommitId: Commit.Id,
     name: String
   ): Branch = withContext(Dispatchers.IO) {
     val remote = firestore.createBranch(
       conversationId = threadMediator.requireConversationId(),
-      parentBranchId = FirestoreBranch.Id(parentBranchId.value),
+      parentBranchId = resolveBranchId(parentBranchId),
       branchedFromCommitId = FirestoreCommit.Id(branchedFromCommitId.value),
       name = name
     )
     val branch = remote.toDomain()
-    inMemoryDB.branchQueries.insertOrReplace(
-      id = branch.id.value,
-      conversationId = branch.conversationId.value,
-      parentBranchId = branch.parentBranchId.value,
-      branchedFromCommitId = branch.branchedFromCommitId.value,
-      name = branch.name,
-      status = branch.status.value,
-      createdAt = branch.createdAt,
-      createdByUid = branch.createdByUid.value
-    )
+    insertOrReplace(branch)
     branch
+  }
+
+  override suspend fun requestMerge(branchId: Branch.Id) = withContext(Dispatchers.IO) {
+    firestore.requestMerge(
+      conversationId = threadMediator.requireConversationId(),
+      branchId = FirestoreBranch.Id(branchId.value)
+    )
+    // Local cache will be reconciled by observeBranchChanges' snapshot.
+  }
+
+  override suspend fun approveMerge(branchId: Branch.Id) = withContext(Dispatchers.IO) {
+    firestore.approveMerge(
+      conversationId = threadMediator.requireConversationId(),
+      branchId = FirestoreBranch.Id(branchId.value),
+      participantUids = threadMediator.directParticipantUids()
+    )
+  }
+
+  override suspend fun revokeApproval(branchId: Branch.Id) = withContext(Dispatchers.IO) {
+    firestore.revokeApproval(
+      conversationId = threadMediator.requireConversationId(),
+      branchId = FirestoreBranch.Id(branchId.value)
+    )
+  }
+
+  override suspend fun cancelMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
+    firestore.cancelMergeRequest(
+      conversationId = threadMediator.requireConversationId(),
+      branchId = FirestoreBranch.Id(branchId.value)
+    )
   }
 
   private fun handleBranchChanges(branches: List<FirestoreBranch>) {
@@ -92,19 +113,35 @@ class BranchRepositoryImpl @Inject constructor(
           null,
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
-            inMemoryDB.branchQueries.insertOrReplace(
-              id = branch.id.value,
-              conversationId = branch.conversationId.value,
-              parentBranchId = branch.parentBranchId.value,
-              branchedFromCommitId = branch.branchedFromCommitId.value,
-              name = branch.name,
-              status = branch.status.value,
-              createdAt = branch.createdAtEpochSeconds,
-              createdByUid = branch.createdByUid.value
-            )
+            insertOrReplace(branch.toDomain())
           }
         }
       }
     }
+  }
+
+  private fun insertOrReplace(branch: Branch) {
+    inMemoryDB.branchQueries.insertOrReplace(
+      id = branch.id.value,
+      conversationId = branch.conversationId.value,
+      parentBranchId = branch.parentBranchId.value,
+      branchedFromCommitId = branch.branchedFromCommitId.value,
+      name = branch.name,
+      status = branch.status.value,
+      createdAt = branch.createdAt,
+      createdByUid = branch.createdByUid.value,
+      mergeRequestInitiatorUid = branch.mergeRequest?.initiatorUid?.value,
+      mergeRequestRequestedAt = branch.mergeRequest?.requestedAt,
+      mergeRequestApprovedByUids = branch.mergeRequest?.approvedByUids?.map { it.value },
+      mergedAt = branch.mergedAt,
+      mergedIntoBranchId = branch.mergedIntoBranchId?.value
+    )
+  }
+
+  private suspend fun resolveBranchId(branchId: Branch.Id?): FirestoreBranch.Id {
+    if (branchId != null) return FirestoreBranch.Id(branchId.value)
+    val conversation = threadMediator.conversationId()
+      ?: error("conversationId not found")
+    return FirestoreBranch.Id(conversation.value)
   }
 }

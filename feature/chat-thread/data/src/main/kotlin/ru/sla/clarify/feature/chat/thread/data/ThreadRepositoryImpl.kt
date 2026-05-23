@@ -10,11 +10,9 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.thread.data.mapper.mapToCommit
-import ru.sla.clarify.feature.chat.thread.data.mapper.selectById
 import ru.sla.clarify.feature.chat.thread.domain.ThreadRepository
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
@@ -34,16 +32,6 @@ class ThreadRepositoryImpl @Inject constructor(
   private val inMemoryDB: InMemoryDB,
   private val threadMediator: ThreadMediator
 ) : ThreadRepository {
-
-  override suspend fun conversation(): Conversation? {
-    val conversationId = threadMediator.conversationId() ?: return null
-    val currentUserId = threadMediator.requireUserId()
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.chatConversationQueries
-        .selectById(conversationId, currentUserId)
-        .executeAsOneOrNull()
-    }
-  }
 
   override fun commits(branchId: Branch.Id?): Flow<List<Commit>> = flow {
     val conversationId = threadMediator.awaitConversationId()
