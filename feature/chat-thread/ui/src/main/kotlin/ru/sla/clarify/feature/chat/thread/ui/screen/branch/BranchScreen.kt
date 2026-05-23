@@ -72,7 +72,7 @@ fun BranchScreen(viewModel: BranchViewModel) {
 @Composable
 internal fun BranchReadyContent(
   state: ViewState,
-  intents: ViewIntents,
+  intents: ViewIntents
 ) {
   Column(
     modifier = Modifier
@@ -143,7 +143,7 @@ private fun TopBar(
       modifier = Modifier
         .weight(1f)
         .padding(start = 4.dp),
-      text = branchName.ifEmpty { "Branch" },
+      text = branchName.ifEmpty { stringResource(R.string.branch_default_name) },
       style = AppTheme.typography.title1,
       fontWeight = FontWeight.SemiBold
     )
@@ -152,14 +152,14 @@ private fun TopBar(
         onClick = onRequestMerge,
         enabled = !isMergeActionPending
       ) {
-        Text("Merge")
+        Text(stringResource(R.string.branch_merge_button))
       }
       Branch.Status.MergeInProgress -> Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
         Text(
-          text = "Merging...",
+          text = stringResource(R.string.branch_merging),
           style = AppTheme.typography.body2,
           color = AppTheme.colors.textPrimary
         )
@@ -191,7 +191,7 @@ private fun MergeBanner(
     when {
       isCurrentUserInitiator -> {
         Text(
-          text = "Waiting for peer to approve the merge.",
+          text = stringResource(R.string.branch_merge_waiting_for_peer),
           style = AppTheme.typography.body2,
           color = AppTheme.colors.textPrimary
         )
@@ -199,12 +199,12 @@ private fun MergeBanner(
           onClick = onRevoke,
           enabled = !isMergeActionPending
         ) {
-          Text("Cancel merge request")
+          Text(stringResource(R.string.branch_merge_cancel_request))
         }
       }
       isCurrentUserApprover -> {
         Text(
-          text = "You approved. Waiting for the request to finalize.",
+          text = stringResource(R.string.branch_merge_approved_waiting),
           style = AppTheme.typography.body2,
           color = AppTheme.colors.textPrimary
         )
@@ -212,12 +212,12 @@ private fun MergeBanner(
           onClick = onRevoke,
           enabled = !isMergeActionPending
         ) {
-          Text("Revoke approval")
+          Text(stringResource(R.string.branch_merge_revoke_approval))
         }
       }
       else -> {
         Text(
-          text = "${mergeRequest.initiatorUid.value} requested to merge this branch.",
+          text = stringResource(R.string.branch_merge_request_summary, mergeRequest.initiatorUid.value),
           style = AppTheme.typography.body2,
           color = AppTheme.colors.textPrimary
         )
@@ -225,7 +225,7 @@ private fun MergeBanner(
           onClick = onApprove,
           enabled = !isMergeActionPending
         ) {
-          Text("Approve merge")
+          Text(stringResource(R.string.branch_merge_approve_button))
         }
       }
     }
@@ -248,13 +248,13 @@ private fun BottomArea(
         .navigationBarsPadding()
     )
     Branch.Status.MergeInProgress -> LockedBanner(
-      text = "Branch is locked while merge is in progress",
+      text = stringResource(R.string.branch_locked_merge_in_progress),
       modifier = Modifier
         .fillMaxWidth()
         .navigationBarsPadding()
     )
     Branch.Status.Merged -> LockedBanner(
-      text = "This branch is merged (read-only)",
+      text = stringResource(R.string.branch_merged_read_only),
       modifier = Modifier
         .fillMaxWidth()
         .navigationBarsPadding()
@@ -299,7 +299,7 @@ private fun BranchEmptyState(modifier: Modifier = Modifier) {
     contentAlignment = Alignment.Center
   ) {
     Text(
-      text = "Start the branch",
+      text = stringResource(R.string.branch_empty_state),
       style = AppTheme.typography.body1
     )
   }
@@ -377,7 +377,7 @@ private fun InputRow(
       modifier = Modifier.weight(1f),
       value = inputValue,
       onValueChange = { inputValue = it },
-      placeholder = { Text("Message") }
+      placeholder = { Text(stringResource(R.string.chat_input_placeholder)) }
     )
     Button(
       onClick = {
@@ -389,7 +389,7 @@ private fun InputRow(
       },
       enabled = inputValue.isNotBlank() && !isSending
     ) {
-      Text("Send")
+      Text(stringResource(R.string.chat_input_send_button))
     }
   }
 }

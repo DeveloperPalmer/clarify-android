@@ -6,6 +6,62 @@
     <string name="error_server_timeout_title">@string/error_something_went_wrong_title</string>
     <string name="error_ssl_error_title">@string/error_something_went_wrong_title</string>
 
+    <!-- Generic actions -->
+    <string name="action_cancel">Cancel</string>
+
+    <!-- Conversation (chat list) screen -->
+    <string name="conversation_new_chat_button">New chat</string>
+    <string name="conversation_header_user_id_label">Your userId</string>
+    <string name="conversation_header_not_signed_in">(not signed in)</string>
+    <string name="conversation_header_settings_button">Settings</string>
+    <string name="conversation_header_copy_button">Copy</string>
+    <string name="conversation_empty_state">No conversations yet. Tap \"New chat\" to start one.</string>
+    <string name="conversation_no_messages_preview">(no messages yet)</string>
+
+    <!-- Conversation: new chat dialog -->
+    <string name="conversation_new_chat_dialog_title">New chat</string>
+    <string name="conversation_new_chat_dialog_text">Enter the peer userId to chat with:</string>
+    <string name="conversation_new_chat_dialog_start">Start</string>
+
+    <!-- Conversation: delete dialog -->
+    <string name="conversation_delete_dialog_title">Delete chat</string>
+    <string name="conversation_delete_dialog_text">Are you sure you want to delete the conversations. This action cannot be undone.</string>
+    <string name="conversation_delete_dialog_primary">Delete</string>
+
+    <!-- Conversation: dropdown menu -->
+    <string name="conversation_dropdown_delete_chat">Delete chat</string>
+
+    <!-- Shared chat input -->
+    <string name="chat_input_placeholder">Message</string>
+    <string name="chat_input_send_button">Send</string>
+
+    <!-- Thread screen -->
+    <string name="thread_branches_count">Branches (%1$d)</string>
+    <string name="thread_empty_state">Say hi!</string>
+    <string name="thread_create_branch_sheet_title">Create branch from this commit</string>
+    <string name="thread_create_branch_sheet_name_placeholder">Branch name</string>
+    <string name="thread_create_branch_sheet_create_button">Create</string>
+    <string name="thread_branches_list_sheet_title">Branches</string>
+    <string name="thread_branches_list_sheet_empty">No branches yet. Long-press a message to create one.</string>
+    <string name="thread_branch_creation_failed">Branch creation failed</string>
     <string name="thread_commit_status_sending">%1$s • sending</string>
     <string name="thread_commit_status_failed">%1$s • failed</string>
+
+    <!-- Branch screen -->
+    <string name="branch_default_name">Branch</string>
+    <string name="branch_empty_state">Start the branch</string>
+    <string name="branch_merge_button">Merge</string>
+    <string name="branch_merging">Merging…</string>
+    <string name="branch_merge_waiting_for_peer">Waiting for peer to approve the merge.</string>
+    <string name="branch_merge_cancel_request">Cancel merge request</string>
+    <string name="branch_merge_approved_waiting">You approved. Waiting for the request to finalize.</string>
+    <string name="branch_merge_revoke_approval">Revoke approval</string>
+    <string name="branch_merge_request_summary">%1$s requested to merge this branch.</string>
+    <string name="branch_merge_approve_button">Approve merge</string>
+    <string name="branch_locked_merge_in_progress">Branch is locked while merge is in progress</string>
+    <string name="branch_merged_read_only">This branch is merged (read-only)</string>
+    <string name="branch_merge_request_failed">Failed to request merge</string>
+    <string name="branch_merge_approve_failed">Failed to approve merge</string>
+    <string name="branch_merge_revoke_failed">Failed to revoke approval</string>
+    <string name="branch_merge_cancel_failed">Failed to cancel merge request</string>
 </resources>

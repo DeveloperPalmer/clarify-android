@@ -15,21 +15,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.event.Dialog
 import ru.sla.clarify.uikit.event.DropdownMenu
-import ru.sla.resourcerefs.strRef
+import ru.sla.resourcerefs.resRef
 
 internal fun showDeleteConversationDialog() = ScreenViewEvent<ViewIntents> { intents ->
   Dialog.Decision(
-    title = strRef("Delete chat"),
-    text = strRef("Are you sure you want to delete the conversations. This action cannot be undone."),
-    primaryActionTitle = strRef("Delete"),
-    secondaryActionTitle = strRef("Cancel"),
+    title = resRef(R.string.conversation_delete_dialog_title),
+    text = resRef(R.string.conversation_delete_dialog_text),
+    primaryActionTitle = resRef(R.string.conversation_delete_dialog_primary),
+    secondaryActionTitle = resRef(R.string.action_cancel),
     primaryAction = intents.confirmDeleteConversation,
     secondaryAction = { }
   )
@@ -38,7 +40,7 @@ internal fun showDeleteConversationDialog() = ScreenViewEvent<ViewIntents> { int
 internal fun showConversationOptions() = ScreenViewEvent<ViewIntents> { intents ->
   val items = listOf(
     ViewEvent.DropdownMenu.Item(
-      title = strRef("Delete chat"),
+      title = resRef(R.string.conversation_dropdown_delete_chat),
       isDestructive = true,
       onClick = intents.showDeleteConfirmation
     )
@@ -57,10 +59,10 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
       BackHandler { dismissEventPresentation() }
       AlertDialog(
         onDismissRequest = { dismissEventPresentation() },
-        title = { Text("New chat") },
+        title = { Text(stringResource(R.string.conversation_new_chat_dialog_title)) },
         text = {
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Enter the peer userId to chat with:")
+            Text(stringResource(R.string.conversation_new_chat_dialog_text))
             OutlinedTextField(
               modifier = Modifier.fillMaxWidth(),
               value = inputValue,
@@ -77,12 +79,12 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
             },
             enabled = inputValue.isNotBlank()
           ) {
-            Text("Start")
+            Text(stringResource(R.string.conversation_new_chat_dialog_start))
           }
         },
         dismissButton = {
           TextButton(onClick = { dismissEventPresentation() }) {
-            Text("Cancel")
+            Text(stringResource(R.string.action_cancel))
           }
         }
       )

@@ -12,6 +12,7 @@ import ru.kode.remo.JobState
 import ru.kode.remo.errors
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.startOnSubscribe
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
@@ -22,7 +23,7 @@ import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.ui.routing.FlowEvent
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.uikit.event.Snackbar
-import ru.sla.resourcerefs.strRef
+import ru.sla.resourcerefs.resRef
 
 class BranchViewModel @AssistedInject constructor(
   private val eventSink: FlowEventSink,
@@ -169,34 +170,34 @@ class BranchViewModel @AssistedInject constructor(
     // Surface failures as snackbars; recovery is just "user tries again".
     onEach(threadModel.requestMerge.jobFlow.errors()) {
       action { _, _, _ ->
-        showMergeError("Failed to request merge")
+        showMergeError(R.string.branch_merge_request_failed)
       }
     }
 
     onEach(threadModel.approveMerge.jobFlow.errors()) {
       action { _, _, _ ->
-        showMergeError("Failed to approve merge")
+        showMergeError(R.string.branch_merge_approve_failed)
       }
     }
 
     onEach(threadModel.revokeApproval.jobFlow.errors()) {
       action { _, _, _ ->
-        showMergeError("Failed to revoke approval")
+        showMergeError(R.string.branch_merge_revoke_failed)
       }
     }
 
     onEach(threadModel.cancelMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
-        showMergeError("Failed to cancel merge request")
+        showMergeError(R.string.branch_merge_cancel_failed)
       }
     }
   }
 
-  private fun showMergeError(text: String) {
+  private fun showMergeError(messageId: Int) {
     sendViewEvent(
       Snackbar(
         isError = true,
-        message = strRef(text)
+        message = resRef(messageId)
       )
     )
   }

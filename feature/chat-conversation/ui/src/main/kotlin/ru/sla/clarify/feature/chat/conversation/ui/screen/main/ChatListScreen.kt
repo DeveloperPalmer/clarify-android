@@ -26,10 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.kode.amvi.component.compose.rememberViewIntents
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.event.captureDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.rememberDropdownMenuAnchorScope
 import ru.sla.clarify.core.ui.screen.MviComponent
@@ -103,7 +105,7 @@ internal fun ChatListReadyContent(
         .align(Alignment.BottomEnd)
         .padding(bottom = 16.dp, end = 16.dp),
       onClick = onShowNewChatDialog,
-      text = { Text("New chat") },
+      text = { Text(stringResource(R.string.conversation_new_chat_button)) },
       icon = {}
     )
   }
@@ -126,12 +128,12 @@ private fun Header(
   ) {
     Column(modifier = Modifier.weight(1f)) {
       Text(
-        text = "Your userId",
+        text = stringResource(R.string.conversation_header_user_id_label),
         style = AppTheme.typography.caption2,
         color = AppTheme.colors.textPrimary
       )
       Text(
-        text = myUserId ?: "(not signed in)",
+        text = myUserId ?: stringResource(R.string.conversation_header_not_signed_in),
         style = AppTheme.typography.title3,
         color = AppTheme.colors.textPrimary,
         maxLines = 1,
@@ -146,7 +148,7 @@ private fun Header(
           onOpenSettings()
         }
       ) {
-        Text("Settings")
+        Text(stringResource(R.string.conversation_header_settings_button))
       }
     } else if (myUserId != null) {
       TextButton(
@@ -156,7 +158,7 @@ private fun Header(
           }
         }
       ) {
-        Text("Copy")
+        Text(stringResource(R.string.conversation_header_copy_button))
       }
     }
   }
@@ -177,7 +179,7 @@ private fun Conversations(
       contentAlignment = Alignment.Center
     ) {
       Text(
-        text = "No conversations yet. Tap \"New chat\" to start one.",
+        text = stringResource(R.string.conversation_empty_state),
         style = AppTheme.typography.body2
       )
     }
@@ -259,9 +261,10 @@ private fun DirectConversationItem(
           maxLines = 1,
           overflow = TextOverflow.Ellipsis
         )
-        val preview = direct.lastMessage?.takeIf { it.isNotBlank() } ?: "(no messages yet)"
         Text(
-          text = preview,
+          text = direct.lastMessage
+            ?.takeIf { it.isNotBlank() }
+            ?: stringResource(R.string.conversation_no_messages_preview),
           style = AppTheme.typography.body2,
           color = AppTheme.colors.textPrimary,
           maxLines = 1,

@@ -20,7 +20,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
@@ -52,14 +54,14 @@ internal fun showBranchCreationSheet(commit: Commit.Message) = ScreenViewEvent<V
           verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
           Text(
-            text = "Create branch from this commit",
+            text = stringResource(R.string.thread_create_branch_sheet_title),
             style = AppTheme.typography.title1
           )
           OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = name,
             onValueChange = { name = it },
-            placeholder = { Text("Branch name") }
+            placeholder = { Text(stringResource(R.string.thread_create_branch_sheet_name_placeholder)) }
           )
           Button(
             modifier = Modifier.fillMaxWidth(),
@@ -69,7 +71,7 @@ internal fun showBranchCreationSheet(commit: Commit.Message) = ScreenViewEvent<V
               dismissEventPresentation()
             }
           ) {
-            Text("Create")
+            Text(stringResource(R.string.thread_create_branch_sheet_create_button))
           }
           Spacer(modifier = Modifier.height(8.dp))
         }
@@ -99,12 +101,12 @@ internal fun showBranchesListSheet(branches: List<Branch>) = ScreenViewEvent<Vie
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           Text(
-            text = "Branches",
+            text = stringResource(R.string.thread_branches_list_sheet_title),
             style = AppTheme.typography.title1
           )
           if (branches.isEmpty()) {
             Text(
-              text = "No branches yet. Long-press a message to create one.",
+              text = stringResource(R.string.thread_branches_list_sheet_empty),
               style = AppTheme.typography.body2,
               color = AppTheme.colors.textPrimary
             )

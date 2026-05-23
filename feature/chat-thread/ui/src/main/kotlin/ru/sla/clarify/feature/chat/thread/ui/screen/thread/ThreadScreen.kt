@@ -150,7 +150,7 @@ private fun TopBar(
       fontWeight = FontWeight.SemiBold
     )
     TextButton(onClick = onShowBranchesList) {
-      Text("Branches ($branchesCount)")
+      Text(stringResource(R.string.thread_branches_count, branchesCount))
     }
   }
   HorizontalDivider()
@@ -201,7 +201,7 @@ private fun TreadEmptyState(modifier: Modifier = Modifier) {
     contentAlignment = Alignment.Center
   ) {
     Text(
-      text = "Say hi!",
+      text = stringResource(R.string.thread_empty_state),
       style = AppTheme.typography.body1
     )
   }
@@ -271,7 +271,7 @@ private fun InputRow(
       modifier = Modifier.weight(1f),
       value = inputValue,
       onValueChange = { inputValue = it },
-      placeholder = { Text("Message") }
+      placeholder = { Text(stringResource(R.string.chat_input_placeholder)) }
     )
     Button(
       onClick = {
@@ -283,7 +283,7 @@ private fun InputRow(
       },
       enabled = inputValue.isNotBlank() && !isSending
     ) {
-      Text("Send")
+      Text(stringResource(R.string.chat_input_send_button))
     }
   }
 }

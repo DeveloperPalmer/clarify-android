@@ -8,6 +8,7 @@ import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.startOnSubscribe
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
@@ -17,7 +18,7 @@ import ru.sla.clarify.feature.chat.thread.ui.routing.FlowEvent
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.event.Snackbar
-import ru.sla.resourcerefs.strRef
+import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
 
 class ThreadViewModel @Inject constructor(
@@ -101,7 +102,7 @@ class ThreadViewModel @Inject constructor(
         sendViewEvent(
           Snackbar(
             isError = true,
-            message = strRef("Branch creation failed")
+            message = resRef(R.string.thread_branch_creation_failed)
           )
         )
       }
