@@ -5,7 +5,7 @@ CREATE TABLE UserDetails (
   uid TEXT AS UserId NOT NULL
 );
 
-insert:
+insertOrReplace:
 INSERT OR REPLACE
 INTO UserDetails(uid)
 VALUES (?);
@@ -15,5 +15,5 @@ SELECT *
 FROM UserDetails
 LIMIT 1;
 
-delete:
+deleteAll:
 DELETE FROM UserDetails;

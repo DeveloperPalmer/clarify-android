@@ -53,7 +53,7 @@ class ThreadRepositoryImpl @Inject constructor(
     val rootBranchId = FirestoreBranch.Id(conversationId.value)
     val resolvedBranchId = branchId?.value?.let(FirestoreBranch::Id) ?: rootBranchId
 
-    firestore.observeDirectCommits(
+    firestore.directCommitsLive(
       peerId = peerId,
       branchId = resolvedBranchId,
       limit = LIVE_COMMIT_LIMIT
@@ -73,7 +73,7 @@ class ThreadRepositoryImpl @Inject constructor(
   ) {
     val conversationId = threadMediator.conversationId() ?: return
     val effectiveBranchId = branchId?.value ?: conversationId.value
-    val historyCommits = firestore.historyCommits(
+    val historyCommits = firestore.getCommits(
       conversationId = conversationId,
       branchId = FirestoreBranch.Id(effectiveBranchId),
       count = count,
@@ -87,7 +87,7 @@ class ThreadRepositoryImpl @Inject constructor(
     colorHex: String?,
     text: String
   ) {
-    firestore.sendCommit(
+    firestore.postCommit(
       conversationId = threadMediator.conversationId(),
       text = text,
       peerId = peerId,
@@ -98,7 +98,7 @@ class ThreadRepositoryImpl @Inject constructor(
 
   override suspend fun markAsRead() {
     val conversationId = threadMediator.conversationId() ?: return
-    firestore.markConversationAsRead(conversationId)
+    firestore.patchUnreadCount(conversationId)
   }
 
   private suspend fun saveHistoryCommits(

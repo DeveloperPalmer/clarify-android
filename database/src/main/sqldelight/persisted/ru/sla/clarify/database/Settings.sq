@@ -3,17 +3,17 @@ CREATE TABLE Settings (
   value TEXT NOT NULL
 );
 
-save:
+insertOrReplace:
 INSERT OR REPLACE
 INTO Settings
 VALUES (?, ?);
 
-get:
+selectByKey:
 SELECT value
 FROM Settings WHERE key = ?
 LIMIT 1;
 
-delete:
+deleteByKey:
 DELETE FROM
 Settings
 WHERE key = ?;

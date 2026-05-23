@@ -3,12 +3,12 @@ CREATE TABLE CacheKey(
  cacheKey TEXT NOT NULL
 );
 
-save:
+insertOrReplace:
 INSERT OR REPLACE
 INTO CacheKey
 VALUES (?, ?);
 
-get:
+selectById:
 SELECT cacheKey
 FROM CacheKey
 WHERE id = ?;

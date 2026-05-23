@@ -55,7 +55,11 @@ internal fun ChatConversationQueries.selectById(
           val peerId = participantUids.first { it != userId.value }
           Conversation.Direct(
             id = Conversation.Id(id),
-            peer = Peer(id = Peer.Id(peerId)),
+            peer = Peer(
+              id = Peer.Id(peerId),
+              displayName = null,
+              photoUrl = null
+            ),
             lastMessage = lastCommit,
             lastMessageTimestamp = lastCommitTimestamp,
             unreadCount = unreadCount

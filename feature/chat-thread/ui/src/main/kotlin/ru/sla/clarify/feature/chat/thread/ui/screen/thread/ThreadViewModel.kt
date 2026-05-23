@@ -140,7 +140,6 @@ class ThreadViewModel @Inject constructor(
   private fun MachineDsl<ViewState>.configurePeerCommitTransitions() {
     onEach(threadModel.commits(branchId = null)) {
       transitionTo { state, commits ->
-        // SQL returns ASC by timestamp; UI renders newest-first.
         state.copy(commits = commits.asReversed())
       }
       action { _, _, _ ->

@@ -3,7 +3,7 @@ CREATE TABLE FirestoreRequestLog (
   sentAt INTEGER NOT NULL
 );
 
-insertOne:
+insert:
 INSERT
 INTO FirestoreRequestLog
 VALUES (?, ?);

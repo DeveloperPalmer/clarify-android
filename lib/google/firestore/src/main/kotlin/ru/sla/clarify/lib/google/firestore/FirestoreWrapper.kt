@@ -106,4 +106,24 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .collection(FirestoreSchema.BRANCHES_COLLECTION)
       .document(branchId.value)
   }
+
+  override fun participantsCollectionRef(
+    conversationId: FirestoreConversation.Id
+  ): CollectionReference {
+    return remoteDB
+      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .document(conversationId.value)
+      .collection(FirestoreSchema.PARTICIPANTS_COLLECTION)
+  }
+
+  override fun participantDocumentRef(
+    conversationId: FirestoreConversation.Id,
+    userId: UserId
+  ): DocumentReference {
+    return remoteDB
+      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .document(conversationId.value)
+      .collection(FirestoreSchema.PARTICIPANTS_COLLECTION)
+      .document(userId.value)
+  }
 }

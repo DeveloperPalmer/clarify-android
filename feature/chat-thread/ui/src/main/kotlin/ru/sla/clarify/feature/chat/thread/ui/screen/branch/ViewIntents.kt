@@ -7,14 +7,14 @@ class ViewIntents : BaseViewIntents() {
   val sendCommit = intent<String>(name = "sendCommit")
   val requestMerge = intent(name = "requestMerge")
 
-  /** Peer-side: confirm someone else's merge request. */
+  /** Со стороны peer'а: подтвердить чужой merge request. */
   val approveMerge = intent(name = "approveMerge")
 
   /**
-   * Universal "step back from approving":
-   * - peer who already approved -> removes own approval, merge request stays in flight;
-   * - initiator -> cancels the entire merge request, branch returns to Active.
-   * The data layer disambiguates by reading the document inside a transaction.
+   * Универсальный «откатить approval»:
+   * - peer, который уже approve'нул -> убирает своё одобрение, merge request продолжает жить;
+   * - инициатор -> отменяет весь merge request, ветка возвращается в Active.
+   * Data-слой разруливает один из двух кейсов, читая документ внутри транзакции.
    */
   val revokeApproval = intent(name = "revokeApproval")
 }

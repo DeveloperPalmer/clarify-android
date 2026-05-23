@@ -46,4 +46,13 @@ interface FirestoreWrapperProvider {
     conversationId: FirestoreConversation.Id,
     branchId: FirestoreBranch.Id
   ): DocumentReference
+
+  fun participantsCollectionRef(
+    conversationId: FirestoreConversation.Id
+  ): CollectionReference
+
+  fun participantDocumentRef(
+    conversationId: FirestoreConversation.Id,
+    userId: UserId
+  ): DocumentReference
 }

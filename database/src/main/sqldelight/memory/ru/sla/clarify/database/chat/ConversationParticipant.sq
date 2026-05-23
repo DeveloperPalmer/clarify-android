@@ -1,0 +1,29 @@
+CREATE TABLE ConversationParticipant(
+  conversationId TEXT NOT NULL,
+  id TEXT NOT NULL,
+  displayName TEXT,
+  photoUrl TEXT,
+  PRIMARY KEY (conversationId, id)
+);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO ConversationParticipant(conversationId, id, displayName, photoUrl)
+VALUES (?, ?, ?, ?);
+
+selectByConversation:
+SELECT id, displayName, photoUrl
+FROM ConversationParticipant
+WHERE conversationId = :conversationId;
+
+selectByConversationAndId:
+SELECT id, displayName, photoUrl
+FROM ConversationParticipant
+WHERE conversationId = :conversationId AND id = :id;
+
+deleteByConversation:
+DELETE FROM ConversationParticipant
+WHERE conversationId = ?;
+
+deleteAll:
+DELETE FROM ConversationParticipant;

@@ -9,7 +9,7 @@ CREATE TABLE ChatConversation(
   unreadCount INTEGER NOT NULL DEFAULT 0
 );
 
-upsertMeta:
+insertOrReplaceMeta:
 INSERT OR REPLACE
 INTO ChatConversation(id, type, participantUids, lastCommit, lastCommitTimestamp, unreadCount)
 VALUES (
@@ -26,15 +26,19 @@ UPDATE ChatConversation
 SET unreadCount = :unreadCount
 WHERE id = :id;
 
-selectAll:
+selectAllWithPeer:
 SELECT
   ChatConversation.id,
   ChatConversation.type,
-  ChatConversation.participantUids,
   ChatConversation.lastCommit,
   ChatConversation.lastCommitTimestamp,
-  ChatConversation.unreadCount
+  ChatConversation.unreadCount,
+  peer.id AS peerId,
+  peer.displayName AS peerDisplayName,
+  peer.photoUrl AS peerPhotoUrl
 FROM ChatConversation
+LEFT JOIN ConversationParticipant AS peer
+  ON peer.conversationId = ChatConversation.id AND peer.id != :currentUserId
 ORDER BY ChatConversation.lastCommitTimestamp DESC;
 
 selectAllIds:
@@ -57,7 +61,7 @@ SELECT id
 FROM ChatConversation
 WHERE type = :type AND participantUids = :participantUids;
 
-delete:
+deleteById:
 DELETE FROM ChatConversation
 WHERE id = ?;
 

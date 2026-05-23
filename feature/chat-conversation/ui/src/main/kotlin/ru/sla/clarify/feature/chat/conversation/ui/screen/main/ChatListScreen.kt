@@ -37,6 +37,7 @@ import ru.sla.clarify.core.ui.event.rememberDropdownMenuAnchorScope
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.uikit.component.Avatar
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -234,28 +235,22 @@ private fun DirectConversationItem(
         ),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      Box(
-        modifier = Modifier
-          .size(40.dp)
-          .clip(CircleShape)
-          .background(
-            if (selected) AppTheme.colors.errorPrimary else AppTheme.colors.textPrimary
-          ),
-        contentAlignment = Alignment.Center
-      ) {
-        Text(
-          text = direct.peer.id.value.take(1).uppercase(),
-          style = AppTheme.typography.button,
-          color = AppTheme.colors.backgroundSecondary
-        )
-      }
+      Avatar(
+        photoUrl = direct.peer.photoUrl,
+        fallbackInitial = direct.peer.displayName
+          ?.takeIf { it.isNotBlank() }
+          ?: direct.peer.id.value,
+        highlighted = selected
+      )
       Column(
         modifier = Modifier
           .padding(start = 12.dp)
           .weight(1f)
       ) {
         Text(
-          text = direct.peer.id.value,
+          text = direct.peer.displayName
+            ?.takeIf { it.isNotBlank() }
+            ?: direct.peer.id.value,
           style = AppTheme.typography.button,
           color = AppTheme.colors.textPrimary,
           maxLines = 1,

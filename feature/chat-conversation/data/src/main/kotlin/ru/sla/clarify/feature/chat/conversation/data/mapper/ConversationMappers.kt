@@ -8,21 +8,26 @@ import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema
 
 internal fun ChatConversationQueries.selectAll(userId: UserId): Query<Conversation> {
-  return selectAll {
+  return selectAllWithPeer(currentUserId = userId.value) {
       id,
       type,
-      participantUids,
       lastCommit,
       lastCommitTimestamp,
-      unreadCount
+      unreadCount,
+      peerId,
+      peerDisplayName,
+      peerPhotoUrl
     ->
 
     when (type) {
       FirestoreSchema.ConversationType.Direct.value -> {
-        val peerId = participantUids.first { it != userId.value }
         Conversation.Direct(
           id = Conversation.Id(id),
-          peer = Peer(id = Peer.Id(peerId)),
+          peer = Peer(
+            id = Peer.Id(requireNotNull(peerId)),
+            displayName = peerDisplayName,
+            photoUrl = peerPhotoUrl
+          ),
           lastMessage = lastCommit,
           lastMessageTimestamp = lastCommitTimestamp,
           unreadCount = unreadCount

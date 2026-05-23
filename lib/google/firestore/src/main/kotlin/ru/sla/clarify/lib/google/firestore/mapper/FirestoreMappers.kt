@@ -27,10 +27,13 @@ import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_LAST_COM
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_TYPE
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.PARTICIPANT_DISPLAY_NAME
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.PARTICIPANT_PHOTO_URL
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
+import ru.sla.clarify.lib.google.firestore.entity.FirestoreParticipant
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 
 fun extractConversationFB(
@@ -103,6 +106,14 @@ internal fun extractBranchFB(
     mergedIntoBranchId = document.getString(BRANCH_MERGED_INTO_BRANCH_ID)
       ?.let(FirestoreBranch::Id),
     changeType = type?.toDomainModel()
+  )
+}
+
+internal fun extractParticipantFB(document: DocumentSnapshot): FirestoreParticipant {
+  return FirestoreParticipant(
+    id = UserId(document.id),
+    displayName = document.getString(PARTICIPANT_DISPLAY_NAME),
+    photoUrl = document.getString(PARTICIPANT_PHOTO_URL)
   )
 }
 

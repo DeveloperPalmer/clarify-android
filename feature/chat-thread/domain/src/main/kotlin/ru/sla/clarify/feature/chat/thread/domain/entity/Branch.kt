@@ -36,9 +36,9 @@ data class Branch(
   }
 
   /**
-   * Active merge proposal for a branch. While present, the branch is in [Status.MergeInProgress]
-   * and accepts no new commits. Once [approvedByUids] covers all conversation participants,
-   * the branch transitions to [Status.Merged].
+   * Активное предложение merge'а для ветки. Пока оно есть, ветка в [Status.MergeInProgress]
+   * и не принимает новые commit'ы. Как только [approvedByUids] покроет всех участников
+   * conversation — ветка переходит в [Status.Merged].
    */
   @Immutable
   data class MergeRequest(

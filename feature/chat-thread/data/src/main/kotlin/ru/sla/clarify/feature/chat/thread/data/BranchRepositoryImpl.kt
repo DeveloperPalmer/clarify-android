@@ -33,7 +33,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   override fun observeBranchChanges(): Flow<Unit> = flow {
     val conversationId = threadMediator.awaitConversationId()
-    firestore.observeBranches(conversationId)
+    firestore.branchesLive(conversationId)
       .flowOn(Dispatchers.IO)
       .collect { changes ->
         handleBranchChanges(changes)
@@ -56,14 +56,14 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   override suspend fun createBranch(
-    parentBranchId: Branch.Id?,
-    branchedFromCommitId: Commit.Id,
+    parentId: Branch.Id?,
+    branchedFrom: Commit.Id,
     name: String
   ): Branch = withContext(Dispatchers.IO) {
-    val remote = firestore.createBranch(
+    val remote = firestore.postBranch(
       conversationId = threadMediator.requireConversationId(),
-      parentBranchId = resolveBranchId(parentBranchId),
-      branchedFromCommitId = FirestoreCommit.Id(branchedFromCommitId.value),
+      parentBranchId = resolveBranchId(parentId),
+      branchedFromCommitId = FirestoreCommit.Id(branchedFrom.value),
       name = name
     )
     val branch = remote.toDomain()
@@ -71,31 +71,30 @@ class BranchRepositoryImpl @Inject constructor(
     branch
   }
 
-  override suspend fun requestMerge(branchId: Branch.Id) = withContext(Dispatchers.IO) {
-    firestore.requestMerge(
+  override suspend fun openMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
+    firestore.postMergeRequest(
       conversationId = threadMediator.requireConversationId(),
       branchId = FirestoreBranch.Id(branchId.value)
     )
-    // Local cache will be reconciled by observeBranchChanges' snapshot.
   }
 
-  override suspend fun approveMerge(branchId: Branch.Id) = withContext(Dispatchers.IO) {
-    firestore.approveMerge(
+  override suspend fun approveMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
+    firestore.patchMergeApproval(
       conversationId = threadMediator.requireConversationId(),
       branchId = FirestoreBranch.Id(branchId.value),
       participantUids = threadMediator.directParticipantUids()
     )
   }
 
-  override suspend fun revokeApproval(branchId: Branch.Id) = withContext(Dispatchers.IO) {
-    firestore.revokeApproval(
+  override suspend fun revokeApprovalMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
+    firestore.deleteMergeApproval(
       conversationId = threadMediator.requireConversationId(),
       branchId = FirestoreBranch.Id(branchId.value)
     )
   }
 
   override suspend fun cancelMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
-    firestore.cancelMergeRequest(
+    firestore.deleteMergeRequest(
       conversationId = threadMediator.requireConversationId(),
       branchId = FirestoreBranch.Id(branchId.value)
     )
@@ -106,7 +105,7 @@ class BranchRepositoryImpl @Inject constructor(
       branches.forEach { branch ->
         when (branch.changeType) {
           FirestoreDocumentResult.Removed -> {
-            inMemoryDB.branchQueries.delete(
+            inMemoryDB.branchQueries.deleteById(
               id = branch.id.value
             )
           }

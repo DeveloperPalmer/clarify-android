@@ -17,7 +17,6 @@ import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
-import ru.sla.clarify.feature.chat.thread.domain.BranchRepository
 import ru.sla.clarify.feature.chat.thread.domain.ThreadModel
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.ui.routing.FlowEvent
@@ -28,7 +27,6 @@ import ru.sla.resourcerefs.resRef
 class BranchViewModel @AssistedInject constructor(
   private val eventSink: FlowEventSink,
   private val threadModel: ThreadModel,
-  private val branchRepository: BranchRepository,
   @Assisted
   branchIdValue: String
 ) : ViewModel<ViewState, ViewIntents>() {
@@ -60,7 +58,7 @@ class BranchViewModel @AssistedInject constructor(
     }
 
     onEach(threadModel.subscribeOnCommits(branchId)) {
-      // nothing to do
+      // нечего делать
     }
 
     onEach(threadModel.userId()) {
@@ -69,7 +67,7 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
-    onEach(branchRepository.branch(branchId).filterNotNull()) {
+    onEach(threadModel.branch(branchId).filterNotNull()) {
       transitionTo { state, branch ->
         state.copy(
           branchName = branch.name,
@@ -81,18 +79,18 @@ class BranchViewModel @AssistedInject constructor(
 
     configureSenderCommitTransitions()
     configurePeerCommitTransitions()
-    configureMergeTransitions()
+    configureMergeRequestTransitions()
   }
 
   private fun MachineDsl<ViewState>.configureSenderCommitTransitions() {
     onEach(intent(ViewIntents::sendCommit)) {
       action { state, _, text ->
-        // Defensive: input is hidden by the UI when status != Active, but if anything
-        // racy slipped through we still don't post a commit into a frozen branch.
+        // Защита: UI прячет инпут когда status != Active, но если что-то проскочит из-за
+        // race condition — всё равно не постим commit в замороженную ветку.
         if (state.branchStatus != Branch.Status.Active) return@action
-        // state.commits is sorted newest-first; index 0 is the freshest message.
-        // For the first message in a brand-new branch this is null, so a fresh color
-        // will be generated downstream — that's intentional, a new branch gets its own color.
+        // state.commits отсортирован newest-first; индекс 0 — самое свежее сообщение.
+        // Для первого сообщения в новой ветке это null, и ниже сгенерируется свежий цвет —
+        // это намеренно, новая ветка получает свой цвет.
         val parentCommit = state.commits
           .filterIsInstance<Commit.Message>()
           .firstOrNull()
@@ -120,7 +118,7 @@ class BranchViewModel @AssistedInject constructor(
   private fun MachineDsl<ViewState>.configurePeerCommitTransitions() {
     onEach(threadModel.commits(branchId)) {
       transitionTo { state, commits ->
-        // SQL returns ASC by timestamp; UI renders newest-first.
+        // SQL отдаёт ASC по timestamp; UI рендерит newest-first.
         state.copy(commits = commits.asReversed())
       }
       action { _, _, _ ->
@@ -129,34 +127,40 @@ class BranchViewModel @AssistedInject constructor(
     }
   }
 
-  private fun MachineDsl<ViewState>.configureMergeTransitions() {
+  private fun MachineDsl<ViewState>.configureMergeRequestTransitions() {
     onEach(intent(ViewIntents::requestMerge)) {
       action { state, _, _ ->
         if (state.branchStatus != Branch.Status.Active) return@action
-        threadModel.requestMerge.start(branchId)
+        threadModel.openMergeRequest.start(branchId)
       }
     }
     onEach(intent(ViewIntents::approveMerge)) {
       action { state, _, _ ->
         if (state.branchStatus != Branch.Status.MergeInProgress) return@action
         if (state.isCurrentUserApprover) return@action
-        threadModel.approveMerge.start(branchId)
+        threadModel.approveMergeRequest.start(branchId)
       }
     }
     onEach(intent(ViewIntents::revokeApproval)) {
       action { state, _, _ ->
         if (state.branchStatus != Branch.Status.MergeInProgress) return@action
-        threadModel.revokeApproval.start(branchId)
+        threadModel.revokeApprovalMergeRequest.start(branchId)
       }
     }
 
-    // Aggregate isMergeActionPending across all four merge-related tasks. Any one of them
-    // being in Running state -> UI shows progress + disables buttons.
+    onEach(threadModel.mergeRequestInitiator(branchId)) {
+      transitionTo { state, participant ->
+        state.copy(initiatorName = participant?.displayName)
+      }
+    }
+
+    // Агрегируем isMergeActionPending по всем четырём merge-задачам. Если хоть одна
+    // в Running -> UI показывает прогресс и блокирует кнопки.
     onEach(
       combine(
-        threadModel.requestMerge.jobFlow.state,
-        threadModel.approveMerge.jobFlow.state,
-        threadModel.revokeApproval.jobFlow.state,
+        threadModel.openMergeRequest.jobFlow.state,
+        threadModel.approveMergeRequest.jobFlow.state,
+        threadModel.revokeApprovalMergeRequest.jobFlow.state,
         threadModel.cancelMergeRequest.jobFlow.state
       ) { a, b, c, d ->
         listOf(a, b, c, d).any { it == JobState.Running }
@@ -167,20 +171,20 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
-    // Surface failures as snackbars; recovery is just "user tries again".
-    onEach(threadModel.requestMerge.jobFlow.errors()) {
+    // Ошибки показываем снэкбарами; recovery — пользователь повторяет вручную.
+    onEach(threadModel.openMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_request_failed)
       }
     }
 
-    onEach(threadModel.approveMerge.jobFlow.errors()) {
+    onEach(threadModel.approveMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_approve_failed)
       }
     }
 
-    onEach(threadModel.revokeApproval.jobFlow.errors()) {
+    onEach(threadModel.revokeApprovalMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_revoke_failed)
       }

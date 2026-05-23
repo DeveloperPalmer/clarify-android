@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
@@ -107,18 +106,15 @@ class ChatListViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureFetchConversationTransitions() {
-    onEach(
-      combine(
-        chatModel.userId,
-        chatModel.conversations,
-        ::Pair
-      )
-    ) {
-      transitionTo { state, (userId, conversations) ->
-        state.copy(
-          userId = userId.value,
-          conversations = conversations
-        )
+    onEach(chatModel.userId) {
+      transitionTo { state, userId ->
+        state.copy(userId = userId.value)
+      }
+    }
+
+    onEach(chatModel.conversations) {
+      transitionTo { state, conversations ->
+        state.copy(conversations = conversations)
       }
     }
 

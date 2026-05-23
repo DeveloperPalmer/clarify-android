@@ -36,7 +36,7 @@ class LoginRepositoryImpl @Inject constructor(
 
         val userId = UserId(user.uid)
 
-        firestore.mergeUser(
+        firestore.patchUser(
           id = userId,
           displayName = user.displayName,
           photoUrl = user.photoUrl?.toString()

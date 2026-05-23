@@ -1,13 +1,18 @@
 package ru.sla.clarify.feature.chat.thread.domain
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.core.domain.mapDistinctChanges
+import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
@@ -17,23 +22,18 @@ import javax.inject.Inject
 class ThreadModel @Inject constructor(
   private val threadRepository: ThreadRepository,
   private val branchRepository: BranchRepository,
+  private val conversationRepository: ConversationRepository,
   private val authSessionRepository: AuthSessionRepository
 ) : ReactiveModel() {
 
   override fun onPostStart() {
     super.onPostStart()
-    // Uncaught exceptions from these subscriptions (e.g. Firestore FAILED_PRECONDITION on a
-    // missing composite index) are logged centrally by ReactiveModel via its uncaughtExceptions
-    // handler, and SupervisorJob in scope prevents one failing subscription from cancelling
-    // sibling tasks like sendMessage.
-    threadRepository.observeCommitsChanges(null).launchIn(scope)
-    branchRepository.observeBranchChanges().launchIn(scope)
+    threadRepository.observeCommitsChanges(null)
+      .launchIn(scope)
+    branchRepository.observeBranchChanges()
+      .launchIn(scope)
   }
 
-  /**
-   * One-shot stream of the current user's id, used by UI to determine "am I the initiator?"
-   * of a merge request.
-   */
   fun userId(): Flow<UserId> = flow {
     val userId = authSessionRepository.withKey { readUserId(it) }
     emit(requireNotNull(userId))
@@ -53,6 +53,25 @@ class ThreadModel @Inject constructor(
 
   fun branches(): Flow<List<Branch>> {
     return branchRepository.branches()
+  }
+
+  fun branch(id: Branch.Id): Flow<Branch?> {
+    return branchRepository.branch(id)
+  }
+
+  fun mergeRequestInitiator(id: Branch.Id): Flow<Participant?> {
+    return branchRepository.branch(id)
+      .mapDistinctChanges { branch ->
+        branch?.mergeRequest?.initiatorUid?.let { it to branch.conversationId }
+      }
+      .flatMapLatest { pair ->
+        if (pair == null) {
+          flowOf<Participant?>(null)
+        } else {
+          val (initiatorUid, conversationId) = pair
+          conversationRepository.participant(conversationId, initiatorUid)
+        }
+      }
   }
 
   val fetchHistoryCommits = task<Unit>(
@@ -87,28 +106,28 @@ class ThreadModel @Inject constructor(
     name = "createBranch"
   ) { parentBranchId, branchedFromCommitId, name ->
     branchRepository.createBranch(
-      parentBranchId = parentBranchId,
-      branchedFromCommitId = branchedFromCommitId.id,
+      parentId = parentBranchId,
+      branchedFrom = branchedFromCommitId.id,
       name = name
     )
   }
 
-  val requestMerge = task<Branch.Id, Unit>(
-    name = "requestMerge"
+  val openMergeRequest = task<Branch.Id, Unit>(
+    name = "openMergeRequest"
   ) { branchId ->
-    branchRepository.requestMerge(branchId)
+    branchRepository.openMergeRequest(branchId)
   }
 
-  val approveMerge = task<Branch.Id, Unit>(
-    name = "approveMerge"
+  val approveMergeRequest = task<Branch.Id, Unit>(
+    name = "approveMergeRequest"
   ) { branchId ->
-    branchRepository.approveMerge(branchId)
+    branchRepository.approveMergeRequest(branchId)
   }
 
-  val revokeApproval = task<Branch.Id, Unit>(
-    name = "revokeApproval"
+  val revokeApprovalMergeRequest = task<Branch.Id, Unit>(
+    name = "revokeApprovalMergeRequest"
   ) { branchId ->
-    branchRepository.revokeApproval(branchId)
+    branchRepository.revokeApprovalMergeRequest(branchId)
   }
 
   val cancelMergeRequest = task<Branch.Id, Unit>(

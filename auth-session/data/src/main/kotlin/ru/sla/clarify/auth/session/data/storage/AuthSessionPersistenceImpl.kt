@@ -36,7 +36,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
 
   override suspend fun saveTokens(key: SessionKey, tokens: AuthTokens) {
     withContext(Dispatchers.IO) {
-      database.settingsQueries.save(
+      database.settingsQueries.insertOrReplace(
         buildTokensSettingsKey(key),
         serializeTokens(tokens)
       )
@@ -45,7 +45,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
 
   override fun tokens(key: SessionKey): Flow<AuthTokens?> {
     return database.settingsQueries
-      .get(buildTokensSettingsKey(key))
+      .selectByKey(buildTokensSettingsKey(key))
       .asFlow()
       .mapToOneOrNull(Dispatchers.IO)
       .map { dbRecord ->
@@ -56,7 +56,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
   override suspend fun readTokens(key: SessionKey): AuthTokens? {
     return withContext(Dispatchers.IO) {
       val dbRecord = database.settingsQueries
-        .get(buildTokensSettingsKey(key))
+        .selectByKey(buildTokensSettingsKey(key))
         .executeAsOneOrNull()
       dbRecord?.let { deserializeTokens(it) }
     }
@@ -64,7 +64,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
 
   override suspend fun saveUserId(key: SessionKey, userId: UserId) {
     withContext(Dispatchers.IO) {
-      database.settingsQueries.save(
+      database.settingsQueries.insertOrReplace(
         buildUserIdSettingsKey(key),
         userId.value
       )
@@ -74,7 +74,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
   override suspend fun readUserId(key: SessionKey): UserId? {
     return withContext(Dispatchers.IO) {
       database.settingsQueries
-        .get(buildUserIdSettingsKey(key))
+        .selectByKey(buildUserIdSettingsKey(key))
         .executeAsOneOrNull()
         ?.let(::UserId)
     }
@@ -83,7 +83,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
   override suspend fun deleteUserId(key: SessionKey) {
     withContext(Dispatchers.IO) {
       database.settingsQueries
-        .delete(buildUserIdSettingsKey(key))
+        .deleteByKey(buildUserIdSettingsKey(key))
     }
   }
 
@@ -114,7 +114,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
   override suspend fun deleteTokens(key: SessionKey) {
     withContext(Dispatchers.IO) {
       database.settingsQueries
-        .delete(buildTokensSettingsKey(key))
+        .deleteByKey(buildTokensSettingsKey(key))
     }
   }
 
@@ -134,7 +134,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
 
   override fun key(): Flow<SessionKey?> {
     return database.settingsQueries
-      .get(PREF_KEY_ACTIVE_SESSION_KEY)
+      .selectByKey(PREF_KEY_ACTIVE_SESSION_KEY)
       .asFlow()
       .mapToOneOrNull(Dispatchers.IO)
       .map { it?.let(::SessionKey) }
@@ -143,7 +143,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
   override suspend fun readKey(): SessionKey? {
     return withContext(Dispatchers.IO) {
       database.settingsQueries
-        .get(PREF_KEY_ACTIVE_SESSION_KEY)
+        .selectByKey(PREF_KEY_ACTIVE_SESSION_KEY)
         .executeAsOneOrNull()
         ?.let { SessionKey(it) }
     }
@@ -152,14 +152,14 @@ class AuthSessionPersistenceImpl @Inject constructor(
   private suspend fun writeActiveKey(key: SessionKey) {
     withContext(Dispatchers.IO) {
       database.settingsQueries
-        .save(PREF_KEY_ACTIVE_SESSION_KEY, key.value)
+        .insertOrReplace(PREF_KEY_ACTIVE_SESSION_KEY, key.value)
     }
   }
 
   private suspend fun deleteActiveKey() {
     withContext(Dispatchers.IO) {
       database.settingsQueries
-        .delete(PREF_KEY_ACTIVE_SESSION_KEY)
+        .deleteByKey(PREF_KEY_ACTIVE_SESSION_KEY)
     }
   }
 }

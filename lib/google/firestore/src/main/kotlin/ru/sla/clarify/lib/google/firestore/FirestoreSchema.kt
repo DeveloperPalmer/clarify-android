@@ -7,6 +7,7 @@ import java.util.Date
 
 object FirestoreSchema {
   const val USERS_COLLECTION = "users"
+  const val PARTICIPANTS_COLLECTION = "participants"
   const val CONVERSATIONS_COLLECTION = "conversations"
   const val COMMITS_COLLECTION = "commits"
   const val UNREAD_COMMITS_COLLECTION = "unreadCommits"
@@ -18,6 +19,10 @@ object FirestoreSchema {
   const val USER_PHOTO_URL = "photoUrl"
   const val USER_CREATED_AT = "createdAt"
   const val USER_UPDATED_AT = "updatedAt"
+
+  const val PARTICIPANT_ID = "id"
+  const val PARTICIPANT_DISPLAY_NAME = "displayName"
+  const val PARTICIPANT_PHOTO_URL = "photoUrl"
 
   const val CONVERSATION_TYPE = "type"
   const val CONVERSATION_PARTICIPANT_UIDS = "participantUids"

@@ -86,12 +86,13 @@ internal fun BranchReadyContent(
       onBack = intents.navigateBack,
       onRequestMerge = intents.requestMerge
     )
-    if (state.mergeRequest != null && state.branchStatus != Branch.Status.MergeInProgress) {
+    if (state.mergeRequest != null && state.branchStatus == Branch.Status.MergeInProgress) {
       MergeBanner(
         isMergeActionPending = state.isMergeActionPending,
         isCurrentUserApprover = state.isCurrentUserApprover,
         isCurrentUserInitiator = state.isCurrentUserInitiator,
         mergeRequest = state.mergeRequest,
+        initiatorName = state.initiatorName,
         onApprove = intents.approveMerge,
         onRevoke = intents.revokeApproval
       )
@@ -121,7 +122,7 @@ internal fun BranchReadyContent(
 
 @Composable
 private fun TopBar(
-  branchName: String,
+  branchName: String?,
   branchStatus: Branch.Status,
   isMergeActionPending: Boolean,
   onBack: () -> Unit,
@@ -139,14 +140,16 @@ private fun TopBar(
       iconResId = R.drawable.ic_back_24,
       onClick = onBack
     )
-    Text(
-      modifier = Modifier
-        .weight(1f)
-        .padding(start = 4.dp),
-      text = branchName.ifEmpty { stringResource(R.string.branch_default_name) },
-      style = AppTheme.typography.title1,
-      fontWeight = FontWeight.SemiBold
-    )
+    if (branchName != null) {
+      Text(
+        modifier = Modifier
+          .weight(1f)
+          .padding(start = 4.dp),
+        text = branchName.ifEmpty { stringResource(R.string.branch_default_name) },
+        style = AppTheme.typography.title1,
+        fontWeight = FontWeight.SemiBold
+      )
+    }
     when (branchStatus) {
       Branch.Status.Active -> Button(
         onClick = onRequestMerge,
@@ -179,6 +182,7 @@ private fun MergeBanner(
   isCurrentUserApprover: Boolean,
   isCurrentUserInitiator: Boolean,
   mergeRequest: Branch.MergeRequest,
+  initiatorName: String?,
   onApprove: () -> Unit,
   onRevoke: () -> Unit
 ) {
@@ -217,7 +221,10 @@ private fun MergeBanner(
       }
       else -> {
         Text(
-          text = stringResource(R.string.branch_merge_request_summary, mergeRequest.initiatorUid.value),
+          text = stringResource(
+            R.string.branch_merge_request_summary,
+            initiatorName?.takeIf { it.isNotBlank() } ?: mergeRequest.initiatorUid.value
+          ),
           style = AppTheme.typography.body2,
           color = AppTheme.colors.textPrimary
         )

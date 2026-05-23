@@ -10,23 +10,24 @@ import ru.sla.clarify.feature.entity.chat.Commit
 data class ViewState(
   val branchId: Branch.Id,
   val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
-  val branchName: String = "",
+  val branchName: String? = null,
   val branchStatus: Branch.Status = Branch.Status.Active,
   val mergeRequest: Branch.MergeRequest? = null,
+  val initiatorName: String? = null,
   val currentUserId: UserId? = null,
   val commits: List<Commit> = emptyList(),
   val isSending: Boolean = false,
   /**
-   * True while any of the merge-approval tasks (request/approve/revoke/cancel) is in flight.
-   * UI uses it to disable buttons and surface a progress indicator.
+   * true пока хоть одна merge-задача (request/approve/revoke/cancel) в полёте.
+   * UI использует это чтобы заблокировать кнопки и показать индикатор прогресса.
    */
   val isMergeActionPending: Boolean = false
 ) {
-  /** Convenience: is the current user the one who started the merge request? */
+  /** Хелпер: является ли текущий пользователь инициатором merge request'а. */
   val isCurrentUserInitiator: Boolean
     get() = mergeRequest != null && currentUserId != null && mergeRequest.initiatorUid == currentUserId
 
-  /** Convenience: did the current user already approve the in-flight merge? */
+  /** Хелпер: одобрил ли текущий пользователь активный merge. */
   val isCurrentUserApprover: Boolean
     get() = mergeRequest != null && currentUserId != null && currentUserId in mergeRequest.approvedByUids
 }
