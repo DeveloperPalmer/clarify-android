@@ -28,10 +28,12 @@ import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreParticipant
+import ru.sla.clarify.lib.google.firestore.entity.FirestoreUser
 import ru.sla.clarify.lib.google.firestore.mapper.extractBranchFB
 import ru.sla.clarify.lib.google.firestore.mapper.extractCommitFB
 import ru.sla.clarify.lib.google.firestore.mapper.extractConversationFB
 import ru.sla.clarify.lib.google.firestore.mapper.extractParticipantFB
+import ru.sla.clarify.lib.google.firestore.mapper.extractUserFB
 import ru.sla.clarify.lib.google.firestore.mapper.mapChanges
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -64,13 +66,17 @@ class Firestore @Inject constructor(
       .await()
   }
 
-  suspend fun getCurrentUserEmail(): Email? {
+  suspend fun getCurrentUser(): FirestoreUser {
     val userId = requireUserId()
-    val email = userDocumentRef(userId)
+    val document = userDocumentRef(userId)
       .get()
       .await()
-      .getString(FirestoreSchema.USER_EMAIL)
-    return email?.let(::Email)
+
+    if (!document.exists()) {
+      error("User by id: ${userId.value} not found in Firestore")
+    }
+
+    return extractUserFB(document)
   }
 
   suspend fun getPeerIdByEmail(email: Email): Peer.Id? {
@@ -133,7 +139,7 @@ class Firestore @Inject constructor(
   }
 
   suspend fun deleteConversations(ids: List<String>) {
-    val batch = remoteDB.batch()
+    val batch = writeBatch()
     val reference = conversationCollectionRef()
     ids.forEach { id -> batch.delete(reference.document(id)) }
     batch.commit().await()
@@ -211,6 +217,9 @@ class Firestore @Inject constructor(
     val participantIds = directParticipantIds(senderId, peerId)
     val isRoot = resolvedBranchId.value == conversationId.value
 
+    val batch = writeBatch()
+    val conversationRef = conversationDocumentRef(conversationId)
+
     val messageData = buildMap {
       put(FirestoreSchema.COMMIT_CLIENT_COMMIT_ID, commitId)
       put(FirestoreSchema.COMMIT_SENDER_UID, senderId.value)
@@ -233,10 +242,6 @@ class Firestore @Inject constructor(
       }
       put(FirestoreSchema.CONVERSATION_UPDATED_AT, FieldValue.serverTimestamp())
     }
-
-    val batch = remoteDB.batch()
-
-    val conversationRef = conversationDocumentRef(conversationId)
 
     val messageRef = conversationRef
       .collection(FirestoreSchema.COMMITS_COLLECTION)
@@ -363,7 +368,7 @@ class Firestore @Inject constructor(
     val branchRef = branchDocumentRef(conversationId, branchId)
     val requestedAt = Timestamp.now()
 
-    val transaction = remoteDB.runTransaction { txn ->
+    val transaction = runTransaction { txn ->
       val snapshot = txn.get(branchRef)
       val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
         ?: error("branch has no status")
@@ -402,7 +407,7 @@ class Firestore @Inject constructor(
     val approver = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
     val now = Timestamp.now()
-    val transaction = remoteDB.runTransaction { txn ->
+    val transaction = runTransaction { txn ->
       val snapshot = txn.get(branchRef)
       val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
         ?: error("branch has no status")
@@ -455,7 +460,7 @@ class Firestore @Inject constructor(
   ) {
     val approver = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
-    val transaction = remoteDB.runTransaction { txn ->
+    val transaction = runTransaction { txn ->
       val snapshot = txn.get(branchRef)
       val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
         ?: error("branch has no status")
@@ -499,7 +504,7 @@ class Firestore @Inject constructor(
   ) {
     val canceller = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
-    val transaction = remoteDB.runTransaction { txn ->
+    val transaction = runTransaction { txn ->
       val snapshot = txn.get(branchRef)
       val currentStatus = snapshot.getString(FirestoreSchema.BRANCH_STATUS)
         ?: error("branch has no status")

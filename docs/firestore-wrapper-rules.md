@@ -84,10 +84,41 @@ override fun conversationsQuery(
 
 ## Где живёт `remoteDB`
 
-`remoteDB` — поле `FirestoreWrapper` и видно только внутри wrapper'а. Если
-понадобилась операция, которой в wrapper'е нет (например `batch()` или
-`runTransaction`) — добавляется wrapper-метод, оборачивающий её. Прямого
-доступа к `remoteDB` извне быть не должно.
+`remoteDB` — `private val` внутри `FirestoreWrapper`. В `FirestoreWrapperProvider`
+поля нет, наружу не торчит. Все SDK-операции, которые раньше выписывались как
+`remoteDB.batch()` / `remoteDB.runTransaction { ... }`, доступны через
+wrapper-методы:
+
+```kotlin
+// FirestoreWrapperProvider
+fun writeBatch(): WriteBatch
+fun <T> runTransaction(block: Transaction.Function<T>): Task<T>
+```
+
+Сигнатуры зеркалят Firestore SDK, поэтому call-sites выглядят как раньше:
+
+```kotlin
+// В Firestore.kt
+suspend fun deleteConversations(ids: List<String>) {
+  val batch = writeBatch()                    // вместо remoteDB.batch()
+  val reference = conversationCollectionRef()
+  ids.forEach { id -> batch.delete(reference.document(id)) }
+  batch.commit().await()
+}
+
+suspend fun patchMergeApproval(...) {
+  val transaction = runTransaction { txn ->   // вместо remoteDB.runTransaction
+    val snapshot = txn.get(branchRef)
+    /* ... */
+  }
+  transaction.await()
+}
+```
+
+Если понадобится новая SDK-операция, которой в wrapper'е нет — сначала
+добавляется метод-обёртка в `FirestoreWrapperProvider` + `FirestoreWrapper`,
+потом используется в `Firestore.kt`. Прямого доступа к `remoteDB` снаружи
+wrapper'а быть не должно.
 
 ## Связанные документы
 

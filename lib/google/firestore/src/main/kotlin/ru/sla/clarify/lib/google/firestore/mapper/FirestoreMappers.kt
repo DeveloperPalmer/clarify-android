@@ -3,6 +3,7 @@ package ru.sla.clarify.lib.google.firestore.mapper
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
+import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_BRANCHED_FROM_COMMIT_ID
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCH_CREATED_AT
@@ -29,11 +30,15 @@ import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_TYPE
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.ConversationType
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.PARTICIPANT_DISPLAY_NAME
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.PARTICIPANT_PHOTO_URL
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USER_DISPLAY_NAME
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USER_EMAIL
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USER_PHOTO_URL
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreBranch
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreCommit
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreConversation
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreParticipant
+import ru.sla.clarify.lib.google.firestore.entity.FirestoreUser
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 
 fun extractConversationFB(
@@ -114,6 +119,15 @@ internal fun extractParticipantFB(document: DocumentSnapshot): FirestoreParticip
     id = UserId(document.id),
     displayName = document.getString(PARTICIPANT_DISPLAY_NAME),
     photoUrl = document.getString(PARTICIPANT_PHOTO_URL)
+  )
+}
+
+internal fun extractUserFB(document: DocumentSnapshot): FirestoreUser {
+  return FirestoreUser(
+    id = UserId(document.id),
+    email = document.getString(USER_EMAIL)?.let(::Email),
+    displayName = document.getString(USER_DISPLAY_NAME),
+    photoUrl = document.getString(USER_PHOTO_URL)
   )
 }
 

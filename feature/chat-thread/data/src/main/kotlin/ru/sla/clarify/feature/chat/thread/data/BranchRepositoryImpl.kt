@@ -82,7 +82,7 @@ class BranchRepositoryImpl @Inject constructor(
     firestore.patchMergeApproval(
       conversationId = threadMediator.requireConversationId(),
       branchId = FirestoreBranch.Id(branchId.value),
-      participantUids = threadMediator.directParticipantUids()
+      participantUids = threadMediator.directParticipantIds()
     )
   }
 

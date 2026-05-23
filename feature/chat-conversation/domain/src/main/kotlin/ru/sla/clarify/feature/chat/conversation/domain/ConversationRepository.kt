@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chat.conversation.domain
 
 import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
@@ -9,7 +10,8 @@ import ru.sla.clarify.feature.entity.chat.Peer
 
 interface ConversationRepository {
 
-  fun email(): Flow<Email?>
+  val user: Flow<User?>
+  suspend fun fetchCurrentUser()
   suspend fun getPeerByEmail(email: Email): Peer.Id
 
   val conversations: Flow<List<Conversation>?>

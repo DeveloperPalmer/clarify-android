@@ -26,7 +26,7 @@ class ThreadMediator @Inject constructor(
     val firstAppearance = inMemoryDB.chatConversationQueries
       .selectIdByParticipants(
         type = ConversationType.Direct.value,
-        participantUids = directParticipantUids()
+        participantUids = directParticipantIds()
       )
       .observeOneOrNull()
       .filterNotNull()
@@ -35,7 +35,7 @@ class ThreadMediator @Inject constructor(
   }
 
   suspend fun conversationId(): FirestoreConversation.Id? {
-    val participants = directParticipantUids()
+    val participants = directParticipantIds()
     return inMemoryDB.chatConversationQueries
       .selectIdByParticipants(
         type = ConversationType.Direct.value,
@@ -51,7 +51,7 @@ class ThreadMediator @Inject constructor(
     }
   }
 
-  suspend fun directParticipantUids(): List<String> {
+  suspend fun directParticipantIds(): List<String> {
     return setOf(requireUserId().value, peerId.value).sorted()
   }
 

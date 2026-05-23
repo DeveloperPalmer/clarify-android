@@ -7,4 +7,6 @@ dependencies {
   api libs.remo
   api project(":lib:log:log")
   api project(":lib:resource-refs:resource-refs")
+
+  implementation libs.compose.runtime
 }

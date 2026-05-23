@@ -27,7 +27,7 @@ class ChatListViewModel @Inject constructor(
 
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState() to {
-      chatModel.fetchConversations.startOnSubscribe()
+      chatModel.fetch.startOnSubscribe()
     }
 
     onEach(intent(ViewIntents::navigateBack)) {
@@ -50,6 +50,21 @@ class ChatListViewModel @Inject constructor(
       }
     }
 
+    configureUserTransitions()
+    configureConversationTransitions()
+    configureNewConversationTransitions()
+    configureDeleteConversationTransitions()
+  }
+
+  private fun MachineDsl<ViewState>.configureUserTransitions() {
+    onEach(chatModel.user) {
+      transitionTo { state, user ->
+        state.copy(email = user?.email)
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureNewConversationTransitions() {
     onEach(intent(ViewIntents::showNewChatDialog)) {
       action { _, _, _ ->
         sendViewEvent(showNewChatDialog())
@@ -82,9 +97,6 @@ class ChatListViewModel @Inject constructor(
         )
       }
     }
-
-    configureFetchConversationTransitions()
-    configureDeleteConversationTransitions()
   }
 
   private fun MachineDsl<ViewState>.configureDeleteConversationTransitions() {
@@ -130,13 +142,7 @@ class ChatListViewModel @Inject constructor(
     }
   }
 
-  private fun MachineDsl<ViewState>.configureFetchConversationTransitions() {
-    onEach(chatModel.email) {
-      transitionTo { state, email ->
-        state.copy(email = email)
-      }
-    }
-
+  private fun MachineDsl<ViewState>.configureConversationTransitions() {
     onEach(chatModel.conversations) {
       transitionTo { state, conversations ->
         state.copy(conversations = conversations)
@@ -144,7 +150,7 @@ class ChatListViewModel @Inject constructor(
     }
 
     onEach(
-      chatModel.fetchConversations.jobFlow
+      chatModel.fetch.jobFlow
         .asLceState()
         .map { it.toUiLceState() }
     ) {

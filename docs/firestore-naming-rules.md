@@ -76,7 +76,7 @@ suspend fun patchUnreadCount(conversationId: FirestoreConversation.Id) {
 
 ```kotlin
 suspend fun deleteConversations(ids: List<String>) {
-  val batch = remoteDB.batch()
+  val batch = writeBatch()
   val reference = conversationCollectionRef()
   ids.forEach { id -> batch.delete(reference.document(id)) }
   batch.commit().await()
@@ -111,7 +111,7 @@ override suspend fun approveMerge(branchId: Branch.Id) = withContext(Dispatchers
   firestore.patchMergeApproval(
     conversationId = threadMediator.requireConversationId(),
     branchId = FirestoreBranch.Id(branchId.value),
-    participantUids = threadMediator.directParticipantUids()
+    participantUids = threadMediator.directParticipantIds()
   )
 }
 ```

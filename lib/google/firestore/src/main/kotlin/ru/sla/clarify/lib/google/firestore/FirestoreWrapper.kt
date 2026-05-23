@@ -1,10 +1,13 @@
 package ru.sla.clarify.lib.google.firestore
 
+import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.Transaction
+import com.google.firebase.firestore.WriteBatch
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
@@ -16,9 +19,17 @@ import javax.inject.Inject
 @SingleIn(AppScope::class)
 class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
 
-  override val remoteDB = FirebaseFirestore.getInstance().apply {
+  private val remoteDB = FirebaseFirestore.getInstance().apply {
     firestoreSettings = FirebaseFirestoreSettings.Builder()
       .build()
+  }
+
+  override fun writeBatch(): WriteBatch {
+    return remoteDB.batch()
+  }
+
+  override fun <T> runTransaction(block: Transaction.Function<T>): Task<T> {
+    return remoteDB.runTransaction(block)
   }
 
   override fun userDocumentRef(userId: UserId): DocumentReference {

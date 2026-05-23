@@ -1,14 +1,13 @@
 package ru.sla.clarify.feature.chat.thread.domain
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
-import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.mapDistinctChanges
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
@@ -32,9 +31,7 @@ class ThreadModel @Inject constructor(
       .launchIn(scope)
   }
 
-  fun email(): Flow<Email> = conversationRepository
-    .email()
-    .filterNotNull()
+  val user: Flow<User?> = conversationRepository.user
 
   fun subscribeOnCommits(branchId: Branch.Id): Flow<Unit> {
     return threadRepository.observeCommitsChanges(branchId)

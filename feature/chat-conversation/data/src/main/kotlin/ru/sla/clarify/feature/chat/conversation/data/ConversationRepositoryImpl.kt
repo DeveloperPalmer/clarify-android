@@ -12,11 +12,13 @@ import kotlinx.coroutines.withContext
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAll
+import ru.sla.clarify.feature.chat.conversation.data.mapper.toDomain
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
@@ -36,9 +38,21 @@ class ConversationRepositoryImpl @Inject constructor(
   private val authSessionPersistence: AuthSessionPersistence
 ) : ConversationRepository {
 
-  override fun email(): Flow<Email?> {
-    return flow { emit(firestore.getCurrentUserEmail()) }
-      .flowOn(Dispatchers.IO)
+  override val user: Flow<User?> = userId().flatMapLatest { userId ->
+    inMemoryDB.userQueries
+      .selectById(userId.value)
+      .observeOneOrNull()
+      .map { user -> user?.toDomain() }
+  }
+
+  override suspend fun fetchCurrentUser(): Unit = withContext(Dispatchers.IO) {
+    val firestoreUser = firestore.getCurrentUser()
+    inMemoryDB.userQueries.insertOrReplace(
+      id = firestoreUser.id.value,
+      email = firestoreUser.email?.value,
+      displayName = firestoreUser.displayName,
+      photoUrl = firestoreUser.photoUrl
+    )
   }
 
   override suspend fun getPeerByEmail(email: Email): Peer.Id = withContext(Dispatchers.IO) {
@@ -89,14 +103,15 @@ class ConversationRepositoryImpl @Inject constructor(
     return inMemoryDB.conversationParticipantQueries
       .selectByConversationAndId(conversationId.value, userId.value)
       .observeOneOrNull()
-      .map { row ->
-        row?.let {
-          Participant(
-            id = Participant.Id(it.id),
-            displayName = it.displayName,
-            photoUrl = it.photoUrl
-          )
+      .map { selectByConversationAndId ->
+        if (selectByConversationAndId == null) {
+          return@map null
         }
+        Participant(
+          id = Participant.Id(selectByConversationAndId.id),
+          displayName = selectByConversationAndId.displayName,
+          photoUrl = selectByConversationAndId.photoUrl
+        )
       }
   }
 

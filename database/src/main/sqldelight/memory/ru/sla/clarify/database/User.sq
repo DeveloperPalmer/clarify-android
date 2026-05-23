@@ -1,0 +1,20 @@
+CREATE TABLE User (
+  id TEXT NOT NULL PRIMARY KEY,
+  email TEXT,
+  displayName TEXT,
+  photoUrl TEXT
+);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO User(id, email, displayName, photoUrl)
+VALUES (?, ?, ?, ?);
+
+selectById:
+SELECT *
+FROM User
+WHERE id = ?
+LIMIT 1;
+
+deleteAll:
+DELETE FROM User;

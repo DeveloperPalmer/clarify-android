@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.thread.ui.screen.thread
 
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
@@ -37,9 +38,9 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(threadModel.email()) {
-      transitionTo { state, email ->
-        state.copy(email = email)
+    onEach(threadModel.user.filterNotNull()) {
+      transitionTo { state, user ->
+        state.copy(email = user.email)
       }
     }
 
