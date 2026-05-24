@@ -149,12 +149,12 @@ private fun Header(
       Text(
         text = stringResource(R.string.conversation_header_email_label),
         style = AppTheme.typography.caption,
-        color = AppTheme.colors.textPrimary
+        color = AppTheme.colors.onSurface
       )
       Text(
         text = email?.value ?: stringResource(R.string.conversation_header_not_signed_in),
         style = AppTheme.typography.title3,
-        color = AppTheme.colors.textPrimary,
+        color = AppTheme.colors.onSurface,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
@@ -270,7 +270,7 @@ private fun DirectConversationItem(
             ?.takeIf { it.isNotBlank() }
             ?: direct.peer.id.value,
           style = AppTheme.typography.caption,
-          color = AppTheme.colors.textPrimary,
+          color = AppTheme.colors.onSurface,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis
         )
@@ -279,7 +279,7 @@ private fun DirectConversationItem(
             ?.takeIf { it.isNotBlank() }
             ?: stringResource(R.string.conversation_no_messages_preview),
           style = AppTheme.typography.body2,
-          color = AppTheme.colors.textPrimary,
+          color = AppTheme.colors.onSurface,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis
         )
@@ -290,13 +290,13 @@ private fun DirectConversationItem(
             .padding(start = 8.dp)
             .size(24.dp)
             .clip(CircleShape)
-            .background(AppTheme.colors.backgroundSecondary),
+            .background(AppTheme.colors.surfaceContainer),
           contentAlignment = Alignment.Center
         ) {
           Text(
             text = direct.unreadCount.coerceAtMost(MAX_UNREAD_BADGE.toLong()).toString(),
             style = AppTheme.typography.body2,
-            color = AppTheme.colors.backgroundPrimary
+            color = AppTheme.colors.surface
           )
         }
       }

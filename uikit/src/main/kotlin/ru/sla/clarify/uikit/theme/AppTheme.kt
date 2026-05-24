@@ -36,13 +36,13 @@ fun AppTheme(
   val typography = remember { AppTypography() }
 
   val textSelectionColors = TextSelectionColors(
-    handleColor = colors.backgroundSecondary,
-    backgroundColor = colors.textPrimary
+    handleColor = colors.surfaceContainer,
+    backgroundColor = colors.onSurface
   )
   CompositionLocalProvider(
     LocalAppColors provides colors,
     LocalAppTypography provides typography,
-    LocalContentColor provides colors.backgroundSecondary,
+    LocalContentColor provides colors.surfaceContainer,
     LocalTextSelectionColors provides textSelectionColors,
     content = content
   )

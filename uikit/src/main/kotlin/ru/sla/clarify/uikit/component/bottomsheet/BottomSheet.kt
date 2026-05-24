@@ -39,7 +39,7 @@ fun ModalBottomSheet(
   sheetGesturesEnabled: Boolean = true,
   onUpdateState: ((SheetState) -> Unit)? = null,
   verticalArrangement: Arrangement.Vertical = Arrangement.Top,
-  sheetBackgroundColor: Color = AppTheme.colors.backgroundPrimary,
+  sheetBackgroundColor: Color = AppTheme.colors.surface,
   properties: ModalBottomSheetProperties = ModalBottomSheetProperties(),
   sheetContent: @Composable ColumnScope.() -> Unit
 ) {
@@ -80,7 +80,7 @@ fun ModalBottomSheet(
 @Composable
 private fun BottomSheetHandle(
   modifier: Modifier = Modifier,
-  handleColor: Color = AppTheme.colors.textPrimary
+  handleColor: Color = AppTheme.colors.onSurface
 ) {
   Box(
     modifier = modifier

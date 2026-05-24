@@ -45,8 +45,8 @@ data class Snackbar(
 
   @Composable
   override fun ViewEventHostScope.Content() {
-    val backgroundColor = if (isError) AppTheme.colors.errorPrimary else AppTheme.colors.textPrimary
-    val contentColor = if (isError) AppTheme.colors.textPrimary else AppTheme.colors.backgroundSecondary
+    val backgroundColor = if (isError) AppTheme.colors.error else AppTheme.colors.onSurface
+    val contentColor = if (isError) AppTheme.colors.onSurface else AppTheme.colors.surfaceContainer
     Box(
       modifier = Modifier
         .systemBarsPadding()
@@ -118,9 +118,9 @@ data class DropdownMenu(
                 text = resolveTextRef(item.title),
                 style = AppTheme.typography.caption,
                 color = if (item.isDestructive) {
-                  AppTheme.colors.errorPrimary
+                  AppTheme.colors.error
                 } else {
-                  AppTheme.colors.textPrimary
+                  AppTheme.colors.onSurface
                 }
               )
             },
@@ -183,7 +183,7 @@ sealed class Dialog : ViewEvent.Content() {
           ) {
             Text(
               text = resolveTextRef(primaryActionTitle),
-              color = if (isDestructive) AppTheme.colors.errorPrimary else AppTheme.colors.textPrimary
+              color = if (isDestructive) AppTheme.colors.error else AppTheme.colors.onSurface
             )
           }
         },

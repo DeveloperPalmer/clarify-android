@@ -134,7 +134,7 @@ internal fun showBranchesListSheet(branches: List<Branch>) =
               Text(
                 text = stringResource(R.string.thread_branches_list_sheet_empty),
                 style = AppTheme.typography.body2,
-                color = AppTheme.colors.textPrimary
+                color = AppTheme.colors.onSurface
               )
             } else {
               branches.forEach { branch ->
