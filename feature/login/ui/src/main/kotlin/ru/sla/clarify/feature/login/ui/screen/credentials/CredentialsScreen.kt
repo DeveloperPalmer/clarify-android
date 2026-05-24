@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.login.ui.screen.splashintro
+package ru.sla.clarify.feature.login.ui.screen.credentials
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,7 +19,7 @@ import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
-fun SplashIntroScreen(viewModel: SplashIntroViewModel) {
+fun CredentialsScreen(viewModel: CredentialsViewModel) {
   MviComponent(
     viewModel = viewModel,
     intents = rememberViewIntents()

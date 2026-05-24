@@ -6,5 +6,5 @@ digraph LoginFlow {
     resultType = "ru.kode.skinepic.feature.login.routing.LoginFlow.Result"
   ]
 
-  loginFlow -> splashIntro
+  loginFlow -> credentials
 }

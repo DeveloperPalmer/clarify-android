@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.login.ui.screen.splashintro
+package ru.sla.clarify.feature.login.ui.screen.credentials
 
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.machine
@@ -15,7 +15,7 @@ import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.strRef
 import javax.inject.Inject
 
-class SplashIntroViewModel @Inject constructor(
+class CredentialsViewModel @Inject constructor(
   private val eventSink: FlowEventSink,
   private val loginModel: LoginModel
 ) : ViewModel<ViewState, Intents>() {

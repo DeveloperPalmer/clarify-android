@@ -18,7 +18,7 @@ class LoginFlowNode @Inject constructor(
   private val scope by FlowNodeCoroutineScopeHook()
 
   override val dismissResult = LoginFlow.Result.Dismissed
-  override val initial = Target.loginFlow.splashIntro
+  override val initial = Target.loginFlow.credentials
 
   override fun onEntry(event: Event) {
     super.onEntry(event)

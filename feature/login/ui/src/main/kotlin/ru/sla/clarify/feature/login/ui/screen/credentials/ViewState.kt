@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.login.ui.screen.splashintro
+package ru.sla.clarify.feature.login.ui.screen.credentials
 
 import androidx.compose.runtime.Immutable
 
