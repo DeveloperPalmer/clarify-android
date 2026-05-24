@@ -89,7 +89,7 @@ object ScreenScaffold {
     ) {
       val error = errorState.error
       Text(
-        style = AppTheme.typography.h2,
+        style = AppTheme.typography.headline2,
         textAlign = TextAlign.Center,
         text = resolveTextRef(source = error.message.title)
       )
@@ -110,7 +110,7 @@ object ScreenScaffold {
           )
           Text(
             modifier = Modifier.alpha(textAlpha),
-            style = AppTheme.typography.button,
+            style = AppTheme.typography.caption,
             textAlign = TextAlign.Center,
             text = resolveTextRef(source = error.message.primaryAction!!.name)
           )

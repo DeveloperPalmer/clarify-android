@@ -7,7 +7,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import ru.sla.clarify.uikit.R
 
@@ -23,84 +22,267 @@ private val Roboto = FontFamily(
 // https://developer.android.com/jetpack/androidx/releases/compose-ui#1.2.0-beta01
 // IOW we need it
 @Suppress("DEPRECATION")
-data class AppTypography internal constructor(
-  val h1: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Bold,
-    fontSize = 34.sp,
-    lineHeight = 42.sp,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val h2: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Bold,
-    fontSize = 22.sp,
-    lineHeight = 30.sp,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val title1: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Bold,
-    fontSize = 17.sp,
-    lineHeight = 22.sp,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val title2: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Bold,
-    fontSize = 17.sp,
-    lineHeight = 20.sp,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val title3: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Medium,
-    fontSize = 15.sp,
-    lineHeight = 20.sp,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val body1: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Normal,
-    fontSize = 17.sp,
-    lineHeight = 22.sp,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val body2: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Normal,
-    fontSize = 15.sp,
-    lineHeight = 20.sp,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val caption1: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Bold,
-    fontSize = 13.sp,
-    lineHeight = TextUnit.Unspecified,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val caption2: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Normal,
-    fontSize = 13.sp,
-    lineHeight = TextUnit.Unspecified,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val fontone: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.SemiBold,
-    fontSize = 12.sp,
-    lineHeight = 16.sp,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
-  ),
-  val button: TextStyle = TextStyle(
-    fontFamily = Roboto,
-    fontWeight = FontWeight.Medium,
-    fontSize = 15.sp,
-    lineHeight = TextUnit.Unspecified,
-    platformStyle = PlatformTextStyle(includeFontPadding = false)
+class AppTypography {
+  val display1: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 57.sp,
+    lineHeight    = 64.sp,
+    letterSpacing = (-0.25).sp,
+    platformStyle = defaultFontPadding,
   )
-)
+  val display1Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 57.sp,
+    lineHeight    = 64.sp,
+    letterSpacing = (-0.25).sp,
+    platformStyle = defaultFontPadding
+  )
+  val display2: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 45.sp,
+    lineHeight    = 52.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val display2Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 45.sp,
+    lineHeight    = 52.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val display3: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 36.sp,
+    lineHeight    = 44.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val display3Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 36.sp,
+    lineHeight    = 44.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val headline1: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 32.sp,
+    lineHeight    = 40.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val headline1Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 32.sp,
+    lineHeight    = 40.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val headline2: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 28.sp,
+    lineHeight    = 36.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val headline2Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 28.sp,
+    lineHeight    = 36.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val headline3: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 24.sp,
+    lineHeight    = 32.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val headline3Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 24.sp,
+    lineHeight    = 32.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val title1: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 22.sp,
+    lineHeight    = 28.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val title1Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 22.sp,
+    lineHeight    = 28.sp,
+    letterSpacing = 0.sp,
+    platformStyle = defaultFontPadding
+  )
+  val title2: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Medium,
+    fontSize      = 16.sp,
+    lineHeight    = 24.sp,
+    letterSpacing = 0.15.sp,
+    platformStyle = defaultFontPadding
+  )
+  val title2Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 16.sp,
+    lineHeight    = 24.sp,
+    letterSpacing = 0.15.sp,
+    platformStyle = defaultFontPadding
+  )
+  val title3: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Medium,
+    fontSize      = 14.sp,
+    lineHeight    = 20.sp,
+    letterSpacing = 0.1.sp,
+    platformStyle = defaultFontPadding
+  )
+  val title3Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 14.sp,
+    lineHeight    = 20.sp,
+    letterSpacing = 0.1.sp,
+    platformStyle = defaultFontPadding
+  )
+  val body1: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 16.sp,
+    lineHeight    = 24.sp,
+    letterSpacing = 0.5.sp,
+    platformStyle = defaultFontPadding
+  )
+  val body1Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 16.sp,
+    lineHeight    = 24.sp,
+    letterSpacing = 0.5.sp,
+    platformStyle = defaultFontPadding
+  )
+  val body2: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 14.sp,
+    lineHeight    = 20.sp,
+    letterSpacing = 0.25.sp,
+    platformStyle = defaultFontPadding
+  )
+  val body2Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 14.sp,
+    lineHeight    = 20.sp,
+    letterSpacing = 0.25.sp,
+    platformStyle = defaultFontPadding
+  )
+  val body3: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 12.sp,
+    lineHeight    = 16.sp,
+    letterSpacing = 0.4.sp,
+    platformStyle = defaultFontPadding
+  )
+  val body3Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 12.sp,
+    lineHeight    = 16.sp,
+    letterSpacing = 0.4.sp,
+    platformStyle = defaultFontPadding
+  )
+  val label1: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Medium,
+    fontSize      = 14.sp,
+    lineHeight    = 20.sp,
+    letterSpacing = 0.1.sp,
+    platformStyle = defaultFontPadding
+  )
+  val label1Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 14.sp,
+    lineHeight    = 20.sp,
+    letterSpacing = 0.1.sp,
+    platformStyle = defaultFontPadding
+  )
+  val label2: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Medium,
+    fontSize      = 12.sp,
+    lineHeight    = 16.sp,
+    letterSpacing = 0.5.sp,
+    platformStyle = defaultFontPadding
+  )
+  val label2Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 12.sp,
+    lineHeight    = 16.sp,
+    letterSpacing = 0.5.sp,
+    platformStyle = defaultFontPadding
+  )
+  val label3: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Medium,
+    fontSize      = 11.sp,
+    lineHeight    = 16.sp,
+    letterSpacing = 0.5.sp,
+    platformStyle = defaultFontPadding
+  )
+  val label3Bold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 11.sp,
+    lineHeight    = 16.sp,
+    letterSpacing = 0.5.sp,
+    platformStyle = defaultFontPadding
+  )
+  val caption: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Normal,
+    fontSize      = 11.sp,
+    lineHeight    = 14.sp,
+    letterSpacing = 0.4.sp,
+    platformStyle = defaultFontPadding
+  )
+  val captionBold: TextStyle = TextStyle(
+    fontFamily    = Roboto,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 11.sp,
+    lineHeight    = 14.sp,
+    letterSpacing = 0.4.sp,
+    platformStyle = defaultFontPadding
+  )
+}
 
-internal val LocalAppTypography = staticCompositionLocalOf { AppTypography() }
+internal val LocalAppTypography = staticCompositionLocalOf<AppTypography> {
+  error("No AppTypography provided")
+}
+
+private val defaultFontPadding = PlatformTextStyle(includeFontPadding = false)

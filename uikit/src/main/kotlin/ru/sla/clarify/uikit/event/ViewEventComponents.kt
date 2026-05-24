@@ -68,7 +68,7 @@ data class Snackbar(
               Text(
                 text = resolveTextRef(label),
                 color = contentColor,
-                style = AppTheme.typography.button
+                style = AppTheme.typography.caption
               )
             }
           }
@@ -116,7 +116,7 @@ data class DropdownMenu(
             text = {
               Text(
                 text = resolveTextRef(item.title),
-                style = AppTheme.typography.button,
+                style = AppTheme.typography.caption,
                 color = if (item.isDestructive) {
                   AppTheme.colors.errorPrimary
                 } else {

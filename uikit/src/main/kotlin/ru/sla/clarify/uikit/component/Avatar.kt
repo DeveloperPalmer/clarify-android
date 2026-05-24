@@ -48,7 +48,7 @@ fun Avatar(
     } else {
       Text(
         text = fallbackInitial.take(1).uppercase(),
-        style = AppTheme.typography.button,
+        style = AppTheme.typography.caption,
         color = AppTheme.colors.backgroundSecondary
       )
     }

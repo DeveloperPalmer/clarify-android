@@ -375,7 +375,7 @@ private fun CommitBubble(commit: Commit) {
         Commit.Status.Sent -> date
       },
       color = AppTheme.colors.textPrimary,
-      style = AppTheme.typography.caption2,
+      style = AppTheme.typography.caption,
       modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
     )
   }

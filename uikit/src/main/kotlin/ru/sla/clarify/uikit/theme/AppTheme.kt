@@ -33,6 +33,7 @@ fun AppTheme(
       ColorTheme.Dark -> DarkColors
     }
   }
+  val typography = remember { AppTypography() }
 
   val textSelectionColors = TextSelectionColors(
     handleColor = colors.backgroundSecondary,
@@ -40,7 +41,7 @@ fun AppTheme(
   )
   CompositionLocalProvider(
     LocalAppColors provides colors,
-    LocalAppTypography provides AppTheme.typography,
+    LocalAppTypography provides typography,
     LocalContentColor provides colors.backgroundSecondary,
     LocalTextSelectionColors provides textSelectionColors,
     content = content

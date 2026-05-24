@@ -148,7 +148,7 @@ private fun Header(
     ) {
       Text(
         text = stringResource(R.string.conversation_header_email_label),
-        style = AppTheme.typography.caption2,
+        style = AppTheme.typography.caption,
         color = AppTheme.colors.textPrimary
       )
       Text(
@@ -269,7 +269,7 @@ private fun DirectConversationItem(
           text = direct.peer.displayName
             ?.takeIf { it.isNotBlank() }
             ?: direct.peer.id.value,
-          style = AppTheme.typography.button,
+          style = AppTheme.typography.caption,
           color = AppTheme.colors.textPrimary,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis
