@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 import android.content.ClipData
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,7 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.kode.amvi.component.compose.rememberViewIntents
-import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.event.captureDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.rememberDropdownMenuAnchorScope
@@ -56,14 +57,15 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
     )
     ScreenScaffold(state = scaffoldState) {
       ChatListReadyContent(
-        email = state.email,
+        user = state.user,
         editModeEnabled = state.editModeEnabled,
         conversations = state.conversations,
         selectedConversationsIds = state.selectedConversationIds,
         onDirectConversation = intents.openChat,
         onConversationLongPress = intents.handleConversationLongPress,
         onShowNewChatDialog = intents.showNewChatDialog,
-        onOpenSettings = intents.openSettings
+        onOpenSettings = intents.openSettings,
+        onOpenProfile = intents.openProfile
       )
     }
   }
@@ -71,7 +73,7 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
 
 @Composable
 internal fun ChatListReadyContent(
-  email: Email?,
+  user: User?,
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,
   editModeEnabled: Boolean,
@@ -79,6 +81,7 @@ internal fun ChatListReadyContent(
   onConversationLongPress: (Conversation.Id) -> Unit,
   onOpenSettings: () -> Unit,
   onShowNewChatDialog: () -> Unit,
+  onOpenProfile: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   Box(
@@ -88,9 +91,10 @@ internal fun ChatListReadyContent(
   ) {
     Column(modifier = Modifier.fillMaxSize()) {
       Header(
-        email = email,
+        user = user,
         editModeEnabled = editModeEnabled,
-        onOpenSettings = onOpenSettings
+        onOpenSettings = onOpenSettings,
+        onOpenProfile = onOpenProfile
       )
       HorizontalDivider()
       Conversations(
@@ -115,10 +119,12 @@ internal fun ChatListReadyContent(
 
 @Composable
 private fun Header(
-  email: Email?,
+  user: User?,
   editModeEnabled: Boolean,
-  onOpenSettings: () -> Unit
+  onOpenSettings: () -> Unit,
+  onOpenProfile: () -> Unit
 ) {
+  val email = user?.email
   val clipboard = LocalClipboard.current
   val scope = rememberCoroutineScope()
   val dropdownMenuAnchorScope = rememberDropdownMenuAnchorScope()
@@ -128,7 +134,18 @@ private fun Header(
       .padding(horizontal = 16.dp, vertical = 12.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Column(modifier = Modifier.weight(1f)) {
+    Avatar(
+      modifier = Modifier
+        .clip(CircleShape)
+        .clickable(onClick = onOpenProfile),
+      photoUrl = user?.photoUrl,
+      fallbackInitial = email?.value?.takeIf { it.isNotBlank() } ?: "?"
+    )
+    Column(
+      modifier = Modifier
+        .padding(start = 12.dp)
+        .weight(1f)
+    ) {
       Text(
         text = stringResource(R.string.conversation_header_email_label),
         style = AppTheme.typography.caption2,

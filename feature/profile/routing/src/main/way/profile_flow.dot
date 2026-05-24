@@ -1,0 +1,10 @@
+digraph ProfileFlow {
+  package = "ru.sla.clarify.feature.profile.routing"
+
+  profileFlow [
+    type = "flow",
+    resultType = "ru.sla.clarify.feature.profile.routing.ProfileFlow.Result"
+  ]
+
+  profileFlow -> main
+}

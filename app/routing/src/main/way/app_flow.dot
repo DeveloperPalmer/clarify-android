@@ -5,16 +5,17 @@ digraph AppFlow {
     type = "flow"
   ]
 
-  mainFlow [
-    type = "schema"
-  ]
-
   loginFlow [
     type = "schema",
     resultType = "ru.sla.clarify.feature.login.routing.LoginFlow.Result"
   ]
 
+  conversationFlow [
+    type = "schema",
+    resultType = "ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow.Result"
+  ]
+
   appFlow -> initialFlowResolve
   appFlow -> loginFlow
-  appFlow -> mainFlow
+  appFlow -> conversationFlow
 }

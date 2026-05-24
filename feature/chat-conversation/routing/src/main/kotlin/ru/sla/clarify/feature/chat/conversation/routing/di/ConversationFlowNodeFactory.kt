@@ -11,6 +11,7 @@ import ru.sla.clarify.feature.chat.conversation.ui.di.Screen
 import ru.sla.clarify.feature.chat.conversation.ui.di.WiredScreen
 import ru.sla.clarify.feature.chat.thread.routing.ThreadFlow
 import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.feature.profile.routing.ProfileFlow
 import javax.inject.Inject
 import javax.inject.Provider
 
@@ -34,5 +35,9 @@ class ConversationFlowNodeFactory @Inject constructor(
       .peerId(id)
       .build()
     return ThreadFlow.nodeBuilder(component)
+  }
+
+  override fun createProfileFlowNodeBuilder(): NodeBuilder {
+    return ProfileFlow.nodeBuilder(component.profileFlowComponent())
   }
 }

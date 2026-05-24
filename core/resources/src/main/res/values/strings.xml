@@ -15,6 +15,9 @@
     <string name="conversation_header_not_signed_in">(not signed in)</string>
     <string name="conversation_header_settings_button">Settings</string>
     <string name="conversation_header_copy_button">Copy</string>
+
+    <!-- Profile screen -->
+    <string name="profile_logout_button">Log out</string>
     <string name="conversation_empty_state">No conversations yet. Tap \"New chat\" to start one.</string>
     <string name="conversation_no_messages_preview">(no messages yet)</string>
 

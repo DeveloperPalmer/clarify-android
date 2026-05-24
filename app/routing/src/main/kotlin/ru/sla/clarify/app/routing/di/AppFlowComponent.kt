@@ -8,15 +8,15 @@ import ru.sla.clarify.core.domain.di.scope.ActivityContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.event.ViewEventsHostMediator
+import ru.sla.clarify.feature.chat.conversation.routing.di.ConversationFlowComponent
 import ru.sla.clarify.feature.login.routing.di.LoginFlowComponent
-import ru.sla.clarify.feature.main.routing.di.MainFlowComponent
 
 @SingleIn(AppFlowScope::class)
 @MergeSubcomponent(AppFlowScope::class)
 interface AppFlowComponent {
   fun nodeFactory(): AppFlowNodeFactory
 
-  fun mainFlowComponent(): MainFlowComponent
+  fun conversationFlowComponent(): ConversationFlowComponent
   fun loginFlowComponent(): LoginFlowComponent
 
   fun viewEventsHostMediator(): ViewEventsHostMediator

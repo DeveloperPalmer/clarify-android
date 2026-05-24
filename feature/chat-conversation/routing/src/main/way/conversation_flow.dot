@@ -2,7 +2,8 @@ digraph ConversationFlow {
   package = "ru.sla.clarify.feature.chat.conversation.routing"
 
   conversationFlow [
-    type = "flow"
+    type = "flow",
+    resultType = "ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow.Result"
   ]
 
   threadFlow [
@@ -11,5 +12,13 @@ digraph ConversationFlow {
     parameterType = "ru.sla.clarify.feature.entity.chat.Peer.Id"
   ]
 
-  conversationFlow -> main -> threadFlow
+  profileFlow [
+    type = "schema",
+    resultType = "ru.sla.clarify.feature.profile.routing.ProfileFlow.Result"
+  ]
+
+  conversationFlow -> main
+
+  main -> threadFlow
+  main -> profileFlow
 }

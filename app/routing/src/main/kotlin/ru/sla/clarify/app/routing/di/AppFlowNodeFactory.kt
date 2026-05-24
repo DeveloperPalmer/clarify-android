@@ -8,8 +8,8 @@ import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.app.routing.AppFlowNode
 import ru.sla.clarify.app.routing.AppFlowNodeBuilder
 import ru.sla.clarify.app.routing.InitialFlowResolveNode
+import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow
 import ru.sla.clarify.feature.login.routing.LoginFlow
-import ru.sla.clarify.feature.main.routing.MainFlow
 import javax.inject.Inject
 import javax.inject.Provider
 
@@ -23,8 +23,8 @@ class AppFlowNodeFactory @Inject constructor(
     return flowNode.get()
   }
 
-  override fun createMainFlowNodeBuilder(): NodeBuilder {
-    return MainFlow.nodeBuilder(component.mainFlowComponent())
+  override fun createConversationFlowNodeBuilder(): NodeBuilder {
+    return ConversationFlow.nodeBuilder(component.conversationFlowComponent())
   }
   override fun createLoginFlowNodeBuilder(): NodeBuilder {
     return LoginFlow.nodeBuilder(component.loginFlowComponent())

@@ -13,4 +13,5 @@ class ViewIntents : BaseViewIntents() {
   val showDeleteConfirmation = intent(name = "showDeleteConfirmation")
   val confirmDeleteConversation = intent(name = "confirmDeleteConversation")
   val openSettings = intent(name = "openSettings")
+  val openProfile = intent(name = "openProfile")
 }

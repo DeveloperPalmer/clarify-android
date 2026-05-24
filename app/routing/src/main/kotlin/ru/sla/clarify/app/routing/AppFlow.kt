@@ -2,12 +2,12 @@ package ru.sla.clarify.app.routing
 
 import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.auth.session.domain.entity.AuthSessionState
+import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow
 import ru.sla.clarify.feature.login.routing.LoginFlow
-import ru.sla.clarify.feature.main.routing.MainFlow
 
 object AppFlow {
   val schema = AppFlowSchema(
-    mainFlowSchema = MainFlow.schema,
+    conversationFlowSchema = ConversationFlow.schema,
     loginFlowSchema = LoginFlow.schema
   )
 

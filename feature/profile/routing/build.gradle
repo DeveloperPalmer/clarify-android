@@ -1,0 +1,17 @@
+plugins {
+  id 'android-library-convention'
+  id 'dagger-convention'
+  id 'android-compose-convention'
+  alias(libs.plugins.way)
+}
+
+android {
+  namespace "ru.sla.clarify.feature.profile.routing"
+}
+
+dependencies {
+  implementation project(":core:routing")
+  api project(":feature:profile:data")
+  api project(":feature:profile:domain")
+  api project(":feature:profile:ui")
+}

@@ -11,15 +11,16 @@ import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
 import ru.sla.clarify.feature.chat.conversation.domain.ChatModel
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
+import ru.sla.clarify.feature.profile.routing.ProfileFlow
 import javax.inject.Inject
 
 class ConversationFlowNode @Inject constructor(
   private val chatModel: ChatModel
-) : BaseFlowNode<Unit>() {
+) : BaseFlowNode<ConversationFlow.Result>() {
 
   private val scope: CoroutineScope by FlowNodeCoroutineScopeHook()
 
-  override val dismissResult = Unit
+  override val dismissResult = ConversationFlow.Result.Dismissed
   override val initial = Target.conversationFlow.main
 
   override fun onEntry(event: Event) {
@@ -27,16 +28,25 @@ class ConversationFlowNode @Inject constructor(
     chatModel.start(scope)
   }
 
-  override fun transition(event: Event): FlowTransition<Unit> {
+  override fun transition(event: Event): FlowTransition<ConversationFlow.Result> {
     return when (event) {
       is FlowEvent.ChatListDismissed -> {
-        Finish(Unit)
+        Finish(ConversationFlow.Result.Dismissed)
       }
       is ConversationFlowChildFinishRequest.ThreadFlow -> {
         NavigateTo(Target.conversationFlow.main)
       }
       is FlowEvent.ThreadRequested -> {
         NavigateTo(Target.conversationFlow.threadFlow(event.id))
+      }
+      is FlowEvent.ProfileRequested -> {
+        NavigateTo(Target.conversationFlow.profileFlow)
+      }
+      is ConversationFlowChildFinishRequest.ProfileFlow -> {
+        when (event.result) {
+          ProfileFlow.Result.LogoutSuccessfully -> Finish(ConversationFlow.Result.LogoutSuccessfully)
+          ProfileFlow.Result.Dismissed -> NavigateTo(Target.conversationFlow.main)
+        }
       }
       else -> Ignore
     }

@@ -50,6 +50,12 @@ class ChatListViewModel @Inject constructor(
       }
     }
 
+    onEach(intent(ViewIntents::openProfile)) {
+      action { _, _, _ ->
+        eventSink.sendEvent(FlowEvent.ProfileRequested)
+      }
+    }
+
     configureUserTransitions()
     configureConversationTransitions()
     configureNewConversationTransitions()
@@ -59,7 +65,7 @@ class ChatListViewModel @Inject constructor(
   private fun MachineDsl<ViewState>.configureUserTransitions() {
     onEach(chatModel.user) {
       transitionTo { state, user ->
-        state.copy(email = user?.email)
+        state.copy(user = user)
       }
     }
   }

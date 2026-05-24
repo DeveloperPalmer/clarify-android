@@ -14,6 +14,7 @@ import ru.sla.clarify.auth.session.domain.AuthSessionModel
 import ru.sla.clarify.auth.session.domain.entity.AuthSessionState
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
 import ru.sla.clarify.core.ui.FlowEventSink
+import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow
 import ru.sla.clarify.feature.login.routing.LoginFlow
 import javax.inject.Inject
 
@@ -36,19 +37,22 @@ class AppFlowNode @Inject constructor(
 
   override fun transition(event: Event): FlowTransition<Unit> {
     return when (event) {
-      is AppFlowChildFinishRequest.MainFlow -> {
-        NavigateTo(Target.appFlow.loginFlow)
+      is AppFlowChildFinishRequest.ConversationFlow -> {
+        when (event.result) {
+          ConversationFlow.Result.LogoutSuccessfully -> NavigateTo(Target.appFlow.loginFlow)
+          ConversationFlow.Result.Dismissed -> Finish(Unit)
+        }
       }
       is AppFlowChildFinishRequest.LoginFlow -> {
         when (event.result) {
-          LoginFlow.Result.Success -> NavigateTo(Target.appFlow.mainFlow)
+          LoginFlow.Result.Success -> NavigateTo(Target.appFlow.conversationFlow)
           LoginFlow.Result.Dismissed -> Finish(Unit)
         }
       }
       is AppFlow.Event.InitialSessionStateReceived -> {
         when (event.state) {
           AuthSessionState.Active -> {
-            NavigateTo(Target.appFlow.mainFlow)
+            NavigateTo(Target.appFlow.conversationFlow)
           }
           AuthSessionState.Inactive -> {
             NavigateTo(Target.appFlow.loginFlow)

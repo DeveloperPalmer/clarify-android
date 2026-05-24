@@ -5,5 +5,6 @@ import ru.sla.clarify.feature.entity.chat.Peer
 
 sealed interface FlowEvent : Event {
   data object ChatListDismissed : FlowEvent
+  data object ProfileRequested : FlowEvent
   data class ThreadRequested(val id: Peer.Id) : FlowEvent
 }
