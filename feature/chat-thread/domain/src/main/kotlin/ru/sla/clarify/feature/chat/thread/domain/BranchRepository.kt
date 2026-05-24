@@ -25,4 +25,6 @@ interface BranchRepository {
   suspend fun revokeApprovalMergeRequest(branchId: Branch.Id)
 
   suspend fun cancelMergeRequest(branchId: Branch.Id)
+
+  suspend fun finalizeMergeRequest(branchId: Branch.Id)
 }

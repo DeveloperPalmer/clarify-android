@@ -3,6 +3,7 @@
 package ru.sla.clarify.lib.google.firestore
 
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
@@ -24,14 +25,11 @@ import ru.sla.clarify.lib.google.firestore.codec.FirestoreFormat
 import ru.sla.clarify.lib.google.firestore.codec.decodeFromSnapshot
 import ru.sla.clarify.lib.google.firestore.codec.encodeToMap
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
-import ru.sla.clarify.lib.google.firestore.entity.BranchNM.Status
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
 import ru.sla.clarify.lib.google.firestore.entity.ParticipantNM
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
-import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchCancelMergeParams
-import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchFinalizeMergeParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchOpenMergeParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadCountParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadIncrementParams
@@ -58,6 +56,16 @@ class Firestore @Inject constructor(
 
   private val codec: FirestoreFormat = FirestoreFormat.Default
 
+  /**
+   * Создаёт `users/{uid}` с обоими server-stamp'ами (`createdAt`/`updatedAt`) и
+   * payload-полями. Без `merge` — это первичная вставка. Вызывать **только**
+   * когда документа ещё нет (проверяется через [isUserExists]).
+   *
+   * **Race window**: если два параллельных signIn одного аккаунта успели увидеть
+   * `!isUserExists` до того как кто-то из них завершил `postUser`, оба запишут
+   * документ — второй затрёт `createdAt` первого. Окно секундное, на login-flow
+   * допустимо; полная атомарность потребовала бы Firestore-транзакции.
+   */
   suspend fun postUser(
     id: UserId,
     displayName: String?,
@@ -76,6 +84,17 @@ class Firestore @Inject constructor(
       .await()
   }
 
+  /**
+   * Частичный апдейт `users/{uid}` через `set(merge)`. Семантика nullable-полей:
+   * `null` означает «значение не присылали, существующее не трогаем» — поле не
+   * попадает в map'у запроса (`@EncodeDefault(NEVER)` в [PatchUserParams]).
+   * `updatedAt` всегда пишется server-stamp'ом.
+   *
+   * **Не покрывает осознанный clear**: чтобы удалить поле (например, аватарку)
+   * — нужен отдельный метод с sentinel'ом
+   * [ru.sla.clarify.lib.google.firestore.codec.sentinel.Delete]; добавить когда
+   * use case появится.
+   */
   suspend fun patchUser(
     id: UserId,
     displayName: String?,
@@ -371,7 +390,6 @@ class Firestore @Inject constructor(
         parentBranchId = parentBranchId,
         branchedFromCommitId = branchedFromCommitId,
         name = name,
-        status = Status.Active,
         createdAt = createdAt,
         createdByUid = createdByUserId
       )
@@ -386,19 +404,17 @@ class Firestore @Inject constructor(
       parentBranchId = parentBranchId,
       branchedFromCommitId = branchedFromCommitId,
       name = name,
-      status = Status.Active,
       createdAt = createdAt,
       createdByUid = createdByUserId.value,
-      mergeRequest = null,
-      mergedAt = null,
-      mergedIntoBranchId = null
+      mergeRequest = null
     )
   }
 
   /**
-   * Открывает merge request для ветки. Атомарно: проходит только если ветка сейчас
-   * в статусе [Status.Active]. Записывает `mergeRequest = { initiator, requestedAt,
-   * approvedByUids: [initiator] }` и переводит статус в [Status.MergeInProgress].
+   * Открывает merge request для ветки. Атомарно: проходит только если у ветки сейчас
+   * нет активного merge request'а. Записывает `mergeRequest = { status: Open, initiator,
+   * requestedAt, approvedByUids: [] }`. Инициатор НЕ добавляется в approvers по
+   * умолчанию — он должен явно нажать approve, как и все остальные участники.
    */
   suspend fun postMergeRequest(
     conversationId: String,
@@ -410,16 +426,16 @@ class Firestore @Inject constructor(
 
     val transaction = runTransaction { txn ->
       val current = codec.decodeFromSnapshot<BranchNM>(txn.get(branchRef))
-      check(current.status == Status.Active) {
-        "Cannot request merge: branch status is ${current.status}, expected ${Status.Active}"
+      check(current.mergeRequest == null) {
+        "Cannot open merge request: there is already an active one"
       }
       val update = codec.encodeToMap(
         PatchBranchOpenMergeParams(
-          status = Status.MergeInProgress,
           mergeRequest = MergeRequestNM(
+            status = MergeRequestNM.Status.Open,
             initiatorUid = initiator.value,
             requestedAt = requestedAt,
-            approvedByUids = listOf(initiator.value)
+            approvedByUids = emptyList()
           )
         )
       )
@@ -432,9 +448,9 @@ class Firestore @Inject constructor(
   /**
    * Добавляет текущего пользователя в список approvers активного merge request'а. Атомарно.
    *
-   * Если с учётом текущего пользователя [participantUids] покрыт полностью, ветка финализируется
-   * в той же транзакции: status -> [Status.Merged], `mergedAt = now`,
-   * `mergedIntoBranchId = parentBranchId`, `mergeRequest` удаляется.
+   * Если с учётом текущего пользователя [participantUids] покрыт полностью, статус
+   * переключается на [MergeRequestNM.Status.ReadyToMerge]. Финализацию merge'а делает
+   * отдельный вызов [patchMergeFinalize].
    */
   suspend fun patchMergeApproval(
     conversationId: String,
@@ -443,49 +459,41 @@ class Firestore @Inject constructor(
   ) {
     val approver = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
-    val now = Timestamp.now()
     val transaction = runTransaction { txn ->
       val current = codec.decodeFromSnapshot<BranchNM>(txn.get(branchRef))
-      check(current.status == Status.MergeInProgress) {
-        "Cannot approve merge: branch status is ${current.status}"
+      val mergeRequest = current.mergeRequest
+        ?: error("Cannot approve merge: no active merge request")
+      check(
+        mergeRequest.status == MergeRequestNM.Status.Open ||
+          mergeRequest.status == MergeRequestNM.Status.ReadyToMerge
+      ) {
+        "Cannot approve merge: status is ${mergeRequest.status}"
       }
-      val approvedRaw = current.mergeRequest?.approvedByUids.orEmpty()
-      val updatedApproved = (approvedRaw + approver.value).distinct()
 
-      val finalize = participantUids
-        .toSet()
-        .subtract(updatedApproved.toSet())
-        .isEmpty() && participantUids.isNotEmpty()
+      val updatedApproved = (mergeRequest.approvedByUids + approver.value).distinct()
 
-      if (finalize) {
-        val update = codec.encodeToMap(
-          PatchBranchFinalizeMergeParams(
-            status = Status.Merged,
-            mergedAt = now,
-            mergedIntoBranchId = current.parentBranchId
-          )
+      val ready = participantUids.isNotEmpty() &&
+        participantUids.toSet().subtract(updatedApproved.toSet()).isEmpty()
+
+      // Partial dot-path update: трогаем только два поля внутри mergeRequest, а не
+      // переписываем объект целиком — initiatorUid/requestedAt остаются нетронутыми.
+      txn.update(
+        branchRef,
+        mapOf(
+          "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}"
+            to updatedApproved,
+          "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_STATUS}"
+            to (if (ready) MergeRequestNM.Status.ReadyToMerge else MergeRequestNM.Status.Open).value
         )
-        txn.update(branchRef, update)
-      } else {
-        // Partial field-path update: дописываем только approvedByUids внутри mergeRequest,
-        // не трогая initiatorUid/requestedAt. NM-payload здесь не годится — нужно
-        // именно "dot-path" обращение, которое Firestore разворачивает по месту.
-        txn.update(
-          branchRef,
-          mapOf(
-            "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}"
-              to updatedApproved
-          )
-        )
-      }
+      )
     }
 
     transaction.await()
   }
 
   /**
-   * Убирает текущего пользователя из списка approvers. Если текущий пользователь — инициатор,
-   * весь merge request отменяется (status -> [Status.Active]).
+   * Убирает текущего пользователя из списка approvers. Статус откатывается на
+   * [MergeRequestNM.Status.Open] (на случай если был [MergeRequestNM.Status.ReadyToMerge]).
    */
   suspend fun deleteMergeApproval(
     conversationId: String,
@@ -495,58 +503,91 @@ class Firestore @Inject constructor(
     val branchRef = branchDocumentRef(conversationId, branchId)
     val transaction = runTransaction { txn ->
       val current = codec.decodeFromSnapshot<BranchNM>(txn.get(branchRef))
-      check(current.status == Status.MergeInProgress) {
-        "Cannot revoke approval: branch status is ${current.status}"
-      }
       val mergeRequest = current.mergeRequest
-        ?: error("branch in MergeInProgress has no mergeRequest")
-      if (mergeRequest.initiatorUid == approver.value) {
-        // Отзыв со стороны инициатора означает отмену всего merge request'а.
-        txn.update(branchRef, cancelMergePayload())
-      } else {
-        val updatedApproved = mergeRequest.approvedByUids.filter { it != approver.value }
-        // Partial field-path update — см. комментарий в patchMergeApproval.
-        txn.update(
-          branchRef,
-          mapOf(
-            "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}"
-              to updatedApproved
-          )
-        )
+        ?: error("Cannot revoke approval: no active merge request")
+      check(
+        mergeRequest.status == MergeRequestNM.Status.Open ||
+          mergeRequest.status == MergeRequestNM.Status.ReadyToMerge
+      ) {
+        "Cannot revoke approval: status is ${mergeRequest.status}"
       }
+      val updatedApproved = mergeRequest.approvedByUids.filter { it != approver.value }
+      txn.update(
+        branchRef,
+        mapOf(
+          "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS}"
+            to updatedApproved,
+          "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_STATUS}"
+            to MergeRequestNM.Status.Open.value
+        )
+      )
     }
 
     transaction.await()
   }
 
   /**
-   * Инициатор отменяет merge request. Ветка возвращается в [Status.Active].
+   * Отменяет merge request — доступно любому участнику. Поле `mergeRequest` удаляется,
+   * ветка снова принимает commit'ы.
    */
   suspend fun deleteMergeRequest(
     conversationId: String,
     branchId: String
   ) {
-    val canceller = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
     val transaction = runTransaction { txn ->
       val current = codec.decodeFromSnapshot<BranchNM>(txn.get(branchRef))
-      check(current.status == Status.MergeInProgress) {
-        "Cannot cancel merge: branch status is ${current.status}"
+      val mergeRequest = current.mergeRequest
+        ?: error("Cannot cancel merge: no active merge request")
+      check(
+        mergeRequest.status == MergeRequestNM.Status.Open ||
+          mergeRequest.status == MergeRequestNM.Status.ReadyToMerge
+      ) {
+        "Cannot cancel merge: status is ${mergeRequest.status}"
       }
-      val initiator = current.mergeRequest?.initiatorUid
-        ?: error("branch in MergeInProgress has no mergeRequest")
-      check(initiator == canceller.value) {
-        "Only the merge initiator can cancel the merge request"
-      }
-      txn.update(branchRef, cancelMergePayload())
+      txn.update(
+        branchRef,
+        mapOf(FirestoreSchema.BRANCH_MERGE_REQUEST to FieldValue.delete())
+      )
     }
 
     transaction.await()
   }
 
-  private fun cancelMergePayload(): Map<String, Any?> = codec.encodeToMap(
-    PatchBranchCancelMergeParams(status = Status.Active)
-  )
+  /**
+   * Финализирует merge — доступно любому участнику. Требует статус
+   * [MergeRequestNM.Status.ReadyToMerge]. Переводит merge request в
+   * [MergeRequestNM.Status.Merged] и записывает `mergedAt = now`,
+   * `mergedIntoBranchId = parentBranchId` внутрь mergeRequest.
+   */
+  suspend fun patchMergeFinalize(
+    conversationId: String,
+    branchId: String
+  ) {
+    val branchRef = branchDocumentRef(conversationId, branchId)
+    val now = Timestamp.now()
+    val transaction = runTransaction { txn ->
+      val current = codec.decodeFromSnapshot<BranchNM>(txn.get(branchRef))
+      val mergeRequest = current.mergeRequest
+        ?: error("Cannot finalize merge: no active merge request")
+      check(mergeRequest.status == MergeRequestNM.Status.ReadyToMerge) {
+        "Cannot finalize merge: status is ${mergeRequest.status}"
+      }
+      txn.update(
+        branchRef,
+        mapOf(
+          "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_STATUS}"
+            to MergeRequestNM.Status.Merged.value,
+          "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_MERGED_AT}"
+            to now,
+          "${FirestoreSchema.BRANCH_MERGE_REQUEST}.${FirestoreSchema.BRANCH_MERGE_REQUEST_MERGED_INTO_BRANCH_ID}"
+            to current.parentBranchId
+        )
+      )
+    }
+
+    transaction.await()
+  }
 
   private fun directConversationIdLive(peerId: Peer.Id): Flow<String?> {
     return callbackFlow {

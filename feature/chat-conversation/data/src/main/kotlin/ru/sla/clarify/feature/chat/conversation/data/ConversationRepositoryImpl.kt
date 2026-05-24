@@ -117,6 +117,23 @@ class ConversationRepositoryImpl @Inject constructor(
       }
   }
 
+  override fun participants(
+    conversationId: Conversation.Id
+  ): Flow<List<Participant>> {
+    return inMemoryDB.conversationParticipantQueries
+      .selectByConversation(conversationId.value)
+      .observeList()
+      .map { rows ->
+        rows.map { row ->
+          Participant(
+            id = Participant.Id(row.id),
+            displayName = row.displayName,
+            photoUrl = row.photoUrl
+          )
+        }
+      }
+  }
+
   private suspend fun applyChange(change: FirestoreChange<ConversationNM>) {
     val conversation = change.data
     when (change.changeType) {

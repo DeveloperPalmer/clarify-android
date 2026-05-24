@@ -21,4 +21,6 @@ interface ConversationRepository {
   fun subscribeOnUnreadCounts(): Flow<Unit>
 
   fun participant(conversationId: Conversation.Id, userId: UserId): Flow<Participant?>
+
+  fun participants(conversationId: Conversation.Id): Flow<List<Participant>>
 }

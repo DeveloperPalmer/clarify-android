@@ -1,0 +1,27 @@
+import ru.sla.clarify.database.adapter.StringList;
+
+CREATE TABLE MergeRequest(
+  branchId TEXT NOT NULL PRIMARY KEY,
+  status TEXT NOT NULL,
+  initiatorUid TEXT NOT NULL,
+  requestedAt INTEGER NOT NULL,
+  approvedByUids TEXT AS StringList NOT NULL,
+  mergedAt INTEGER,
+  mergedIntoBranchId TEXT,
+  FOREIGN KEY(branchId) REFERENCES Branch(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO MergeRequest(
+  branchId, status, initiatorUid, requestedAt, approvedByUids,
+  mergedAt, mergedIntoBranchId
+)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteByBranchId:
+DELETE FROM MergeRequest
+WHERE branchId = ?;
+
+deleteAll:
+DELETE FROM MergeRequest;

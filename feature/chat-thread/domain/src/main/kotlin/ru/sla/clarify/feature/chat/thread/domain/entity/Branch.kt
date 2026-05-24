@@ -12,25 +12,40 @@ data class Branch(
   val parentBranchId: Id,
   val branchedFromCommitId: Commit.Id,
   val name: String,
-  val status: Status,
   val createdAt: Long,
   val createdByUid: UserId,
-  val mergeRequest: MergeRequest? = null,
-  val mergedAt: Long? = null,
-  val mergedIntoBranchId: Id? = null
+  val mergeRequest: MergeRequest? = null
 ) {
   @JvmInline
   value class Id(val value: String)
 
-  enum class Status(val value: String) {
-    Active("active"),
-    MergeInProgress("mergeInProgress"),
-    Merged("merged");
+  /**
+   * Состояние merge-предложения ветки. Отсутствие [MergeRequest] означает что ветка живая
+   * и принимает commit'ы. Если объект есть — поведение ветки определяется [status]:
+   *
+   *  - [Status.Open]            — MR открыт, идёт сбор approvals.
+   *  - [Status.ReadyToMerge]    — все участники approved, ждём явный finalize.
+   *  - [Status.Merged]          — ветка замерджена в [mergedIntoBranchId] в [mergedAt].
+   */
+  @Immutable
+  data class MergeRequest(
+    val status: Status,
+    val initiatorUid: UserId,
+    val requestedAt: Long,
+    val approvedByUids: Set<UserId>,
+    val mergedAt: Long? = null,
+    val mergedIntoBranchId: Id? = null
+  ) {
+    enum class Status(val value: String) {
+      Open("open"),
+      ReadyToMerge("readyToMerge"),
+      Merged("merged");
 
-    companion object {
-      fun fromValue(value: String): Status {
-        return entries.firstOrNull { it.value == value }
-          ?: error("unexpected branch status: $value")
+      companion object {
+        fun fromValue(value: String): Status {
+          return entries.firstOrNull { it.value == value }
+            ?: error("unexpected merge request status: $value")
+        }
       }
     }
   }

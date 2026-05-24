@@ -11,8 +11,8 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.adapter.StringListAdapter
-import ru.sla.clarify.database.chat.Branch
 import ru.sla.clarify.database.chat.ChatConversation
+import ru.sla.clarify.database.chat.MergeRequest
 
 @ContributesTo(AppScope::class)
 @Module
@@ -26,8 +26,8 @@ object DatabaseModule {
       ChatConversationAdapter = ChatConversation.Adapter(
         participantUidsAdapter = StringListAdapter
       ),
-      BranchAdapter = Branch.Adapter(
-        mergeRequestApprovedByUidsAdapter = StringListAdapter
+      MergeRequestAdapter = MergeRequest.Adapter(
+        approvedByUidsAdapter = StringListAdapter
       )
     )
   }

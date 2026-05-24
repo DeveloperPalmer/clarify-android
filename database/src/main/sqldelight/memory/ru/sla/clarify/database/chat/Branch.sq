@@ -1,19 +1,11 @@
-import ru.sla.clarify.database.adapter.StringList;
-
 CREATE TABLE Branch(
   id TEXT NOT NULL PRIMARY KEY,
   conversationId TEXT NOT NULL,
   parentBranchId TEXT NOT NULL,
   branchedFromCommitId TEXT NOT NULL,
   name TEXT NOT NULL,
-  status TEXT NOT NULL,
   createdAt INTEGER NOT NULL,
   createdByUid TEXT NOT NULL,
-  mergeRequestInitiatorUid TEXT,
-  mergeRequestRequestedAt INTEGER,
-  mergeRequestApprovedByUids TEXT AS StringList,
-  mergedAt INTEGER,
-  mergedIntoBranchId TEXT,
   FOREIGN KEY(conversationId) REFERENCES ChatConversation(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -22,49 +14,49 @@ CREATE INDEX Branch_conversationId ON Branch(conversationId);
 insertOrReplace:
 INSERT OR REPLACE
 INTO Branch(
-  id, conversationId, parentBranchId, branchedFromCommitId, name, status,
-  createdAt, createdByUid,
-  mergeRequestInitiatorUid, mergeRequestRequestedAt, mergeRequestApprovedByUids,
-  mergedAt, mergedIntoBranchId
+  id, conversationId, parentBranchId, branchedFromCommitId, name,
+  createdAt, createdByUid
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 selectByConversationId:
 SELECT
-  id,
-  conversationId,
-  parentBranchId,
-  branchedFromCommitId,
-  name,
-  status,
-  createdAt,
-  createdByUid,
-  mergeRequestInitiatorUid,
-  mergeRequestRequestedAt,
-  mergeRequestApprovedByUids,
-  mergedAt,
-  mergedIntoBranchId
-FROM Branch
-WHERE conversationId = :conversationId
-ORDER BY createdAt ASC;
+  b.id,
+  b.conversationId,
+  b.parentBranchId,
+  b.branchedFromCommitId,
+  b.name,
+  b.createdAt,
+  b.createdByUid,
+  mr.status AS mergeRequestStatus,
+  mr.initiatorUid AS mergeRequestInitiatorUid,
+  mr.requestedAt AS mergeRequestRequestedAt,
+  mr.approvedByUids AS mergeRequestApprovedByUids,
+  mr.mergedAt AS mergeRequestMergedAt,
+  mr.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
+FROM Branch b
+LEFT JOIN MergeRequest mr ON mr.branchId = b.id
+WHERE b.conversationId = :conversationId
+ORDER BY b.createdAt ASC;
 
 selectById:
 SELECT
-  id,
-  conversationId,
-  parentBranchId,
-  branchedFromCommitId,
-  name,
-  status,
-  createdAt,
-  createdByUid,
-  mergeRequestInitiatorUid,
-  mergeRequestRequestedAt,
-  mergeRequestApprovedByUids,
-  mergedAt,
-  mergedIntoBranchId
-FROM Branch
-WHERE id = :id;
+  b.id,
+  b.conversationId,
+  b.parentBranchId,
+  b.branchedFromCommitId,
+  b.name,
+  b.createdAt,
+  b.createdByUid,
+  mr.status AS mergeRequestStatus,
+  mr.initiatorUid AS mergeRequestInitiatorUid,
+  mr.requestedAt AS mergeRequestRequestedAt,
+  mr.approvedByUids AS mergeRequestApprovedByUids,
+  mr.mergedAt AS mergeRequestMergedAt,
+  mr.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
+FROM Branch b
+LEFT JOIN MergeRequest mr ON mr.branchId = b.id
+WHERE b.id = :id;
 
 deleteById:
 DELETE FROM Branch

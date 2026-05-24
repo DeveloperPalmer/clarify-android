@@ -8,4 +8,6 @@ class ViewIntents : BaseViewIntents() {
   val openMergeRequest = intent(name = "openMergeRequest")
   val approveMergeRequest = intent(name = "approveMergeRequest")
   val revokeApprovalMergeRequest = intent(name = "revokeApprovalMergeRequest")
+  val cancelMergeRequest = intent(name = "cancelMergeRequest")
+  val finalizeMergeRequest = intent(name = "finalizeMergeRequest")
 }

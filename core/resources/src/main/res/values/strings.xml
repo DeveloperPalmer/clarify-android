@@ -53,18 +53,20 @@
     <!-- Branch screen -->
     <string name="branch_default_name">Branch</string>
     <string name="branch_empty_state">Start the branch</string>
-    <string name="branch_merge_button">Merge</string>
-    <string name="branch_merging">Merging…</string>
-    <string name="branch_merge_waiting_for_peer">Waiting for peer to approve the merge.</string>
+    <string name="branch_open_mr_button">Open MR</string>
+    <string name="branch_merge_in_progress">Merge request in progress…</string>
+    <string name="branch_merge_ready">Ready to merge</string>
+    <string name="branch_merge_finalize_button">Merge now</string>
     <string name="branch_merge_cancel_request">Cancel merge request</string>
-    <string name="branch_merge_approved_waiting">You approved. Waiting for the request to finalize.</string>
+    <string name="branch_merge_approved_waiting">You approved. Waiting for other participants.</string>
     <string name="branch_merge_revoke_approval">Revoke approval</string>
-    <string name="branch_merge_request_summary">%1$s requested to merge this branch.</string>
+    <string name="branch_merge_request_summary">%1$s opened a merge request for this branch.</string>
     <string name="branch_merge_approve_button">Approve merge</string>
-    <string name="branch_locked_merge_in_progress">Branch is locked while merge is in progress</string>
+    <string name="branch_locked_merge_in_progress">Branch is locked while merge request is open</string>
     <string name="branch_merged_read_only">This branch is merged (read-only)</string>
-    <string name="branch_merge_request_failed">Failed to request merge</string>
+    <string name="branch_merge_request_failed">Failed to open merge request</string>
     <string name="branch_merge_approve_failed">Failed to approve merge</string>
     <string name="branch_merge_revoke_failed">Failed to revoke approval</string>
     <string name="branch_merge_cancel_failed">Failed to cancel merge request</string>
+    <string name="branch_merge_finalize_failed">Failed to finalize merge</string>
 </resources>

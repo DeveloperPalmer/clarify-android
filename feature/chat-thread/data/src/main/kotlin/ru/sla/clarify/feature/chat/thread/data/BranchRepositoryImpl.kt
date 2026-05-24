@@ -19,6 +19,7 @@ import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
+import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import javax.inject.Inject
 
@@ -100,9 +101,16 @@ class BranchRepositoryImpl @Inject constructor(
     )
   }
 
+  override suspend fun finalizeMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
+    firestore.patchMergeFinalize(
+      conversationId = threadMediator.requireConversationId(),
+      branchId = branchId.value
+    )
+  }
+
   private fun handleBranchChanges(
     conversationId: String,
-    changes: List<FirestoreChange<ru.sla.clarify.lib.google.firestore.entity.BranchNM>>
+    changes: List<FirestoreChange<BranchNM>>
   ) {
     inMemoryDB.transaction {
       changes.forEach { change ->
@@ -127,15 +135,23 @@ class BranchRepositoryImpl @Inject constructor(
       parentBranchId = branch.parentBranchId.value,
       branchedFromCommitId = branch.branchedFromCommitId.value,
       name = branch.name,
-      status = branch.status.value,
       createdAt = branch.createdAt,
-      createdByUid = branch.createdByUid.value,
-      mergeRequestInitiatorUid = branch.mergeRequest?.initiatorUid?.value,
-      mergeRequestRequestedAt = branch.mergeRequest?.requestedAt,
-      mergeRequestApprovedByUids = branch.mergeRequest?.approvedByUids?.map { it.value },
-      mergedAt = branch.mergedAt,
-      mergedIntoBranchId = branch.mergedIntoBranchId?.value
+      createdByUid = branch.createdByUid.value
     )
+    val mergeRequest = branch.mergeRequest
+    if (mergeRequest != null) {
+      inMemoryDB.mergeRequestQueries.insertOrReplace(
+        branchId = branch.id.value,
+        status = mergeRequest.status.value,
+        initiatorUid = mergeRequest.initiatorUid.value,
+        requestedAt = mergeRequest.requestedAt,
+        approvedByUids = mergeRequest.approvedByUids.map { it.value },
+        mergedAt = mergeRequest.mergedAt,
+        mergedIntoBranchId = mergeRequest.mergedIntoBranchId?.value
+      )
+    } else {
+      inMemoryDB.mergeRequestQueries.deleteByBranchId(branch.id.value)
+    }
   }
 
   private suspend fun resolveBranchId(branchId: Branch.Id?): String {

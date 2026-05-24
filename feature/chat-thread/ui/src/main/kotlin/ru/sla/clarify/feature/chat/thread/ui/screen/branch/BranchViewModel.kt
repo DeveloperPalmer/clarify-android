@@ -11,6 +11,7 @@ import ru.dimsuz.unicorn2.machine
 import ru.kode.remo.JobState
 import ru.kode.remo.errors
 import ru.sla.clarify.core.domain.asLceState
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.startOnSubscribe
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
@@ -61,11 +62,16 @@ class BranchViewModel @AssistedInject constructor(
       // нечего делать
     }
 
+    onEach(threadModel.user.filterNotNull()) {
+      transitionTo { state, user ->
+        state.copy(currentUserId = user.id)
+      }
+    }
+
     onEach(threadModel.branch(branchId).filterNotNull()) {
       transitionTo { state, branch ->
         state.copy(
           branchName = branch.name,
-          branchStatus = branch.status,
           mergeRequest = branch.mergeRequest
         )
       }
@@ -79,9 +85,9 @@ class BranchViewModel @AssistedInject constructor(
   private fun MachineDsl<ViewState>.configureSenderCommitTransitions() {
     onEach(intent(ViewIntents::sendCommit)) {
       action { state, _, text ->
-        // Защита: UI прячет инпут когда status != Active, но если что-то проскочит из-за
-        // race condition — всё равно не постим commit в замороженную ветку.
-        if (state.branchStatus != Branch.Status.Active) return@action
+        // Защита: UI прячет инпут когда у ветки активный MR, но если что-то проскочит
+        // из-за race condition — всё равно не постим commit в замороженную ветку.
+        if (state.mergeRequest != null) return@action
         // state.commits отсортирован newest-first; индекс 0 — самое свежее сообщение.
         // Для первого сообщения в новой ветке это null, и ниже сгенерируется свежий цвет —
         // это намеренно, новая ветка получает свой цвет.
@@ -124,21 +130,34 @@ class BranchViewModel @AssistedInject constructor(
   private fun MachineDsl<ViewState>.configureMergeRequestTransitions() {
     onEach(intent(ViewIntents::openMergeRequest)) {
       action { state, _, _ ->
-        if (state.branchStatus != Branch.Status.Active) return@action
+        if (state.mergeRequest != null) return@action
         threadModel.openMergeRequest.start(branchId)
       }
     }
     onEach(intent(ViewIntents::approveMergeRequest)) {
       action { state, _, _ ->
-        if (state.branchStatus != Branch.Status.MergeInProgress) return@action
-        if (state.isCurrentUserApprover) return@action
+        if (!state.mergeRequest.isPending()) return@action
+        if (state.isCurrentUserApproved) return@action
         threadModel.approveMergeRequest.start(branchId)
       }
     }
     onEach(intent(ViewIntents::revokeApprovalMergeRequest)) {
       action { state, _, _ ->
-        if (state.branchStatus != Branch.Status.MergeInProgress) return@action
+        if (!state.mergeRequest.isPending()) return@action
+        if (!state.isCurrentUserApproved) return@action
         threadModel.revokeApprovalMergeRequest.start(branchId)
+      }
+    }
+    onEach(intent(ViewIntents::cancelMergeRequest)) {
+      action { state, _, _ ->
+        if (!state.mergeRequest.isPending()) return@action
+        threadModel.cancelMergeRequest.start(branchId)
+      }
+    }
+    onEach(intent(ViewIntents::finalizeMergeRequest)) {
+      action { state, _, _ ->
+        if (state.mergeRequest?.status != Branch.MergeRequest.Status.ReadyToMerge) return@action
+        threadModel.finalizeMergeRequest.start(branchId)
       }
     }
 
@@ -148,20 +167,43 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
-    // Агрегируем isMergeActionPending по всем четырём merge-задачам. Если хоть одна
-    // в Running -> UI показывает прогресс и блокирует кнопки.
+    // Approvers: участники conversation'а с флагом — пересечение с
+    // mergeRequest.approvedByUids делаем тут, чтобы Composable получал
+    // готовый UI-state без логики на стороне рендера.
+    onEach(
+      combine(
+        threadModel.branchParticipants(branchId),
+        threadModel.branch(branchId)
+      ) { participants, branch ->
+        val approvedUids = branch?.mergeRequest?.approvedByUids.orEmpty()
+        val approvers = participants.map { participant ->
+          val userId = UserId(participant.id.value)
+          Approver(
+            userId = userId,
+            displayName = participant.displayName,
+            photoUrl = participant.photoUrl,
+            isApproved = userId in approvedUids
+          )
+        }
+        approvers
+      }
+    ) {
+      transitionTo { state, approvers ->
+        state.copy(approvers = approvers)
+      }
+    }
+
     onEach(
       combine(
         threadModel.openMergeRequest.jobFlow.state,
         threadModel.approveMergeRequest.jobFlow.state,
         threadModel.revokeApprovalMergeRequest.jobFlow.state,
-        threadModel.cancelMergeRequest.jobFlow.state
-      ) { a, b, c, d ->
-        listOf(a, b, c, d).any { it == JobState.Running }
-      }
+        threadModel.cancelMergeRequest.jobFlow.state,
+        threadModel.finalizeMergeRequest.jobFlow.state
+      ) { states -> states.any { it == JobState.Running } }
     ) {
       transitionTo { state, pending ->
-        state.copy(isMergeActionPending = pending)
+        state.copy(mergeRequestRunning = pending)
       }
     }
 
@@ -189,6 +231,18 @@ class BranchViewModel @AssistedInject constructor(
         showMergeError(R.string.branch_merge_cancel_failed)
       }
     }
+
+    onEach(threadModel.finalizeMergeRequest.jobFlow.errors()) {
+      action { _, _, _ ->
+        showMergeError(R.string.branch_merge_finalize_failed)
+      }
+    }
+  }
+
+  /** Pending = MR открыт и ещё не зафинализирован (можно approve/revoke/cancel). */
+  private fun Branch.MergeRequest?.isPending(): Boolean {
+    return this?.status == Branch.MergeRequest.Status.Open ||
+      this?.status == Branch.MergeRequest.Status.ReadyToMerge
   }
 
   private fun showMergeError(messageId: Int) {

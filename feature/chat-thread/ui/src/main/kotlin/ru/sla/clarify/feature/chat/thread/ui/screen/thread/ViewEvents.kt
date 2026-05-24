@@ -150,7 +150,7 @@ internal fun showBranchesListSheet(branches: List<Branch>) =
                     horizontalArrangement = Arrangement.SpaceBetween
                   ) {
                     Text(text = branch.name)
-                    Text(text = branch.status.name)
+                    Text(text = branch.mergeRequest?.status?.name.orEmpty())
                   }
                 }
               }

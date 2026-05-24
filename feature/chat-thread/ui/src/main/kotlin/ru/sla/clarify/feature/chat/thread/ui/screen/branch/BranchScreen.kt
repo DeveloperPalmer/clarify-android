@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chat.thread.ui.screen.branch
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -40,7 +42,6 @@ import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.core.ui.text.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
-import ru.sla.clarify.feature.chat.thread.domain.entity.MergeRequest
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.uikit.component.IconAction
 import ru.sla.clarify.uikit.modifier.surface
@@ -49,6 +50,13 @@ import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
 
 private val MergeProgressIndicatorSize = 24.dp
+private val ApproverDotSize = 8.dp
+
+// Цвета индикатора approve-статуса. Не привязаны к AppTheme — это семантические
+// светофор-цвета (approved = зелёный, pending = жёлтый), они одинаковы в light/dark
+// темах. Если в проекте появятся semantic accent colors — заменить здесь.
+private val ApproverDotApprovedColor = Color(0xFF4CAF50)
+private val ApproverDotPendingColor = Color(0xFFFFC107)
 
 @Composable
 fun BranchScreen(viewModel: BranchViewModel) {
@@ -82,20 +90,20 @@ internal fun BranchReadyContent(
   ) {
     TopBar(
       branchName = state.branchName,
-      branchStatus = state.branchStatus,
-      isMergeActionPending = state.isMergeActionPending,
+      mergeRequestStatus = state.mergeRequest?.status,
+      isMergeActionPending = state.mergeRequestRunning,
       onBack = intents.navigateBack,
       onRequestMerge = intents.openMergeRequest
     )
-    if (state.mergeRequest != null && state.branchStatus == Branch.Status.MergeInProgress) {
+    if (state.mergeRequest != null &&
+      state.mergeRequest.status != Branch.MergeRequest.Status.Merged
+    ) {
       MergeBanner(
-        isMergeActionPending = state.isMergeActionPending,
-        isCurrentUserApprover = state.isCurrentUserApprover,
-        isCurrentUserInitiator = state.isCurrentUserInitiator,
-        mergeRequest = state.mergeRequest,
-        initiatorName = state.initiatorName,
+        state = state,
         onApprove = intents.approveMergeRequest,
-        onRevoke = intents.revokeApprovalMergeRequest
+        onRevoke = intents.revokeApprovalMergeRequest,
+        onCancel = intents.cancelMergeRequest,
+        onFinalize = intents.finalizeMergeRequest
       )
     }
     if (state.commits.isEmpty()) {
@@ -114,8 +122,7 @@ internal fun BranchReadyContent(
     }
     HorizontalDivider()
     BottomArea(
-      branchStatus = state.branchStatus,
-      isSending = state.isSending,
+      state = state,
       onSend = intents.sendCommit
     )
   }
@@ -124,7 +131,7 @@ internal fun BranchReadyContent(
 @Composable
 private fun TopBar(
   branchName: String?,
-  branchStatus: Branch.Status,
+  mergeRequestStatus: Branch.MergeRequest.Status?,
   isMergeActionPending: Boolean,
   onBack: () -> Unit,
   onRequestMerge: () -> Unit
@@ -151,90 +158,116 @@ private fun TopBar(
         fontWeight = FontWeight.SemiBold
       )
     }
-    when (branchStatus) {
-      Branch.Status.Active -> Button(
+    when (mergeRequestStatus) {
+      null -> Button(
         onClick = onRequestMerge,
         enabled = !isMergeActionPending
       ) {
-        Text(stringResource(R.string.branch_merge_button))
+        Text(stringResource(R.string.branch_open_mr_button))
       }
-      Branch.Status.MergeInProgress -> Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-        Text(
-          text = stringResource(R.string.branch_merging),
-          style = AppTheme.typography.body2,
-          color = AppTheme.colors.textPrimary
-        )
-        CircularProgressIndicator(
-          modifier = Modifier.size(MergeProgressIndicatorSize)
-        )
-      }
-      Branch.Status.Merged -> Unit
+      Branch.MergeRequest.Status.Open -> MergeStatusLabel(
+        text = stringResource(R.string.branch_merge_in_progress)
+      )
+      Branch.MergeRequest.Status.ReadyToMerge -> MergeStatusLabel(
+        text = stringResource(R.string.branch_merge_ready),
+        showProgress = false
+      )
+      Branch.MergeRequest.Status.Merged -> Unit
     }
   }
   HorizontalDivider()
 }
 
 @Composable
-private fun MergeBanner(
-  isMergeActionPending: Boolean,
-  isCurrentUserApprover: Boolean,
-  isCurrentUserInitiator: Boolean,
-  mergeRequest: MergeRequest,
-  initiatorName: String?,
-  onApprove: () -> Unit,
-  onRevoke: () -> Unit
+private fun MergeStatusLabel(
+  text: String,
+  showProgress: Boolean = true
 ) {
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp)
+  ) {
+    Text(
+      text = text,
+      style = AppTheme.typography.body2,
+      color = AppTheme.colors.textPrimary
+    )
+    if (showProgress) {
+      CircularProgressIndicator(
+        modifier = Modifier.size(MergeProgressIndicatorSize)
+      )
+    }
+  }
+}
+
+@Composable
+private fun MergeBanner(
+  state: ViewState,
+  onApprove: () -> Unit,
+  onRevoke: () -> Unit,
+  onCancel: () -> Unit,
+  onFinalize: () -> Unit
+) {
+  val mergeRequest = state.mergeRequest ?: return
   Column(
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp, vertical = 12.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    when {
-      isCurrentUserInitiator -> {
-        Text(
-          text = stringResource(R.string.branch_merge_waiting_for_peer),
-          style = AppTheme.typography.body2,
-          color = AppTheme.colors.textPrimary
-        )
-        TextButton(
-          onClick = onRevoke,
-          enabled = !isMergeActionPending
+    Text(
+      text = stringResource(
+        R.string.branch_merge_request_summary,
+        state.initiatorName?.takeIf { it.isNotBlank() } ?: mergeRequest.initiatorUid.value
+      ),
+      style = AppTheme.typography.body2,
+      color = AppTheme.colors.textPrimary
+    )
+    if (state.isCurrentUserApproved) {
+      Text(
+        text = stringResource(R.string.branch_merge_approved_waiting),
+        style = AppTheme.typography.body2,
+        color = AppTheme.colors.textPrimary
+      )
+    }
+    if (state.approvers.isNotEmpty()) {
+      ApproversRow(approvers = state.approvers)
+    }
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      // Approve / Revoke: видна на статусах Open и ReadyToMerge.
+      if (!state.isCurrentUserApproved) {
+        Button(
+          onClick = onApprove,
+          enabled = !state.mergeRequestRunning
         ) {
-          Text(stringResource(R.string.branch_merge_cancel_request))
+          Text(stringResource(R.string.branch_merge_approve_button))
         }
-      }
-      isCurrentUserApprover -> {
-        Text(
-          text = stringResource(R.string.branch_merge_approved_waiting),
-          style = AppTheme.typography.body2,
-          color = AppTheme.colors.textPrimary
-        )
+      } else {
         TextButton(
           onClick = onRevoke,
-          enabled = !isMergeActionPending
+          enabled = !state.mergeRequestRunning
         ) {
           Text(stringResource(R.string.branch_merge_revoke_approval))
         }
       }
-      else -> {
-        Text(
-          text = stringResource(
-            R.string.branch_merge_request_summary,
-            initiatorName?.takeIf { it.isNotBlank() } ?: mergeRequest.initiatorUid.value
-          ),
-          style = AppTheme.typography.body2,
-          color = AppTheme.colors.textPrimary
-        )
+      // Merge now: только на ReadyToMerge, доступна любому участнику.
+      if (mergeRequest.status == Branch.MergeRequest.Status.ReadyToMerge) {
         Button(
-          onClick = onApprove,
-          enabled = !isMergeActionPending
+          onClick = onFinalize,
+          enabled = !state.mergeRequestRunning
         ) {
-          Text(stringResource(R.string.branch_merge_approve_button))
+          Text(stringResource(R.string.branch_merge_finalize_button))
         }
+      }
+      // Cancel: доступна любому участнику, не зависит от инициатора.
+      TextButton(
+        onClick = onCancel,
+        enabled = !state.mergeRequestRunning
+      ) {
+        Text(stringResource(R.string.branch_merge_cancel_request))
       }
     }
   }
@@ -243,29 +276,26 @@ private fun MergeBanner(
 
 @Composable
 private fun BottomArea(
-  branchStatus: Branch.Status,
-  isSending: Boolean,
+  state: ViewState,
   onSend: (String) -> Unit
 ) {
-  when (branchStatus) {
-    Branch.Status.Active -> InputRow(
-      isSending = isSending,
+  val modifier = Modifier
+    .fillMaxWidth()
+    .navigationBarsPadding()
+  when (state.mergeRequest?.status) {
+    null -> InputRow(
+      isSending = state.isSending,
       onSend = onSend,
-      modifier = Modifier
-        .fillMaxWidth()
-        .navigationBarsPadding()
+      modifier = modifier
     )
-    Branch.Status.MergeInProgress -> LockedBanner(
+    Branch.MergeRequest.Status.Open,
+    Branch.MergeRequest.Status.ReadyToMerge -> LockedBanner(
       text = stringResource(R.string.branch_locked_merge_in_progress),
-      modifier = Modifier
-        .fillMaxWidth()
-        .navigationBarsPadding()
+      modifier = modifier
     )
-    Branch.Status.Merged -> LockedBanner(
+    Branch.MergeRequest.Status.Merged -> LockedBanner(
       text = stringResource(R.string.branch_merged_read_only),
-      modifier = Modifier
-        .fillMaxWidth()
-        .navigationBarsPadding()
+      modifier = modifier
     )
   }
 }
@@ -348,6 +378,39 @@ private fun CommitBubble(commit: Commit) {
       style = AppTheme.typography.caption2,
       modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
     )
+  }
+}
+
+@Composable
+private fun ApproversRow(approvers: List<Approver>) {
+  Column(
+    modifier = Modifier.fillMaxWidth(),
+    verticalArrangement = Arrangement.spacedBy(4.dp)
+  ) {
+    approvers.forEach { approver ->
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        Box(
+          modifier = Modifier
+            .size(ApproverDotSize)
+            .background(
+              color = if (approver.isApproved) {
+                ApproverDotApprovedColor
+              } else {
+                ApproverDotPendingColor
+              },
+              shape = CircleShape
+            )
+        )
+        Text(
+          text = approver.displayName?.takeIf { it.isNotBlank() } ?: approver.userId.value,
+          style = AppTheme.typography.body2,
+          color = AppTheme.colors.textPrimary
+        )
+      }
+    }
   }
 }
 

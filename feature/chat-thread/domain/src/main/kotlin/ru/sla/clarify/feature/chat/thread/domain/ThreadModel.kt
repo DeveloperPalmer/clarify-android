@@ -68,6 +68,23 @@ class ThreadModel @Inject constructor(
       }
   }
 
+  /**
+   * Список всех участников conversation'а ветки. Используется UI'ем чтобы
+   * отрисовать строку approver'ов с индикатором (approved / pending) — пересекая
+   * с `mergeRequest.approvedByUids`.
+   */
+  fun branchParticipants(id: Branch.Id): Flow<List<Participant>> {
+    return branchRepository.branch(id)
+      .mapDistinctChanges { it?.conversationId }
+      .flatMapLatest { conversationId ->
+        if (conversationId == null) {
+          flowOf(emptyList())
+        } else {
+          conversationRepository.participants(conversationId)
+        }
+      }
+  }
+
   val fetchHistoryCommits = task<Unit>(
     name = "fetchHistoryCommits"
   ) {
@@ -128,6 +145,12 @@ class ThreadModel @Inject constructor(
     name = "cancelMergeRequest"
   ) { branchId ->
     branchRepository.cancelMergeRequest(branchId)
+  }
+
+  val finalizeMergeRequest = task<Branch.Id, Unit>(
+    name = "finalizeMergeRequest"
+  ) { branchId ->
+    branchRepository.finalizeMergeRequest(branchId)
   }
 }
 

@@ -9,8 +9,8 @@ import java.util.Date
  * Имена коллекций и тех полей документа, к которым нужно обращаться **снаружи**
  * NM — query whereEqualTo/orderBy, dot-path update'ы и денормализационные чтения
  * через `snapshot.getString/getLong(...)`. Поля, имена которых фигурируют только
- * внутри NM (`UserNM.email`, `BranchNM.status`, ...), сюда не входят — single
- * source of truth там @Serializable property name (или @SerialName).
+ * внутри NM (`UserNM.email`, `MergeRequestNM.status`, ...), сюда не входят —
+ * single source of truth там @Serializable property name (или @SerialName).
  *
  * Sentinel-поля (`updatedAt`, `serverCreatedAt`, ...) тоже не нужны здесь как
  * константы — они живут как обычные типизированные поля внутри `*Params`
@@ -46,11 +46,14 @@ object FirestoreSchema {
   const val COMMIT_CREATED_AT = "createdAt"
   const val COMMIT_BRANCH_ID = "branchId"
 
-  // Merge-транзакции: dot-path update вложенного `mergeRequest.approvedByUids`.
-  // Точечная операция на вложенное поле — NM-payload здесь не годится, нужно
+  // Merge-транзакции: dot-path update'ы вложенных полей `mergeRequest`. Точечные
+  // операции на вложенное поле — NM-payload через codec здесь не годится, нужно
   // именно "dot-path" обращение, которое Firestore разворачивает по месту.
   const val BRANCH_MERGE_REQUEST = "mergeRequest"
+  const val BRANCH_MERGE_REQUEST_STATUS = "status"
   const val BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS = "approvedByUids"
+  const val BRANCH_MERGE_REQUEST_MERGED_AT = "mergedAt"
+  const val BRANCH_MERGE_REQUEST_MERGED_INTO_BRANCH_ID = "mergedIntoBranchId"
 }
 
 fun Timestamp.toEpochSeconds(): Long {
