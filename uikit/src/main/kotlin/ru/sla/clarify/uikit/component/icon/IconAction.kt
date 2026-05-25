@@ -1,4 +1,4 @@
-package ru.sla.clarify.uikit.component
+package ru.sla.clarify.uikit.component.icon
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton

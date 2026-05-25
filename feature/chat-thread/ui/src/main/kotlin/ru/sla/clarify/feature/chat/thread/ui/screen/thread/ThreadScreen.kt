@@ -45,7 +45,7 @@ import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.core.ui.text.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.uikit.component.IconAction
+import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
