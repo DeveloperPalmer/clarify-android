@@ -42,7 +42,7 @@ internal val LightColors = AppColors(
 )
 
 internal val DarkColors = AppColors(
-  isLight = true,
+  isLight = false,
   primary = ColorPalette.primary80,
   onPrimary = ColorPalette.primary20,
   primaryContainer = ColorPalette.primary30,

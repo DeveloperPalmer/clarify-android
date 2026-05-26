@@ -5,11 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -73,8 +76,16 @@ class MainActivity : ComponentActivity() {
     })
 
     setContent {
+      val view = LocalView.current
+      val isDarkTheme = isSystemInDarkTheme()
+      SideEffect {
+        WindowCompat.getInsetsController(window, view).run {
+          isAppearanceLightStatusBars = !isDarkTheme
+          isAppearanceLightNavigationBars = !isDarkTheme
+        }
+      }
       AppTheme(
-        currentTheme = ColorTheme.Light
+        currentTheme = if (isDarkTheme) ColorTheme.Dark else ColorTheme.Light
       ) {
         CompositionLocalProvider(
           LocalDropdownMenuAnchor provides remember { DropdownMenuAnchorState() },
