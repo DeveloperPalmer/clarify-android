@@ -2,16 +2,17 @@ package ru.sla.clarify.feature.login.ui.screen.credentials
 
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.machine
-import ru.kode.remo.JobState
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.kode.way.Back
 import ru.kode.way.Event
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.feature.login.domain.LoginModel
 import ru.sla.clarify.feature.login.ui.routing.FlowEvent
 import ru.sla.clarify.uikit.event.Snackbar
+import ru.sla.resourcerefs.resRef
 import ru.sla.resourcerefs.strRef
 import javax.inject.Inject
 
@@ -20,7 +21,7 @@ class CredentialsViewModel @Inject constructor(
   private val loginModel: LoginModel
 ) : ViewModel<ViewState, Intents>() {
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState() to null
+    initial = ViewState to null
 
     onEach(intent(Intents::navigateBack)) {
       action { _, _, _ ->
@@ -28,25 +29,25 @@ class CredentialsViewModel @Inject constructor(
       }
     }
 
-    onEach(intent(Intents::signIn)) {
+    onEach(intent(Intents::signInByEmail)) {
       action { _, _, _ ->
-        loginModel.signIn.start()
+        sendViewEvent(Snackbar(resRef(R.string.not_yet_implemented_message)))
       }
     }
 
-    onEach(loginModel.signIn.jobFlow.state) {
-      transitionTo { state, jobState ->
-        state.copy(processing = jobState == JobState.Running)
+    onEach(intent(Intents::signInByGoogle)) {
+      action { _, _, _ ->
+        loginModel.signInByGoogle.start()
       }
     }
 
-    onEach(loginModel.signIn.jobFlow.successResults()) {
+    onEach(loginModel.signInByGoogle.jobFlow.successResults()) {
       action { _, _, _ ->
         eventSink.sendEvent(FlowEvent.GoogleSignInSucceeded)
       }
     }
 
-    onEach(loginModel.signIn.jobFlow.errors()) {
+    onEach(loginModel.signInByGoogle.jobFlow.errors()) {
       action { _, _, error ->
         val message = error.message
         if (message != null) {

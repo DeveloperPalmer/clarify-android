@@ -11,8 +11,8 @@ class LoginModel @Inject constructor(
   private val authSessionRepository: AuthSessionRepository
 ) : ReactiveModel() {
 
-  val signIn = task<Unit>(name = "signIn") {
-    val result = loginRepository.signIn()
+  val signInByGoogle = task<Unit>(name = "signInByGoogle") {
+    val result = loginRepository.signInByGoogle()
     authSessionRepository.startNew(
       userId = result.userId,
       tokens = result.tokens

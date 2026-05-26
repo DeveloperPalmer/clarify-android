@@ -22,7 +22,7 @@ class LoginRepositoryImpl @Inject constructor(
   private val googleAuthenticator: GoogleAuthenticator
 ) : LoginRepository {
 
-  override suspend fun signIn(): AuthResult {
+  override suspend fun signInByGoogle(): AuthResult {
     return when (val signInResult = googleAuthenticator.auth()) {
       is SignInResult.Success -> {
         val user = signInResult.authResult

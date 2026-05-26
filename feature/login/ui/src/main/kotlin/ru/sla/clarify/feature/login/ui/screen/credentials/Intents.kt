@@ -4,5 +4,6 @@ import ru.kode.amvi.viewmodel.ViewIntents
 
 class Intents : ViewIntents() {
   val navigateBack = intent(name = "navigateBack")
-  val signIn = intent(name = "signIn")
+  val signInByEmail = intent(name = "signInByEmail")
+  val signInByGoogle = intent(name = "signInByGoogle")
 }

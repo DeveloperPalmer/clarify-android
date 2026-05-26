@@ -5,9 +5,23 @@
     <string name="error_something_went_wrong_title">Что-то пошло не так</string>
     <string name="error_server_timeout_title">@string/error_something_went_wrong_title</string>
     <string name="error_ssl_error_title">@string/error_something_went_wrong_title</string>
+    <string name="not_yet_implemented_message">Not yet implemented</string>
+
+    <!-- simple -->
+    <string name="or">или</string>
+    <string name="enter">Войти</string>
 
     <!-- Generic actions -->
     <string name="action_cancel">Cancel</string>
+
+    <!-- Google sign in -->
+    <string name="G">G</string>
+    <string name="google_sign_in">Войдите через Google</string>
+
+    <!-- Credentials screen -->
+
+    <string name="credentials_enter_description">Войдите в аккаунт Clarify, чтобы продолжить.</string>
+    <string name="credentials_enter_by_email">Войти по email</string>
 
     <!-- Conversation (chat list) screen -->
     <string name="conversation_new_chat_button">New chat</string>
