@@ -10,10 +10,11 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.login.domain.LoginRepository
 import ru.sla.clarify.feature.login.domain.LoginScope
 import ru.sla.clarify.feature.login.entity.AuthResult
+import ru.sla.clarify.feature.login.entity.GoogleAuthError
 import ru.sla.clarify.lib.google.authenticator.GoogleAuthenticator
-import ru.sla.clarify.lib.google.authenticator.SignInResult
 import ru.sla.clarify.lib.google.firestore.Firestore
 import javax.inject.Inject
+import ru.sla.clarify.lib.google.authenticator.SignInResult as GoogleSignInResult
 
 @SingleIn(LoginScope::class)
 @ContributesBinding(LoginScope::class)
@@ -24,7 +25,7 @@ class LoginRepositoryImpl @Inject constructor(
 
   override suspend fun signInByGoogle(): AuthResult {
     return when (val signInResult = googleAuthenticator.auth()) {
-      is SignInResult.Success -> {
+      is GoogleSignInResult.Success -> {
         val user = signInResult.authResult
           .user
           ?: error("FirebaseAuth returned null user after Google sign-in")
@@ -61,11 +62,11 @@ class LoginRepositoryImpl @Inject constructor(
           )
         )
       }
-      is SignInResult.Error -> {
-        throw signInResult.error
+      is GoogleSignInResult.Error -> {
+        throw GoogleAuthError.Authentication(signInResult.error)
       }
-      is SignInResult.CancelledByUser -> {
-        error("cancel by user")
+      is GoogleSignInResult.CancelledByUser -> {
+        throw GoogleAuthError.CancelledByUser(cause = null)
       }
     }
   }

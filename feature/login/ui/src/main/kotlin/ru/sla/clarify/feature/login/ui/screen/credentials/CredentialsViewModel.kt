@@ -10,6 +10,7 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.feature.login.domain.LoginModel
+import ru.sla.clarify.feature.login.entity.GoogleAuthError
 import ru.sla.clarify.feature.login.ui.routing.FlowEvent
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
@@ -49,6 +50,9 @@ class CredentialsViewModel @Inject constructor(
 
     onEach(loginModel.signInByGoogle.jobFlow.errors()) {
       action { _, _, error ->
+        if (error.cause is GoogleAuthError.CancelledByUser) {
+          return@action
+        }
         val message = error.message
         if (message != null) {
           sendViewEvent(Snackbar(message = strRef(message), isError = true))
