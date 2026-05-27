@@ -20,9 +20,8 @@ import ru.kode.amvi.component.compose.rememberViewIntents
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.uikit.component.Divider
-import ru.sla.clarify.uikit.component.button.PrimaryIconButton
+import ru.sla.clarify.uikit.component.button.PrimaryButton
 import ru.sla.clarify.uikit.component.button.SecondaryButton
-import ru.sla.clarify.uikit.component.icon.GoogleIcon
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -34,10 +33,11 @@ fun CredentialsScreen(viewModel: CredentialsViewModel) {
   MviComponent(
     viewModel = viewModel,
     intents = rememberViewIntents()
-  ) { _, intents ->
+  ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     ScreenScaffold(state = scaffoldState) {
       CredentialsContent(
+        googleInProgress = state.googleInProgress,
         onSignInByEmail = intents.signInByEmail,
         onSignInByGoogle = intents.signInByGoogle
       )
@@ -47,6 +47,7 @@ fun CredentialsScreen(viewModel: CredentialsViewModel) {
 
 @Composable
 internal fun CredentialsContent(
+  googleInProgress: Boolean,
   onSignInByEmail: () -> Unit,
   onSignInByGoogle: () -> Unit
 ) {
@@ -74,12 +75,12 @@ internal fun CredentialsContent(
       textAlign = TextAlign.Center
     )
     VSpacer(24.dp)
-    PrimaryIconButton(
+    PrimaryButton(
       modifier = Modifier
         .fillMaxWidth()
         .padding(horizontal = 24.dp),
-      trailingIcon = { GoogleIcon() },
       text = stringResource(R.string.google_sign_in),
+      showLoading = googleInProgress,
       onClick = onSignInByGoogle
     )
     VSpacer(16.dp)

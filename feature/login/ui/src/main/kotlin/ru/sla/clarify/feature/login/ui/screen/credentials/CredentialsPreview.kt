@@ -10,6 +10,7 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 private fun CredentialsScreenPreviewLight() {
   PreviewColumn(colorTheme = ColorTheme.Light) {
     CredentialsContent(
+      googleInProgress = true,
       onSignInByEmail = {},
       onSignInByGoogle = {}
     )
@@ -21,6 +22,7 @@ private fun CredentialsScreenPreviewLight() {
 private fun CredentialsScreenPreviewDark() {
   PreviewColumn(colorTheme = ColorTheme.Dark) {
     CredentialsContent(
+      googleInProgress = false,
       onSignInByEmail = {},
       onSignInByGoogle = {}
     )

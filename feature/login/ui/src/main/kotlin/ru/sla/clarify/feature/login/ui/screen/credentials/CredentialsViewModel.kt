@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.login.ui.screen.credentials
 
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.machine
+import ru.kode.remo.JobState
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.kode.way.Back
@@ -22,7 +23,7 @@ class CredentialsViewModel @Inject constructor(
   private val loginModel: LoginModel
 ) : ViewModel<ViewState, Intents>() {
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState to null
+    initial = ViewState() to null
 
     onEach(intent(Intents::navigateBack)) {
       action { _, _, _ ->
@@ -39,6 +40,12 @@ class CredentialsViewModel @Inject constructor(
     onEach(intent(Intents::signInByGoogle)) {
       action { _, _, _ ->
         loginModel.signInByGoogle.start()
+      }
+    }
+
+    onEach(loginModel.signInByGoogle.jobFlow.state) {
+      transitionTo { state, jobState ->
+        state.copy(googleInProgress = jobState == JobState.Running)
       }
     }
 

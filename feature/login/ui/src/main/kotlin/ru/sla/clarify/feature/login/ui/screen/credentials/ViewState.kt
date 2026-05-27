@@ -3,4 +3,6 @@ package ru.sla.clarify.feature.login.ui.screen.credentials
 import androidx.compose.runtime.Immutable
 
 @Immutable
-data object ViewState
+data class ViewState(
+  val googleInProgress: Boolean = false
+)
