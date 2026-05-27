@@ -16,6 +16,6 @@ digraph AppFlow {
   ]
 
   appFlow -> initialFlowResolve
-  appFlow -> loginFlow
-  appFlow -> conversationFlow
+  initialFlowResolve -> loginFlow
+  initialFlowResolve -> conversationFlow
 }

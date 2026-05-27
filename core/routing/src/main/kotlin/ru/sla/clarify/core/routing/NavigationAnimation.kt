@@ -103,5 +103,5 @@ fun AnimatedContentTransitionScope<*>.noTransition(): ContentTransform {
 
 // Aligned with Material motion durations recommended by the Navigation 3 guideline:
 // https://developer.android.com/guide/navigation/navigation-3/animate-destinations
-private const val FORWARD_DURATION_MS = 350
-private const val POP_DURATION_MS = 300
+private const val FORWARD_DURATION_MS = 200
+private const val POP_DURATION_MS = 200

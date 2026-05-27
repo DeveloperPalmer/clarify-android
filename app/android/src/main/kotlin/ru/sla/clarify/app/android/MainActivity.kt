@@ -33,6 +33,7 @@ import ru.sla.clarify.app.routing.AppFlow
 import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.routing.FlowEventMediator
 import ru.sla.clarify.core.routing.noTransition
+import ru.sla.clarify.core.routing.popTransition
 import ru.sla.clarify.core.routing.pushTransition
 import ru.sla.clarify.core.routing.rememberTransitionSpec
 import ru.sla.clarify.core.ui.event.DropdownMenuAnchorState
@@ -108,10 +109,15 @@ class MainActivity : ComponentActivity() {
                 //    initialState.node.findParentFlowNode().customTransition(from, to) != null) {
                 //    initialState.node.findParentFlowNode().customTransition(from, to)
                 //  } else { pushTransition() }
-                if (initialState?.path?.segments?.lastOrNull()?.name == "initialFlowResolve") {
-                  noTransition()
-                } else {
-                  pushTransition()
+                val fromInitialResolve = initialState?.path?.segments
+                  ?.lastOrNull()
+                  ?.name == "initialFlowResolve"
+                val toLogin = targetState?.path?.segments
+                  ?.any { it.name == "loginFlow" } == true
+                when {
+                  fromInitialResolve -> noTransition()
+                  toLogin -> popTransition()
+                  else -> pushTransition()
                 }
               }
             )
