@@ -125,7 +125,7 @@ private fun SecondaryButtonsPreviewDark(
 private fun SecondaryButtonsPreviewContent(state: SecondaryButtonPreviewState) {
   Column(
     modifier = Modifier
-      .background(AppTheme.colors.surface)
+      .background(AppTheme.colors.backgroundPrimary)
       .padding(start = 16.dp, end = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {

@@ -29,9 +29,9 @@ fun Avatar(
       .surface(
         shape = CircleShape,
         backgroundColor = if (highlighted) {
-          AppTheme.colors.error
+          AppTheme.colors.errorPrimary
         } else {
-          AppTheme.colors.onSurface
+          AppTheme.colors.contentPrimary
         }
       ),
     contentAlignment = Alignment.Center
@@ -49,7 +49,7 @@ fun Avatar(
       Text(
         text = fallbackInitial.take(1).uppercase(),
         style = AppTheme.typography.caption,
-        color = AppTheme.colors.surfaceContainer
+        color = AppTheme.colors.cardPrimary
       )
     }
   }

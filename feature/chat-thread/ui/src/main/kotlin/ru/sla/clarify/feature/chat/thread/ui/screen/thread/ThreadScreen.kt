@@ -251,7 +251,7 @@ private fun CommitMessageBubble(
       Text(
         text = commit.text,
         style = AppTheme.typography.body1,
-        color = AppTheme.colors.onSurface
+        color = AppTheme.colors.contentPrimary
       )
     }
     val date = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE)
@@ -261,7 +261,7 @@ private fun CommitMessageBubble(
         Commit.Status.Failed -> stringResource(R.string.thread_commit_status_failed, date)
         Commit.Status.Sent -> date
       },
-      color = AppTheme.colors.onSurface,
+      color = AppTheme.colors.contentPrimary,
       style = AppTheme.typography.caption,
       modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
     )

@@ -53,7 +53,7 @@ internal fun CredentialsContent(
   Column(
     modifier = Modifier
       .fillMaxSize()
-      .background(AppTheme.colors.surface)
+      .background(AppTheme.colors.backgroundPrimary)
       .systemBarsPadding()
       .displayCutoutPadding(),
     horizontalAlignment = Alignment.CenterHorizontally
@@ -62,14 +62,14 @@ internal fun CredentialsContent(
     Text(
       modifier = Modifier.padding(horizontal = 24.dp),
       text = stringResource(R.string.enter),
-      color = AppTheme.colors.onSurface,
+      color = AppTheme.colors.contentPrimary,
       style = AppTheme.typography.display3
     )
     VSpacer(12.dp)
     Text(
       modifier = Modifier.padding(horizontal = 48.dp),
       text = stringResource(R.string.credentials_enter_description),
-      color = AppTheme.colors.onSurfaceVariant,
+      color = AppTheme.colors.contentSecondary,
       style = AppTheme.typography.body1,
       textAlign = TextAlign.Center
     )
@@ -110,7 +110,7 @@ private fun OptionsSeparator(modifier: Modifier = Modifier) {
     HSpacer(16.dp)
     Text(
       text = stringResource(R.string.or),
-      color = AppTheme.colors.onSurfaceVariant,
+      color = AppTheme.colors.contentSecondary,
       style = AppTheme.typography.body3
     )
     HSpacer(16.dp)

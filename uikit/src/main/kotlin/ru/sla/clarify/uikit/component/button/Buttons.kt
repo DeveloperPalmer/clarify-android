@@ -70,7 +70,7 @@ internal fun OutlinedButtonInternal(
   OutlinedButton(
     modifier = modifier.heightIn(size.toDp()),
     enabled = enabled,
-    border = BorderStroke(Dp.Hairline, AppTheme.colors.outline),
+    border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
     colors = colors,
     elevation = elevation,
     shape = AppTheme.shapes.round16,
@@ -129,7 +129,7 @@ internal fun OutlinedIconButtonInternal(
 ) {
   OutlinedButton(
     modifier = modifier.heightIn(min = size.toDp()),
-    border = BorderStroke(Dp.Hairline, AppTheme.colors.outline),
+    border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
     enabled = enabled,
     colors = colors,
     elevation = elevation,
@@ -160,7 +160,7 @@ internal fun IconRightSideOutlinedButtonInternal(
 ) {
   OutlinedButton(
     modifier = modifier.heightIn(size.toDp()),
-    border = BorderStroke(Dp.Hairline, AppTheme.colors.outline),
+    border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
     enabled = enabled,
     colors = colors,
     elevation = elevation,
@@ -217,20 +217,20 @@ internal object ButtonDefaultsInternal {
   @Composable
   fun primaryButtonColors(): ButtonColors {
     return ButtonColors(
-      containerColor = AppTheme.colors.primary,
-      contentColor = AppTheme.colors.onPrimary,
-      disabledContainerColor = AppTheme.colors.primary,
-      disabledContentColor = AppTheme.colors.onPrimary
+      containerColor = AppTheme.colors.buttonPrimaryBg,
+      contentColor = AppTheme.colors.buttonPrimaryContent,
+      disabledContainerColor = AppTheme.colors.buttonPrimaryBgDisabled,
+      disabledContentColor = AppTheme.colors.buttonPrimaryContentDisabled
     )
   }
 
   @Composable
   fun secondaryButtonColors(): ButtonColors {
     return ButtonColors(
-      containerColor = AppTheme.colors.surface,
-      contentColor = AppTheme.colors.primary,
-      disabledContainerColor = AppTheme.colors.surface,
-      disabledContentColor = AppTheme.colors.primary
+      containerColor = AppTheme.colors.buttonSecondaryBg,
+      contentColor = AppTheme.colors.buttonSecondaryContent,
+      disabledContainerColor = AppTheme.colors.buttonSecondaryBgDisabled,
+      disabledContentColor = AppTheme.colors.buttonSecondaryContentDisabled
     )
   }
 

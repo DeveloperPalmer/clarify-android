@@ -25,15 +25,15 @@ fun GoogleIcon(modifier: Modifier = Modifier) {
       .size(24.dp)
       .surface(
         shape = CircleShape,
-        border = BorderStroke(Dp.Hairline, AppTheme.colors.outlineVariant),
-        backgroundColor = AppTheme.colors.onPrimary
+        border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
+        backgroundColor = AppTheme.colors.cardPrimary
       )
       .padding(4.dp),
     contentAlignment = Alignment.Center
   ) {
     Text(
       text = stringResource(R.string.G),
-      color = AppTheme.colors.onSurface,
+      color = AppTheme.colors.contentPrimary,
       style = AppTheme.typography.title3
     )
   }

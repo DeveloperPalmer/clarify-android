@@ -187,7 +187,7 @@ private fun SecondaryIconButtonsPreviewContent(state: SecondaryIconButtonPreview
   val icon = painterResource(R.drawable.ic_back_24)
   Column(
     modifier = Modifier
-      .background(AppTheme.colors.surface)
+      .background(AppTheme.colors.backgroundPrimary)
       .padding(start = 16.dp, end = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {

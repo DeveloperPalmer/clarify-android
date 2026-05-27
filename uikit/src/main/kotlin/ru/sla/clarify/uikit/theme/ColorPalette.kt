@@ -13,59 +13,49 @@ import androidx.compose.ui.graphics.Color
 //
 // IMPORTANT: Do not ever make this "public"! See ^^^
 internal object ColorPalette {
-  val white = Color(0xFFFFFFFF)
+  // region Палитра (gray / purple / red / green / cyan / gold)
 
-  // Primary tones
-  val primary10 = Color(0xFF00210B)
-  val primary20 = Color(0xFF00390F)
-  val primary30 = Color(0xFF00531E)
-  val primary40 = Color(0xFF1F6B3A)
-  val primary80 = Color(0xFF8BD99F)
-  val primary90 = Color(0xFFA6F2B7)
+  val gray0 = Color(0xFFFFFFFF)
+  val gray100 = Color(0xFFF5F5F5)
+  val gray115 = Color(0xFFEDEDED)
+  val gray130 = Color(0xFFE7E7E7)
+  val gray150 = Color(0xFFC7C7C7)
+  val gray200 = Color(0xFFB2B2B2)
+  val gray250 = Color(0xFF747478)
+  val gray300 = Color(0xFF565860)
+  val gray350 = Color(0xFF4A4E5D)
+  val gray400 = Color(0xFF62646A)
+  val gray450 = Color(0xFF404040)
+  val gray500 = Color(0xFF2C2C2C)
+  val gray550 = Color(0xFF1D1D1D)
+  val gray600 = Color(0xFF1D1E21)
+  val gray700 = Color(0xFF171825)
+  val gray800 = Color(0xFF1C1E24)
+  val gray900 = Color(0xFF141414)
+  val gray1000 = Color(0xFF000000)
 
-  // Secondary tones
-  val secondary10 = Color(0xFF101F10)
-  val secondary20 = Color(0xFF243524)
-  val secondary30 = Color(0xFF3A4B39)
-  val secondary40 = Color(0xFF52634F)
-  val secondary80 = Color(0xFFB9CCB4)
-  val secondary90 = Color(0xFFD5E8CF)
+  val purple0 = Color(0xFFECDCFB)
+  val purple100 = Color(0xFF9B3AFC)
+  val purple150 = Color(0xFF9730FE)
+  val purple200 = Color(0xFF9326FF)
+  val purple300 = Color(0xFF9934FE)
+  val purple400 = Color(0xFF8000FF)
+  val purple500 = Color(0xFF7520FF)
+  val purple900 = Color(0xFF2D2634)
 
-  // Tertiary tones
-  val tertiary10 = Color(0xFF001F22)
-  val tertiary20 = Color(0xFF003739)
-  val tertiary30 = Color(0xFF1F4D51)
-  val tertiary40 = Color(0xFF38656A)
-  val tertiary80 = Color(0xFFA0CFD4)
-  val tertiary90 = Color(0xFFBBEBF0)
+  val red0 = Color(0xFFFFF0F0)
+  val red100 = Color(0xFFFF3939)
+  val red200 = Color(0xFFD21515)
+  val red900 = Color(0xFF3A1B1B)
 
-  // Error tones
-  val error10 = Color(0xFF410002)
-  val error20 = Color(0xFF690005)
-  val error40 = Color(0xFFBA1A1A)
-  val error30 = Color(0xFF93000A)
-  val error80 = Color(0xFFFFB4AB)
-  val error90 = Color(0xFFFFDAD6)
+  val green0 = Color(0xFFCCEBD5)
+  val green100 = Color(0xFF5EC97C)
+  val green200 = Color(0xFF008224)
+  val green900 = Color(0xFF116729)
 
-  // Neutral tones
-  val neutral5 = Color(0xFF0B0F0B)
-  val neutral10 = Color(0xFF101410)
-  val neutral15 = Color(0xFF181D17)
-  val neutral20 = Color(0xFF1C211B)
-  val neutral25 = Color(0xFF262B25)
-  val neutral30 = Color(0xFF313630)
-  val neutral35 = Color(0xFF363A35)
-  val neutral70 = Color(0xFFF7FBF2)
-  val neutral80 = Color(0xFFF1F5EC)
-  val neutral85 = Color(0xFFD8DBD2)
-  val neutral90 = Color(0xFFE0E4DC)
-  val neutral95 = Color(0xFFE6E9E1)
-  val neutral99 = Color(0xFFECEFE7)
+  val cyan200 = Color(0xFF05C2CE)
 
-  // Neutral variant
-  val neutralVariant30 = Color(0xFF424940)
-  val neutralVariant50 = Color(0xFF727970)
-  val neutralVariant60 = Color(0xFF8C928A)
-  val neutralVariant80 = Color(0xFFC2C9BB)
-  val neutralVariant90 = Color(0xFFDEE5D7)
+  val gold200 = Color(0xFFDFA616)
+
+  // endregion
 }

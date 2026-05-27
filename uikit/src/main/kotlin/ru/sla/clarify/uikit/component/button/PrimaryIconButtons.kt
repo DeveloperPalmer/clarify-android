@@ -178,7 +178,7 @@ private fun PrimaryIconButtonsPreviewDark(
 private fun PrimaryIconButtonsPreviewContent(state: PrimaryIconButtonPreviewState) {
   Column(
     modifier = Modifier
-      .background(AppTheme.colors.surface)
+      .background(AppTheme.colors.backgroundPrimary)
       .padding(start = 16.dp, end = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {

@@ -19,7 +19,7 @@ import ru.sla.clarify.uikit.theme.VSpacer
 @Composable
 fun Divider(
   modifier: Modifier = Modifier,
-  color: Color = AppTheme.colors.surfaceVariant
+  color: Color = AppTheme.colors.cardSecondary
 ) {
   Box(
     modifier = modifier
@@ -49,7 +49,7 @@ private fun DividerPreviewDark() {
 private fun DividerPreview() {
   Column(
     modifier = Modifier
-      .background(AppTheme.colors.surface)
+      .background(AppTheme.colors.backgroundPrimary)
   ) {
     VSpacer(24.dp)
     Divider(

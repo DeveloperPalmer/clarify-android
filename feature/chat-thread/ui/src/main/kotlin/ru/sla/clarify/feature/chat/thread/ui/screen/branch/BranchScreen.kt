@@ -190,7 +190,7 @@ private fun MergeStatusLabel(
     Text(
       text = text,
       style = AppTheme.typography.body2,
-      color = AppTheme.colors.onSurface
+      color = AppTheme.colors.contentPrimary
     )
     if (showProgress) {
       CircularProgressIndicator(
@@ -221,13 +221,13 @@ private fun MergeBanner(
         state.initiatorName?.takeIf { it.isNotBlank() } ?: mergeRequest.initiatorUid.value
       ),
       style = AppTheme.typography.body2,
-      color = AppTheme.colors.onSurface
+      color = AppTheme.colors.contentPrimary
     )
     if (state.isCurrentUserApproved) {
       Text(
         text = stringResource(R.string.branch_merge_approved_waiting),
         style = AppTheme.typography.body2,
-        color = AppTheme.colors.onSurface
+        color = AppTheme.colors.contentPrimary
       )
     }
     if (state.approvers.isNotEmpty()) {
@@ -364,7 +364,7 @@ private fun CommitBubble(commit: Commit) {
       Text(
         text = commit.text,
         style = AppTheme.typography.body1,
-        color = AppTheme.colors.onSurface
+        color = AppTheme.colors.contentPrimary
       )
     }
     val date = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE)
@@ -374,7 +374,7 @@ private fun CommitBubble(commit: Commit) {
         Commit.Status.Failed -> stringResource(R.string.thread_commit_status_failed, date)
         Commit.Status.Sent -> date
       },
-      color = AppTheme.colors.onSurface,
+      color = AppTheme.colors.contentPrimary,
       style = AppTheme.typography.caption,
       modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
     )
@@ -407,7 +407,7 @@ private fun ApproversRow(approvers: List<Approver>) {
         Text(
           text = approver.displayName?.takeIf { it.isNotBlank() } ?: approver.userId.value,
           style = AppTheme.typography.body2,
-          color = AppTheme.colors.onSurface
+          color = AppTheme.colors.contentPrimary
         )
       }
     }
@@ -426,7 +426,7 @@ private fun LockedBanner(
     Text(
       text = text,
       style = AppTheme.typography.body2,
-      color = AppTheme.colors.onSurface
+      color = AppTheme.colors.contentPrimary
     )
   }
 }
