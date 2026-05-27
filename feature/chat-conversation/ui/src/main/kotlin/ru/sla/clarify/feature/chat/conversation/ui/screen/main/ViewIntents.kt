@@ -12,6 +12,5 @@ class ViewIntents : BaseViewIntents() {
   val handleConversationLongPress = intent<Conversation.Id>(name = "handleConversationLongPress")
   val showDeleteConfirmation = intent(name = "showDeleteConfirmation")
   val confirmDeleteConversation = intent(name = "confirmDeleteConversation")
-  val openSettings = intent(name = "openSettings")
   val openProfile = intent(name = "openProfile")
 }

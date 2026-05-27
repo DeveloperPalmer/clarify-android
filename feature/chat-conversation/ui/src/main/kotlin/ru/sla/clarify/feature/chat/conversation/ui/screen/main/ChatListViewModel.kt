@@ -106,12 +106,6 @@ class ChatListViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureDeleteConversationTransitions() {
-    onEach(intent(ViewIntents::openSettings)) {
-      action { _, _, _ ->
-        sendViewEvent(showConversationOptions())
-      }
-    }
-
     onEach(intent(ViewIntents::handleConversationLongPress)) {
       transitionTo { state, conversationId ->
         val updated = if (state.selectedConversationIds.contains(conversationId)) {

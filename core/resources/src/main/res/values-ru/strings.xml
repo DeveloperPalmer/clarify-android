@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_refresh">Обновить</string>
+
+    <string name="error_something_went_wrong_title">Что-то пошло не так</string>
+    <string name="error_server_timeout_title">@string/error_something_went_wrong_title</string>
+    <string name="error_ssl_error_title">@string/error_something_went_wrong_title</string>
+    <string name="not_yet_implemented_message">Ещё не реализовано</string>
+
+    <!-- simple -->
+    <string name="or">или</string>
+    <string name="enter">Войти</string>
+    <string name="delete">Удалить</string>
+
+    <!-- Generic actions -->
+    <string name="action_cancel">Отмена</string>
+
+    <!-- Google sign in -->
+    <string name="google_sign_in">Войдите через Google</string>
+
+    <!-- Credentials screen -->
+
+    <string name="credentials_enter_description">Войдите в аккаунт Clarify, чтобы продолжить.</string>
+    <string name="credentials_enter_by_email">Войти по email</string>
+
+    <!-- Conversation (chat list) screen -->
+    <string name="conversation_new_chat_button">Новый чат</string>
+    <string name="conversation_header_title">Чаты</string>
+    <string name="conversation_edit_selected_count">Выбрано %1$d</string>
+
+    <!-- Profile screen -->
+    <string name="profile_logout_button">Выйти</string>
+    <string name="conversation_empty_title">Здесь появятся ваши чаты</string>
+    <string name="conversation_empty_subtitle">Создайте первый, чтобы начать общение с командой или друзьями.</string>
+    <string name="conversation_no_messages_preview">(сообщений пока нет)</string>
+
+    <!-- Conversation: new chat dialog -->
+    <string name="conversation_new_chat_dialog_title">Новый чат</string>
+    <string name="conversation_new_chat_dialog_text">Введите email пользователя, с которым хотите начать чат:</string>
+    <string name="conversation_new_chat_dialog_start">Начать</string>
+    <string name="conversation_new_chat_error_user_not_found">Пользователь с таким email не найден</string>
+    <string name="conversation_new_chat_error_lookup_failed">Не удалось найти пользователя, попробуйте снова</string>
+
+    <!-- Conversation: delete dialog -->
+    <string name="conversation_delete_dialog_title">Удалить чат</string>
+    <string name="conversation_delete_dialog_text">Вы уверены, что хотите удалить выбранные чаты? Это действие нельзя отменить.</string>
+    <string name="conversation_delete_dialog_primary">Удалить</string>
+
+    <!-- Shared chat input -->
+    <string name="chat_input_placeholder">Сообщение</string>
+    <string name="chat_input_send_button">Отправить</string>
+
+    <!-- Thread screen -->
+    <string name="thread_branches_count">Ветки (%1$d)</string>
+    <string name="thread_empty_state">Поздоровайтесь!</string>
+    <string name="thread_create_branch_sheet_title">Создать ветку из этого коммита</string>
+    <string name="thread_create_branch_sheet_name_placeholder">Название ветки</string>
+    <string name="thread_create_branch_sheet_create_button">Создать</string>
+    <string name="thread_branches_list_sheet_title">Ветки</string>
+    <string name="thread_branches_list_sheet_empty">Веток пока нет. Зажмите сообщение, чтобы создать ветку.</string>
+    <string name="thread_branch_creation_failed">Не удалось создать ветку</string>
+    <string name="thread_commit_status_sending">%1$s • отправляется</string>
+    <string name="thread_commit_status_failed">%1$s • ошибка</string>
+
+    <!-- Branch screen -->
+    <string name="branch_default_name">Ветка</string>
+    <string name="branch_empty_state">Начните ветку</string>
+    <string name="branch_open_mr_button">Открыть MR</string>
+    <string name="branch_merge_in_progress">Идёт merge request…</string>
+    <string name="branch_merge_ready">Готово к мерджу</string>
+    <string name="branch_merge_finalize_button">Смерджить</string>
+    <string name="branch_merge_cancel_request">Отменить merge request</string>
+    <string name="branch_merge_approved_waiting">Вы одобрили. Ждём остальных участников.</string>
+    <string name="branch_merge_revoke_approval">Отозвать одобрение</string>
+    <string name="branch_merge_request_summary">%1$s открыл merge request для этой ветки.</string>
+    <string name="branch_merge_approve_button">Одобрить мердж</string>
+    <string name="branch_locked_merge_in_progress">Ветка заблокирована, пока открыт merge request</string>
+    <string name="branch_merged_read_only">Эта ветка смерджена (только чтение)</string>
+    <string name="branch_merge_request_failed">Не удалось открыть merge request</string>
+    <string name="branch_merge_approve_failed">Не удалось одобрить мердж</string>
+    <string name="branch_merge_revoke_failed">Не удалось отозвать одобрение</string>
+    <string name="branch_merge_cancel_failed">Не удалось отменить merge request</string>
+    <string name="branch_merge_finalize_failed">Не удалось завершить мердж</string>
+</resources>

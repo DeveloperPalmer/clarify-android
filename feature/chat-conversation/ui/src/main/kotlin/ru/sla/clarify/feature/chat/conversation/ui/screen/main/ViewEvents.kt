@@ -25,7 +25,6 @@ import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
 import ru.sla.clarify.uikit.event.Dialog
-import ru.sla.clarify.uikit.event.DropdownMenu
 import ru.sla.resourcerefs.resRef
 
 internal fun showDeleteConversationDialog() = ScreenViewEvent<ViewIntents> { intents ->
@@ -36,20 +35,6 @@ internal fun showDeleteConversationDialog() = ScreenViewEvent<ViewIntents> { int
     secondaryActionTitle = resRef(R.string.action_cancel),
     primaryAction = intents.confirmDeleteConversation,
     secondaryAction = { }
-  )
-}
-
-internal fun showConversationOptions() = ScreenViewEvent<ViewIntents> { intents ->
-  val items = listOf(
-    ViewEvent.DropdownMenu.Item(
-      title = resRef(R.string.conversation_dropdown_delete_chat),
-      isDestructive = true,
-      onClick = intents.showDeleteConfirmation
-    )
-  )
-  DropdownMenu(
-    items = items,
-    onDismissRequest = { }
   )
 }
 

@@ -1,44 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="action_refresh">Обновить</string>
+    <string name="action_refresh">Refresh</string>
 
-    <string name="error_something_went_wrong_title">Что-то пошло не так</string>
+    <string name="error_something_went_wrong_title">Something went wrong</string>
     <string name="error_server_timeout_title">@string/error_something_went_wrong_title</string>
     <string name="error_ssl_error_title">@string/error_something_went_wrong_title</string>
     <string name="not_yet_implemented_message">Not yet implemented</string>
 
     <!-- simple -->
-    <string name="or">или</string>
-    <string name="enter">Войти</string>
+    <string name="or">or</string>
+    <string name="enter">Sign in</string>
+    <string name="delete">Delete</string>
 
     <!-- Generic actions -->
     <string name="action_cancel">Cancel</string>
 
     <!-- Google sign in -->
-    <string name="G">G</string>
-    <string name="google_sign_in">Войдите через Google</string>
+    <string name="G" translatable="false">G</string>
+    <string name="google_sign_in">Sign in with Google</string>
 
     <!-- Credentials screen -->
 
-    <string name="credentials_enter_description">Войдите в аккаунт Clarify, чтобы продолжить.</string>
-    <string name="credentials_enter_by_email">Войти по email</string>
+    <string name="credentials_enter_description">Sign in to your Clarify account to continue.</string>
+    <string name="credentials_enter_by_email">Sign in with email</string>
 
     <!-- Conversation (chat list) screen -->
     <string name="conversation_new_chat_button">New chat</string>
-    <string name="conversation_header_email_label">Your email</string>
-    <string name="conversation_header_not_signed_in">(not signed in)</string>
-    <string name="conversation_header_settings_button">Settings</string>
-    <string name="conversation_header_copy_button">Copy</string>
+    <string name="conversation_header_title">Chats</string>
+    <string name="conversation_edit_selected_count">Selected %1$d</string>
 
     <!-- Profile screen -->
     <string name="profile_logout_button">Log out</string>
-    <string name="conversation_empty_state">No conversations yet. Tap \"New chat\" to start one.</string>
+    <string name="conversation_empty_title">Your chats will appear here</string>
+    <string name="conversation_empty_subtitle">Create your first one to start chatting with your team or friends.</string>
     <string name="conversation_no_messages_preview">(no messages yet)</string>
 
     <!-- Conversation: new chat dialog -->
     <string name="conversation_new_chat_dialog_title">New chat</string>
     <string name="conversation_new_chat_dialog_text">Enter the email of the person you want to chat with:</string>
-    <string name="conversation_new_chat_dialog_email_placeholder">name@example.com</string>
+    <string name="conversation_new_chat_dialog_email_placeholder" translatable="false">name@example.com</string>
     <string name="conversation_new_chat_dialog_start">Start</string>
     <string name="conversation_new_chat_error_user_not_found">No user with this email</string>
     <string name="conversation_new_chat_error_lookup_failed">Could not look up user, try again</string>
@@ -48,8 +48,6 @@
     <string name="conversation_delete_dialog_text">Are you sure you want to delete the conversations. This action cannot be undone.</string>
     <string name="conversation_delete_dialog_primary">Delete</string>
 
-    <!-- Conversation: dropdown menu -->
-    <string name="conversation_dropdown_delete_chat">Delete chat</string>
 
     <!-- Shared chat input -->
     <string name="chat_input_placeholder">Message</string>
