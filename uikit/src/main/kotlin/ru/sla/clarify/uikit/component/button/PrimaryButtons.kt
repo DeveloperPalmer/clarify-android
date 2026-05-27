@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -21,7 +20,6 @@ fun PrimaryButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  elevated: Boolean = false,
   showLoading: Boolean = false
 ) {
   ButtonInternal(
@@ -31,12 +29,7 @@ fun PrimaryButton(
     showLoading = showLoading,
     enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaultsInternal.primaryButtonColors(),
-    elevation = if (elevated) {
-      ButtonDefaultsInternal.elevation()
-    } else {
-      ButtonDefaultsInternal.defaultElevation()
-    }
+    colors = ButtonDefaults.primaryButtonColors()
   )
 }
 
@@ -46,7 +39,6 @@ fun PrimaryButtonLarge(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  elevated: Boolean = false,
   showLoading: Boolean = false
 ) {
   ButtonInternal(
@@ -56,54 +48,15 @@ fun PrimaryButtonLarge(
     showLoading = showLoading,
     enabled = enabled,
     size = ButtonSize.Large,
-    colors = ButtonDefaultsInternal.primaryButtonColors(),
-    elevation = if (elevated) {
-      ButtonDefaultsInternal.elevation()
-    } else {
-      ButtonDefaultsInternal.defaultElevation()
-    }
-  )
-}
-
-// region Previews
-
-/** Состояние кнопки для превью: loading + enabled. */
-private data class PrimaryButtonPreviewState(
-  val label: String,
-  val showLoading: Boolean,
-  val enabled: Boolean
-)
-
-private class PrimaryButtonPreviewStateProvider : PreviewParameterProvider<PrimaryButtonPreviewState> {
-  override val values = sequenceOf(
-    PrimaryButtonPreviewState(
-      label = "default",
-      enabled = true,
-      showLoading = false
-    ),
-    PrimaryButtonPreviewState(
-      label = "loading",
-      enabled = true,
-      showLoading = true
-    ),
-    PrimaryButtonPreviewState(
-      label = "disabled",
-      enabled = false,
-      showLoading = false
-    ),
-    PrimaryButtonPreviewState(
-      label = "loading + disabled",
-      enabled = false,
-      showLoading = true
-    )
+    colors = ButtonDefaults.primaryButtonColors()
   )
 }
 
 @Preview(name = "Light", showBackground = true, widthDp = 360)
 @Composable
 private fun PrimaryButtonsPreviewLight(
-  @PreviewParameter(PrimaryButtonPreviewStateProvider::class)
-  state: PrimaryButtonPreviewState
+  @PreviewParameter(ButtonPreviewStateProvider::class)
+  state: ButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Light) {
     PrimaryButtonsPreviewContent(state)
@@ -113,8 +66,8 @@ private fun PrimaryButtonsPreviewLight(
 @Preview(name = "Dark", showBackground = true, widthDp = 360)
 @Composable
 private fun PrimaryButtonsPreviewDark(
-  @PreviewParameter(PrimaryButtonPreviewStateProvider::class)
-  state: PrimaryButtonPreviewState
+  @PreviewParameter(ButtonPreviewStateProvider::class)
+  state: ButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Dark) {
     PrimaryButtonsPreviewContent(state)
@@ -122,7 +75,7 @@ private fun PrimaryButtonsPreviewDark(
 }
 
 @Composable
-private fun PrimaryButtonsPreviewContent(state: PrimaryButtonPreviewState) {
+private fun PrimaryButtonsPreviewContent(state: ButtonPreviewState) {
   Column(
     modifier = Modifier
       .background(AppTheme.colors.backgroundPrimary)
@@ -148,5 +101,3 @@ private fun PrimaryButtonsPreviewContent(state: PrimaryButtonPreviewState) {
     VSpacer(8.dp)
   }
 }
-
-// endregion

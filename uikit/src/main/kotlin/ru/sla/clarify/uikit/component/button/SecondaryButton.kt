@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -21,7 +20,6 @@ fun SecondaryButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  elevated: Boolean = false,
   showLoading: Boolean = false
 ) {
   OutlinedButtonInternal(
@@ -31,12 +29,7 @@ fun SecondaryButton(
     showLoading = showLoading,
     enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaultsInternal.secondaryButtonColors(),
-    elevation = if (elevated) {
-      ButtonDefaultsInternal.elevation()
-    } else {
-      ButtonDefaultsInternal.defaultElevation()
-    }
+    colors = ButtonDefaults.secondaryButtonColors()
   )
 }
 
@@ -46,7 +39,6 @@ fun SecondaryButtonLarge(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  elevated: Boolean = false,
   showLoading: Boolean = false
 ) {
   OutlinedButtonInternal(
@@ -56,54 +48,15 @@ fun SecondaryButtonLarge(
     showLoading = showLoading,
     enabled = enabled,
     size = ButtonSize.Large,
-    colors = ButtonDefaultsInternal.secondaryButtonColors(),
-    elevation = if (elevated) {
-      ButtonDefaultsInternal.elevation()
-    } else {
-      ButtonDefaultsInternal.defaultElevation()
-    }
-  )
-}
-
-// region Previews
-
-/** Состояние кнопки для превью: loading + enabled. */
-private data class SecondaryButtonPreviewState(
-  val label: String,
-  val showLoading: Boolean,
-  val enabled: Boolean
-)
-
-private class SecondaryButtonPreviewStateProvider : PreviewParameterProvider<SecondaryButtonPreviewState> {
-  override val values = sequenceOf(
-    SecondaryButtonPreviewState(
-      label = "default",
-      enabled = true,
-      showLoading = false
-    ),
-    SecondaryButtonPreviewState(
-      label = "loading",
-      enabled = true,
-      showLoading = true
-    ),
-    SecondaryButtonPreviewState(
-      label = "disabled",
-      enabled = false,
-      showLoading = false
-    ),
-    SecondaryButtonPreviewState(
-      label = "loading + disabled",
-      enabled = false,
-      showLoading = true
-    )
+    colors = ButtonDefaults.secondaryButtonColors()
   )
 }
 
 @Preview
 @Composable
 private fun SecondaryButtonsPreviewLight(
-  @PreviewParameter(SecondaryButtonPreviewStateProvider::class)
-  state: SecondaryButtonPreviewState
+  @PreviewParameter(ButtonPreviewStateProvider::class)
+  state: ButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Light) {
     SecondaryButtonsPreviewContent(state)
@@ -113,8 +66,8 @@ private fun SecondaryButtonsPreviewLight(
 @Preview
 @Composable
 private fun SecondaryButtonsPreviewDark(
-  @PreviewParameter(SecondaryButtonPreviewStateProvider::class)
-  state: SecondaryButtonPreviewState
+  @PreviewParameter(ButtonPreviewStateProvider::class)
+  state: ButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Dark) {
     SecondaryButtonsPreviewContent(state)
@@ -122,7 +75,7 @@ private fun SecondaryButtonsPreviewDark(
 }
 
 @Composable
-private fun SecondaryButtonsPreviewContent(state: SecondaryButtonPreviewState) {
+private fun SecondaryButtonsPreviewContent(state: ButtonPreviewState) {
   Column(
     modifier = Modifier
       .background(AppTheme.colors.backgroundPrimary)
@@ -148,5 +101,3 @@ private fun SecondaryButtonsPreviewContent(state: SecondaryButtonPreviewState) {
     VSpacer(8.dp)
   }
 }
-
-// endregion

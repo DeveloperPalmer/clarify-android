@@ -1,15 +1,19 @@
 package ru.sla.clarify.uikit.component.button
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -18,14 +22,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.theme.AppTheme
-import ru.sla.clarify.uikit.theme.HSpacer
+import androidx.compose.material3.ButtonDefaults as ButtonDefaultsInternal
 
 @Composable
 internal fun ButtonInternal(
@@ -35,23 +40,24 @@ internal fun ButtonInternal(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false,
-  elevation: ButtonElevation = ButtonDefaultsInternal.defaultElevation()
+  showLoading: Boolean = false
 ) {
   Button(
-    modifier = modifier.heightIn(size.toDp()),
+    modifier = modifier.heightIn(size.height()),
     enabled = enabled,
     colors = colors,
-    elevation = elevation,
+    elevation = null,
     shape = AppTheme.shapes.round16,
     contentPadding = PaddingValues(16.dp),
     onClick = { if (!showLoading) onClick() }
   ) {
     ButtonContent(
+      iconRes = null,
       text = text,
-      colors = colors,
       enabled = enabled,
-      showLoading = showLoading
+      showLoading = showLoading,
+      size = size,
+      colors = colors
     )
   }
 }
@@ -64,159 +70,162 @@ internal fun OutlinedButtonInternal(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false,
-  elevation: ButtonElevation = ButtonDefaultsInternal.defaultElevation()
+  showLoading: Boolean = false
 ) {
   OutlinedButton(
-    modifier = modifier.heightIn(size.toDp()),
+    modifier = modifier.heightIn(size.height()),
     enabled = enabled,
     border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
     colors = colors,
-    elevation = elevation,
+    elevation = null,
     shape = AppTheme.shapes.round16,
     contentPadding = PaddingValues(16.dp),
     onClick = { if (!showLoading) onClick() }
   ) {
     ButtonContent(
+      iconRes = null,
       text = text,
-      colors = colors,
       enabled = enabled,
-      showLoading = showLoading
+      showLoading = showLoading,
+      size = size,
+      colors = colors
     )
   }
 }
 
 @Composable
 internal fun IconButtonInternal(
+  @DrawableRes
+  iconRes: Int?,
   text: String,
   size: ButtonSize,
   colors: ButtonColors,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  elevation: ButtonElevation = ButtonDefaultsInternal.defaultElevation(),
-  icon: @Composable () -> Unit
+  showLoading: Boolean = false
 ) {
   Button(
-    modifier = modifier.heightIn(min = size.toDp()),
+    modifier = modifier.heightIn(min = size.height()),
     enabled = enabled,
     colors = colors,
-    elevation = elevation,
+    elevation = null,
     shape = AppTheme.shapes.round16,
     contentPadding = PaddingValues(16.dp),
-    onClick = onClick
+    onClick = { if (!showLoading) onClick() }
   ) {
-    icon()
-    HSpacer(16.dp)
-    Text(
+    ButtonContent(
+      iconRes = iconRes,
       text = text,
-      style = AppTheme.typography.title3,
-      textAlign = TextAlign.Center
+      enabled = enabled,
+      showLoading = showLoading,
+      size = size,
+      colors = colors
     )
   }
 }
 
 @Composable
 internal fun OutlinedIconButtonInternal(
+  @DrawableRes
+  iconRes: Int?,
   text: String,
   size: ButtonSize,
   colors: ButtonColors,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  elevation: ButtonElevation = ButtonDefaultsInternal.defaultElevation(),
-  icon: @Composable () -> Unit
+  showLoading: Boolean = false
 ) {
   OutlinedButton(
-    modifier = modifier.heightIn(min = size.toDp()),
+    modifier = modifier.heightIn(min = size.height()),
     border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
     enabled = enabled,
     colors = colors,
-    elevation = elevation,
+    elevation = null,
     shape = AppTheme.shapes.round16,
     contentPadding = PaddingValues(16.dp),
-    onClick = onClick
+    onClick = { if (!showLoading) onClick() }
   ) {
-    icon()
-    HSpacer(16.dp)
-    Text(
+    ButtonContent(
+      iconRes = iconRes,
       text = text,
-      style = AppTheme.typography.title3,
-      textAlign = TextAlign.Center
+      enabled = enabled,
+      showLoading = showLoading,
+      size = size,
+      colors = colors
     )
   }
 }
 
 @Composable
-internal fun IconRightSideOutlinedButtonInternal(
-  icon: Painter,
+private fun ButtonContent(
+  @DrawableRes
+  iconRes: Int?,
   text: String,
   size: ButtonSize,
-  colors: ButtonColors,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
-  enabled: Boolean = true,
-  elevation: ButtonElevation = ButtonDefaultsInternal.defaultElevation()
-) {
-  OutlinedButton(
-    modifier = modifier.heightIn(size.toDp()),
-    border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
-    enabled = enabled,
-    colors = colors,
-    elevation = elevation,
-    shape = AppTheme.shapes.round16,
-    contentPadding = PaddingValues(16.dp),
-    onClick = onClick
-  ) {
-    Text(
-      modifier = Modifier.weight(weight = 1f),
-      text = text,
-      style = AppTheme.typography.title3,
-      textAlign = TextAlign.Center
-    )
-    HSpacer(16.dp)
-    Icon(
-      modifier = Modifier.size(24.dp),
-      painter = icon,
-      contentDescription = null
-    )
-  }
-}
-
-@Composable
-private fun RowScope.ButtonContent(
-  text: String,
   enabled: Boolean,
   showLoading: Boolean,
   colors: ButtonColors
 ) {
-  AnimatedVisibility(showLoading) {
-    Row {
-      CircularProgressIndicator(
-        modifier = Modifier.size(20.dp),
-        color = colors.contentColor(enabled = enabled).value,
-        strokeWidth = 2.dp
+  AnimatedContent(
+    targetState = showLoading,
+    transitionSpec = { fadeIn() togetherWith fadeOut() }
+  ) { loading ->
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(
+        space = 16.dp,
+        alignment = Alignment.CenterHorizontally
       )
-      HSpacer(16.dp)
+    ) {
+      if (loading) {
+        CircularProgressIndicator(
+          modifier = Modifier.size(size.iconSize()),
+          color = colors.contentColor(enabled = enabled).value,
+          strokeWidth = 2.dp
+        )
+      } else if (iconRes != null) {
+        Icon(
+          modifier = Modifier.size(size.iconSize()),
+          painter = painterResource(iconRes),
+          contentDescription = null
+        )
+        Text(
+          text = text,
+          style = AppTheme.typography.title3,
+          color = colors.contentColor(enabled = enabled).value
+        )
+      } else {
+        Text(
+          text = text,
+          style = AppTheme.typography.title3,
+          color = colors.contentColor(enabled = enabled).value
+        )
+      }
     }
   }
-  Text(
-    text = text,
-    style = AppTheme.typography.title3
-  )
 }
 
-private fun ButtonSize.toDp(): Dp {
+private fun ButtonSize.height(): Dp {
   return when (this) {
     ButtonSize.Medium -> 40.dp
     ButtonSize.Large -> 56.dp
   }
 }
 
-internal object ButtonDefaultsInternal {
+private fun ButtonSize.iconSize(): Dp {
+  return when (this) {
+    ButtonSize.Medium -> 16.dp
+    ButtonSize.Large -> 20.dp
+  }
+}
+
+internal object ButtonDefaults {
   @Composable
   fun primaryButtonColors(): ButtonColors {
-    return ButtonColors(
+    return ButtonDefaultsInternal.buttonColors(
       containerColor = AppTheme.colors.buttonPrimaryBg,
       contentColor = AppTheme.colors.buttonPrimaryContent,
       disabledContainerColor = AppTheme.colors.buttonPrimaryBgDisabled,
@@ -226,7 +235,7 @@ internal object ButtonDefaultsInternal {
 
   @Composable
   fun secondaryButtonColors(): ButtonColors {
-    return ButtonColors(
+    return ButtonDefaultsInternal.buttonColors(
       containerColor = AppTheme.colors.buttonSecondaryBg,
       contentColor = AppTheme.colors.buttonSecondaryContent,
       disabledContainerColor = AppTheme.colors.buttonSecondaryBgDisabled,
@@ -236,17 +245,9 @@ internal object ButtonDefaultsInternal {
 
   @Composable
   fun defaultElevation(): ButtonElevation {
-    return ButtonDefaults.buttonElevation(
+    return ButtonDefaultsInternal.buttonElevation(
       defaultElevation = 0.dp,
       pressedElevation = 0.dp
-    )
-  }
-
-  @Composable
-  fun elevation(): ButtonElevation {
-    return ButtonDefaults.buttonElevation(
-      defaultElevation = 8.dp,
-      pressedElevation = 12.dp
     )
   }
 }
@@ -259,4 +260,35 @@ private fun ButtonColors.contentColor(enabled: Boolean): State<Color> {
 internal enum class ButtonSize {
   Large,
   Medium
+}
+
+internal data class ButtonPreviewState(
+  val label: String,
+  val enabled: Boolean,
+  val showLoading: Boolean
+)
+
+internal class ButtonPreviewStateProvider : PreviewParameterProvider<ButtonPreviewState> {
+  override val values = sequenceOf(
+    ButtonPreviewState(
+      label = "default",
+      enabled = true,
+      showLoading = false
+    ),
+    ButtonPreviewState(
+      label = "default",
+      enabled = true,
+      showLoading = true
+    ),
+    ButtonPreviewState(
+      label = "disabled",
+      enabled = false,
+      showLoading = false
+    ),
+    ButtonPreviewState(
+      label = "disabled",
+      enabled = false,
+      showLoading = true
+    )
+  )
 }
