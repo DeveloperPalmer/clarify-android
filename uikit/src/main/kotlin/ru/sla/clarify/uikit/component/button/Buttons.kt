@@ -244,6 +244,16 @@ internal object ButtonDefaults {
   }
 
   @Composable
+  fun tertiaryButtonColors(): ButtonColors {
+    return ButtonDefaultsInternal.buttonColors(
+      containerColor = AppTheme.colors.backgroundAccentPrimary,
+      contentColor = AppTheme.colors.cardAccent,
+      disabledContainerColor = AppTheme.colors.buttonPrimaryBgDisabled,
+      disabledContentColor = AppTheme.colors.backgroundPrimary
+    )
+  }
+
+  @Composable
   fun defaultElevation(): ButtonElevation {
     return ButtonDefaultsInternal.buttonElevation(
       defaultElevation = 0.dp,
