@@ -1,0 +1,10 @@
+digraph DebugPanelFlow {
+  package = "ru.sla.clarify.feature.debug.panel.routing"
+
+  debugPanelFlow [
+    type = "flow",
+    resultType = "ru.sla.clarify.feature.debug.panel.routing.DebugPanelFlow.Result"
+  ]
+
+  debugPanelFlow -> main
+}

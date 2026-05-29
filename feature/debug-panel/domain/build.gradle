@@ -1,0 +1,12 @@
+plugins {
+    id 'android-library-convention'
+    id 'dagger-convention'
+}
+
+android {
+    namespace "ru.sla.clarify.feature.debug.panel.domain"
+}
+
+dependencies {
+  api project(":core:domain")
+}
