@@ -86,4 +86,11 @@
     <string name="branch_merge_revoke_failed">Failed to revoke approval</string>
     <string name="branch_merge_cancel_failed">Failed to cancel merge request</string>
     <string name="branch_merge_finalize_failed">Failed to finalize merge</string>
+
+    <!-- Debug panel -->
+    <string name="debug_panel_title">Debug panel</string>
+    <string name="debug_panel_close">Close</string>
+    <string name="debug_panel_notification_title">Clarify Debug</string>
+    <string name="debug_panel_notification_text">Tap to open the debug panel</string>
+    <string name="debug_panel_notification_channel_name">Debug tools</string>
 </resources>

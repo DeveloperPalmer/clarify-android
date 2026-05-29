@@ -104,11 +104,13 @@ dependencies {
 
   coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
   implementation libs.androidx.activity.compose
+  implementation libs.androidx.core
   implementation project(":lib:log:android")
   implementation project(":build-config")
 
   implementation project(":uikit")
   implementation project(":app:routing")
+  implementation project(":feature:debug-panel:routing")
   implementation project(":lib:google:firestore")
 }
 

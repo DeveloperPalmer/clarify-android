@@ -12,11 +12,13 @@ import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.feature.debug.panel.routing.di.DebugPanelFlowComponent
 
 @SingleIn(AppScope::class)
 @MergeComponent(AppScope::class)
 interface AppComponent {
   fun appFlowComponentBuilder(): AppFlowComponent.Builder
+  fun debugPanelFlowComponentBuilder(): DebugPanelFlowComponent.Builder
 
   @MergeComponent.Builder
   interface Builder {

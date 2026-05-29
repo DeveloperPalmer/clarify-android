@@ -1,22 +1,34 @@
 package ru.sla.clarify.app.android
 
+import android.Manifest.permission.POST_NOTIFICATIONS
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.os.Build.VERSION.SDK_INT
+import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
@@ -29,6 +41,9 @@ import ru.kode.way.compose.NodeHost
 import ru.kode.way.extension.node.hook.NodeHooksSupportExtensionPoint
 import ru.kode.way.extension.service.LogTransitionsExtensionPoint
 import ru.kode.way.name
+import ru.sla.clarify.app.android.debug.DebugPanelNotification
+import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
+import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.clarify.app.routing.AppFlow
 import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.routing.FlowEventMediator
@@ -39,6 +54,7 @@ import ru.sla.clarify.core.routing.rememberTransitionSpec
 import ru.sla.clarify.core.ui.event.DropdownMenuAnchorState
 import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.LocalViewEventsHostMediator
+import ru.sla.clarify.feature.debug.panel.routing.DebugPanelFlow
 import ru.sla.clarify.uikit.event.ViewEventsHost
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -48,6 +64,32 @@ import ru.sla.log.log
 class MainActivity : ComponentActivity() {
   private val exceptionHandler = CoroutineExceptionHandler { _, error -> log { error.asLog() } }
   private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob() + exceptionHandler)
+
+  // Дебаг-панель показывается отдельным оверлей-сервисом поверх основного флоу, см. DebugPanelNotification
+  private val isDebugPanelEnabled: Boolean by lazy {
+    when ((application!! as BuildConfigProvider).buildType) {
+      BuildType.Dev,
+      BuildType.Internal -> true
+      BuildType.Release -> false
+    }
+  }
+  private val showDebugPanel = mutableStateOf(false)
+  private val debugPanelService = mutableStateOf<NavigationService<DebugPanelFlow.Result>?>(null)
+  private var debugPanelEventsJob: Job? = null
+
+  private val debugPanelReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+      if (intent.action == DebugPanelNotification.ACTION_OPEN_DEBUG_PANEL) {
+        openDebugPanel()
+      }
+    }
+  }
+
+  private val requestNotificationPermission = registerForActivityResult(
+    ActivityResultContracts.RequestPermission()
+  ) { granted ->
+    if (granted) DebugPanelNotification.install(this)
+  }
 
   @OptIn(ExperimentalAnimationApi::class)
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,6 +163,10 @@ class MainActivity : ComponentActivity() {
                 }
               }
             )
+            val debugService = debugPanelService.value
+            if (showDebugPanel.value && debugService != null) {
+              NodeHost(service = debugService)
+            }
             ViewEventsHost()
           }
         }
@@ -128,8 +174,65 @@ class MainActivity : ComponentActivity() {
     }
   }
 
+  override fun onResume() {
+    super.onResume()
+    if (!isDebugPanelEnabled) return
+    ContextCompat.registerReceiver(
+      this,
+      debugPanelReceiver,
+      IntentFilter(DebugPanelNotification.ACTION_OPEN_DEBUG_PANEL),
+      ContextCompat.RECEIVER_NOT_EXPORTED
+    )
+    ensureDebugNotification()
+  }
+
+  override fun onPause() {
+    super.onPause()
+    if (!isDebugPanelEnabled) return
+    unregisterReceiver(debugPanelReceiver)
+    DebugPanelNotification.remove(this)
+  }
+
   override fun onDestroy() {
     super.onDestroy()
     coroutineScope.cancel()
+  }
+
+  private fun ensureDebugNotification() {
+    if (SDK_INT >= TIRAMISU && checkSelfPermission(POST_NOTIFICATIONS) != PERMISSION_GRANTED) {
+      requestNotificationPermission.launch(POST_NOTIFICATIONS)
+    } else {
+      DebugPanelNotification.install(this)
+    }
+  }
+
+  private fun openDebugPanel() {
+    if (showDebugPanel.value) return
+    val mediator = FlowEventMediator(coroutineScope)
+    val component = (applicationContext!! as Application).appComponent
+      .debugPanelFlowComponentBuilder()
+      .eventSink(mediator)
+      .build()
+    val service = NavigationService<DebugPanelFlow.Result>(
+      DebugPanelFlow.nodeBuilder(component),
+      onFinishRequest = {
+        closeDebugPanel()
+        Ignore
+      }
+    )
+    service.addNodeExtensionPoint(NodeHooksSupportExtensionPoint())
+    debugPanelEventsJob?.cancel()
+    debugPanelEventsJob = mediator.events
+      .onEach(service::sendEvent)
+      .launchIn(coroutineScope)
+    debugPanelService.value = service
+    showDebugPanel.value = true
+  }
+
+  private fun closeDebugPanel() {
+    showDebugPanel.value = false
+    debugPanelService.value = null
+    debugPanelEventsJob?.cancel()
+    debugPanelEventsJob = null
   }
 }
