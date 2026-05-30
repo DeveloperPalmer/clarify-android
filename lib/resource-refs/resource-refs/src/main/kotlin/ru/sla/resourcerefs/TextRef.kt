@@ -2,7 +2,9 @@ package ru.sla.resourcerefs
 
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 
+@Immutable
 sealed interface TextRef {
   data class Res(@StringRes val id: Int, val formatArgs: List<Any> = emptyList()) : TextRef {
     constructor(@StringRes id: Int, vararg formatArgs: Any) : this(id, formatArgs.toList())

@@ -27,7 +27,7 @@ import ru.sla.clarify.uikit.component.button.TertiaryButton
 
 @Composable
 internal fun FabActionButton(
-  visible: Boolean,
+  visible: () -> Boolean,
   editModeEnabled: Boolean,
   selectedConversationsIds: List<Conversation.Id>,
   onShowNewChatDialog: () -> Unit,
@@ -45,7 +45,7 @@ internal fun FabActionButton(
     contentAlignment = Alignment.BottomEnd
   ) {
     AnimatedVisibility(
-      visible = visible,
+      visible = visible(),
       enter = slideInVertically { it } + scaleIn(transformOrigin = bottomCenter),
       exit = slideOutVertically { it } + scaleOut(transformOrigin = bottomCenter)
     ) {

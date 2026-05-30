@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -75,13 +74,14 @@ internal fun ChatListReadyContent(
   onOpenProfile: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val listState = rememberLazyListState()
-  val fabVisible by rememberFabVisibility(listState)
   Box(
     modifier = modifier
       .fillMaxSize()
       .systemBarsPadding()
   ) {
+    val listState = rememberLazyListState()
+    val fabVisibility = rememberFabVisibility(listState)
+
     Column(modifier = Modifier.fillMaxSize()) {
       VSpacer(8.dp)
       if (user != null) {
@@ -110,7 +110,7 @@ internal fun ChatListReadyContent(
     }
     FabActionButton(
       modifier = Modifier.align(Alignment.BottomEnd),
-      visible = fabVisible,
+      visible = { fabVisibility.value },
       editModeEnabled = editModeEnabled,
       selectedConversationsIds = selectedConversationsIds,
       onShowNewChatDialog = onShowNewChatDialog,
