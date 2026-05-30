@@ -24,15 +24,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
+import com.github.michaelbull.result.coroutines.runSuspendCatching
+import com.github.michaelbull.result.onFailure
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import ru.kode.way.Back
 import ru.kode.way.Event
 import ru.kode.way.Ignore
@@ -54,6 +61,7 @@ import ru.sla.clarify.core.routing.rememberTransitionSpec
 import ru.sla.clarify.core.ui.event.DropdownMenuAnchorState
 import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.LocalViewEventsHostMediator
+import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.debug.panel.routing.DebugPanelFlow
 import ru.sla.clarify.uikit.event.ViewEventsHost
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -91,12 +99,16 @@ class MainActivity : ComponentActivity() {
     if (granted) DebugPanelNotification.install(this)
   }
 
+  private val splashScreenLoading = MutableStateFlow(true)
+
   @OptIn(ExperimentalAnimationApi::class)
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     WindowCompat.setDecorFitsSystemWindows(window, false)
+    installSplashScreen().setKeepOnScreenCondition { splashScreenLoading.value }
 
     val appComponent = (applicationContext!! as Application).appComponent
+    val conversationRepository = appComponent.conversationRepository()
 
     val flowEventMediator = FlowEventMediator(coroutineScope)
     val component: AppFlowComponent = appComponent.appFlowComponentBuilder()
@@ -117,6 +129,10 @@ class MainActivity : ComponentActivity() {
         flowEventMediator.sendEvent(Event.Back)
       }
     })
+
+    coroutineScope.launch {
+      warmUpApp(conversationRepository)
+    }
 
     setContent {
       val view = LocalView.current
@@ -234,5 +250,17 @@ class MainActivity : ComponentActivity() {
     debugPanelService.value = null
     debugPanelEventsJob?.cancel()
     debugPanelEventsJob = null
+  }
+
+  private suspend fun warmUpApp(conversationRepository: ConversationRepository) {
+    runSuspendCatching {
+      coroutineScope {
+        launch { conversationRepository.user.first() }
+        launch { conversationRepository.conversations.first() }
+      }
+      splashScreenLoading.value = false
+    }.onFailure {
+      splashScreenLoading.value = false
+    }
   }
 }

@@ -12,6 +12,7 @@ import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.debug.panel.routing.di.DebugPanelFlowComponent
 
 @SingleIn(AppScope::class)
@@ -19,6 +20,8 @@ import ru.sla.clarify.feature.debug.panel.routing.di.DebugPanelFlowComponent
 interface AppComponent {
   fun appFlowComponentBuilder(): AppFlowComponent.Builder
   fun debugPanelFlowComponentBuilder(): DebugPanelFlowComponent.Builder
+
+  fun conversationRepository(): ConversationRepository
 
   @MergeComponent.Builder
   interface Builder {

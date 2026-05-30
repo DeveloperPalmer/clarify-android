@@ -1,18 +1,14 @@
 package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 
-import kotlinx.coroutines.flow.map
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
-import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.entity.Email
-import ru.sla.clarify.core.domain.startOnSubscribe
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
-import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.conversation.domain.ChatModel
 import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
@@ -26,9 +22,7 @@ class ChatListViewModel @Inject constructor(
 ) : ViewModel<ViewState, ViewIntents>() {
 
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState() to {
-      chatModel.fetch.startOnSubscribe()
-    }
+    initial = ViewState() to null
 
     onEach(intent(ViewIntents::navigateBack)) {
       transitionTo { state, _ ->
@@ -66,6 +60,14 @@ class ChatListViewModel @Inject constructor(
     onEach(chatModel.user) {
       transitionTo { state, user ->
         state.copy(user = user)
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureConversationTransitions() {
+    onEach(chatModel.conversations) {
+      transitionTo { state, conversations ->
+        state.copy(conversations = conversations)
       }
     }
   }
@@ -138,24 +140,6 @@ class ChatListViewModel @Inject constructor(
           editModeEnabled = false,
           selectedConversationIds = emptyList()
         )
-      }
-    }
-  }
-
-  private fun MachineDsl<ViewState>.configureConversationTransitions() {
-    onEach(chatModel.conversations) {
-      transitionTo { state, conversations ->
-        state.copy(conversations = conversations)
-      }
-    }
-
-    onEach(
-      chatModel.fetch.jobFlow
-        .asLceState()
-        .map { it.toUiLceState() }
-    ) {
-      transitionTo { state, contentLoadState ->
-        state.copy(contentLoadState = contentLoadState)
       }
     }
   }

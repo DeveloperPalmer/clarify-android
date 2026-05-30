@@ -36,8 +36,6 @@ import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.rememb
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.component.Avatar
 import ru.sla.clarify.uikit.modifier.surface
-import ru.sla.clarify.uikit.scaffold.ScreenScaffold
-import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
@@ -47,24 +45,20 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
     viewModel = viewModel,
     intents = rememberViewIntents()
   ) { state, intents ->
-    val scaffoldState = rememberScreenScaffoldState()
-    scaffoldState.contentLoadState = state.contentLoadState
     BackHandler(
       onBack = intents.navigateBack
     )
-    ScreenScaffold(state = scaffoldState) {
-      ChatListReadyContent(
-        user = state.user,
-        editModeEnabled = state.editModeEnabled,
-        conversations = state.conversations,
-        selectedConversationsIds = state.selectedConversationIds,
-        onDirectConversation = intents.openChat,
-        onConversationLongPress = intents.handleConversationLongPress,
-        onShowNewChatDialog = intents.showNewChatDialog,
-        onShowDeleteConfirmation = intents.showDeleteConfirmation,
-        onOpenProfile = intents.openProfile
-      )
-    }
+    ChatListReadyContent(
+      user = state.user,
+      editModeEnabled = state.editModeEnabled,
+      conversations = state.conversations,
+      selectedConversationsIds = state.selectedConversationIds,
+      onDirectConversation = intents.openChat,
+      onConversationLongPress = intents.handleConversationLongPress,
+      onShowNewChatDialog = intents.showNewChatDialog,
+      onShowDeleteConfirmation = intents.showDeleteConfirmation,
+      onOpenProfile = intents.openProfile
+    )
   }
 }
 

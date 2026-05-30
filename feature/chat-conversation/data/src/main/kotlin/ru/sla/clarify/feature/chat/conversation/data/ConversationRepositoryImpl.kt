@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
+import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.User
@@ -21,7 +22,6 @@ import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAll
 import ru.sla.clarify.feature.chat.conversation.data.mapper.toDomain
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
-import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.entity.chat.Peer
@@ -32,8 +32,8 @@ import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import javax.inject.Inject
 
-@SingleIn(ConversationScope::class)
-@ContributesBinding(ConversationScope::class)
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class ConversationRepositoryImpl @Inject constructor(
   private val firestore: Firestore,
   private val persistedDB: PersistedDB,
