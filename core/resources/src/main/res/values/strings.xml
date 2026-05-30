@@ -11,6 +11,7 @@
     <string name="or">or</string>
     <string name="enter">Sign in</string>
     <string name="delete">Delete</string>
+    <string name="yesterday">Yesterday</string>
 
     <!-- Generic actions -->
     <string name="action_cancel">Cancel</string>
@@ -33,7 +34,6 @@
     <string name="profile_logout_button">Log out</string>
     <string name="conversation_empty_title">Your chats will appear here</string>
     <string name="conversation_empty_subtitle">Create your first one to start chatting with your team or friends.</string>
-    <string name="conversation_no_messages_preview">(no messages yet)</string>
 
     <!-- Conversation: new chat dialog -->
     <string name="conversation_new_chat_dialog_title">New chat</string>

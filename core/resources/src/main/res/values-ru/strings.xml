@@ -11,6 +11,7 @@
     <string name="or">или</string>
     <string name="enter">Войти</string>
     <string name="delete">Удалить</string>
+    <string name="yesterday">Вчера</string>
 
     <!-- Generic actions -->
     <string name="action_cancel">Отмена</string>
@@ -32,7 +33,6 @@
     <string name="profile_logout_button">Выйти</string>
     <string name="conversation_empty_title">Здесь появятся ваши чаты</string>
     <string name="conversation_empty_subtitle">Создайте первый, чтобы начать общение с командой или друзьями.</string>
-    <string name="conversation_no_messages_preview">(сообщений пока нет)</string>
 
     <!-- Conversation: new chat dialog -->
     <string name="conversation_new_chat_dialog_title">Новый чат</string>

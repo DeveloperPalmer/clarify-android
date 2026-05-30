@@ -1,4 +1,4 @@
-package ru.sla.clarify.core.ui.text
+package ru.sla.clarify.core.domain.date
 
 import java.time.format.DateTimeFormatter
 import java.util.Locale

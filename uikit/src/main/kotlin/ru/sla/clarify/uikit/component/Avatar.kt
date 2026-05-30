@@ -1,5 +1,6 @@
 package ru.sla.clarify.uikit.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -10,46 +11,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
 
 @Composable
 fun Avatar(
+  size: Dp,
   photoUrl: String?,
   fallbackInitial: String,
-  modifier: Modifier = Modifier,
-  size: Dp = 40.dp,
-  highlighted: Boolean = false
+  modifier: Modifier = Modifier
 ) {
-  Box(
-    modifier = modifier
-      .size(size)
-      .surface(
-        shape = CircleShape,
-        backgroundColor = if (highlighted) {
-          AppTheme.colors.errorPrimary
-        } else {
-          AppTheme.colors.contentPrimary
-        }
-      ),
-    contentAlignment = Alignment.Center
-  ) {
-    if (!photoUrl.isNullOrBlank()) {
-      AsyncImage(
-        model = photoUrl,
-        contentDescription = null,
-        modifier = Modifier
-          .size(size)
-          .clip(CircleShape),
-        contentScale = ContentScale.Crop
-      )
-    } else {
+  if (!photoUrl.isNullOrBlank()) {
+    AsyncImage(
+      modifier = Modifier
+        .size(size)
+        .clip(CircleShape),
+      model = photoUrl,
+      contentDescription = null,
+      contentScale = ContentScale.Crop
+    )
+  } else {
+    Box(
+      modifier = modifier
+        .size(size)
+        .background(AppTheme.colors.cardSecondary, CircleShape),
+      contentAlignment = Alignment.Center
+    ) {
       Text(
         text = fallbackInitial.take(1).uppercase(),
-        style = AppTheme.typography.caption,
-        color = AppTheme.colors.cardPrimary
+        style = AppTheme.typography.title3,
+        color = AppTheme.colors.contentPrimary
       )
     }
   }
