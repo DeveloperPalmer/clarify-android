@@ -81,7 +81,7 @@ class ConversationRepositoryImpl @Inject constructor(
     firestore.deleteConversations(idValues)
     inMemoryDB.transaction {
       idValues.forEach {
-        inMemoryDB.conversationParticipantQueries.deleteByConversation(it)
+        inMemoryDB.chatConversationParticipantQueries.deleteByConversation(it)
         inMemoryDB.chatConversationQueries.deleteById(it)
       }
     }
@@ -103,7 +103,7 @@ class ConversationRepositoryImpl @Inject constructor(
     conversationId: Conversation.Id,
     userId: UserId
   ): Flow<Participant?> {
-    return inMemoryDB.conversationParticipantQueries
+    return inMemoryDB.chatConversationParticipantQueries
       .selectByConversationAndId(conversationId.value, userId.value)
       .observeOneOrNull()
       .map { selectByConversationAndId ->
@@ -121,7 +121,7 @@ class ConversationRepositoryImpl @Inject constructor(
   override fun participants(
     conversationId: Conversation.Id
   ): Flow<List<Participant>> {
-    return inMemoryDB.conversationParticipantQueries
+    return inMemoryDB.chatConversationParticipantQueries
       .selectByConversation(conversationId.value)
       .observeList()
       .map { rows ->
@@ -146,7 +146,7 @@ class ConversationRepositoryImpl @Inject constructor(
       }
       FirestoreDocumentResult.Removed -> {
         inMemoryDB.transaction {
-          inMemoryDB.conversationParticipantQueries.deleteByConversation(conversation.id)
+          inMemoryDB.chatConversationParticipantQueries.deleteByConversation(conversation.id)
           inMemoryDB.chatConversationQueries.deleteById(id = conversation.id)
         }
       }
@@ -154,16 +154,22 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   private suspend fun addConversation(conversation: ConversationNM) {
-    // Participants подтягиваем ДО локального upsert'а, чтобы SQL никогда не отдал
-    // conversation без peer'а в join'е (иначе mapper падает на requireNotNull(peerId)).
-    val participants = firestore.getParticipants(conversation.id)
+    val profiles = conversation.participantUids.mapNotNull { uid ->
+      firestore.getUser(UserId(uid))
+    }
     inMemoryDB.transaction {
-      participants.forEach { participant ->
-        inMemoryDB.conversationParticipantQueries.insertOrReplace(
+      conversation.participantUids.forEach { participantId ->
+        inMemoryDB.chatConversationParticipantQueries.insertOrReplace(
           conversationId = conversation.id,
-          id = participant.id,
-          displayName = participant.displayName,
-          photoUrl = participant.photoUrl
+          id = participantId
+        )
+      }
+      profiles.forEach { profile ->
+        inMemoryDB.userQueries.insertOrReplace(
+          id = profile.id,
+          email = profile.email,
+          displayName = profile.displayName,
+          photoUrl = profile.photoUrl
         )
       }
       inMemoryDB.chatConversationQueries.insertOrReplaceMeta(

@@ -28,7 +28,6 @@ import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
-import ru.sla.clarify.lib.google.firestore.entity.ParticipantNM
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchOpenMergeParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadCountParams
@@ -241,16 +240,6 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  suspend fun getParticipants(
-    conversationId: String
-  ): List<ParticipantNM> {
-    return participantsCollectionRef(conversationId)
-      .get()
-      .await()
-      .documents
-      .map { codec.decodeFromSnapshot<ParticipantNM>(it) }
-  }
-
   fun directCommitsLive(
     peerId: Peer.Id,
     branchId: String,
@@ -348,19 +337,9 @@ class Firestore @Inject constructor(
 
     if (isNewConversation) {
       participantIds.forEach { uid ->
-        val userId = UserId(uid)
-        val userSnapshot = userDocumentRef(userId)
-          .get()
-          .await()
-        val participantData = codec.encodeToMap(
-          PostParticipantParams(
-            displayName = userSnapshot.getString(FirestoreSchema.USER_DISPLAY_NAME),
-            photoUrl = userSnapshot.getString(FirestoreSchema.USER_PHOTO_URL)
-          )
-        )
         batch.set(
-          participantDocumentRef(conversationId, userId),
-          participantData
+          participantDocumentRef(conversationId, UserId(uid)),
+          codec.encodeToMap(PostParticipantParams(id = uid))
         )
       }
     }

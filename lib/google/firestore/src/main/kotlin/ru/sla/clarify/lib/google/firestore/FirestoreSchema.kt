@@ -29,12 +29,6 @@ object FirestoreSchema {
   // NM для документа смысла не имеет — в нём ровно одно поле, обращаемся точечно.
   const val UNREAD_COMMITS_COUNT = "count"
 
-  // users/{uid} денормализация: в postCommit при создании conversation мы вытаскиваем
-  // displayName/photoUrl из user-документа sender'а одним вызовом getString —
-  // полный decode<UserNM> здесь оверкилл (нужны два поля из трёх).
-  const val USER_DISPLAY_NAME = "displayName"
-  const val USER_PHOTO_URL = "photoUrl"
-
   // usersQuery whereEqualTo(USER_EMAIL, ...) — точечный query.
   const val USER_EMAIL = "email"
 

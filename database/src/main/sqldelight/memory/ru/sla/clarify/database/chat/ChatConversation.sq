@@ -33,12 +33,14 @@ SELECT
   ChatConversation.lastCommit,
   ChatConversation.lastCommitTimestamp,
   ChatConversation.unreadCount,
-  peer.id AS peerId,
-  peer.displayName AS peerDisplayName,
-  peer.photoUrl AS peerPhotoUrl
+  peerLink.id AS peerId,
+  peerProfile.displayName AS peerDisplayName,
+  peerProfile.photoUrl AS peerPhotoUrl
 FROM ChatConversation
-LEFT JOIN ConversationParticipant AS peer
-  ON peer.conversationId = ChatConversation.id AND peer.id != :currentUserId
+LEFT JOIN ChatConversationParticipant AS peerLink
+  ON peerLink.conversationId = ChatConversation.id AND peerLink.id != :currentUserId
+LEFT JOIN User AS peerProfile
+  ON peerProfile.id = peerLink.id
 ORDER BY ChatConversation.lastCommitTimestamp DESC;
 
 selectAllIds:

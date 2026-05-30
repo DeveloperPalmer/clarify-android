@@ -4,6 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class PostParticipantParams(
-  val displayName: String? = null,
-  val photoUrl: String? = null
+  val id: String
 )
