@@ -14,11 +14,64 @@
       },
       "oauth_client": [
         {
+          "client_id": "471058294257-2v37soo7c16ur0jceptu7qvbl0obgqdu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ru.sla.clarify.dev",
+            "certificate_hash": "9297eafd6954b43d5ed5d294596560e9d218fed6"
+          }
+        },
+        {
           "client_id": "471058294257-j9mdfu9harmqnviefj1kegv35grbvvtm.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "ru.sla.clarify.dev",
             "certificate_hash": "c0da2c6836907349dc68c62598a47793e59b8200"
+          }
+        },
+        {
+          "client_id": "471058294257-mgmobmac0fbh6c7odif0emqpeqvb2vu2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDM2m9o8zAqCY0oLld_Yj6mljDzPBwJrJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "471058294257-ktr1tlh55k17ak4jqgni17pshpobvsho.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:471058294257:android:1288b21b12a245fb149050",
+        "android_client_info": {
+          "package_name": "ru.sla.clarify.internal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "471058294257-soodumsr3fnl1lq2t85tje7mspt0vrl5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ru.sla.clarify.internal",
+            "certificate_hash": "c0da2c6836907349dc68c62598a47793e59b8200"
+          }
+        },
+        {
+          "client_id": "471058294257-ukv184krcrm8u2gpb23dj38hq5tll176.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ru.sla.clarify.internal",
+            "certificate_hash": "9297eafd6954b43d5ed5d294596560e9d218fed6"
           }
         },
         {
