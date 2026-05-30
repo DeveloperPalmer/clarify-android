@@ -156,6 +156,33 @@ class Firestore @Inject constructor(
       ?.let(::UserId)
   }
 
+  suspend fun getUser(id: UserId): UserNM? {
+    val document = userDocumentRef(id)
+      .get()
+      .await()
+    if (!document.exists()) return null
+    return codec.decodeFromSnapshot<UserNM>(document)
+  }
+
+  fun userLive(id: UserId): Flow<UserNM?> {
+    return callbackFlow {
+      listenerGuard.trackOpen("userLive:${id.value}")
+
+      val listener = userDocumentRef(id).addSnapshotListener { snapshot, error ->
+        if (error != null) {
+          close(error)
+          return@addSnapshotListener
+        }
+        val user = snapshot
+          ?.takeIf { it.exists() }
+          ?.let { codec.decodeFromSnapshot<UserNM>(it) }
+        trySend(user)
+      }
+
+      awaitClose { listener.remove() }
+    }
+  }
+
   fun conversationsLive(): Flow<List<FirestoreChange<ConversationNM>>> {
     return callbackFlow {
       val userId = requireUserId()
