@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.feature.chat.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.thread.data.mapper.generateColorHex
@@ -31,14 +31,14 @@ import javax.inject.Inject
 class ThreadRepositoryImpl @Inject constructor(
   private val peerId: Peer.Id,
   private val firestore: Firestore,
-  private val inMemoryDB: InMemoryDB,
+  private val persistedDB: PersistedDB,
   private val threadMediator: ThreadMediator
 ) : ThreadRepository {
 
   override fun commits(branchId: Branch.Id?): Flow<List<Commit>> = flow {
     val conversationId = threadMediator.awaitConversationId()
     val effectiveBranchId = branchId?.value ?: conversationId
-    val commitsFlow = inMemoryDB.chatCommitQueries
+    val commitsFlow = persistedDB.chatCommitQueries
       .selectByBranchId(
         conversationId = conversationId,
         branchId = effectiveBranchId,
@@ -115,13 +115,13 @@ class ThreadRepositoryImpl @Inject constructor(
     commitNMS: List<CommitNM>
   ): Unit = withContext(Dispatchers.IO) {
     val userId = threadMediator.requireUserId()
-    inMemoryDB.transaction {
+    persistedDB.transaction {
       commitNMS.forEach { item -> insertOrReplaceCommit(conversationId, item, userId) }
     }
   }
 
   private suspend fun applyPeerChanges(user: UserNM): Unit = withContext(Dispatchers.IO) {
-    inMemoryDB.userQueries.insertOrReplace(
+    persistedDB.userQueries.insertOrReplace(
       id = user.id,
       email = user.email,
       displayName = user.displayName,
@@ -134,12 +134,12 @@ class ThreadRepositoryImpl @Inject constructor(
     userId: UserId,
     changes: List<FirestoreChange<CommitNM>>
   ): Unit = withContext(Dispatchers.IO) {
-    inMemoryDB.transaction {
+    persistedDB.transaction {
       changes.forEach { change ->
         val commit = change.data
         when (change.changeType) {
           FirestoreDocumentResult.Removed -> {
-            inMemoryDB.chatCommitQueries.deleteById(id = commit.id)
+            persistedDB.chatCommitQueries.deleteById(id = commit.id)
           }
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
@@ -155,7 +155,7 @@ class ThreadRepositoryImpl @Inject constructor(
     commitNM: CommitNM,
     currentUserId: UserId
   ) {
-    inMemoryDB.chatCommitQueries.insertOrReplace(
+    persistedDB.chatCommitQueries.insertOrReplace(
       id = commitNM.id,
       conversationId = conversationId,
       branchId = commitNM.branchId,

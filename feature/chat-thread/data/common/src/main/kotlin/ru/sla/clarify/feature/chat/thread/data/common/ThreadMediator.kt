@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.first
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.entity.chat.Peer
@@ -15,14 +15,14 @@ import javax.inject.Inject
 @SingleIn(ThreadScope::class)
 class ThreadMediator @Inject constructor(
   private val peerId: Peer.Id,
-  private val inMemoryDB: InMemoryDB,
+  private val persistedDB: PersistedDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) {
 
   suspend fun awaitConversationId(): String {
     conversationId()?.let { return it }
 
-    return inMemoryDB.chatConversationQueries
+    return persistedDB.chatConversationQueries
       .selectIdByParticipants(
         type = Type.Direct.value,
         participantUids = directParticipantIds()
@@ -34,7 +34,7 @@ class ThreadMediator @Inject constructor(
 
   suspend fun conversationId(): String? {
     val participants = directParticipantIds()
-    return inMemoryDB.chatConversationQueries
+    return persistedDB.chatConversationQueries
       .selectIdByParticipants(
         type = Type.Direct.value,
         participantUids = participants

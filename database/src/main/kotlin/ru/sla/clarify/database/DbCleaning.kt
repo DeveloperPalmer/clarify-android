@@ -11,7 +11,7 @@ import ru.sla.log.log
 //      feature has some kind of "registerSessionKeyCleanupCallback" which would be called by some kind of a cleanup
 //      director when the time comes to delete everything. Having it centralized here may be not very good
 
-fun InMemoryDB.cleanupBySessionKey(key: String) {
+fun PersistedDB.cleanupBySessionKey(key: String) {
   transaction {
     log { "cleaning up data for session key=$key" }
     userQueries.deleteAll()

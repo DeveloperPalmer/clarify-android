@@ -10,13 +10,13 @@ import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.cleanupBySessionKey
 import javax.inject.Inject
 
 @ContributesBinding(AppScope::class)
 class AuthSessionRepositoryImpl @Inject constructor(
-  private val memoryDB: InMemoryDB,
+  private val persistedDB: PersistedDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : AuthSessionRepository {
   override suspend fun readTokens(key: SessionKey): AuthTokens? {
@@ -79,7 +79,7 @@ class AuthSessionRepositoryImpl @Inject constructor(
 
   override suspend fun cleanupStorage(key: SessionKey) {
     withContext(Dispatchers.IO) {
-      memoryDB.cleanupBySessionKey(key.value)
+      persistedDB.cleanupBySessionKey(key.value)
     }
   }
 }

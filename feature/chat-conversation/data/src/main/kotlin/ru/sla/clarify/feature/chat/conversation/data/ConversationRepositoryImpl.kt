@@ -14,7 +14,7 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAll
@@ -36,12 +36,12 @@ import javax.inject.Inject
 @ContributesBinding(ConversationScope::class)
 class ConversationRepositoryImpl @Inject constructor(
   private val firestore: Firestore,
-  private val inMemoryDB: InMemoryDB,
+  private val persistedDB: PersistedDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : ConversationRepository {
 
   override val user: Flow<User?> = userId().flatMapLatest { userId ->
-    inMemoryDB.userQueries
+    persistedDB.userQueries
       .selectById(userId.value)
       .observeOneOrNull()
       .map { user -> user?.toDomain() }
@@ -49,7 +49,7 @@ class ConversationRepositoryImpl @Inject constructor(
 
   override suspend fun fetchCurrentUser(): Unit = withContext(Dispatchers.IO) {
     val firestoreUser = firestore.getCurrentUser()
-    inMemoryDB.userQueries.insertOrReplace(
+    persistedDB.userQueries.insertOrReplace(
       id = firestoreUser.id,
       email = firestoreUser.email,
       displayName = firestoreUser.displayName,
@@ -63,7 +63,7 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   override val conversations: Flow<List<Conversation>> = userId().flatMapLatest { userId ->
-    inMemoryDB.chatConversationQueries
+    persistedDB.chatConversationQueries
       .selectAll(userId)
       .observeList()
   }
@@ -79,16 +79,16 @@ class ConversationRepositoryImpl @Inject constructor(
   ) = withContext(Dispatchers.IO) {
     val idValues = ids.map { it.value }
     firestore.deleteConversations(idValues)
-    inMemoryDB.transaction {
+    persistedDB.transaction {
       idValues.forEach {
-        inMemoryDB.chatConversationParticipantQueries.deleteByConversation(it)
-        inMemoryDB.chatConversationQueries.deleteById(it)
+        persistedDB.chatConversationParticipantQueries.deleteByConversation(it)
+        persistedDB.chatConversationQueries.deleteById(it)
       }
     }
   }
 
   override fun subscribeOnUnreadCounts(): Flow<Unit> {
-    return inMemoryDB.chatConversationQueries
+    return persistedDB.chatConversationQueries
       .selectAllIds()
       .observeList()
       .flatMapLatest { conversationIds ->
@@ -103,7 +103,7 @@ class ConversationRepositoryImpl @Inject constructor(
     conversationId: Conversation.Id,
     userId: UserId
   ): Flow<Participant?> {
-    return inMemoryDB.chatConversationParticipantQueries
+    return persistedDB.chatConversationParticipantQueries
       .selectByConversationAndId(conversationId.value, userId.value)
       .observeOneOrNull()
       .map { selectByConversationAndId ->
@@ -121,7 +121,7 @@ class ConversationRepositoryImpl @Inject constructor(
   override fun participants(
     conversationId: Conversation.Id
   ): Flow<List<Participant>> {
-    return inMemoryDB.chatConversationParticipantQueries
+    return persistedDB.chatConversationParticipantQueries
       .selectByConversation(conversationId.value)
       .observeList()
       .map { rows ->
@@ -145,9 +145,9 @@ class ConversationRepositoryImpl @Inject constructor(
         upsertConversation(conversation)
       }
       FirestoreDocumentResult.Removed -> {
-        inMemoryDB.transaction {
-          inMemoryDB.chatConversationParticipantQueries.deleteByConversation(conversation.id)
-          inMemoryDB.chatConversationQueries.deleteById(id = conversation.id)
+        persistedDB.transaction {
+          persistedDB.chatConversationParticipantQueries.deleteByConversation(conversation.id)
+          persistedDB.chatConversationQueries.deleteById(id = conversation.id)
         }
       }
     }
@@ -157,22 +157,22 @@ class ConversationRepositoryImpl @Inject constructor(
     val profiles = conversation.participantUids.mapNotNull { uid ->
       firestore.getUser(UserId(uid))
     }
-    inMemoryDB.transaction {
+    persistedDB.transaction {
       conversation.participantUids.forEach { participantId ->
-        inMemoryDB.chatConversationParticipantQueries.insertOrReplace(
+        persistedDB.chatConversationParticipantQueries.insertOrReplace(
           conversationId = conversation.id,
           id = participantId
         )
       }
       profiles.forEach { profile ->
-        inMemoryDB.userQueries.insertOrReplace(
+        persistedDB.userQueries.insertOrReplace(
           id = profile.id,
           email = profile.email,
           displayName = profile.displayName,
           photoUrl = profile.photoUrl
         )
       }
-      inMemoryDB.chatConversationQueries.insertOrReplaceMeta(
+      persistedDB.chatConversationQueries.insertOrReplaceMeta(
         id = conversation.id,
         type = conversation.type.value,
         participantUids = conversation.participantUids,
@@ -183,7 +183,7 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   private fun upsertConversation(conversationNM: ConversationNM) {
-    inMemoryDB.chatConversationQueries.insertOrReplaceMeta(
+    persistedDB.chatConversationQueries.insertOrReplaceMeta(
       id = conversationNM.id,
       type = conversationNM.type.value,
       participantUids = conversationNM.participantUids,
@@ -194,7 +194,7 @@ class ConversationRepositoryImpl @Inject constructor(
 
   private fun subscribeOnUnreadCount(id: String): Flow<Unit> {
     return firestore.unreadCountLive(id).map { unreadCount ->
-      inMemoryDB.chatConversationQueries.updateUnreadCount(
+      persistedDB.chatConversationQueries.updateUnreadCount(
         id = id,
         unreadCount = unreadCount
       )

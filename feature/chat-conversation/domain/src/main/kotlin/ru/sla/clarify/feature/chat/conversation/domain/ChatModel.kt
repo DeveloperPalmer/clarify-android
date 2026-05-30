@@ -26,6 +26,10 @@ class ChatModel @Inject constructor(
       .launchIn(scope)
     conversationRepository.subscribeOnUnreadCounts()
       .launchIn(scope)
+
+    scope.launch {
+      conversationRepository.fetchCurrentUser()
+    }
   }
 
   val getPeerByEmail = task<Email, Peer.Id>(
@@ -38,7 +42,7 @@ class ChatModel @Inject constructor(
     name = "fetch"
   ) {
     coroutineScope {
-      launch { conversationRepository.fetchCurrentUser() }
+      launch { conversationRepository.user.first() }
       launch { conversationRepository.conversations.first() }
     }
   }

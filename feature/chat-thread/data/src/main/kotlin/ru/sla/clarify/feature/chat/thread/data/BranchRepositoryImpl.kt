@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
-import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.thread.data.common.ThreadMediator
@@ -27,7 +27,7 @@ import javax.inject.Inject
 @ContributesBinding(ThreadScope::class)
 class BranchRepositoryImpl @Inject constructor(
   private val firestore: Firestore,
-  private val inMemoryDB: InMemoryDB,
+  private val persistedDB: PersistedDB,
   private val threadMediator: ThreadMediator
 ) : BranchRepository {
 
@@ -43,14 +43,14 @@ class BranchRepositoryImpl @Inject constructor(
 
   override fun branches(): Flow<List<Branch>> = flow {
     val conversationId = threadMediator.awaitConversationId()
-    inMemoryDB.branchQueries
+    persistedDB.branchQueries
       .selectByConversationId(conversationId, ::mapToBranch)
       .observeList()
       .collect { emit(it) }
   }
 
   override fun branch(id: Branch.Id): Flow<Branch?> {
-    return inMemoryDB.branchQueries
+    return persistedDB.branchQueries
       .selectById(id.value, ::mapToBranch)
       .observeOneOrNull()
   }
@@ -112,12 +112,12 @@ class BranchRepositoryImpl @Inject constructor(
     conversationId: String,
     changes: List<FirestoreChange<BranchNM>>
   ) {
-    inMemoryDB.transaction {
+    persistedDB.transaction {
       changes.forEach { change ->
         val branch = change.data
         when (change.changeType) {
           FirestoreDocumentResult.Removed -> {
-            inMemoryDB.branchQueries.deleteById(id = branch.id)
+            persistedDB.branchQueries.deleteById(id = branch.id)
           }
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
@@ -129,7 +129,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   private fun insertOrReplace(branch: Branch) {
-    inMemoryDB.branchQueries.insertOrReplace(
+    persistedDB.branchQueries.insertOrReplace(
       id = branch.id.value,
       conversationId = branch.conversationId.value,
       parentBranchId = branch.parentBranchId.value,
@@ -140,7 +140,7 @@ class BranchRepositoryImpl @Inject constructor(
     )
     val mergeRequest = branch.mergeRequest
     if (mergeRequest != null) {
-      inMemoryDB.mergeRequestQueries.insertOrReplace(
+      persistedDB.mergeRequestQueries.insertOrReplace(
         branchId = branch.id.value,
         status = mergeRequest.status.value,
         initiatorUid = mergeRequest.initiatorUid.value,
@@ -150,7 +150,7 @@ class BranchRepositoryImpl @Inject constructor(
         mergedIntoBranchId = mergeRequest.mergedIntoBranchId?.value
       )
     } else {
-      inMemoryDB.mergeRequestQueries.deleteByBranchId(branch.id.value)
+      persistedDB.mergeRequestQueries.deleteByBranchId(branch.id.value)
     }
   }
 
