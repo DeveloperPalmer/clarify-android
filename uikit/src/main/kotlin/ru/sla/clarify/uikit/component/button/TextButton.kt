@@ -9,73 +9,76 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
-fun ErrorButtonSmall(
+fun TextButtonSmall(
   text: String,
+  isError: Boolean,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   showLoading: Boolean = false
 ) {
-  ButtonInternal(
+  TextButtonInternal(
     modifier = modifier,
     onClick = onClick,
     text = text,
     showLoading = showLoading,
     enabled = enabled,
     size = ButtonSize.Small,
-    colors = ButtonDefaults.errorButtonColors()
+    colors = ButtonDefaults.textButtonColors(isError)
   )
 }
 
 @Composable
-fun ErrorButton(
+fun TextButton(
   text: String,
+  isError: Boolean,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   showLoading: Boolean = false
 ) {
-  ButtonInternal(
+  TextButtonInternal(
     modifier = modifier,
     onClick = onClick,
     text = text,
     showLoading = showLoading,
     enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaults.errorButtonColors()
+    colors = ButtonDefaults.textButtonColors(isError)
   )
 }
 
 @Preview(name = "Light", showBackground = true, widthDp = 360)
 @Composable
-private fun ErrorButtonsPreviewLight(
-  @PreviewParameter(ButtonPreviewStateProvider::class)
-  state: ButtonPreviewState
+private fun TextButtonsPreviewLight(
+  @PreviewParameter(TextButtonPreviewStateProvider::class)
+  state: TextButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Light) {
-    ErrorButtonsPreviewContent(state)
+    TextButtonsPreviewContent(state)
   }
 }
 
 @Preview(name = "Dark", showBackground = true, widthDp = 360)
 @Composable
-private fun ErrorButtonsPreviewDark(
-  @PreviewParameter(ButtonPreviewStateProvider::class)
-  state: ButtonPreviewState
+private fun TextButtonsPreviewDark(
+  @PreviewParameter(TextButtonPreviewStateProvider::class)
+  state: TextButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Dark) {
-    ErrorButtonsPreviewContent(state)
+    TextButtonsPreviewContent(state)
   }
 }
 
 @Composable
-private fun ErrorButtonsPreviewContent(state: ButtonPreviewState) {
+private fun TextButtonsPreviewContent(state: TextButtonPreviewState) {
   Column(
     modifier = Modifier
       .background(AppTheme.colors.backgroundPrimary)
@@ -83,21 +86,59 @@ private fun ErrorButtonsPreviewContent(state: ButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    ErrorButtonSmall(
+    TextButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
       onClick = {},
       showLoading = state.showLoading,
-      enabled = state.enabled
+      enabled = state.enabled,
+      isError = state.isError
     )
     VSpacer(8.dp)
-    ErrorButton(
+    TextButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
       onClick = {},
       showLoading = state.showLoading,
-      enabled = state.enabled
+      enabled = state.enabled,
+      isError = state.isError
     )
     VSpacer(8.dp)
   }
+}
+
+internal data class TextButtonPreviewState(
+  val label: String,
+  val enabled: Boolean = true,
+  val showLoading: Boolean = false,
+  val isError: Boolean = false
+)
+
+internal class TextButtonPreviewStateProvider : PreviewParameterProvider<TextButtonPreviewState> {
+  override val values = sequenceOf(
+    TextButtonPreviewState(
+      label = "default",
+      enabled = true,
+      showLoading = false,
+      isError = true
+    ),
+    TextButtonPreviewState(
+      label = "default",
+      enabled = true,
+      showLoading = true,
+      isError = true
+    ),
+    TextButtonPreviewState(
+      label = "disabled",
+      enabled = false,
+      showLoading = false,
+      isError = true
+    ),
+    TextButtonPreviewState(
+      label = "disabled",
+      enabled = false,
+      showLoading = true,
+      isError = true
+    )
+  )
 }

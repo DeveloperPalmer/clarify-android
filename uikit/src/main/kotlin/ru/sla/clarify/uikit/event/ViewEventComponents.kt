@@ -11,7 +11,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
@@ -22,6 +21,7 @@ import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent.Snackbar.Duration
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
+import ru.sla.clarify.uikit.component.button.TextButton
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.compose.resolveTextRef
@@ -45,8 +45,16 @@ data class Snackbar(
 
   @Composable
   override fun ViewEventHostScope.Content() {
-    val backgroundColor = if (isError) AppTheme.colors.errorPrimary else AppTheme.colors.contentPrimary
-    val contentColor = if (isError) AppTheme.colors.contentPrimary else AppTheme.colors.cardPrimary
+    val backgroundColor = if (isError) {
+      AppTheme.colors.errorPrimary
+    } else {
+      AppTheme.colors.contentPrimary
+    }
+    val contentColor = if (isError) {
+      AppTheme.colors.contentPrimary
+    } else {
+      AppTheme.colors.cardPrimary
+    }
     Box(
       modifier = Modifier
         .systemBarsPadding()
@@ -60,17 +68,13 @@ data class Snackbar(
         action = actionLabel?.let { label ->
           {
             TextButton(
+              text = resolveTextRef(label),
+              isError = isError,
               onClick = {
                 action()
                 dismissEventPresentation()
               }
-            ) {
-              Text(
-                text = resolveTextRef(label),
-                color = contentColor,
-                style = AppTheme.typography.caption
-              )
-            }
+            )
           }
         }
       ) {
@@ -168,34 +172,48 @@ sealed class Dialog : ViewEvent.Content() {
         dismissEventPresentation()
       }
       AlertDialog(
+        containerColor = AppTheme.colors.cardSecondary,
         onDismissRequest = {
           onDismissRequest?.invoke()
           dismissEventPresentation()
         },
-        title = title?.let { titleRef -> { Text(resolveTextRef(titleRef)) } },
-        text = text?.let { textRef -> { Text(resolveTextRef(textRef)) } },
+        title = title?.let { titleRef ->
+          {
+            Text(
+              text = resolveTextRef(titleRef),
+              color = AppTheme.colors.contentPrimary,
+              style = AppTheme.typography.headline3
+            )
+          }
+        },
+        text = text?.let { textRef ->
+          {
+            Text(
+              text = resolveTextRef(textRef),
+              color = AppTheme.colors.contentSecondary,
+              style = AppTheme.typography.body2
+            )
+          }
+        },
         confirmButton = {
           TextButton(
+            text = resolveTextRef(primaryActionTitle),
+            isError = isDestructive,
             onClick = {
               primaryAction?.invoke()
               dismissEventPresentation()
             }
-          ) {
-            Text(
-              text = resolveTextRef(primaryActionTitle),
-              color = if (isDestructive) AppTheme.colors.errorPrimary else AppTheme.colors.contentPrimary
-            )
-          }
+          )
         },
         dismissButton = {
           TextButton(
+            text = resolveTextRef(secondaryActionTitle),
+            isError = false,
             onClick = {
               secondaryAction?.invoke()
               dismissEventPresentation()
             }
-          ) {
-            Text(resolveTextRef(secondaryActionTitle))
-          }
+          )
         }
       )
     }
@@ -228,13 +246,13 @@ sealed class Dialog : ViewEvent.Content() {
         text = text?.let { textRef -> { Text(resolveTextRef(textRef)) } },
         confirmButton = {
           TextButton(
+            text = resolveTextRef(buttonText),
+            isError = false,
             onClick = {
               onButtonClick?.invoke()
               dismissEventPresentation()
             }
-          ) {
-            Text(resolveTextRef(buttonText))
-          }
+          )
         }
       )
     }
@@ -264,13 +282,13 @@ sealed class Dialog : ViewEvent.Content() {
         text = { Text(resolveTextRef(text)) },
         confirmButton = {
           TextButton(
+            text = resolveTextRef(buttonText),
+            isError = false,
             onClick = {
               onButtonClick?.invoke()
               dismissEventPresentation()
             }
-          ) {
-            Text(resolveTextRef(buttonText))
-          }
+          )
         }
       )
     }

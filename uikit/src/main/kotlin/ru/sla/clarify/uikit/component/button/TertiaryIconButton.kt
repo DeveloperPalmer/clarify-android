@@ -17,7 +17,7 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
-fun TertiaryIconButton(
+fun TertiaryIconButtonSmall(
   @DrawableRes
   iconRes: Int,
   text: String,
@@ -32,14 +32,14 @@ fun TertiaryIconButton(
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Medium,
+    size = ButtonSize.Small,
     colors = ButtonDefaults.tertiaryButtonColors(),
     onClick = onClick
   )
 }
 
 @Composable
-fun TertiaryIconButtonLarge(
+fun TertiaryIconButton(
   @DrawableRes
   iconRes: Int,
   text: String,
@@ -55,7 +55,7 @@ fun TertiaryIconButtonLarge(
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Large,
+    size = ButtonSize.Medium,
     colors = ButtonDefaults.tertiaryButtonColors()
   )
 }
@@ -91,7 +91,7 @@ private fun TertiaryIconButtonsPreviewContent(state: ButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    TertiaryIconButton(
+    TertiaryIconButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
@@ -100,7 +100,7 @@ private fun TertiaryIconButtonsPreviewContent(state: ButtonPreviewState) {
       showLoading = state.showLoading
     )
     VSpacer(8.dp)
-    TertiaryIconButtonLarge(
+    TertiaryIconButton(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Scroll down and read",

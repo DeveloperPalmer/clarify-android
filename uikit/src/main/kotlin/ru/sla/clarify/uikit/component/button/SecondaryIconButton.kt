@@ -18,6 +18,29 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
+fun SecondaryIconButtonSmall(
+  @DrawableRes
+  iconRes: Int,
+  text: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showLoading: Boolean = false,
+  colors: ButtonColors = ButtonDefaults.secondaryButtonColors()
+) {
+  OutlinedIconButtonInternal(
+    modifier = modifier,
+    iconRes = iconRes,
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    size = ButtonSize.Small,
+    colors = colors,
+    onClick = onClick
+  )
+}
+
+@Composable
 fun SecondaryIconButton(
   @DrawableRes
   iconRes: Int,
@@ -35,29 +58,6 @@ fun SecondaryIconButton(
     enabled = enabled,
     showLoading = showLoading,
     size = ButtonSize.Medium,
-    colors = colors,
-    onClick = onClick
-  )
-}
-
-@Composable
-fun SecondaryIconButtonLarge(
-  @DrawableRes
-  iconRes: Int,
-  text: String,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
-  enabled: Boolean = true,
-  showLoading: Boolean = false,
-  colors: ButtonColors = ButtonDefaults.secondaryButtonColors()
-) {
-  OutlinedIconButtonInternal(
-    modifier = modifier,
-    iconRes = iconRes,
-    text = text,
-    enabled = enabled,
-    showLoading = showLoading,
-    size = ButtonSize.Large,
     colors = colors,
     onClick = onClick
   )
@@ -94,7 +94,7 @@ private fun SecondaryIconButtonsPreviewContent(state: ButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    SecondaryIconButton(
+    SecondaryIconButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
@@ -103,7 +103,7 @@ private fun SecondaryIconButtonsPreviewContent(state: ButtonPreviewState) {
       showLoading = state.showLoading
     )
     VSpacer(8.dp)
-    SecondaryIconButtonLarge(
+    SecondaryIconButton(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",

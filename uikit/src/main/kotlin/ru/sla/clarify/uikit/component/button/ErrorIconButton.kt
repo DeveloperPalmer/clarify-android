@@ -17,7 +17,7 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
-fun ErrorIconButton(
+fun ErrorIconButtonSmall(
   @DrawableRes
   iconRes: Int,
   text: String,
@@ -32,14 +32,14 @@ fun ErrorIconButton(
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Medium,
+    size = ButtonSize.Small,
     colors = ButtonDefaults.errorButtonColors(),
     onClick = onClick
   )
 }
 
 @Composable
-fun ErrorIconButtonLarge(
+fun ErrorIconButton(
   @DrawableRes
   iconRes: Int,
   text: String,
@@ -55,7 +55,7 @@ fun ErrorIconButtonLarge(
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Large,
+    size = ButtonSize.Medium,
     colors = ButtonDefaults.errorButtonColors()
   )
 }
@@ -91,7 +91,7 @@ private fun ErrorIconButtonsPreviewContent(state: ButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    ErrorIconButton(
+    ErrorIconButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
@@ -100,10 +100,10 @@ private fun ErrorIconButtonsPreviewContent(state: ButtonPreviewState) {
       showLoading = state.showLoading
     )
     VSpacer(8.dp)
-    ErrorIconButtonLarge(
+    ErrorIconButton(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
-      text = "Scroll down and read",
+      text = "Продолжить",
       onClick = {},
       enabled = state.enabled,
       showLoading = state.showLoading

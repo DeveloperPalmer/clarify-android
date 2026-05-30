@@ -15,6 +15,25 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
+fun PrimaryButtonSmall(
+  text: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showLoading: Boolean = false
+) {
+  ButtonInternal(
+    modifier = modifier,
+    onClick = onClick,
+    text = text,
+    showLoading = showLoading,
+    enabled = enabled,
+    size = ButtonSize.Small,
+    colors = ButtonDefaults.primaryButtonColors()
+  )
+}
+
+@Composable
 fun PrimaryButton(
   text: String,
   onClick: () -> Unit,
@@ -29,25 +48,6 @@ fun PrimaryButton(
     showLoading = showLoading,
     enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaults.primaryButtonColors()
-  )
-}
-
-@Composable
-fun PrimaryButtonLarge(
-  text: String,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
-  enabled: Boolean = true,
-  showLoading: Boolean = false
-) {
-  ButtonInternal(
-    modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
-    size = ButtonSize.Large,
     colors = ButtonDefaults.primaryButtonColors()
   )
 }
@@ -83,7 +83,7 @@ private fun PrimaryButtonsPreviewContent(state: ButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    PrimaryButton(
+    PrimaryButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
       onClick = {},
@@ -91,7 +91,7 @@ private fun PrimaryButtonsPreviewContent(state: ButtonPreviewState) {
       enabled = state.enabled
     )
     VSpacer(8.dp)
-    PrimaryButtonLarge(
+    PrimaryButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
       onClick = {},

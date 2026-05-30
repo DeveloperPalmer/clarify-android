@@ -15,6 +15,25 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
+fun SecondaryButtonSmall(
+  text: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showLoading: Boolean = false
+) {
+  OutlinedButtonInternal(
+    modifier = modifier,
+    onClick = onClick,
+    text = text,
+    showLoading = showLoading,
+    enabled = enabled,
+    size = ButtonSize.Small,
+    colors = ButtonDefaults.secondaryButtonColors()
+  )
+}
+
+@Composable
 fun SecondaryButton(
   text: String,
   onClick: () -> Unit,
@@ -29,25 +48,6 @@ fun SecondaryButton(
     showLoading = showLoading,
     enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaults.secondaryButtonColors()
-  )
-}
-
-@Composable
-fun SecondaryButtonLarge(
-  text: String,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
-  enabled: Boolean = true,
-  showLoading: Boolean = false
-) {
-  OutlinedButtonInternal(
-    modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
-    size = ButtonSize.Large,
     colors = ButtonDefaults.secondaryButtonColors()
   )
 }
@@ -83,7 +83,7 @@ private fun SecondaryButtonsPreviewContent(state: ButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    SecondaryButton(
+    SecondaryButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
       onClick = {},
@@ -91,7 +91,7 @@ private fun SecondaryButtonsPreviewContent(state: ButtonPreviewState) {
       enabled = state.enabled
     )
     VSpacer(8.dp)
-    SecondaryButtonLarge(
+    SecondaryButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
       onClick = {},

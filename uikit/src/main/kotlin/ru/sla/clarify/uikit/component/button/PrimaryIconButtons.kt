@@ -17,7 +17,7 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
-fun PrimaryIconButton(
+fun PrimaryIconButtonSmall(
   @DrawableRes
   iconRes: Int,
   text: String,
@@ -32,14 +32,14 @@ fun PrimaryIconButton(
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Medium,
+    size = ButtonSize.Small,
     colors = ButtonDefaults.primaryButtonColors(),
     onClick = onClick
   )
 }
 
 @Composable
-fun PrimaryIconButtonLarge(
+fun PrimaryIconButton(
   @DrawableRes
   iconRes: Int,
   text: String,
@@ -55,7 +55,7 @@ fun PrimaryIconButtonLarge(
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Large,
+    size = ButtonSize.Medium,
     colors = ButtonDefaults.primaryButtonColors()
   )
 }
@@ -91,7 +91,7 @@ private fun PrimaryIconButtonsPreviewContent(state: ButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    PrimaryIconButton(
+    PrimaryIconButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
@@ -100,7 +100,7 @@ private fun PrimaryIconButtonsPreviewContent(state: ButtonPreviewState) {
       showLoading = state.showLoading
     )
     VSpacer(8.dp)
-    PrimaryIconButtonLarge(
+    PrimaryIconButton(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Scroll down and read",

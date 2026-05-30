@@ -15,6 +15,25 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
+fun TertiaryButtonSmall(
+  text: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showLoading: Boolean = false
+) {
+  OutlinedButtonInternal(
+    modifier = modifier,
+    onClick = onClick,
+    text = text,
+    showLoading = showLoading,
+    enabled = enabled,
+    size = ButtonSize.Small,
+    colors = ButtonDefaults.tertiaryButtonColors()
+  )
+}
+
+@Composable
 fun TertiaryButton(
   text: String,
   onClick: () -> Unit,
@@ -29,25 +48,6 @@ fun TertiaryButton(
     showLoading = showLoading,
     enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaults.tertiaryButtonColors()
-  )
-}
-
-@Composable
-fun TertiaryButtonLarge(
-  text: String,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
-  enabled: Boolean = true,
-  showLoading: Boolean = false
-) {
-  OutlinedButtonInternal(
-    modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
-    size = ButtonSize.Large,
     colors = ButtonDefaults.tertiaryButtonColors()
   )
 }
@@ -83,7 +83,7 @@ private fun TertiaryButtonsPreviewContent(state: ButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    TertiaryButton(
+    TertiaryButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
       onClick = {},
@@ -91,7 +91,7 @@ private fun TertiaryButtonsPreviewContent(state: ButtonPreviewState) {
       enabled = state.enabled
     )
     VSpacer(8.dp)
-    TertiaryButtonLarge(
+    TertiaryButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
       onClick = {},

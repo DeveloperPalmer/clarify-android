@@ -6,25 +6,29 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -42,54 +46,16 @@ internal fun ButtonInternal(
   showLoading: Boolean = false
 ) {
   Button(
-    modifier = modifier.heightIn(size.height()),
+    modifier = modifier,
+    iconRes = null,
+    text = text,
+    size = size,
     enabled = enabled,
-    colors = colors,
-    elevation = null,
+    showLoading = showLoading,
     shape = AppTheme.shapes.round16,
-    contentPadding = PaddingValues(16.dp),
-    onClick = { if (!showLoading) onClick() }
-  ) {
-    ButtonContent(
-      iconRes = null,
-      text = text,
-      enabled = enabled,
-      showLoading = showLoading,
-      size = size,
-      colors = colors
-    )
-  }
-}
-
-@Composable
-internal fun OutlinedButtonInternal(
-  text: String,
-  size: ButtonSize,
-  colors: ButtonColors,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
-  enabled: Boolean = true,
-  showLoading: Boolean = false
-) {
-  OutlinedButton(
-    modifier = modifier.heightIn(size.height()),
-    enabled = enabled,
-    border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
     colors = colors,
-    elevation = null,
-    shape = AppTheme.shapes.round16,
-    contentPadding = PaddingValues(16.dp),
     onClick = { if (!showLoading) onClick() }
-  ) {
-    ButtonContent(
-      iconRes = null,
-      text = text,
-      enabled = enabled,
-      showLoading = showLoading,
-      size = size,
-      colors = colors
-    )
-  }
+  )
 }
 
 @Composable
@@ -105,23 +71,40 @@ internal fun IconButtonInternal(
   showLoading: Boolean = false
 ) {
   Button(
-    modifier = modifier.heightIn(min = size.height()),
+    modifier = modifier,
+    iconRes = iconRes,
+    text = text,
+    size = size,
     enabled = enabled,
-    colors = colors,
-    elevation = null,
+    showLoading = showLoading,
     shape = AppTheme.shapes.round16,
-    contentPadding = PaddingValues(16.dp),
+    colors = colors,
     onClick = { if (!showLoading) onClick() }
-  ) {
-    ButtonContent(
-      iconRes = iconRes,
-      text = text,
-      enabled = enabled,
-      showLoading = showLoading,
-      size = size,
-      colors = colors
-    )
-  }
+  )
+}
+
+@Composable
+internal fun OutlinedButtonInternal(
+  text: String,
+  size: ButtonSize,
+  colors: ButtonColors,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showLoading: Boolean = false
+) {
+  OutlinedButton(
+    border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
+    modifier = modifier,
+    iconRes = null,
+    text = text,
+    size = size,
+    enabled = enabled,
+    showLoading = showLoading,
+    shape = AppTheme.shapes.round16,
+    colors = colors,
+    onClick = { if (!showLoading) onClick() }
+  )
 }
 
 @Composable
@@ -137,86 +120,152 @@ internal fun OutlinedIconButtonInternal(
   showLoading: Boolean = false
 ) {
   OutlinedButton(
-    modifier = modifier.heightIn(min = size.height()),
     border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
+    modifier = modifier,
+    iconRes = iconRes,
+    text = text,
+    size = size,
     enabled = enabled,
-    colors = colors,
-    elevation = null,
+    showLoading = showLoading,
     shape = AppTheme.shapes.round16,
-    contentPadding = PaddingValues(16.dp),
+    colors = colors,
     onClick = { if (!showLoading) onClick() }
-  ) {
-    ButtonContent(
-      iconRes = iconRes,
-      text = text,
-      enabled = enabled,
-      showLoading = showLoading,
-      size = size,
-      colors = colors
-    )
-  }
+  )
 }
 
 @Composable
-private fun ButtonContent(
+private fun OutlinedButton(
   @DrawableRes
   iconRes: Int?,
   text: String,
+  border: BorderStroke?,
+  shape: Shape,
   size: ButtonSize,
-  enabled: Boolean,
-  showLoading: Boolean,
-  colors: ButtonColors
+  colors: ButtonColors,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showLoading: Boolean = false,
+  interactionSource: MutableInteractionSource? = null
 ) {
-  AnimatedContent(
-    targetState = showLoading,
-    transitionSpec = { fadeIn() togetherWith fadeOut() }
-  ) { loading ->
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(
-        space = 16.dp,
-        alignment = Alignment.CenterHorizontally
-      )
-    ) {
-      if (loading) {
-        CircularProgressIndicator(
-          modifier = Modifier.size(size.iconSize()),
-          color = colors.contentColor(enabled = enabled).value,
-          strokeWidth = 2.dp
+  Button(
+    modifier = modifier,
+    iconRes = iconRes,
+    text = text,
+    shape = shape,
+    size = size,
+    border = border,
+    enabled = enabled,
+    showLoading = showLoading,
+    colors = colors,
+    interactionSource = interactionSource,
+    onClick = onClick
+  )
+}
+
+@Composable
+internal fun TextButtonInternal(
+  text: String,
+  size: ButtonSize,
+  colors: ButtonColors,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showLoading: Boolean = false
+) {
+  Button(
+    modifier = modifier,
+    iconRes = null,
+    text = text,
+    size = size,
+    enabled = enabled,
+    showLoading = showLoading,
+    shape = AppTheme.shapes.round16,
+    colors = colors,
+    onClick = { if (!showLoading) onClick() }
+  )
+}
+
+@Composable
+private fun Button(
+  @DrawableRes
+  iconRes: Int?,
+  text: String,
+  shape: Shape,
+  size: ButtonSize,
+  colors: ButtonColors,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showLoading: Boolean = false,
+  border: BorderStroke? = null,
+  interactionSource: MutableInteractionSource? = null
+) {
+  @Suppress("NAME_SHADOWING")
+  val interactionSource = interactionSource ?: remember { MutableInteractionSource() }
+  val containerColor = colors.containerColor(enabled)
+  val contentColor = colors.contentColor(enabled)
+  Surface(
+    onClick = onClick,
+    modifier = modifier.semantics { role = Role.Button },
+    enabled = enabled,
+    shape = shape,
+    color = containerColor.value,
+    contentColor = contentColor.value,
+    border = border,
+    interactionSource = interactionSource
+  ) {
+    AnimatedContent(
+      modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+      targetState = showLoading,
+      transitionSpec = { fadeIn() togetherWith fadeOut() }
+    ) { loading ->
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(
+          space = 16.dp,
+          alignment = Alignment.CenterHorizontally
         )
-      } else if (iconRes != null) {
-        Icon(
-          modifier = Modifier.size(size.iconSize()),
-          painter = painterResource(iconRes),
-          contentDescription = null
-        )
-        Text(
-          text = text,
-          style = AppTheme.typography.title3,
-          color = colors.contentColor(enabled = enabled).value
-        )
-      } else {
-        Text(
-          text = text,
-          style = AppTheme.typography.title3,
-          color = colors.contentColor(enabled = enabled).value
-        )
+      ) {
+        if (loading) {
+          CircularProgressIndicator(
+            modifier = Modifier.size(size.iconSize()),
+            color = colors.contentColor(enabled = enabled).value,
+            strokeWidth = 2.dp
+          )
+        } else if (iconRes != null) {
+          Icon(
+            modifier = Modifier.size(size.iconSize()),
+            painter = painterResource(iconRes),
+            contentDescription = null
+          )
+          Text(
+            text = text,
+            style = when (size) {
+              ButtonSize.Small -> AppTheme.typography.label3
+              ButtonSize.Medium -> AppTheme.typography.title3
+            },
+            color = colors.contentColor(enabled = enabled).value
+          )
+        } else {
+          Text(
+            text = text,
+            style = when (size) {
+              ButtonSize.Small -> AppTheme.typography.label3
+              ButtonSize.Medium -> AppTheme.typography.title3
+            },
+            color = colors.contentColor(enabled = enabled).value
+          )
+        }
       }
     }
   }
 }
 
-private fun ButtonSize.height(): Dp {
-  return when (this) {
-    ButtonSize.Medium -> 40.dp
-    ButtonSize.Large -> 56.dp
-  }
-}
-
 private fun ButtonSize.iconSize(): Dp {
   return when (this) {
-    ButtonSize.Medium -> 16.dp
-    ButtonSize.Large -> 20.dp
+    ButtonSize.Small -> 16.dp
+    ButtonSize.Medium -> 20.dp
   }
 }
 
@@ -262,6 +311,18 @@ internal object ButtonDefaults {
   }
 
   @Composable
+  fun textButtonColors(isError: Boolean): ButtonColors {
+    return ButtonDefaultsInternal.textButtonColors(
+      contentColor = if (isError) {
+        AppTheme.colors.errorPrimary
+      } else {
+        AppTheme.colors.buttonTertiaryContent
+      },
+      disabledContentColor = AppTheme.colors.buttonTertiaryContentDisabled
+    )
+  }
+
+  @Composable
   fun defaultElevation(): ButtonElevation {
     return ButtonDefaultsInternal.buttonElevation(
       defaultElevation = 0.dp,
@@ -275,8 +336,13 @@ private fun ButtonColors.contentColor(enabled: Boolean): State<Color> {
   return rememberUpdatedState(if (enabled) contentColor else disabledContentColor)
 }
 
+@Composable
+private fun ButtonColors.containerColor(enabled: Boolean): State<Color> {
+  return rememberUpdatedState(if (enabled) containerColor else disabledContainerColor)
+}
+
 internal enum class ButtonSize {
-  Large,
+  Small,
   Medium
 }
 
