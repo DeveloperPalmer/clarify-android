@@ -7,10 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,11 +22,15 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
+import ru.sla.clarify.uikit.component.button.PrimaryButton
+import ru.sla.clarify.uikit.component.button.TextButton
 import ru.sla.clarify.uikit.event.Dialog
+import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.resRef
 
 internal fun showDeleteConversationDialog() = ScreenViewEvent<ViewIntents> { intents ->
   Dialog.Decision(
+    isDestructive = true,
     title = resRef(R.string.conversation_delete_dialog_title),
     text = resRef(R.string.conversation_delete_dialog_text),
     primaryActionTitle = resRef(R.string.conversation_delete_dialog_primary),
@@ -49,12 +51,21 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
         .matches()
       BackHandler { dismissEventPresentation() }
       AlertDialog(
+        containerColor = AppTheme.colors.cardSecondary,
         onDismissRequest = { dismissEventPresentation() },
-        title = { Text(stringResource(R.string.conversation_new_chat_dialog_title)) },
+        title = {
+          Text(
+            text = stringResource(R.string.conversation_new_chat_dialog_title),
+            color = AppTheme.colors.contentPrimary,
+            style = AppTheme.typography.headline3
+          )
+        },
         text = {
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-              text = stringResource(R.string.conversation_new_chat_dialog_text)
+              text = stringResource(R.string.conversation_new_chat_dialog_text),
+              color = AppTheme.colors.contentSecondary,
+              style = AppTheme.typography.body2
             )
             OutlinedTextField(
               modifier = Modifier.fillMaxWidth(),
@@ -62,31 +73,30 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
               onValueChange = { inputValue = it },
               singleLine = true,
               placeholder = {
-                Text(stringResource(R.string.conversation_new_chat_dialog_email_placeholder))
+                Text(
+                  text = stringResource(R.string.conversation_new_chat_dialog_email_placeholder)
+                )
               },
               keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
           }
         },
         confirmButton = {
-          Button(
+          PrimaryButton(
             onClick = {
               intents.confirmNewChat(trimmedEmail.lowercase())
               dismissEventPresentation()
             },
-            enabled = isValidEmail
-          ) {
-            Text(
-              text = stringResource(R.string.conversation_new_chat_dialog_start)
-            )
-          }
+            enabled = isValidEmail,
+            text = stringResource(R.string.conversation_new_chat_dialog_start)
+          )
         },
         dismissButton = {
-          TextButton(onClick = { dismissEventPresentation() }) {
-            Text(
-              text = stringResource(R.string.action_cancel)
-            )
-          }
+          TextButton(
+            onClick = { dismissEventPresentation() },
+            isError = false,
+            text = stringResource(R.string.action_cancel)
+          )
         }
       )
     }

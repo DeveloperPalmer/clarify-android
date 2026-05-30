@@ -46,8 +46,8 @@ internal fun FabActionButton(
   ) {
     AnimatedVisibility(
       visible = visible,
-      enter = slideInVertically { it } + scaleIn(transformOrigin = bottomCenter) + fadeIn(),
-      exit = slideOutVertically { it } + scaleOut(transformOrigin = bottomCenter) + fadeOut()
+      enter = slideInVertically { it } + scaleIn(transformOrigin = bottomCenter),
+      exit = slideOutVertically { it } + scaleOut(transformOrigin = bottomCenter)
     ) {
       Box(contentAlignment = Alignment.BottomEnd) {
         AnimatedVisibility(
@@ -57,7 +57,8 @@ internal fun FabActionButton(
         ) {
           TertiaryButton(
             onClick = onShowNewChatDialog,
-            text = stringResource(R.string.conversation_new_chat_button)
+            text = stringResource(R.string.conversation_new_chat_button),
+            showElevation = true
           )
         }
         AnimatedVisibility(
@@ -67,7 +68,8 @@ internal fun FabActionButton(
         ) {
           ErrorButton(
             onClick = onShowDeleteConfirmation,
-            text = stringResource(R.string.delete)
+            text = stringResource(R.string.delete),
+            showElevation = true
           )
         }
       }

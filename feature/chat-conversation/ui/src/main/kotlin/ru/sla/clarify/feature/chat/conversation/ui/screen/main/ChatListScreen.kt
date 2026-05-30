@@ -255,5 +255,6 @@ private fun ConversationReadyState(
         }
       }
     }
+    item { VSpacer(60.dp) }
   }
 }

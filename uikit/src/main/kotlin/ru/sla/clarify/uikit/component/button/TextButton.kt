@@ -26,12 +26,12 @@ fun TextButtonSmall(
 ) {
   TextButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Small,
-    colors = ButtonDefaults.textButtonColors(isError)
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    colors = ButtonDefaults.textButtonColors(isError),
+    onClick = onClick
   )
 }
 
@@ -46,16 +46,16 @@ fun TextButton(
 ) {
   TextButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaults.textButtonColors(isError)
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    colors = ButtonDefaults.textButtonColors(isError),
+    onClick = onClick
   )
 }
 
-@Preview(name = "Light", showBackground = true, widthDp = 360)
+@Preview
 @Composable
 private fun TextButtonsPreviewLight(
   @PreviewParameter(TextButtonPreviewStateProvider::class)
@@ -66,7 +66,7 @@ private fun TextButtonsPreviewLight(
   }
 }
 
-@Preview(name = "Dark", showBackground = true, widthDp = 360)
+@Preview
 @Composable
 private fun TextButtonsPreviewDark(
   @PreviewParameter(TextButtonPreviewStateProvider::class)
@@ -89,19 +89,19 @@ private fun TextButtonsPreviewContent(state: TextButtonPreviewState) {
     TextButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
-      showLoading = state.showLoading,
+      isError = state.isError,
       enabled = state.enabled,
-      isError = state.isError
+      showLoading = state.showLoading,
+      onClick = {}
     )
     VSpacer(8.dp)
     TextButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
-      showLoading = state.showLoading,
+      isError = state.isError,
       enabled = state.enabled,
-      isError = state.isError
+      showLoading = state.showLoading,
+      onClick = {}
     )
     VSpacer(8.dp)
   }
@@ -109,36 +109,42 @@ private fun TextButtonsPreviewContent(state: TextButtonPreviewState) {
 
 internal data class TextButtonPreviewState(
   val label: String,
-  val enabled: Boolean = true,
-  val showLoading: Boolean = false,
-  val isError: Boolean = false
+  val isError: Boolean,
+  val enabled: Boolean,
+  val showLoading: Boolean
 )
 
 internal class TextButtonPreviewStateProvider : PreviewParameterProvider<TextButtonPreviewState> {
   override val values = sequenceOf(
     TextButtonPreviewState(
       label = "default",
+      isError = true,
       enabled = true,
-      showLoading = false,
-      isError = true
+      showLoading = false
     ),
     TextButtonPreviewState(
       label = "default",
+      isError = true,
       enabled = true,
-      showLoading = true,
-      isError = true
+      showLoading = true
     ),
     TextButtonPreviewState(
       label = "disabled",
+      isError = true,
       enabled = false,
-      showLoading = false,
-      isError = true
+      showLoading = false
     ),
     TextButtonPreviewState(
       label = "disabled",
+      isError = true,
       enabled = false,
-      showLoading = true,
-      isError = true
+      showLoading = true
+    ),
+    TextButtonPreviewState(
+      label = "elevation",
+      isError = true,
+      enabled = true,
+      showLoading = false
     )
   )
 }

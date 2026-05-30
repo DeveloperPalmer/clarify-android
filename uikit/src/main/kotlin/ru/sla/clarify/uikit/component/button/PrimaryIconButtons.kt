@@ -24,15 +24,17 @@ fun PrimaryIconButtonSmall(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   IconButtonInternal(
     modifier = modifier,
+    size = ButtonSize.Small,
     iconRes = iconRes,
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Small,
+    showElevation = showElevation,
     colors = ButtonDefaults.primaryButtonColors(),
     onClick = onClick
   )
@@ -46,17 +48,19 @@ fun PrimaryIconButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   IconButtonInternal(
-    iconRes = iconRes,
     modifier = modifier,
-    onClick = onClick,
+    size = ButtonSize.Medium,
+    iconRes = iconRes,
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Medium,
-    colors = ButtonDefaults.primaryButtonColors()
+    showElevation = showElevation,
+    colors = ButtonDefaults.primaryButtonColors(),
+    onClick = onClick
   )
 }
 
@@ -95,18 +99,20 @@ private fun PrimaryIconButtonsPreviewContent(state: ButtonPreviewState) {
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
-      onClick = {},
       enabled = state.enabled,
-      showLoading = state.showLoading
+      showLoading = state.showLoading,
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
     PrimaryIconButton(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
-      text = "Scroll down and read",
-      onClick = {},
+      text = "Продолжить",
       enabled = state.enabled,
-      showLoading = state.showLoading
+      showLoading = state.showLoading,
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
   }

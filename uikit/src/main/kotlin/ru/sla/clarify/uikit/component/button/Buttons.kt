@@ -43,16 +43,18 @@ internal fun ButtonInternal(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   Button(
     modifier = modifier,
     iconRes = null,
     text = text,
     size = size,
+    shape = AppTheme.shapes.round16,
     enabled = enabled,
     showLoading = showLoading,
-    shape = AppTheme.shapes.round16,
+    showElevation = showElevation,
     colors = colors,
     onClick = { if (!showLoading) onClick() }
   )
@@ -68,16 +70,18 @@ internal fun IconButtonInternal(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   Button(
     modifier = modifier,
     iconRes = iconRes,
     text = text,
     size = size,
+    shape = AppTheme.shapes.round16,
     enabled = enabled,
     showLoading = showLoading,
-    shape = AppTheme.shapes.round16,
+    showElevation = showElevation,
     colors = colors,
     onClick = { if (!showLoading) onClick() }
   )
@@ -91,7 +95,8 @@ internal fun OutlinedButtonInternal(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   OutlinedButton(
     border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
@@ -99,9 +104,10 @@ internal fun OutlinedButtonInternal(
     iconRes = null,
     text = text,
     size = size,
+    shape = AppTheme.shapes.round16,
     enabled = enabled,
     showLoading = showLoading,
-    shape = AppTheme.shapes.round16,
+    showElevation = showElevation,
     colors = colors,
     onClick = { if (!showLoading) onClick() }
   )
@@ -117,7 +123,8 @@ internal fun OutlinedIconButtonInternal(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   OutlinedButton(
     border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
@@ -125,9 +132,10 @@ internal fun OutlinedIconButtonInternal(
     iconRes = iconRes,
     text = text,
     size = size,
+    shape = AppTheme.shapes.round16,
     enabled = enabled,
     showLoading = showLoading,
-    shape = AppTheme.shapes.round16,
+    showElevation = showElevation,
     colors = colors,
     onClick = { if (!showLoading) onClick() }
   )
@@ -146,17 +154,19 @@ private fun OutlinedButton(
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   showLoading: Boolean = false,
+  showElevation: Boolean = false,
   interactionSource: MutableInteractionSource? = null
 ) {
   Button(
     modifier = modifier,
     iconRes = iconRes,
     text = text,
-    shape = shape,
     size = size,
+    shape = shape,
     border = border,
     enabled = enabled,
     showLoading = showLoading,
+    showElevation = showElevation,
     colors = colors,
     interactionSource = interactionSource,
     onClick = onClick
@@ -171,7 +181,8 @@ internal fun TextButtonInternal(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   Button(
     modifier = modifier,
@@ -180,6 +191,7 @@ internal fun TextButtonInternal(
     size = size,
     enabled = enabled,
     showLoading = showLoading,
+    showElevation = showElevation,
     shape = AppTheme.shapes.round16,
     colors = colors,
     onClick = { if (!showLoading) onClick() }
@@ -198,6 +210,7 @@ private fun Button(
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   showLoading: Boolean = false,
+  showElevation: Boolean = false,
   border: BorderStroke? = null,
   interactionSource: MutableInteractionSource? = null
 ) {
@@ -205,14 +218,17 @@ private fun Button(
   val interactionSource = interactionSource ?: remember { MutableInteractionSource() }
   val containerColor = colors.containerColor(enabled)
   val contentColor = colors.contentColor(enabled)
+  val elevation = if (showElevation && containerColor.value.alpha > 0f) 2.dp else 0.dp
   Surface(
     onClick = onClick,
     modifier = modifier.semantics { role = Role.Button },
-    enabled = enabled,
     shape = shape,
+    border = border,
+    enabled = enabled,
     color = containerColor.value,
     contentColor = contentColor.value,
-    border = border,
+    tonalElevation = elevation,
+    shadowElevation = elevation,
     interactionSource = interactionSource
   ) {
     AnimatedContent(
@@ -349,7 +365,8 @@ internal enum class ButtonSize {
 internal data class ButtonPreviewState(
   val label: String,
   val enabled: Boolean,
-  val showLoading: Boolean
+  val showLoading: Boolean,
+  val showElevation: Boolean
 )
 
 internal class ButtonPreviewStateProvider : PreviewParameterProvider<ButtonPreviewState> {
@@ -357,22 +374,32 @@ internal class ButtonPreviewStateProvider : PreviewParameterProvider<ButtonPrevi
     ButtonPreviewState(
       label = "default",
       enabled = true,
-      showLoading = false
+      showLoading = false,
+      showElevation = false
     ),
     ButtonPreviewState(
       label = "default",
       enabled = true,
-      showLoading = true
+      showLoading = true,
+      showElevation = false
     ),
     ButtonPreviewState(
       label = "disabled",
       enabled = false,
-      showLoading = false
+      showLoading = false,
+      showElevation = false
     ),
     ButtonPreviewState(
       label = "disabled",
       enabled = false,
-      showLoading = true
+      showLoading = true,
+      showElevation = false
+    ),
+    ButtonPreviewState(
+      label = "default",
+      enabled = true,
+      showLoading = false,
+      showElevation = true
     )
   )
 }

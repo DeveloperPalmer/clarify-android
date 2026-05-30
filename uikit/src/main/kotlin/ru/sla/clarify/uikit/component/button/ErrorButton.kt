@@ -20,16 +20,18 @@ fun ErrorButtonSmall(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   ButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Small,
-    colors = ButtonDefaults.errorButtonColors()
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    showElevation = showElevation,
+    colors = ButtonDefaults.errorButtonColors(),
+    onClick = onClick
   )
 }
 
@@ -39,16 +41,18 @@ fun ErrorButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   ButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaults.errorButtonColors()
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    showElevation = showElevation,
+    colors = ButtonDefaults.errorButtonColors(),
+    onClick = onClick
   )
 }
 
@@ -86,17 +90,19 @@ private fun ErrorButtonsPreviewContent(state: ButtonPreviewState) {
     ErrorButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
+      enabled = state.enabled,
       showLoading = state.showLoading,
-      enabled = state.enabled
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
     ErrorButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
+      enabled = state.enabled,
       showLoading = state.showLoading,
-      enabled = state.enabled
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
   }

@@ -20,16 +20,18 @@ fun SecondaryButtonSmall(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   OutlinedButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Small,
-    colors = ButtonDefaults.secondaryButtonColors()
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    showElevation = showElevation,
+    colors = ButtonDefaults.secondaryButtonColors(),
+    onClick = onClick
   )
 }
 
@@ -39,16 +41,18 @@ fun SecondaryButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   OutlinedButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaults.secondaryButtonColors()
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    showElevation = showElevation,
+    colors = ButtonDefaults.secondaryButtonColors(),
+    onClick = onClick
   )
 }
 
@@ -86,17 +90,19 @@ private fun SecondaryButtonsPreviewContent(state: ButtonPreviewState) {
     SecondaryButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
+      enabled = state.enabled,
       showLoading = state.showLoading,
-      enabled = state.enabled
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
     SecondaryButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
+      enabled = state.enabled,
       showLoading = state.showLoading,
-      enabled = state.enabled
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
   }

@@ -20,16 +20,18 @@ fun TertiaryButtonSmall(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   OutlinedButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Small,
-    colors = ButtonDefaults.tertiaryButtonColors()
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    showElevation = showElevation,
+    colors = ButtonDefaults.tertiaryButtonColors(),
+    onClick = onClick
   )
 }
 
@@ -39,16 +41,18 @@ fun TertiaryButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   OutlinedButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaults.tertiaryButtonColors()
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    showElevation = showElevation,
+    colors = ButtonDefaults.tertiaryButtonColors(),
+    onClick = onClick
   )
 }
 
@@ -86,17 +90,19 @@ private fun TertiaryButtonsPreviewContent(state: ButtonPreviewState) {
     TertiaryButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
+      enabled = state.enabled,
       showLoading = state.showLoading,
-      enabled = state.enabled
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
     TertiaryButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
+      enabled = state.enabled,
       showLoading = state.showLoading,
-      enabled = state.enabled
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
   }

@@ -20,16 +20,18 @@ fun PrimaryButtonSmall(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   ButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Small,
-    colors = ButtonDefaults.primaryButtonColors()
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    showElevation = showElevation,
+    colors = ButtonDefaults.primaryButtonColors(),
+    onClick = onClick
   )
 }
 
@@ -39,16 +41,18 @@ fun PrimaryButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  showLoading: Boolean = false
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
 ) {
   ButtonInternal(
     modifier = modifier,
-    onClick = onClick,
-    text = text,
-    showLoading = showLoading,
-    enabled = enabled,
     size = ButtonSize.Medium,
-    colors = ButtonDefaults.primaryButtonColors()
+    text = text,
+    enabled = enabled,
+    showLoading = showLoading,
+    showElevation = showElevation,
+    colors = ButtonDefaults.primaryButtonColors(),
+    onClick = onClick
   )
 }
 
@@ -86,17 +90,19 @@ private fun PrimaryButtonsPreviewContent(state: ButtonPreviewState) {
     PrimaryButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
+      enabled = state.enabled,
       showLoading = state.showLoading,
-      enabled = state.enabled
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
     PrimaryButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      onClick = {},
+      enabled = state.enabled,
       showLoading = state.showLoading,
-      enabled = state.enabled
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
   }

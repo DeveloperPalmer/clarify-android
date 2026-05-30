@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ButtonColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,16 +25,17 @@ fun SecondaryIconButtonSmall(
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   showLoading: Boolean = false,
-  colors: ButtonColors = ButtonDefaults.secondaryButtonColors()
+  showElevation: Boolean = false
 ) {
   OutlinedIconButtonInternal(
     modifier = modifier,
+    size = ButtonSize.Small,
     iconRes = iconRes,
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Small,
-    colors = colors,
+    showElevation = showElevation,
+    colors = ButtonDefaults.secondaryButtonColors(),
     onClick = onClick
   )
 }
@@ -49,16 +49,17 @@ fun SecondaryIconButton(
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   showLoading: Boolean = false,
-  colors: ButtonColors = ButtonDefaults.secondaryButtonColors()
+  showElevation: Boolean = false
 ) {
   OutlinedIconButtonInternal(
     modifier = modifier,
+    size = ButtonSize.Medium,
     iconRes = iconRes,
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    size = ButtonSize.Medium,
-    colors = colors,
+    showElevation = showElevation,
+    colors = ButtonDefaults.secondaryButtonColors(),
     onClick = onClick
   )
 }
@@ -98,18 +99,20 @@ private fun SecondaryIconButtonsPreviewContent(state: ButtonPreviewState) {
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
-      onClick = {},
       enabled = state.enabled,
-      showLoading = state.showLoading
+      showLoading = state.showLoading,
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
     SecondaryIconButton(
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
-      onClick = {},
       enabled = state.enabled,
-      showLoading = state.showLoading
+      showLoading = state.showLoading,
+      showElevation = state.showElevation,
+      onClick = {}
     )
     VSpacer(8.dp)
   }
