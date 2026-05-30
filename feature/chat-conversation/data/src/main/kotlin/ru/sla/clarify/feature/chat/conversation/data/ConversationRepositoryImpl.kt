@@ -58,7 +58,8 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   override suspend fun getPeerByEmail(email: Email): Peer.Id = withContext(Dispatchers.IO) {
-    firestore.getPeerIdByEmail(email) ?: throw PeerNotFoundException(email)
+    val userId = firestore.getUserIdByEmail(email) ?: throw PeerNotFoundException(email)
+    return@withContext Peer.Id(userId.value)
   }
 
   override val conversations: Flow<List<Conversation>> = userId().flatMapLatest { userId ->

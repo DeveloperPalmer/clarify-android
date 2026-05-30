@@ -81,4 +81,20 @@
     <string name="branch_merge_revoke_failed">Не удалось отозвать одобрение</string>
     <string name="branch_merge_cancel_failed">Не удалось отменить merge request</string>
     <string name="branch_merge_finalize_failed">Не удалось завершить мердж</string>
+
+    <!-- Debug panel -->
+    <string name="debug_panel_title">Панель отладки</string>
+    <string name="debug_panel_close">Закрыть</string>
+    <string name="debug_panel_notification_title">Clarify Debug</string>
+    <string name="debug_panel_notification_text">Нажмите, чтобы открыть панель отладки</string>
+    <string name="debug_panel_notification_channel_name">Инструменты отладки</string>
+    <string name="debug_panel_json_hint">Вставьте JSON пользователя сюда</string>
+    <string name="debug_panel_send">Создать пользователя</string>
+    <string name="debug_panel_user_created">Пользователь создан</string>
+    <string name="debug_panel_user_create_failed">Не удалось создать пользователя</string>
+    <string name="debug_panel_error_malformed_json">Некорректный JSON</string>
+    <string name="debug_panel_error_missing_field">Отсутствует поле: %1$s</string>
+    <string name="debug_panel_error_unknown_field">Неизвестное поле: %1$s</string>
+    <string name="debug_panel_error_invalid_photo_url">photoUrl должен быть корректным http(s) URL</string>
+    <string name="debug_panel_error_invalid_email">Пользователь с таким email уже существует</string>
 </resources>

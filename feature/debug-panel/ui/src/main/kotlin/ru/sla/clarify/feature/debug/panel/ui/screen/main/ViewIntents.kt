@@ -4,4 +4,6 @@ import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents
 
 class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
+  val createUser = intent(name = "createUser")
+  val changeUserField = intent<String>(name = "jsonChanged")
 }

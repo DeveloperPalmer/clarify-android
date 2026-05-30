@@ -6,3 +6,8 @@ plugins {
 android {
   namespace "ru.sla.clarify.feature.debug.panel.data"
 }
+
+dependencies {
+  implementation project(":lib:google:firestore")
+  implementation project(":feature:debug-panel:domain")
+}

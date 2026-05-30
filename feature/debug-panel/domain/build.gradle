@@ -9,4 +9,9 @@ android {
 
 dependencies {
   api project(":core:domain")
+
+  implementation libs.kotlinx.serialization.json
+  implementation libs.arrow.core
+
+  ksp libs.arrow.optics.ksp
 }

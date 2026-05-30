@@ -91,4 +91,13 @@
     <string name="debug_panel_notification_title">Clarify Debug</string>
     <string name="debug_panel_notification_text">Tap to open the debug panel</string>
     <string name="debug_panel_notification_channel_name">Debug tools</string>
+    <string name="debug_panel_json_hint">Paste user JSON here</string>
+    <string name="debug_panel_send">Create user</string>
+    <string name="debug_panel_user_created">User created</string>
+    <string name="debug_panel_user_create_failed">Failed to create user</string>
+    <string name="debug_panel_error_malformed_json">Malformed JSON</string>
+    <string name="debug_panel_error_missing_field">Missing field: %1$s</string>
+    <string name="debug_panel_error_unknown_field">Unknown field: %1$s</string>
+    <string name="debug_panel_error_invalid_photo_url">photoUrl must be a valid http(s) URL</string>
+    <string name="debug_panel_error_invalid_email">User with email already exists</string>
 </resources>

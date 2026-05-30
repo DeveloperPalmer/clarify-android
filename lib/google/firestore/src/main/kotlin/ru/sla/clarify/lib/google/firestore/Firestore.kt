@@ -124,6 +124,15 @@ class Firestore @Inject constructor(
       .exists()
   }
 
+  suspend fun isUserExistsByEmail(email: Email?): Boolean {
+    if (email == null) return false
+    return !usersQuery(whereEqualTo = email.value.lowercase())
+      .limit(1)
+      .get()
+      .await()
+      .isEmpty
+  }
+
   suspend fun getCurrentUser(): UserNM {
     val userId = requireUserId()
     val document = userDocumentRef(userId)
@@ -137,21 +146,19 @@ class Firestore @Inject constructor(
     return codec.decodeFromSnapshot<UserNM>(document)
   }
 
-  suspend fun getPeerIdByEmail(email: Email): Peer.Id? {
+  suspend fun getUserIdByEmail(email: Email): UserId? {
     val snapshot = usersQuery(whereEqualTo = email.value.lowercase())
       .limit(1)
       .get()
       .await()
     return snapshot.documents.firstOrNull()
       ?.id
-      ?.let(Peer::Id)
+      ?.let(::UserId)
   }
 
   fun conversationsLive(): Flow<List<FirestoreChange<ConversationNM>>> {
     return callbackFlow {
       val userId = requireUserId()
-      listenerGuard.trackOpen("conversationsLive:${userId.value}")
-
       val listener = conversationsQuery(
         whereArrayContains = userId
       ).addSnapshotListener { snapshot, error ->
@@ -185,8 +192,6 @@ class Firestore @Inject constructor(
   fun unreadCountLive(conversationId: String): Flow<Long> {
     return callbackFlow {
       val userId = requireUserId()
-      listenerGuard.trackOpen("unreadCountLive:$conversationId:${userId.value}")
-
       val listener = unreadCommitsDocumentRef(
         conversationId = conversationId,
         userId = userId
