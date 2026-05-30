@@ -27,6 +27,8 @@ class ThreadModel @Inject constructor(
     super.onPostStart()
     threadRepository.observeCommitsChanges(null)
       .launchIn(scope)
+    threadRepository.observePeerChanges()
+      .launchIn(scope)
     branchRepository.observeBranchChanges()
       .launchIn(scope)
   }

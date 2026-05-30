@@ -8,6 +8,8 @@ interface ThreadRepository {
 
   fun observeCommitsChanges(branchId: Branch.Id?): Flow<Unit>
 
+  fun observePeerChanges(): Flow<Unit>
+
   fun commits(branchId: Branch.Id?): Flow<List<Commit>>
 
   suspend fun fetchHistoryCommits(

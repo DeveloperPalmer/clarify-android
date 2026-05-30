@@ -22,6 +22,7 @@ import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
+import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import javax.inject.Inject
 
@@ -63,6 +64,13 @@ class ThreadRepositoryImpl @Inject constructor(
         userId = userId,
         changes = changes
       )
+      emit(Unit)
+    }
+  }
+
+  override fun observePeerChanges(): Flow<Unit> = flow {
+    firestore.userLive(UserId(peerId.value)).collect { user ->
+      user?.let { applyPeerChanges(it) }
       emit(Unit)
     }
   }
@@ -110,6 +118,15 @@ class ThreadRepositoryImpl @Inject constructor(
     inMemoryDB.transaction {
       commitNMS.forEach { item -> insertOrReplaceCommit(conversationId, item, userId) }
     }
+  }
+
+  private suspend fun applyPeerChanges(user: UserNM): Unit = withContext(Dispatchers.IO) {
+    inMemoryDB.userQueries.insertOrReplace(
+      id = user.id,
+      email = user.email,
+      displayName = user.displayName,
+      photoUrl = user.photoUrl
+    )
   }
 
   private suspend fun applyCommitChanges(
