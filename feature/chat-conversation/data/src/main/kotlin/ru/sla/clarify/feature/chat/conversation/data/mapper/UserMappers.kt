@@ -8,7 +8,7 @@ import ru.sla.clarify.database.User as DbUser
 internal fun DbUser.toDomain(): User {
   return User(
     id = UserId(id),
-    email = email?.let(::Email),
+    email = Email(email),
     displayName = displayName,
     photoUrl = photoUrl
   )

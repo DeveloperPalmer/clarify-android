@@ -37,19 +37,25 @@ class LoginRepositoryImpl @Inject constructor(
 
         val userId = UserId(user.uid)
 
+        val email = user.email?.lowercase()
+          ?: error("FirebaseAuth returned null email after Google sign-in")
+
+        val displayName = user.displayName
+          ?: error("FirebaseAuth returned null displayName after Google sign-in")
+
         if (firestore.isUserExists(userId)) {
           firestore.patchUser(
             id = userId,
-            displayName = user.displayName,
-            photoUrl = user.photoUrl?.toString(),
-            email = user.email?.lowercase()
+            email = email,
+            displayName = displayName,
+            photoUrl = user.photoUrl?.toString()
           )
         } else {
           firestore.postUser(
             id = userId,
-            displayName = user.displayName,
-            photoUrl = user.photoUrl?.toString(),
-            email = user.email?.lowercase()
+            email = email,
+            displayName = displayName,
+            photoUrl = user.photoUrl?.toString()
           )
         }
 

@@ -143,28 +143,22 @@ private fun Header(
     Avatar(
       size = 48.dp,
       photoUrl = user.photoUrl,
-      fallbackInitial = user.email?.value?.takeIf { it.isNotBlank() } ?: "?"
+      fallbackInitial = user.email.value.takeIf { it.isNotBlank() } ?: "?"
     )
     Column(
       modifier = Modifier.weight(1f),
       verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-      val displayName = user.displayName
-      if (displayName != null) {
-        Text(
-          text = displayName,
-          style = AppTheme.typography.title2,
-          color = AppTheme.colors.contentPrimary
-        )
-      }
-      val email = user.email
-      if (email != null) {
-        Text(
-          text = email.value,
-          style = AppTheme.typography.body3,
-          color = AppTheme.colors.contentPrimary
-        )
-      }
+      Text(
+        text = user.displayName,
+        style = AppTheme.typography.title2,
+        color = AppTheme.colors.contentPrimary
+      )
+      Text(
+        text = user.email.value,
+        style = AppTheme.typography.body3,
+        color = AppTheme.colors.contentPrimary
+      )
     }
     Icon(
       painter = painterResource(R.drawable.ic_chevron_right_24),

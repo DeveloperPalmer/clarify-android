@@ -6,9 +6,9 @@ import ru.sla.clarify.lib.google.firestore.codec.sentinel.ServerTimestamp
 
 @Serializable
 data class PostUserParams(
-  val displayName: String? = null,
+  val email: String,
+  val displayName: String,
   val photoUrl: String? = null,
-  val email: String? = null,
   @Contextual
   val createdAt: ServerTimestamp = ServerTimestamp,
   @Contextual

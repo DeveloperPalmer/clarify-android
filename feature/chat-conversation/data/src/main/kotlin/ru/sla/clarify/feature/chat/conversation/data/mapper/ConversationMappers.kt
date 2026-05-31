@@ -35,7 +35,7 @@ internal fun ChatConversationQueries.selectAll(userId: UserId): Query<Conversati
           id = Conversation.Id(id),
           peer = Peer(
             id = Peer.Id(requireNotNull(peerId)),
-            displayName = peerDisplayName,
+            displayName = requireNotNull(peerDisplayName),
             photoUrl = peerPhotoUrl
           ),
           lastMessage = lastCommit,

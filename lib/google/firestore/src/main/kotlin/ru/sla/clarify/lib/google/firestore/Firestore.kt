@@ -67,9 +67,9 @@ class Firestore @Inject constructor(
    */
   suspend fun postUser(
     id: UserId,
-    displayName: String?,
-    photoUrl: String?,
-    email: String?
+    email: String,
+    displayName: String,
+    photoUrl: String?
   ) {
     val payload = codec.encodeToMap(
       PostUserParams(
@@ -96,14 +96,10 @@ class Firestore @Inject constructor(
    */
   suspend fun patchUser(
     id: UserId,
-    displayName: String?,
-    photoUrl: String?,
-    email: String?
+    email: String,
+    displayName: String,
+    photoUrl: String?
   ) {
-    // Если на вход пришли только null'ы, в map'е остался бы один updatedAt —
-    // нет смысла дергать сеть ради одного timestamp'а.
-    if (displayName == null && photoUrl == null && email == null) return
-
     val payload = codec.encodeToMap(
       PatchUserParams(
         displayName = displayName,
@@ -123,8 +119,7 @@ class Firestore @Inject constructor(
       .exists()
   }
 
-  suspend fun isUserExistsByEmail(email: Email?): Boolean {
-    if (email == null) return false
+  suspend fun isUserExistsByEmail(email: Email): Boolean {
     return !usersQuery(whereEqualTo = email.value.lowercase())
       .limit(1)
       .get()

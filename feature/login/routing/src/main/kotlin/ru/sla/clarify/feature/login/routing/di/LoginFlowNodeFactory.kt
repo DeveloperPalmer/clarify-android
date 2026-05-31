@@ -16,7 +16,7 @@ import javax.inject.Provider
 @SingleIn(LoginScope::class)
 class LoginFlowNodeFactory @Inject constructor(
   private val flowNode: Provider<LoginFlowNode>,
-  @WiredScreen(Screen.Credentials)
+  @param:WiredScreen(Screen.Credentials)
   private val credentialsNode: Provider<WiredComposableScreen>
 ) : LoginFlowNodeBuilder.Factory {
   override fun createRootNode(): FlowNode<*> {

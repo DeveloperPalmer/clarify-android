@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 @Immutable
 data class Peer(
   val id: Id,
-  val displayName: String?,
+  val displayName: String,
   val photoUrl: String?
 ) {
   @Immutable

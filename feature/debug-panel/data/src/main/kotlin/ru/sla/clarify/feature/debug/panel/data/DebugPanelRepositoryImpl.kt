@@ -19,15 +19,14 @@ class DebugPanelRepositoryImpl @Inject constructor(
 ) : DebugPanelRepository {
 
   override suspend fun createUser(user: User) = withContext(Dispatchers.IO) {
-    val email = user.email
-    if (firestore.isUserExistsByEmail(email)) {
+    if (firestore.isUserExistsByEmail(user.email)) {
       throw DebugUserException(UserJsonError.UserAlreadyExist)
     }
     firestore.postUser(
       id = user.id,
+      email = user.email.value,
       displayName = user.displayName,
-      photoUrl = user.photoUrl,
-      email = email?.value
+      photoUrl = user.photoUrl
     )
   }
 }

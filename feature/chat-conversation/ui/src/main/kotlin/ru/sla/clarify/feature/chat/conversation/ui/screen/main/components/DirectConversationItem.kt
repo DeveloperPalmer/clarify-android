@@ -56,8 +56,6 @@ internal fun DirectConversationItem(
           size = 40.dp,
           photoUrl = direct.peer.photoUrl,
           fallbackInitial = direct.peer.displayName
-            ?.takeIf { it.isNotBlank() }
-            ?: direct.peer.id.value
         )
         DoneBadge(
           modifier = Modifier
@@ -70,16 +68,13 @@ internal fun DirectConversationItem(
         modifier = Modifier.weight(1f),
         verticalArrangement = Arrangement.spacedBy(2.dp)
       ) {
-        val displayName = direct.peer.displayName
-        if (displayName != null) {
-          Text(
-            text = displayName,
-            style = AppTheme.typography.title2Bold,
-            color = AppTheme.colors.contentPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-          )
-        }
+        Text(
+          text = direct.peer.displayName,
+          style = AppTheme.typography.title2Bold,
+          color = AppTheme.colors.contentPrimary,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
         val lastMessage = direct.lastMessage
         if (lastMessage != null) {
           Text(

@@ -22,7 +22,7 @@ class ThreadFlowNodeFactory @Inject constructor(
   private val branchScreenFactory: Provider<BranchWiredScreenFactory>
 ) : ThreadFlowNodeBuilder.Factory {
 
-  override fun createRootNode(peerId: Peer.Id): FlowNode<*> {
+  override fun createRootNode(id: Peer.Id): FlowNode<*> {
     return flowNode.get()
   }
 
