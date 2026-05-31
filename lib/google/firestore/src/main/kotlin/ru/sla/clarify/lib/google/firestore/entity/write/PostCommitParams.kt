@@ -16,7 +16,6 @@ data class PostCommitParams(
   val type: Type,
   @Contextual
   val createdAt: Timestamp,
-  val readBy: List<String>,
   val colorHex: String,
   val branchId: String,
   @Contextual

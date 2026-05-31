@@ -30,7 +30,9 @@ sealed interface Commit {
   ) : Commit
 
   enum class Status(val value: String) {
-    Sent("sent");
+    Sending("sending"),
+    Sent("sent"),
+    Read("read");
 
     companion object {
       fun fromValue(value: String): Status {

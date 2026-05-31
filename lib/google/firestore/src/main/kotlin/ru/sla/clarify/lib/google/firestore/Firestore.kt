@@ -4,6 +4,7 @@ package ru.sla.clarify.lib.google.firestore
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
@@ -28,8 +29,10 @@ import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
+import ru.sla.clarify.lib.google.firestore.entity.ParticipantNM
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchOpenMergeParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchReadWatermarkParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadCountParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadIncrementParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUserParams
@@ -228,6 +231,42 @@ class Firestore @Inject constructor(
     }
   }
 
+  suspend fun patchReadWatermark(
+    conversationId: String,
+    lastReadAt: LocalDateTime
+  ) {
+    val userId = requireUserId()
+    participantDocumentRef(conversationId, userId)
+      .set(
+        codec.encodeToMap(PatchReadWatermarkParams(lastReadAt = lastReadAt.toTimestamp())),
+        SetOptions.merge()
+      )
+      .await()
+  }
+
+  fun participantLive(
+    conversationId: String,
+    userId: UserId
+  ): Flow<ParticipantNM?> {
+    return callbackFlow {
+      listenerGuard.trackOpen("participantLive:$conversationId:${userId.value}")
+
+      val listener = participantDocumentRef(conversationId, userId)
+        .addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            close(error)
+            return@addSnapshotListener
+          }
+          val participant = snapshot
+            ?.takeIf { it.exists() }
+            ?.let { codec.decodeFromSnapshot<ParticipantNM>(it) }
+          trySend(participant)
+        }
+
+      awaitClose { listener.remove() }
+    }
+  }
+
   suspend fun deleteConversations(ids: List<String>) {
     val batch = writeBatch()
     val reference = conversationCollectionRef()
@@ -307,7 +346,6 @@ class Firestore @Inject constructor(
         text = text,
         type = CommitNM.Type.Text,
         createdAt = createdAt,
-        readBy = listOf(senderId.value),
         colorHex = colorHex,
         branchId = resolvedBranchId
       )
@@ -629,15 +667,16 @@ class Firestore @Inject constructor(
         .whereEqualTo(FirestoreSchema.COMMIT_BRANCH_ID, branchId)
         .orderBy(FirestoreSchema.COMMIT_CREATED_AT, Query.Direction.DESCENDING)
         .limit(limit)
-        .addSnapshotListener { snapshot, error ->
+        .addSnapshotListener(MetadataChanges.INCLUDE) { snapshot, error ->
           if (error != null) {
             close(error)
             return@addSnapshotListener
           }
-          val response = snapshot.mapDocumentChanges { change ->
+          val response = snapshot.mapDocumentChanges(MetadataChanges.INCLUDE) { change ->
             FirestoreChange(
               changeType = change.type.toFirestoreDocumentResult(),
-              data = codec.decodeFromSnapshot<CommitNM>(change.document)
+              data = codec.decodeFromSnapshot<CommitNM>(change.document),
+              hasPendingWrites = change.document.metadata.hasPendingWrites()
             )
           }
           trySend(response)

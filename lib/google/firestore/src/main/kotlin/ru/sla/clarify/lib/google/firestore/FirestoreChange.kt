@@ -9,5 +9,6 @@ import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
  */
 data class FirestoreChange<T>(
   val changeType: FirestoreDocumentResult,
-  val data: T
+  val data: T,
+  val hasPendingWrites: Boolean = false
 )

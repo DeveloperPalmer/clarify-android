@@ -1,12 +1,16 @@
 package ru.sla.clarify.lib.google.firestore.mapper
 
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.QuerySnapshot
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 
-internal fun <T> QuerySnapshot?.mapDocumentChanges(transform: (DocumentChange) -> T): List<T> {
+internal fun <T> QuerySnapshot?.mapDocumentChanges(
+  metadataChanges: MetadataChanges = MetadataChanges.EXCLUDE,
+  transform: (DocumentChange) -> T
+): List<T> {
   return this
-    ?.documentChanges
+    ?.getDocumentChanges(metadataChanges)
     .orEmpty()
     .map(transform)
 }
