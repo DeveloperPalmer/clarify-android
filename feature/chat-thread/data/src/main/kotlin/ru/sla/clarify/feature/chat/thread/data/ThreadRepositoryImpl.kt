@@ -4,12 +4,16 @@ import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
+import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.thread.data.mapper.mapToCommit
@@ -35,6 +39,19 @@ class ThreadRepositoryImpl @Inject constructor(
   private val threadMediator: ThreadMediator
 ) : ThreadRepository {
 
+  override val peer: Flow<Peer?> = persistedDB.userQueries
+    .selectById(peerId.value)
+    .observeOneOrNull()
+    .map { peer ->
+      peer?.let {
+        Peer(
+          id = peerId,
+          displayName = peer.displayName,
+          photoUrl = peer.photoUrl
+        )
+      }
+    }
+
   override fun commits(branchId: Branch.Id?): Flow<List<Commit>> = flow {
     val conversationId = threadMediator.awaitConversationId()
     val effectiveBranchId = branchId?.value ?: conversationId
@@ -49,30 +66,31 @@ class ThreadRepositoryImpl @Inject constructor(
     emitAll(commitsFlow)
   }
 
-  override fun observeCommitsChanges(branchId: Branch.Id?): Flow<Unit> = flow {
+  override suspend fun subscribeOnCommitChanges(branchId: Branch.Id?) {
     val conversationId = threadMediator.awaitConversationId()
     val userId = threadMediator.requireUserId()
     val resolvedBranchId = branchId?.value ?: conversationId
-
     firestore.directCommitsLive(
       peerId = peerId,
       branchId = resolvedBranchId,
       limit = LIVE_COMMIT_LIMIT
+    ).flowOn(
+      context = Dispatchers.IO
     ).collect { changes ->
       applyCommitChanges(
         conversationId = conversationId,
         userId = userId,
         changes = changes
       )
-      emit(Unit)
     }
   }
 
-  override fun observePeerChanges(): Flow<Unit> = flow {
-    firestore.userLive(UserId(peerId.value)).collect { user ->
-      user?.let { applyPeerChanges(it) }
-      emit(Unit)
-    }
+  override suspend fun subscribeOnPeerChanges() {
+    val peerId = UserId(peerId.value)
+    firestore.userLive(peerId)
+      .flowOn(Dispatchers.IO)
+      .filterNotNull()
+      .collect { applyPeerChanges(it) }
   }
 
   override suspend fun fetchHistoryCommits(
@@ -141,6 +159,7 @@ class ThreadRepositoryImpl @Inject constructor(
           FirestoreDocumentResult.Removed -> {
             persistedDB.chatCommitQueries.deleteById(id = commit.id)
           }
+
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
             insertOrReplaceCommit(conversationId, commit, userId)

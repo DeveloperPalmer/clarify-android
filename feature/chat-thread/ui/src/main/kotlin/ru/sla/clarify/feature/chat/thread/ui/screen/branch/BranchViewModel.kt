@@ -36,6 +36,7 @@ class BranchViewModel @AssistedInject constructor(
 
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState(branchId = branchId) to {
+      threadModel.subscribeOnCommitChanges(branchId)
       threadModel.markReadCommits()
       threadModel.fetchHistoryBranchCommits.startOnSubscribe(branchId)
     }
@@ -56,10 +57,6 @@ class BranchViewModel @AssistedInject constructor(
           contentLoadState = contentLoadState
         )
       }
-    }
-
-    onEach(threadModel.subscribeOnCommits(branchId)) {
-      // нечего делать
     }
 
     onEach(threadModel.user.filterNotNull()) {

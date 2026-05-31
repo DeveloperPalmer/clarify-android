@@ -6,7 +6,7 @@ import ru.sla.clarify.feature.entity.chat.Commit
 
 interface BranchRepository {
 
-  fun observeBranchChanges(): Flow<Unit>
+  suspend fun subscribeOnBranchChanges()
 
   fun branches(): Flow<List<Branch>>
 

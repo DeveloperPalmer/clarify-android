@@ -31,14 +31,11 @@ class BranchRepositoryImpl @Inject constructor(
   private val threadMediator: ThreadMediator
 ) : BranchRepository {
 
-  override fun observeBranchChanges(): Flow<Unit> = flow {
+  override suspend fun subscribeOnBranchChanges() {
     val conversationId = threadMediator.awaitConversationId()
     firestore.branchesLive(conversationId)
       .flowOn(Dispatchers.IO)
-      .collect { changes ->
-        handleBranchChanges(conversationId, changes)
-        emit(Unit)
-      }
+      .collect { handleBranchChanges(conversationId, it) }
   }
 
   override fun branches(): Flow<List<Branch>> = flow {

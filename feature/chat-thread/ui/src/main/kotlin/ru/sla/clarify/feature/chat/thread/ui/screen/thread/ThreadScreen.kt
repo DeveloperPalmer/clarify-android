@@ -1,10 +1,7 @@
 package ru.sla.clarify.feature.chat.thread.ui.screen.thread
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,37 +12,41 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
-import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.uikit.component.icon.IconAction
+import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.uikit.component.Avatar
+import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
 import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
+import ru.sla.clarify.uikit.component.topappbar.TopAppBar
+import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
+import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
@@ -64,12 +65,16 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
     )
     ScreenScaffold(state = scaffoldState) {
       ThreadReadyContent(
-        email = state.email,
+        modifier = Modifier
+          .fillMaxSize()
+          .systemBarsPadding()
+          .imePadding(),
+        peer = state.peer,
         commits = state.commits,
         branchesCount = state.branches.size,
         isSending = state.isSending,
         onBack = intents.navigateBack,
-        onShowBranchesList = intents.showBranchesList,
+        onShowBranches = intents.showBranchesList,
         onCommitLongPress = intents.showBranchSheet,
         onSend = intents.sendCommit
       )
@@ -79,26 +84,35 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
 
 @Composable
 internal fun ThreadReadyContent(
-  email: Email?,
+  peer: Peer?,
   commits: List<Commit>,
   branchesCount: Int,
   isSending: Boolean,
   onBack: () -> Unit,
-  onShowBranchesList: () -> Unit,
-  onCommitLongPress: (Commit.Message) -> Unit,
   onSend: (String) -> Unit,
+  onShowBranches: () -> Unit,
+  onCommitLongPress: (Commit.Message) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  Column(
-    modifier = modifier
-      .fillMaxSize()
-      .imePadding()
-  ) {
-    TopBar(
-      email = email,
-      branchesCount = branchesCount,
-      onBack = onBack,
-      onShowBranchesList = onShowBranchesList
+  val listState = rememberLazyListState()
+  val isScrolledUnderTopBar by remember { derivedStateOf { listState.canScrollForward } }
+  val topBarElevation by animateDpAsState(
+    label = "topBarElevation",
+    targetValue = if (isScrolledUnderTopBar) 4.dp else 0.dp
+  )
+  Column(modifier) {
+    TopAppBar(
+      modifier = Modifier.bottomShadow(topBarElevation),
+      navigationIcon = { TopAppBarDefaults.NavigationIcon(onBack) },
+      title = { peer?.let { TopAppBarContent(peer = peer) } },
+      actions = {
+        TertiaryIconButtonSmall(
+          modifier = Modifier.padding(end = 4.dp),
+          iconRes = R.drawable.ic_branch_24,
+          onClick = onShowBranches,
+          text = stringResource(R.string.thread_branches_count, branchesCount)
+        )
+      }
     )
     if (commits.isEmpty()) {
       TreadEmptyState(
@@ -108,75 +122,54 @@ internal fun ThreadReadyContent(
       )
     } else {
       Commits(
-        commits = commits,
-        onCommitLongPress = onCommitLongPress,
         modifier = Modifier
           .weight(1f)
-          .fillMaxWidth()
+          .fillMaxWidth(),
+        listState = listState,
+        commits = commits,
+        onCommitLongPress = onCommitLongPress
       )
     }
     HorizontalDivider()
     InputRow(
+      modifier = Modifier.fillMaxWidth(),
       isSending = isSending,
-      onSend = onSend,
-      modifier = Modifier
-        .fillMaxWidth()
-        .navigationBarsPadding()
+      onSend = onSend
     )
   }
 }
 
 @Composable
-private fun TopBar(
-  email: Email?,
-  branchesCount: Int,
-  onBack: () -> Unit,
-  onShowBranchesList: () -> Unit
+private fun TopAppBarContent(
+  peer: Peer,
+  modifier: Modifier = Modifier
 ) {
   Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .statusBarsPadding()
-      .padding(horizontal = 8.dp, vertical = 8.dp),
+    modifier = modifier,
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(8.dp)
+    horizontalArrangement = Arrangement.spacedBy(10.dp)
   ) {
-    IconAction(
-      iconResId = R.drawable.ic_back_24,
-      onClick = onBack
+    Avatar(
+      size = 40.dp,
+      photoUrl = peer.photoUrl,
+      fallbackInitial = peer.displayName
     )
-    AnimatedContent(
-      modifier = Modifier
-        .weight(1f)
-        .padding(start = 4.dp),
-      targetState = email,
-      transitionSpec = { fadeIn() togetherWith fadeOut() }
-    ) { email ->
-      if (email != null) {
-        Text(
-
-          text = email.value,
-          style = AppTheme.typography.title1,
-          fontWeight = FontWeight.SemiBold
-        )
-      }
-    }
-    TextButton(onShowBranchesList) {
+    Column(modifier = Modifier.weight(1f)) {
       Text(
-        text = stringResource(R.string.thread_branches_count, branchesCount)
+        text = peer.displayName,
+        style = AppTheme.typography.title2Bold
       )
     }
   }
-  HorizontalDivider()
 }
 
 @Composable
 private fun Commits(
   commits: List<Commit>,
+  listState: LazyListState,
   onCommitLongPress: (Commit.Message) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val listState = rememberLazyListState()
   LaunchedEffect(commits.size) {
     if (commits.isNotEmpty()) {
       listState.animateScrollToItem(0)

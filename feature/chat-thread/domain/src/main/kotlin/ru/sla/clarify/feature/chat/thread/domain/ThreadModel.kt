@@ -1,9 +1,9 @@
 package ru.sla.clarify.feature.chat.thread.domain
 
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
@@ -14,6 +14,7 @@ import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.feature.entity.chat.Peer
 import javax.inject.Inject
 
 @SingleIn(ThreadScope::class)
@@ -25,18 +26,20 @@ class ThreadModel @Inject constructor(
 
   override fun onPostStart() {
     super.onPostStart()
-    threadRepository.observeCommitsChanges(null)
-      .launchIn(scope)
-    threadRepository.observePeerChanges()
-      .launchIn(scope)
-    branchRepository.observeBranchChanges()
-      .launchIn(scope)
+    scope.launch {
+      coroutineScope {
+        launch { threadRepository.subscribeOnPeerChanges() }
+        launch { branchRepository.subscribeOnBranchChanges() }
+        launch { threadRepository.subscribeOnCommitChanges(null) }
+      }
+    }
   }
 
   val user: Flow<User?> = conversationRepository.user
+  val peer: Flow<Peer?> = threadRepository.peer
 
-  fun subscribeOnCommits(branchId: Branch.Id): Flow<Unit> {
-    return threadRepository.observeCommitsChanges(branchId)
+  fun subscribeOnCommitChanges(branchId: Branch.Id) {
+    scope.launch { threadRepository.subscribeOnCommitChanges(branchId) }
   }
 
   fun commits(branchId: Branch.Id?): Flow<List<Commit>> {

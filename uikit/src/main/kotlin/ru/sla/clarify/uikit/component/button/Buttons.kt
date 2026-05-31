@@ -30,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -209,6 +210,10 @@ private fun Button(
   colors: ButtonColors,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  textStyle: TextStyle = when (size) {
+    ButtonSize.Small -> AppTheme.typography.body3Bold
+    ButtonSize.Medium -> AppTheme.typography.title3
+  },
   enabled: Boolean = true,
   showLoading: Boolean = false,
   showElevation: Boolean = false,
@@ -241,10 +246,16 @@ private fun Button(
     ) { loading ->
       Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(
-          space = 16.dp,
-          alignment = Alignment.CenterHorizontally
-        )
+        horizontalArrangement = when (size) {
+          ButtonSize.Small -> Arrangement.spacedBy(
+            space = 6.dp,
+            alignment = Alignment.CenterHorizontally
+          )
+          ButtonSize.Medium -> Arrangement.spacedBy(
+            space = 16.dp,
+            alignment = Alignment.CenterHorizontally
+          )
+        }
       ) {
         if (loading) {
           CircularProgressIndicator(
@@ -260,19 +271,13 @@ private fun Button(
           )
           Text(
             text = text,
-            style = when (size) {
-              ButtonSize.Small -> AppTheme.typography.label3
-              ButtonSize.Medium -> AppTheme.typography.title3
-            },
+            style = textStyle,
             color = colors.contentColor(enabled = enabled).value
           )
         } else {
           Text(
             text = text,
-            style = when (size) {
-              ButtonSize.Small -> AppTheme.typography.label3
-              ButtonSize.Medium -> AppTheme.typography.title3
-            },
+            style = textStyle,
             color = colors.contentColor(enabled = enabled).value
           )
         }

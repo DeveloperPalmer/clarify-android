@@ -51,7 +51,7 @@
     <string name="chat_input_send_button">Отправить</string>
 
     <!-- Thread screen -->
-    <string name="thread_branches_count">Ветки (%1$d)</string>
+    <string name="thread_branches_count">Ветки · %1$d</string>
     <string name="thread_empty_state">Поздоровайтесь!</string>
     <string name="thread_create_branch_sheet_title">Создать ветку из этого коммита</string>
     <string name="thread_create_branch_sheet_name_placeholder">Название ветки</string>

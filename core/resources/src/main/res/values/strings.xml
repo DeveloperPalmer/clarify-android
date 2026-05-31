@@ -54,7 +54,7 @@
     <string name="chat_input_send_button">Send</string>
 
     <!-- Thread screen -->
-    <string name="thread_branches_count">Branches (%1$d)</string>
+    <string name="thread_branches_count">Branches · %1$d</string>
     <string name="thread_empty_state">Say hi!</string>
     <string name="thread_create_branch_sheet_title">Create branch from this commit</string>
     <string name="thread_create_branch_sheet_name_placeholder">Branch name</string>

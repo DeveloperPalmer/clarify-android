@@ -38,9 +38,9 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(threadModel.user.filterNotNull()) {
-      transitionTo { state, user ->
-        state.copy(email = user.email)
+    onEach(threadModel.peer.filterNotNull()) {
+      transitionTo { state, peer ->
+        state.copy(peer = peer)
       }
     }
 
