@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Text
@@ -92,7 +91,6 @@ internal fun CredentialsContent(
     VSpacer(16.dp)
     SecondaryButton(
       modifier = Modifier
-        .heightIn(56.dp)
         .fillMaxWidth()
         .padding(horizontal = 24.dp),
       text = stringResource(R.string.credentials_enter_by_email),

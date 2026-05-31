@@ -21,8 +21,8 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
-import ru.sla.clarify.uikit.component.button.PrimaryButton
-import ru.sla.clarify.uikit.component.button.TextButton
+import ru.sla.clarify.uikit.component.button.PrimaryButtonSmall
+import ru.sla.clarify.uikit.component.button.TextButtonSmall
 import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
 import ru.sla.clarify.uikit.event.Dialog
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -82,7 +82,7 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
           }
         },
         confirmButton = {
-          PrimaryButton(
+          PrimaryButtonSmall(
             onClick = {
               intents.confirmNewChat(trimmedEmail.lowercase())
               dismissEventPresentation()
@@ -92,7 +92,7 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
           )
         },
         dismissButton = {
-          TextButton(
+          TextButtonSmall(
             onClick = { dismissEventPresentation() },
             isError = false,
             text = stringResource(R.string.action_cancel)

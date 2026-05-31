@@ -21,7 +21,7 @@ import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent.Snackbar.Duration
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
-import ru.sla.clarify.uikit.component.button.TextButton
+import ru.sla.clarify.uikit.component.button.TextButtonSmall
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.compose.resolveTextRef
@@ -67,7 +67,7 @@ data class Snackbar(
         contentColor = contentColor,
         action = actionLabel?.let { label ->
           {
-            TextButton(
+            TextButtonSmall(
               text = resolveTextRef(label),
               isError = isError,
               onClick = {
@@ -196,7 +196,7 @@ sealed class Dialog : ViewEvent.Content() {
           }
         },
         confirmButton = {
-          TextButton(
+          TextButtonSmall(
             text = resolveTextRef(primaryActionTitle),
             isError = isDestructive,
             onClick = {
@@ -206,7 +206,7 @@ sealed class Dialog : ViewEvent.Content() {
           )
         },
         dismissButton = {
-          TextButton(
+          TextButtonSmall(
             text = resolveTextRef(secondaryActionTitle),
             isError = false,
             onClick = {
@@ -245,7 +245,7 @@ sealed class Dialog : ViewEvent.Content() {
         title = { Text(resolveTextRef(title)) },
         text = text?.let { textRef -> { Text(resolveTextRef(textRef)) } },
         confirmButton = {
-          TextButton(
+          TextButtonSmall(
             text = resolveTextRef(buttonText),
             isError = false,
             onClick = {
@@ -281,7 +281,7 @@ sealed class Dialog : ViewEvent.Content() {
         title = { Text(resolveTextRef(title)) },
         text = { Text(resolveTextRef(text)) },
         confirmButton = {
-          TextButton(
+          TextButtonSmall(
             text = resolveTextRef(buttonText),
             isError = false,
             onClick = {

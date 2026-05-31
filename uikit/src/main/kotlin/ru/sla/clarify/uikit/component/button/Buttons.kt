@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ButtonColors
@@ -221,7 +222,9 @@ private fun Button(
   val elevation = if (showElevation && containerColor.value.alpha > 0f) 2.dp else 0.dp
   Surface(
     onClick = onClick,
-    modifier = modifier.semantics { role = Role.Button },
+    modifier = modifier
+      .heightIn(size.height())
+      .semantics { role = Role.Button },
     shape = shape,
     border = border,
     enabled = enabled,
@@ -275,6 +278,13 @@ private fun Button(
         }
       }
     }
+  }
+}
+
+private fun ButtonSize.height(): Dp {
+  return when (this) {
+    ButtonSize.Small -> 32.dp
+    ButtonSize.Medium -> 48.dp
   }
 }
 
