@@ -14,12 +14,24 @@ internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
         bubble = BubbleMessage(
           id = BubbleMessage.Id(commit.id.value),
           type = bubbleType(index, commits),
-          side = if (commit.isSelf) BubbleMessage.Side.Right() else BubbleMessage.Side.Left,
+          side = if (commit.isSelf) {
+            BubbleMessage.Side.Right(commit.status.toReadStatus())
+          } else {
+            BubbleMessage.Side.Left
+          },
           text = commit.text,
           time = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE)
         )
       )
     }
+  }
+}
+
+private fun DomainCommit.Status.toReadStatus(): BubbleMessage.ReadStatus {
+  return when (this) {
+    DomainCommit.Status.Sending -> BubbleMessage.ReadStatus.Sending
+    DomainCommit.Status.Sent -> BubbleMessage.ReadStatus.Sent
+    DomainCommit.Status.Read -> BubbleMessage.ReadStatus.Read
   }
 }
 

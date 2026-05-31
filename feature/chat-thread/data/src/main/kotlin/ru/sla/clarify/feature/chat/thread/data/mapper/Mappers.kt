@@ -1,8 +1,10 @@
 package ru.sla.clarify.feature.chat.thread.data.mapper
 
+import com.google.firebase.Timestamp
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.entity.chat.Commit
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.random.Random
 
@@ -27,6 +29,19 @@ internal fun mapToCommit(
     isSelf = isSelf,
     status = Commit.Status.fromValue(status)
   )
+}
+
+internal fun Commit.withReadStatus(peerLastReadAt: LocalDateTime?): Commit {
+  if (this !is Commit.Message || !isSelf) return this
+  if (status != Commit.Status.Sent || peerLastReadAt == null) return this
+  return if (timestamp.isAfter(peerLastReadAt)) this else copy(status = Commit.Status.Read)
+}
+
+internal fun Timestamp.toLocalDateTime(): LocalDateTime {
+  return Instant
+    .ofEpochSecond(seconds)
+    .atZone(ZoneId.systemDefault())
+    .toLocalDateTime()
 }
 
 internal fun generateColorHex(): String {

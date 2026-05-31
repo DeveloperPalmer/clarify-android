@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chat.thread.data
 import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
@@ -17,6 +18,8 @@ import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.thread.data.mapper.mapToCommit
+import ru.sla.clarify.feature.chat.thread.data.mapper.toLocalDateTime
+import ru.sla.clarify.feature.chat.thread.data.mapper.withReadStatus
 import ru.sla.clarify.feature.chat.thread.domain.ThreadRepository
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
@@ -62,8 +65,15 @@ class ThreadRepositoryImpl @Inject constructor(
         mapper = ::mapToCommit
       )
       .observeList()
+    val peerReadAtFlow = firestore
+      .participantLive(conversationId, UserId(peerId.value))
+      .map { it?.lastReadAt?.toLocalDateTime() }
 
-    emitAll(commitsFlow)
+    emitAll(
+      combine(commitsFlow, peerReadAtFlow) { commits, peerReadAt ->
+        commits.map { it.withReadStatus(peerReadAt) }
+      }
+    )
   }
 
   override suspend fun subscribeOnCommitChanges(branchId: Branch.Id?) {
@@ -134,7 +144,9 @@ class ThreadRepositoryImpl @Inject constructor(
   ): Unit = withContext(Dispatchers.IO) {
     val userId = threadMediator.requireUserId()
     persistedDB.transaction {
-      commitNMS.forEach { item -> insertOrReplaceCommit(conversationId, item, userId) }
+      commitNMS.forEach { item ->
+        insertOrReplaceCommit(conversationId, item, userId, hasPendingWrites = false)
+      }
     }
   }
 
@@ -162,7 +174,7 @@ class ThreadRepositoryImpl @Inject constructor(
 
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
-            insertOrReplaceCommit(conversationId, commit, userId)
+            insertOrReplaceCommit(conversationId, commit, userId, change.hasPendingWrites)
           }
         }
       }
@@ -172,8 +184,10 @@ class ThreadRepositoryImpl @Inject constructor(
   private fun insertOrReplaceCommit(
     conversationId: String,
     commitNM: CommitNM,
-    currentUserId: UserId
+    currentUserId: UserId,
+    hasPendingWrites: Boolean
   ) {
+    val status = if (hasPendingWrites) Commit.Status.Sending else Commit.Status.Sent
     persistedDB.chatCommitQueries.insertOrReplace(
       id = commitNM.id,
       conversationId = conversationId,
@@ -183,9 +197,7 @@ class ThreadRepositoryImpl @Inject constructor(
       colorHex = commitNM.colorHex,
       timestamp = commitNM.createdAt?.toEpochSeconds() ?: 0L,
       isSelf = commitNM.senderUid == currentUserId.value,
-      // TODO: @sla. Добавить сохранение статуса сообщения из backend в локальный кэш.
-      //  сейчас только один статус - Sent
-      status = Commit.Status.Sent.value
+      status = status.value
     )
   }
 }
