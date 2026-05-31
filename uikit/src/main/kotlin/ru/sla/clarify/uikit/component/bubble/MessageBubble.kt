@@ -1,6 +1,12 @@
 package ru.sla.clarify.uikit.component.bubble
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +23,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
@@ -24,8 +32,11 @@ import ru.sla.clarify.uikit.component.bubble.BubbleMessage.ReadStatus
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.AppTheme.colors
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 @Composable
 fun BubbleMessage(
@@ -169,11 +180,11 @@ private fun BubbleTimeStatus(
       color = timeColor
     )
     when (status) {
+      ReadStatus.Sending -> {
+        ClockMark(tint = statusMutedColor)
+      }
       ReadStatus.Sent -> {
         CheckMark(tint = statusMutedColor)
-      }
-      ReadStatus.Delivered -> {
-        DoubleStatusCheck(tint = statusMutedColor)
       }
       ReadStatus.Read -> {
         DoubleStatusCheck(tint = statusReadColor)
@@ -224,6 +235,65 @@ private fun CheckMark(
   }
 }
 
+@Composable
+private fun ClockMark(
+  tint: Color,
+  modifier: Modifier = Modifier
+) {
+  val transition = rememberInfiniteTransition(label = "clock")
+  val hourAngle by transition.animateFloat(
+    label = "hourAngle",
+    initialValue = 0f,
+    targetValue = 360f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(durationMillis = CLOCK_HOUR_PERIOD_MILLIS, easing = LinearEasing),
+      repeatMode = RepeatMode.Restart
+    )
+  )
+  val minuteAngle by transition.animateFloat(
+    label = "minuteAngle",
+    initialValue = 0f,
+    targetValue = 360f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(durationMillis = CLOCK_MINUTE_PERIOD_MILLIS, easing = LinearEasing),
+      repeatMode = RepeatMode.Restart
+    )
+  )
+  Canvas(modifier = modifier.size(checkMarkSize)) {
+    val strokeWidth = checkMarkStrokeWidth.toPx()
+    val center = Offset(size.width / 2f, size.height / 2f)
+    val radius = (size.minDimension - strokeWidth) / 2f
+    drawCircle(
+      color = tint,
+      radius = radius,
+      center = center,
+      style = Stroke(width = strokeWidth)
+    )
+    drawClockHand(tint, center, radius * 0.5f, hourAngle, strokeWidth)
+    drawClockHand(tint, center, radius * 0.82f, minuteAngle, strokeWidth)
+  }
+}
+
+private fun DrawScope.drawClockHand(
+  tint: Color,
+  center: Offset,
+  length: Float,
+  angleDegrees: Float,
+  strokeWidth: Float
+) {
+  val radians = angleDegrees * (PI.toFloat() / HALF_TURN_DEGREES)
+  drawLine(
+    color = tint,
+    start = center,
+    end = Offset(
+      x = center.x + length * sin(radians),
+      y = center.y - length * cos(radians)
+    ),
+    strokeWidth = strokeWidth,
+    cap = StrokeCap.Round
+  )
+}
+
 private fun topShape(side: BubbleMessage.Side): Shape {
   val isLeft = side is BubbleMessage.Side.Left
   return RoundedCornerShape(
@@ -268,3 +338,8 @@ private val timeStatusTopPadding = 2.dp
 private val checkMarkSize = 12.dp
 private val checkMarkStrokeWidth = 1.5.dp
 private val doubleCheckMarkOffset = 5.dp
+
+private const val CLOCK_HOUR_PERIOD_MILLIS = 5000
+private const val CLOCK_MINUTE_PERIOD_MILLIS = 1500
+
+private const val HALF_TURN_DEGREES = 180f

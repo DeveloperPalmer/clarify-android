@@ -54,7 +54,7 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
       BubbleMessage(
         id = BubbleMessage.Id(randomUuid()),
         type = BubbleMessage.Type.Middle,
-        side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Delivered),
+        side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Sending),
         text = "Вот текущий флоу создания ветки — несколько строк, чтобы было видно перенос времени",
         time = "18:05"
       )

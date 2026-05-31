@@ -25,8 +25,8 @@ data class BubbleMessage(
 
   @Immutable
   enum class ReadStatus {
+    Sending,
     Sent,
-    Delivered,
     Read
   }
 
