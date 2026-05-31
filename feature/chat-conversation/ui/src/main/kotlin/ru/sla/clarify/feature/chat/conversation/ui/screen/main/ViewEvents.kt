@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +23,7 @@ import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
 import ru.sla.clarify.uikit.component.button.PrimaryButton
 import ru.sla.clarify.uikit.component.button.TextButton
+import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
 import ru.sla.clarify.uikit.event.Dialog
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.resRef

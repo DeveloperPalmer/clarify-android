@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +40,7 @@ import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.ui.screen.thread.ViewState.CreateBranchPayload
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.uikit.component.bottomsheet.ModalBottomSheet
+import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
 import ru.sla.clarify.uikit.theme.AppTheme
 
 internal fun showBranchCreationSheet(commit: Commit.Message) =
