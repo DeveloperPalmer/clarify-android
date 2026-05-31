@@ -3,7 +3,7 @@ package ru.sla.clarify.uikit.modifier
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -20,7 +20,8 @@ fun Modifier.surface(
   border: BorderStroke? = null,
   enabled: Boolean = true,
   elevation: Dp = 0.dp,
-  onClick: (() -> Unit)? = null
+  onClick: (() -> Unit)? = null,
+  onLongClick: (() -> Unit)? = null
 ): Modifier {
   return this
     .shadow(elevation, shape)
@@ -28,8 +29,12 @@ fun Modifier.surface(
     .background(color = backgroundColor, shape = shape)
     .clip(shape)
     .then(
-      if (onClick != null) {
-        Modifier.clickable(onClick = onClick, enabled = enabled)
+      if (onClick != null || onLongClick != null) {
+        Modifier.combinedClickable(
+          enabled = enabled,
+          onClick = { onClick?.invoke() },
+          onLongClick = { onLongClick?.invoke() }
+        )
       } else {
         Modifier
       }
@@ -43,7 +48,8 @@ fun Modifier.surface(
   border: BorderStroke? = null,
   enabled: Boolean = true,
   elevation: Dp = 0.dp,
-  onClick: (() -> Unit)? = null
+  onClick: (() -> Unit)? = null,
+  onLongClick: (() -> Unit)? = null
 ): Modifier {
   return this
     .shadow(elevation, shape)
@@ -51,8 +57,12 @@ fun Modifier.surface(
     .background(brush = backgroundBrush, shape = shape)
     .clip(shape)
     .then(
-      if (onClick != null) {
-        Modifier.clickable(onClick = onClick, enabled = enabled)
+      if (onClick != null || onLongClick != null) {
+        Modifier.combinedClickable(
+          enabled = enabled,
+          onClick = { onClick?.invoke() },
+          onLongClick = { onLongClick?.invoke() }
+        )
       } else {
         Modifier
       }

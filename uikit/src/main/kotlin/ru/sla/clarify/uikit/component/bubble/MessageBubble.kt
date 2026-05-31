@@ -2,7 +2,6 @@ package ru.sla.clarify.uikit.component.bubble
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -22,6 +21,7 @@ import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage.ReadStatus
+import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.AppTheme.colors
 import kotlin.math.max
@@ -30,7 +30,9 @@ import kotlin.math.roundToInt
 @Composable
 fun BubbleMessage(
   bubble: BubbleMessage,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  onClick: (() -> Unit)? = null,
+  onLongClick: (() -> Unit)? = null
 ) {
   val isRight = bubble.side is BubbleMessage.Side.Right
 
@@ -62,9 +64,11 @@ fun BubbleMessage(
 
   BubbleMessageContent(
     modifier = modifier
-      .background(
+      .surface(
         shape = shape,
-        color = backgroundColor
+        backgroundColor = backgroundColor,
+        onClick = onClick,
+        onLongClick = onLongClick
       )
       .padding(
         vertical = 8.dp,

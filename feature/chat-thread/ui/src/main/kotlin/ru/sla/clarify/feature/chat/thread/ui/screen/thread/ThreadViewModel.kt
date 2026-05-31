@@ -15,8 +15,9 @@ import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.thread.domain.ThreadModel
+import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
+import ru.sla.clarify.feature.chat.thread.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.thread.ui.routing.FlowEvent
-import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
@@ -56,9 +57,48 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    configurePeerCommitTransitions()
-    configureSenderCommitTransitions()
+    onEach(
+      threadModel.commits(branchId = null)
+        .map { it.toUiCommits() }
+    ) {
+      transitionTo { state, commits ->
+        state.copy(commits = commits.asReversed())
+      }
+      action { _, _, _ ->
+        threadModel.markReadCommits()
+      }
+    }
+
+    configureSendMessageTransitions()
     configureBranchTransitions()
+  }
+
+  private fun MachineDsl<ViewState>.configureSendMessageTransitions() {
+    onEach(intent(ViewIntents::sendMessage)) {
+      action { state, _, text ->
+        // state.commits is built via addFirst — index 0 is the newest commit.
+        val parentCommit = state.commits
+          .filterIsInstance<Commit.Message>()
+          .firstOrNull()
+        threadModel.sendMessage.start(
+          argument1 = null,
+          argument2 = requireNotNull(text.trim().ifBlank { null }),
+          argument3 = parentCommit?.source?.colorHex
+        )
+      }
+    }
+
+    onEach(
+      threadModel.sendMessage.jobFlow
+        .asLceState()
+        .map { it.toUiLceState() }
+    ) {
+      transitionTo { state, contentLoadState ->
+        state.copy(
+          isSending = contentLoadState is ContentLoadState.Loading
+        )
+      }
+    }
   }
 
   private fun MachineDsl<ViewState>.configureBranchTransitions() {
@@ -68,7 +108,7 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(intent(ViewIntents::showBranchSheet)) {
+    onEach(intent(ViewIntents::showBranches)) {
       action { _, _, commit ->
         sendViewEvent(showBranchCreationSheet(commit))
       }
@@ -90,7 +130,7 @@ class ThreadViewModel @Inject constructor(
       action { _, _, createBranch ->
         threadModel.createBranch.start(
           argument1 = null,
-          argument2 = createBranch.commit,
+          argument2 = createBranch.commit.source,
           argument3 = createBranch.name
         )
       }
@@ -110,45 +150,6 @@ class ThreadViewModel @Inject constructor(
             message = resRef(R.string.thread_branch_creation_failed)
           )
         )
-      }
-    }
-  }
-
-  private fun MachineDsl<ViewState>.configureSenderCommitTransitions() {
-    onEach(intent(ViewIntents::sendCommit)) {
-      action { state, _, text ->
-        // state.commits is built via addFirst — index 0 is the newest commit.
-        val parentCommit = state.commits
-          .filterIsInstance<Commit.Message>()
-          .firstOrNull()
-        threadModel.sendMessage.start(
-          argument1 = null,
-          argument2 = requireNotNull(text.trim().ifBlank { null }),
-          argument3 = parentCommit?.colorHex
-        )
-      }
-    }
-
-    onEach(
-      threadModel.sendMessage.jobFlow
-        .asLceState()
-        .map { it.toUiLceState() }
-    ) {
-      transitionTo { state, contentLoadState ->
-        state.copy(
-          isSending = contentLoadState is ContentLoadState.Loading
-        )
-      }
-    }
-  }
-
-  private fun MachineDsl<ViewState>.configurePeerCommitTransitions() {
-    onEach(threadModel.commits(branchId = null)) {
-      transitionTo { state, commits ->
-        state.copy(commits = commits.asReversed())
-      }
-      action { _, _, _ ->
-        threadModel.markReadCommits()
       }
     }
   }

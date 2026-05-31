@@ -30,14 +30,11 @@ sealed interface Commit {
   ) : Commit
 
   enum class Status(val value: String) {
-    Sending("sending"),
-    Sent("sent"),
-    Failed("failed");
+    Sent("sent");
 
     companion object {
       fun fromValue(value: String): Status {
-        return entries.firstOrNull { it.value == value }
-          ?: error("unexpected commit status: $value")
+        return entries.firstOrNull { it.value == value } ?: error("unexpected status: $value")
       }
     }
   }

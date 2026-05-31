@@ -35,8 +35,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toColorInt
-import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
@@ -44,7 +42,6 @@ import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
-import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -324,8 +321,8 @@ private fun Commits(
     items(
       items = commits,
       key = { it.id.value.ifEmpty { "${it.senderId.value}_${it.timestamp}_${it.text.hashCode()}" } }
-    ) { commit ->
-      CommitBubble(commit)
+    ) { _ ->
+      // TODO: Реализовать commit
     }
   }
 }
@@ -339,44 +336,6 @@ private fun BranchEmptyState(modifier: Modifier = Modifier) {
     Text(
       text = stringResource(R.string.branch_empty_state),
       style = AppTheme.typography.body1
-    )
-  }
-}
-
-@Composable
-private fun CommitBubble(commit: Commit) {
-  val alignment = if (commit.isSelf) Alignment.End else Alignment.Start
-  Column(
-    modifier = Modifier.fillMaxWidth(),
-    horizontalAlignment = alignment
-  ) {
-    Box(
-      modifier = Modifier
-        .surface(
-          shape = AppTheme.shapes.round12,
-          backgroundColor = Color(commit.colorHex.toColorInt())
-        )
-        .padding(
-          vertical = 8.dp,
-          horizontal = 12.dp
-        )
-    ) {
-      Text(
-        text = commit.text,
-        style = AppTheme.typography.body1,
-        color = AppTheme.colors.contentPrimary
-      )
-    }
-    val date = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE)
-    Text(
-      text = when (commit.status) {
-        Commit.Status.Sending -> stringResource(R.string.thread_commit_status_sending, date)
-        Commit.Status.Failed -> stringResource(R.string.thread_commit_status_failed, date)
-        Commit.Status.Sent -> date
-      },
-      color = AppTheme.colors.contentPrimary,
-      style = AppTheme.typography.caption,
-      modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
     )
   }
 }

@@ -37,8 +37,8 @@ import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.thread.ui.screen.thread.ViewState.CreateBranchPayload
-import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.uikit.component.bottomsheet.ModalBottomSheet
 import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
 import ru.sla.clarify.uikit.theme.AppTheme

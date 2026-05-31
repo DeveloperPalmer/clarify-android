@@ -183,6 +183,8 @@ class ThreadRepositoryImpl @Inject constructor(
       colorHex = commitNM.colorHex,
       timestamp = commitNM.createdAt?.toEpochSeconds() ?: 0L,
       isSelf = commitNM.senderUid == currentUserId.value,
+      // TODO: @sla. Добавить сохранение статуса сообщения из backend в локальный кэш.
+      //  сейчас только один статус - Sent
       status = Commit.Status.Sent.value
     )
   }

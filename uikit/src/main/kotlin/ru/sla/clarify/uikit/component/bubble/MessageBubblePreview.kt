@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.AppTheme.colors
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -42,6 +43,7 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
   ) {
     ClusterBubblePreview(
       BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
         type = BubbleMessage.Type.Top,
         side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Read),
         text = "Спасибо! Сейчас покажу",
@@ -50,6 +52,7 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
     )
     ClusterBubblePreview(
       BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
         type = BubbleMessage.Type.Middle,
         side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Delivered),
         text = "Вот текущий флоу создания ветки — несколько строк, чтобы было видно перенос времени",
@@ -58,6 +61,7 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
     )
     ClusterBubblePreview(
       BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
         type = BubbleMessage.Type.Bottom,
         side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Sent),
         text = "Зажимаешь — и готово",
@@ -67,6 +71,7 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
     VSpacer(12.dp)
     ClusterBubblePreview(
       BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
         type = BubbleMessage.Type.Top,
         side = BubbleMessage.Side.Left,
         text = "Привет! Глянула макет",
@@ -75,6 +80,7 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
     )
     ClusterBubblePreview(
       BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
         type = BubbleMessage.Type.Bottom,
         side = BubbleMessage.Side.Left,
         text = "Особенно как треды выносятся в отдельный экран — это топ",

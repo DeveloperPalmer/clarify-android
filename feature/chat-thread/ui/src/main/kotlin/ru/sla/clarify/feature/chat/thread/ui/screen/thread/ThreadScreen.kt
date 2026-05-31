@@ -2,8 +2,6 @@ package ru.sla.clarify.feature.chat.thread.ui.screen.thread
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,12 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,23 +29,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toColorInt
-import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
-import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.component.Avatar
+import ru.sla.clarify.uikit.component.bubble.BubbleMessage
 import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
 import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.modifier.bottomShadow
-import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -75,8 +70,8 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
         isSending = state.isSending,
         onBack = intents.navigateBack,
         onShowBranches = intents.showBranchesList,
-        onCommitLongPress = intents.showBranchSheet,
-        onSend = intents.sendCommit
+        onCommitLongClick = intents.showBranches,
+        onSend = intents.sendMessage
       )
     }
   }
@@ -91,7 +86,7 @@ internal fun ThreadReadyContent(
   onBack: () -> Unit,
   onSend: (String) -> Unit,
   onShowBranches: () -> Unit,
-  onCommitLongPress: (Commit.Message) -> Unit,
+  onCommitLongClick: (Commit.Message) -> Unit,
   modifier: Modifier = Modifier
 ) {
   val listState = rememberLazyListState()
@@ -127,10 +122,9 @@ internal fun ThreadReadyContent(
           .fillMaxWidth(),
         listState = listState,
         commits = commits,
-        onCommitLongPress = onCommitLongPress
+        onLongClick = onCommitLongClick
       )
     }
-    HorizontalDivider()
     InputRow(
       modifier = Modifier.fillMaxWidth(),
       isSending = isSending,
@@ -167,7 +161,7 @@ private fun TopAppBarContent(
 private fun Commits(
   commits: List<Commit>,
   listState: LazyListState,
-  onCommitLongPress: (Commit.Message) -> Unit,
+  onLongClick: (Commit.Message) -> Unit,
   modifier: Modifier = Modifier
 ) {
   LaunchedEffect(commits.size) {
@@ -185,15 +179,15 @@ private fun Commits(
     ),
     contentPadding = PaddingValues(8.dp)
   ) {
-    items(
+    itemsIndexed(
       items = commits,
-      key = { it.id.value.ifEmpty { "${it.senderId.value}_${it.timestamp}_${it.text.hashCode()}" } }
-    ) { commit ->
+      key = { index, item -> "${index}_{${item.source.id.value}}" }
+    ) { _, commit ->
       when (commit) {
         is Commit.Message -> {
           CommitMessageBubble(
             commit = commit,
-            onLongPress = { onCommitLongPress(commit) }
+            onLongClick = { onLongClick(commit) }
           )
         }
       }
@@ -215,48 +209,25 @@ private fun TreadEmptyState(modifier: Modifier = Modifier) {
   return
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CommitMessageBubble(
-  commit: Commit,
-  onLongPress: () -> Unit
+  commit: Commit.Message,
+  onLongClick: () -> Unit,
+  modifier: Modifier = Modifier
 ) {
-  val alignment = if (commit.isSelf) Alignment.End else Alignment.Start
-  Column(
-    modifier = Modifier.fillMaxWidth(),
-    horizontalAlignment = alignment
-  ) {
-    Box(
-      modifier = Modifier
-        .surface(
-          shape = AppTheme.shapes.round12,
-          backgroundColor = Color(commit.colorHex.toColorInt())
-        )
-        .combinedClickable(
-          onClick = {},
-          onLongClick = onLongPress
-        )
-        .padding(
-          vertical = 8.dp,
-          horizontal = 12.dp
-        )
-    ) {
-      Text(
-        text = commit.text,
-        style = AppTheme.typography.body1,
-        color = AppTheme.colors.contentPrimary
-      )
+  Box(
+    modifier = modifier.fillMaxWidth(),
+    contentAlignment = if (commit.bubble.side is BubbleMessage.Side.Right) {
+      Alignment.CenterEnd
+    } else {
+      Alignment.CenterStart
     }
-    val date = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE)
-    Text(
-      text = when (commit.status) {
-        Commit.Status.Sending -> stringResource(R.string.thread_commit_status_sending, date)
-        Commit.Status.Failed -> stringResource(R.string.thread_commit_status_failed, date)
-        Commit.Status.Sent -> date
-      },
-      color = AppTheme.colors.contentPrimary,
-      style = AppTheme.typography.caption,
-      modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+  ) {
+    BubbleMessage(
+      bubble = commit.bubble,
+      modifier = Modifier
+        .widthIn(max = 280.dp),
+      onLongClick = onLongClick
     )
   }
 }
