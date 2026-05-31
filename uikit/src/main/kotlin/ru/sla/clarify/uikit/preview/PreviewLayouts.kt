@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -21,8 +20,8 @@ fun PreviewColumn(
 ) {
   AppTheme(currentTheme = colorTheme) {
     Column(
+      modifier = modifier.background(AppTheme.colors.backgroundPrimary),
       verticalArrangement = verticalArrangement,
-      modifier = modifier.background(Color.White),
       content = content
     )
   }
