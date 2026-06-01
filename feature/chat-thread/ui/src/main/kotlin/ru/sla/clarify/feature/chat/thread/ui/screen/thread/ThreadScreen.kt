@@ -27,10 +27,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
@@ -46,6 +49,7 @@ import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
+import java.time.LocalDateTime
 
 @Composable
 fun ThreadScreen(viewModel: ThreadViewModel) {
@@ -71,6 +75,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
         onBack = intents.navigateBack,
         onShowBranches = intents.showBranchesList,
         onCommitLongClick = intents.showBranches,
+        onCommitsRead = intents.markReadUpTo,
         onSend = intents.sendMessage
       )
     }
@@ -87,6 +92,7 @@ internal fun ThreadReadyContent(
   onSend: (String) -> Unit,
   onShowBranches: () -> Unit,
   onCommitLongClick: (Commit.Message) -> Unit,
+  onCommitsRead: (LocalDateTime) -> Unit,
   modifier: Modifier = Modifier
 ) {
   val listState = rememberLazyListState()
@@ -122,7 +128,8 @@ internal fun ThreadReadyContent(
           .fillMaxWidth(),
         listState = listState,
         commits = commits,
-        onLongClick = onCommitLongClick
+        onLongClick = onCommitLongClick,
+        onCommitsRead = onCommitsRead
       )
     }
     InputRow(
@@ -162,12 +169,23 @@ private fun Commits(
   commits: List<Commit>,
   listState: LazyListState,
   onLongClick: (Commit.Message) -> Unit,
+  onCommitsRead: (LocalDateTime) -> Unit,
   modifier: Modifier = Modifier
 ) {
   LaunchedEffect(commits.size) {
     if (commits.isNotEmpty()) {
       listState.animateScrollToItem(0)
     }
+  }
+  LaunchedEffect(listState, commits) {
+    snapshotFlow {
+      listState.layoutInfo.visibleItemsInfo
+        .mapNotNull { commits.getOrNull(it.index)?.source?.timestamp }
+        .maxOrNull()
+    }
+      .filterNotNull()
+      .distinctUntilChanged()
+      .collect(onCommitsRead)
   }
   LazyColumn(
     modifier = modifier,

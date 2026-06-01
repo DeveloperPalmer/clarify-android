@@ -15,6 +15,7 @@ import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 @SingleIn(ThreadScope::class)
@@ -48,6 +49,10 @@ class ThreadModel @Inject constructor(
 
   fun markReadCommits() {
     scope.launch { threadRepository.markAsRead() }
+  }
+
+  fun markReadUpTo(lastReadAt: LocalDateTime) {
+    scope.launch { threadRepository.markReadUpTo(lastReadAt) }
   }
 
   fun branches(): Flow<List<Branch>> {

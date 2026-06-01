@@ -64,8 +64,11 @@ class ThreadViewModel @Inject constructor(
       transitionTo { state, commits ->
         state.copy(commits = commits.asReversed())
       }
-      action { _, _, _ ->
-        threadModel.markReadCommits()
+    }
+
+    onEach(intent(ViewIntents::markReadUpTo)) {
+      action { _, _, lastReadAt ->
+        threadModel.markReadUpTo(lastReadAt)
       }
     }
 

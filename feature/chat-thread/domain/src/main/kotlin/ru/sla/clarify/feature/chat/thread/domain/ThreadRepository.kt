@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
+import java.time.LocalDateTime
 
 interface ThreadRepository {
 
@@ -26,4 +27,6 @@ interface ThreadRepository {
   )
 
   suspend fun markAsRead()
+
+  suspend fun markReadUpTo(lastReadAt: LocalDateTime)
 }

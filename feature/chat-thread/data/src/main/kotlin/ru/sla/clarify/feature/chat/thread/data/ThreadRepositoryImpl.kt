@@ -31,6 +31,7 @@ import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 @SingleIn(ThreadScope::class)
@@ -41,6 +42,8 @@ class ThreadRepositoryImpl @Inject constructor(
   private val persistedDB: PersistedDB,
   private val threadMediator: ThreadMediator
 ) : ThreadRepository {
+
+  private var lastReadWatermark: LocalDateTime? = null
 
   override val peer: Flow<Peer?> = persistedDB.userQueries
     .selectById(peerId.value)
@@ -136,6 +139,14 @@ class ThreadRepositoryImpl @Inject constructor(
   override suspend fun markAsRead() {
     val conversationId = threadMediator.conversationId() ?: return
     firestore.patchUnreadCount(conversationId)
+  }
+
+  override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
+    val conversationId = threadMediator.conversationId() ?: return
+    val current = lastReadWatermark
+    if (current != null && !lastReadAt.isAfter(current)) return
+    lastReadWatermark = lastReadAt
+    firestore.patchReadWatermark(conversationId, lastReadAt)
   }
 
   private suspend fun saveHistoryCommits(
