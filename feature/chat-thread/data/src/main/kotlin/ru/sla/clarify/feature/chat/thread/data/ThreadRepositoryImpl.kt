@@ -147,6 +147,7 @@ class ThreadRepositoryImpl @Inject constructor(
     if (current != null && !lastReadAt.isAfter(current)) return
     lastReadWatermark = lastReadAt
     firestore.patchReadWatermark(conversationId, lastReadAt)
+    firestore.patchUnreadCount(conversationId)
   }
 
   private suspend fun saveHistoryCommits(
