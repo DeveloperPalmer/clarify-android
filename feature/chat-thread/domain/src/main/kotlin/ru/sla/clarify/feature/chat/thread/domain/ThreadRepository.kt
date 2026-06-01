@@ -14,6 +14,8 @@ interface ThreadRepository {
   fun commits(branchId: Branch.Id?): Flow<List<Commit>>
   suspend fun subscribeOnCommitChanges(branchId: Branch.Id?)
 
+  fun unreadCount(): Flow<Long>
+
   suspend fun fetchHistoryCommits(
     branchId: Branch.Id?,
     count: Int,

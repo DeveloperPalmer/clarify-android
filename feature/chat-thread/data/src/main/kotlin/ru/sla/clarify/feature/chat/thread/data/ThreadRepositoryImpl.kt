@@ -79,6 +79,11 @@ class ThreadRepositoryImpl @Inject constructor(
     )
   }
 
+  override fun unreadCount(): Flow<Long> = flow {
+    val conversationId = threadMediator.awaitConversationId()
+    emitAll(firestore.unreadCountLive(conversationId))
+  }
+
   override suspend fun subscribeOnCommitChanges(branchId: Branch.Id?) {
     val conversationId = threadMediator.awaitConversationId()
     val userId = threadMediator.requireUserId()

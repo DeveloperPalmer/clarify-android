@@ -47,6 +47,10 @@ class ThreadModel @Inject constructor(
     return threadRepository.commits(branchId)
   }
 
+  fun unreadCount(): Flow<Long> {
+    return threadRepository.unreadCount()
+  }
+
   fun markReadCommits() {
     scope.launch { threadRepository.markAsRead() }
   }

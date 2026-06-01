@@ -62,6 +62,7 @@
     <string name="thread_branches_list_sheet_title">Branches</string>
     <string name="thread_branches_list_sheet_empty">No branches yet. Long-press a message to create one.</string>
     <string name="thread_branch_creation_failed">Branch creation failed</string>
+    <string name="thread_scroll_to_bottom">Scroll to latest messages</string>
     <string name="thread_commit_status_sending">%1$s • sending</string>
     <string name="thread_commit_status_failed">%1$s • failed</string>
 

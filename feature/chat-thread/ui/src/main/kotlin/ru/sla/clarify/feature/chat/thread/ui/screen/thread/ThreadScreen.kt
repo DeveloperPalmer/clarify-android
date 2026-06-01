@@ -1,7 +1,12 @@
 package ru.sla.clarify.feature.chat.thread.ui.screen.thread
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,13 +16,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,15 +34,18 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
@@ -46,6 +58,7 @@ import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.modifier.bottomShadow
+import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -72,6 +85,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
         commits = state.commits,
         branchesCount = state.branches.size,
         isSending = state.isSending,
+        unreadCount = state.unreadCount,
         onBack = intents.navigateBack,
         onShowBranches = intents.showBranchesList,
         onCommitLongClick = intents.showBranches,
@@ -88,6 +102,7 @@ internal fun ThreadReadyContent(
   commits: List<Commit>,
   branchesCount: Int,
   isSending: Boolean,
+  unreadCount: Int,
   onBack: () -> Unit,
   onSend: (String) -> Unit,
   onShowBranches: () -> Unit,
@@ -122,15 +137,26 @@ internal fun ThreadReadyContent(
           .fillMaxWidth()
       )
     } else {
-      Commits(
+      Box(
         modifier = Modifier
           .weight(1f)
-          .fillMaxWidth(),
-        listState = listState,
-        commits = commits,
-        onLongClick = onCommitLongClick,
-        onCommitsRead = onCommitsRead
-      )
+          .fillMaxWidth()
+      ) {
+        Commits(
+          modifier = Modifier.fillMaxSize(),
+          listState = listState,
+          commits = commits,
+          onLongClick = onCommitLongClick,
+          onCommitsRead = onCommitsRead
+        )
+        ScrollToBottomFab(
+          modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 16.dp, bottom = 16.dp),
+          listState = listState,
+          unreadCount = unreadCount
+        )
+      }
     }
     InputRow(
       modifier = Modifier.fillMaxWidth(),
@@ -194,7 +220,7 @@ private fun Commits(
   ) {
     itemsIndexed(
       items = commits,
-      key = { index, item -> "${index}_{${item.source.id.value}}" }
+      key = { _, item -> item.source.id.value }
     ) { _, commit ->
       when (commit) {
         is Commit.Message -> {
@@ -205,6 +231,74 @@ private fun Commits(
         }
       }
     }
+  }
+}
+
+@Composable
+private fun ScrollToBottomFab(
+  listState: LazyListState,
+  unreadCount: Int,
+  modifier: Modifier = Modifier
+) {
+  val isVisible by remember {
+    derivedStateOf { listState.firstVisibleItemIndex > 0 }
+  }
+  val scope = rememberCoroutineScope()
+  AnimatedVisibility(
+    modifier = modifier,
+    visible = isVisible,
+    enter = fadeIn() + scaleIn(),
+    exit = fadeOut() + scaleOut()
+  ) {
+    Box(contentAlignment = Alignment.TopCenter) {
+      Box(
+        modifier = Modifier
+          .padding(top = 8.dp)
+          .size(44.dp)
+          .surface(
+            shape = CircleShape,
+            backgroundColor = AppTheme.colors.cardSecondary,
+            elevation = 4.dp,
+            onClick = { scope.launch { listState.animateScrollToItem(0) } }
+          ),
+        contentAlignment = Alignment.Center
+      ) {
+        Icon(
+          painter = painterResource(R.drawable.ic_chevron_down_24),
+          tint = AppTheme.colors.contentSecondary,
+          contentDescription = stringResource(R.string.thread_scroll_to_bottom)
+        )
+      }
+      if (unreadCount > 0) {
+        UnreadBadge(
+          modifier = Modifier.align(Alignment.TopCenter),
+          count = unreadCount
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun UnreadBadge(
+  count: Int,
+  modifier: Modifier = Modifier
+) {
+  Box(
+    modifier = modifier
+      .sizeIn(minWidth = 18.dp, minHeight = 18.dp)
+      .surface(
+        shape = CircleShape,
+        backgroundColor = AppTheme.colors.contentAccentPrimary
+      )
+      .padding(horizontal = 5.dp),
+    contentAlignment = Alignment.Center
+  ) {
+    Text(
+      text = count.toString(),
+      style = AppTheme.typography.caption,
+      color = AppTheme.colors.contentAccentSecondary
+    )
   }
 }
 

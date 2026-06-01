@@ -72,6 +72,12 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
+    onEach(threadModel.unreadCount()) {
+      transitionTo { state, unreadCount ->
+        state.copy(unreadCount = unreadCount.toInt())
+      }
+    }
+
     configureSendMessageTransitions()
     configureBranchTransitions()
   }

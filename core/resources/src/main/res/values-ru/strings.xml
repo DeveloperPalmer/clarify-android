@@ -59,6 +59,7 @@
     <string name="thread_branches_list_sheet_title">Ветки</string>
     <string name="thread_branches_list_sheet_empty">Веток пока нет. Зажмите сообщение, чтобы создать ветку.</string>
     <string name="thread_branch_creation_failed">Не удалось создать ветку</string>
+    <string name="thread_scroll_to_bottom">Прокрутить к новым сообщениям</string>
     <string name="thread_commit_status_sending">%1$s • отправляется</string>
     <string name="thread_commit_status_failed">%1$s • ошибка</string>
 
