@@ -208,17 +208,19 @@ private fun Commits(
       .distinctUntilChanged()
       .collect(onCommitsRead)
   }
-  val newestCommitId = commits.firstOrNull()?.source?.id?.value
+  val newestCommit = commits.firstOrNull()
+  val newestCommitId = newestCommit?.source?.id?.value
   var previousNewestCommitId by remember { mutableStateOf<String?>(null) }
   LaunchedEffect(newestCommitId) {
-    if (newestCommitId == null) return@LaunchedEffect
+    if (newestCommit == null || newestCommitId == null) return@LaunchedEffect
     val isFirstLoad = previousNewestCommitId == null
     val isNewCommit = newestCommitId != previousNewestCommitId
     previousNewestCommitId = newestCommitId
     if (!isNewCommit) return@LaunchedEffect
 
+    val newestIsSelf = newestCommit.source.isSelf
     val wasAtBottom = listState.firstVisibleItemIndex <= 1
-    if (isFirstLoad || wasAtBottom) {
+    if (isFirstLoad || newestIsSelf || wasAtBottom) {
       listState.scrollToItem(0)
     }
   }
