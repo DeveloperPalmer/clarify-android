@@ -208,6 +208,20 @@ private fun Commits(
       .distinctUntilChanged()
       .collect(onCommitsRead)
   }
+  val newestCommitId = commits.firstOrNull()?.source?.id?.value
+  var previousNewestCommitId by remember { mutableStateOf<String?>(null) }
+  LaunchedEffect(newestCommitId) {
+    if (newestCommitId == null) return@LaunchedEffect
+    val isFirstLoad = previousNewestCommitId == null
+    val isNewCommit = newestCommitId != previousNewestCommitId
+    previousNewestCommitId = newestCommitId
+    if (!isNewCommit) return@LaunchedEffect
+
+    val wasAtBottom = listState.firstVisibleItemIndex <= 1
+    if (isFirstLoad || wasAtBottom) {
+      listState.scrollToItem(0)
+    }
+  }
   LazyColumn(
     modifier = modifier,
     state = listState,
