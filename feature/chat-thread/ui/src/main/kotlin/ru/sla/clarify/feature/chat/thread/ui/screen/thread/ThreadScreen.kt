@@ -172,11 +172,6 @@ private fun Commits(
   onCommitsRead: (LocalDateTime) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  LaunchedEffect(commits.size) {
-    if (commits.isNotEmpty()) {
-      listState.animateScrollToItem(0)
-    }
-  }
   LaunchedEffect(listState, commits) {
     snapshotFlow {
       listState.layoutInfo.visibleItemsInfo
