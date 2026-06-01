@@ -11,8 +11,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -73,28 +75,38 @@ fun BubbleMessage(
     BubbleMessage.Type.Bottom -> bottomShape(bubble.side)
   }
 
-  BubbleMessageContent(
-    modifier = modifier
-      .surface(
-        shape = shape,
-        backgroundColor = backgroundColor,
-        onClick = onClick,
-        onLongClick = onLongClick
-      )
-      .padding(
-        vertical = 8.dp,
-        horizontal = 12.dp
-      ),
-    text = bubble.text,
-    textColor = contentColor
+  Box(
+    modifier = modifier.fillMaxWidth(),
+    contentAlignment = if (bubble.side is BubbleMessage.Side.Right) {
+      Alignment.CenterEnd
+    } else {
+      Alignment.CenterStart
+    }
   ) {
-    BubbleTimeStatus(
-      time = bubble.time,
-      timeColor = timeColor,
-      status = (bubble.side as? BubbleMessage.Side.Right)?.status,
-      statusMutedColor = timeColor,
-      statusReadColor = statusReadColor
-    )
+    BubbleMessageContent(
+      modifier = Modifier
+        .widthIn(max = 280.dp)
+        .surface(
+          shape = shape,
+          backgroundColor = backgroundColor,
+          onClick = onClick,
+          onLongClick = onLongClick
+        )
+        .padding(
+          vertical = 8.dp,
+          horizontal = 12.dp
+        ),
+      text = bubble.text,
+      textColor = contentColor
+    ) {
+      BubbleTimeStatus(
+        time = bubble.time,
+        timeColor = timeColor,
+        status = (bubble.side as? BubbleMessage.Side.Right)?.status,
+        statusMutedColor = timeColor,
+        statusReadColor = statusReadColor
+      )
+    }
   }
 }
 

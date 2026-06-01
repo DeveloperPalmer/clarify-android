@@ -12,7 +12,6 @@ data class ViewState(
   val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
   val commits: List<Commit> = emptyList(),
   val branches: List<Branch> = emptyList(),
-  val isSending: Boolean = false,
   val unreadCount: Int = 0
 ) {
   data class CreateBranchPayload(

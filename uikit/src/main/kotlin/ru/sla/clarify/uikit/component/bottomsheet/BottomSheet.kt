@@ -1,5 +1,7 @@
 package ru.sla.clarify.uikit.component.bottomsheet
 
+import android.view.View
+import android.view.Window
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,10 +25,14 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
 import ru.sla.clarify.uikit.theme.AppTheme
 
 @Composable
@@ -49,19 +55,37 @@ fun ModalBottomSheet(
         onUpdateState(sheetState)
       }
     }
+    val isLightTheme = AppTheme.colors.isLight
     ModalBottomSheet(
       modifier = modifier,
-      onDismissRequest = { onDismissRequest() },
-      shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-      contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Top).union(WindowInsets.ime) },
       sheetState = sheetState,
-      tonalElevation = SheetDefaultElevation,
-      sheetGesturesEnabled = sheetGesturesEnabled,
-      scrimColor = Color.Black.copy(0.4f),
-      containerColor = sheetBackgroundColor,
+      shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
       dragHandle = {},
-      properties = properties
+      containerColor = sheetBackgroundColor,
+      sheetGesturesEnabled = sheetGesturesEnabled,
+      tonalElevation = SheetDefaultElevation,
+      scrimColor = Color.Black.copy(0.4f),
+      contentWindowInsets = {
+        WindowInsets.safeDrawing
+          .only(WindowInsetsSides.Top)
+          .union(WindowInsets.ime)
+      },
+      properties = ModalBottomSheetProperties(
+        isAppearanceLightStatusBars = isLightTheme,
+        isAppearanceLightNavigationBars = isLightTheme,
+        securePolicy = properties.securePolicy,
+        shouldDismissOnBackPress = properties.shouldDismissOnBackPress,
+        shouldDismissOnClickOutside = properties.shouldDismissOnClickOutside
+      ),
+      onDismissRequest = { onDismissRequest() }
     ) {
+      val sheetView = LocalView.current
+      SideEffect {
+        findDialogWindow(sheetView)?.let { window ->
+          window.navigationBarColor = Color.Transparent.toArgb()
+          window.isNavigationBarContrastEnforced = false
+        }
+      }
       Column(
         modifier = Modifier
           .fillMaxWidth()
@@ -99,6 +123,14 @@ private fun BottomSheetHandle(
           shape = RoundedCornerShape(5.dp)
         )
     )
+  }
+}
+
+private tailrec fun findDialogWindow(view: View?): Window? {
+  return when (val parent = view?.parent) {
+    is DialogWindowProvider -> parent.window
+    is View -> findDialogWindow(parent)
+    else -> null
   }
 }
 

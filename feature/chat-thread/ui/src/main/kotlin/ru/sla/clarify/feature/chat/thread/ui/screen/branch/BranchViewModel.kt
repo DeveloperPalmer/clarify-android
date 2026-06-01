@@ -15,13 +15,13 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.startOnSubscribe
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
-import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.thread.domain.ThreadModel
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
+import ru.sla.clarify.feature.chat.thread.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.thread.ui.routing.FlowEvent
-import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 
@@ -94,32 +94,32 @@ class BranchViewModel @AssistedInject constructor(
         threadModel.sendMessage.start(
           argument1 = branchId,
           argument2 = requireNotNull(text.trim().ifBlank { null }),
-          argument3 = parentCommit?.colorHex
-        )
-      }
-    }
-
-    onEach(
-      threadModel.sendMessage.jobFlow
-        .asLceState()
-        .map { it.toUiLceState() }
-    ) {
-      transitionTo { state, contentLoadState ->
-        state.copy(
-          isSending = contentLoadState is ContentLoadState.Loading
+          argument3 = parentCommit?.source?.colorHex
         )
       }
     }
   }
 
   private fun MachineDsl<ViewState>.configurePeerCommitTransitions() {
-    onEach(threadModel.commits(branchId)) {
+    onEach(
+      threadModel.commits(branchId)
+        .map { it.toUiCommits() }
+    ) {
       transitionTo { state, commits ->
         // SQL отдаёт ASC по timestamp; UI рендерит newest-first.
         state.copy(commits = commits.asReversed())
       }
-      action { _, _, _ ->
-        threadModel.markReadCommits()
+    }
+
+    onEach(intent(ViewIntents::markReadUpTo)) {
+      action { _, _, lastReadAt ->
+        threadModel.markReadUpTo(lastReadAt)
+      }
+    }
+
+    onEach(threadModel.unreadCount()) {
+      transitionTo { state, unreadCount ->
+        state.copy(unreadCount = unreadCount.toInt())
       }
     }
   }

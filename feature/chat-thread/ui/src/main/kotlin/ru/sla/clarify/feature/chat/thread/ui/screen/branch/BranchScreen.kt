@@ -5,17 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
@@ -24,24 +20,24 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
-import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.uikit.component.icon.IconAction
-import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
+import ru.sla.clarify.feature.chat.thread.ui.components.ChatEmptyState
+import ru.sla.clarify.feature.chat.thread.ui.components.ChatInput
+import ru.sla.clarify.feature.chat.thread.ui.components.Commits
+import ru.sla.clarify.feature.chat.thread.ui.components.ScrollToBottomFab
+import ru.sla.clarify.feature.chat.thread.ui.components.rememberTopBarElevation
+import ru.sla.clarify.uikit.component.topappbar.TopAppBar
+import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
+import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -80,12 +76,19 @@ internal fun BranchReadyContent(
   state: ViewState,
   intents: ViewIntents
 ) {
+  val listState = rememberLazyListState()
+  val topBarElevation = rememberTopBarElevation(listState)
+  val topBarModifier = remember(topBarElevation) {
+    Modifier.bottomShadow { topBarElevation.value }
+  }
   Column(
     modifier = Modifier
       .fillMaxSize()
+      .systemBarsPadding()
       .imePadding()
   ) {
-    TopBar(
+    BranchTopAppBar(
+      modifier = topBarModifier,
       branchName = state.branchName,
       mergeRequestStatus = state.mergeRequest?.status,
       isMergeActionPending = state.mergeRequestRunning,
@@ -104,20 +107,33 @@ internal fun BranchReadyContent(
       )
     }
     if (state.commits.isEmpty()) {
-      BranchEmptyState(
+      ChatEmptyState(
+        text = stringResource(R.string.branch_empty_state),
         modifier = Modifier
           .weight(1f)
           .fillMaxWidth()
       )
     } else {
-      Commits(
-        commits = state.commits,
+      Box(
         modifier = Modifier
           .weight(1f)
           .fillMaxWidth()
-      )
+      ) {
+        Commits(
+          modifier = Modifier.fillMaxSize(),
+          listState = listState,
+          commits = state.commits,
+          onCommitsRead = intents.markReadUpTo
+        )
+        ScrollToBottomFab(
+          modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 16.dp, bottom = 16.dp),
+          listState = listState,
+          unreadCount = state.unreadCount
+        )
+      }
     }
-    HorizontalDivider()
     BottomArea(
       state = state,
       onSend = intents.sendCommit
@@ -126,53 +142,49 @@ internal fun BranchReadyContent(
 }
 
 @Composable
-private fun TopBar(
+private fun BranchTopAppBar(
   branchName: String?,
   mergeRequestStatus: Branch.MergeRequest.Status?,
   isMergeActionPending: Boolean,
   onBack: () -> Unit,
-  onRequestMerge: () -> Unit
+  onRequestMerge: () -> Unit,
+  modifier: Modifier = Modifier
 ) {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .statusBarsPadding()
-      .padding(horizontal = 8.dp, vertical = 8.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
-    IconAction(
-      iconResId = R.drawable.ic_back_24,
-      onClick = onBack
-    )
-    if (branchName != null) {
-      Text(
-        modifier = Modifier
-          .weight(1f)
-          .padding(start = 4.dp),
-        text = branchName.ifEmpty { stringResource(R.string.branch_default_name) },
-        style = AppTheme.typography.title1,
-        fontWeight = FontWeight.SemiBold
-      )
-    }
-    when (mergeRequestStatus) {
-      null -> Button(
-        onClick = onRequestMerge,
-        enabled = !isMergeActionPending
-      ) {
-        Text(stringResource(R.string.branch_open_mr_button))
+  TopAppBar(
+    modifier = modifier,
+    navigationIcon = { TopAppBarDefaults.NavigationIcon(onBack) },
+    title = { branchName?.let { TopAppBarContent(branchName = it) } },
+    actions = {
+      when (mergeRequestStatus) {
+        null -> Button(
+          onClick = onRequestMerge,
+          enabled = !isMergeActionPending
+        ) {
+          Text(stringResource(R.string.branch_open_mr_button))
+        }
+        Branch.MergeRequest.Status.Open -> MergeStatusLabel(
+          text = stringResource(R.string.branch_merge_in_progress)
+        )
+        Branch.MergeRequest.Status.ReadyToMerge -> MergeStatusLabel(
+          text = stringResource(R.string.branch_merge_ready),
+          showProgress = false
+        )
+        Branch.MergeRequest.Status.Merged -> Unit
       }
-      Branch.MergeRequest.Status.Open -> MergeStatusLabel(
-        text = stringResource(R.string.branch_merge_in_progress)
-      )
-      Branch.MergeRequest.Status.ReadyToMerge -> MergeStatusLabel(
-        text = stringResource(R.string.branch_merge_ready),
-        showProgress = false
-      )
-      Branch.MergeRequest.Status.Merged -> Unit
     }
-  }
-  HorizontalDivider()
+  )
+}
+
+@Composable
+private fun TopAppBarContent(
+  branchName: String,
+  modifier: Modifier = Modifier
+) {
+  Text(
+    modifier = modifier,
+    text = branchName.ifEmpty { stringResource(R.string.branch_default_name) },
+    style = AppTheme.typography.title2Bold
+  )
 }
 
 @Composable
@@ -276,12 +288,9 @@ private fun BottomArea(
   state: ViewState,
   onSend: (String) -> Unit
 ) {
-  val modifier = Modifier
-    .fillMaxWidth()
-    .navigationBarsPadding()
+  val modifier = Modifier.fillMaxWidth()
   when (state.mergeRequest?.status) {
-    null -> InputRow(
-      isSending = state.isSending,
+    null -> ChatInput(
       onSend = onSend,
       modifier = modifier
     )
@@ -293,49 +302,6 @@ private fun BottomArea(
     Branch.MergeRequest.Status.Merged -> LockedBanner(
       text = stringResource(R.string.branch_merged_read_only),
       modifier = modifier
-    )
-  }
-}
-
-@Composable
-private fun Commits(
-  commits: List<Commit>,
-  modifier: Modifier = Modifier
-) {
-  val listState = rememberLazyListState()
-  LaunchedEffect(commits.size) {
-    if (commits.isNotEmpty()) {
-      listState.animateScrollToItem(0)
-    }
-  }
-  LazyColumn(
-    modifier = modifier,
-    state = listState,
-    reverseLayout = true,
-    verticalArrangement = Arrangement.spacedBy(
-      space = 4.dp,
-      alignment = Alignment.Bottom
-    ),
-    contentPadding = PaddingValues(8.dp)
-  ) {
-    items(
-      items = commits,
-      key = { it.id.value.ifEmpty { "${it.senderId.value}_${it.timestamp}_${it.text.hashCode()}" } }
-    ) { _ ->
-      // TODO: Реализовать commit
-    }
-  }
-}
-
-@Composable
-private fun BranchEmptyState(modifier: Modifier = Modifier) {
-  Box(
-    modifier = modifier,
-    contentAlignment = Alignment.Center
-  ) {
-    Text(
-      text = stringResource(R.string.branch_empty_state),
-      style = AppTheme.typography.body1
     )
   }
 }
@@ -387,39 +353,5 @@ private fun LockedBanner(
       style = AppTheme.typography.body2,
       color = AppTheme.colors.contentPrimary
     )
-  }
-}
-
-@Composable
-private fun InputRow(
-  isSending: Boolean,
-  onSend: (String) -> Unit,
-  modifier: Modifier = Modifier
-) {
-  Row(
-    modifier = modifier
-      .padding(horizontal = 8.dp, vertical = 8.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
-    var inputValue by rememberSaveable { mutableStateOf("") }
-    OutlinedTextField(
-      modifier = Modifier.weight(1f),
-      value = inputValue,
-      onValueChange = { inputValue = it },
-      placeholder = { Text(stringResource(R.string.chat_input_placeholder)) }
-    )
-    Button(
-      onClick = {
-        val text = inputValue.trim()
-        if (text.isNotEmpty()) {
-          onSend(text)
-          inputValue = ""
-        }
-      },
-      enabled = inputValue.isNotBlank() && !isSending
-    ) {
-      Text(stringResource(R.string.chat_input_send_button))
-    }
   }
 }

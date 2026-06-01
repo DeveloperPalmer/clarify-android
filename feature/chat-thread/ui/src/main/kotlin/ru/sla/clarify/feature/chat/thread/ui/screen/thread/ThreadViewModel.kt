@@ -11,7 +11,6 @@ import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.startOnSubscribe
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
-import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.thread.domain.ThreadModel
@@ -93,18 +92,6 @@ class ThreadViewModel @Inject constructor(
           argument1 = null,
           argument2 = requireNotNull(text.trim().ifBlank { null }),
           argument3 = parentCommit?.source?.colorHex
-        )
-      }
-    }
-
-    onEach(
-      threadModel.sendMessage.jobFlow
-        .asLceState()
-        .map { it.toUiLceState() }
-    ) {
-      transitionTo { state, contentLoadState ->
-        state.copy(
-          isSending = contentLoadState is ContentLoadState.Loading
         )
       }
     }
