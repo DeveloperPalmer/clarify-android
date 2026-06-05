@@ -111,8 +111,8 @@ class ThreadViewModel @Inject constructor(
     }
 
     onEach(intent(ViewIntents::showBranchesList)) {
-      action { state, _, _ ->
-        sendViewEvent(showBranchesListSheet(state.branches))
+      action { _, _, _ ->
+        sendViewEvent(showBranchesListSheet())
       }
     }
 

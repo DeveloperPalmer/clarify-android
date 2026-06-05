@@ -29,8 +29,9 @@ fun <S : Any, I : ViewIntents> MviComponent(
   LaunchedEffect(viewModel) {
     viewModel.eventsFlow
       .map { event ->
-        if (event is ScreenViewEvent<*>) {
-          (event as ScreenViewEvent<I>).event(
+        if (event is ScreenViewEvent<*, *>) {
+          (event as ScreenViewEvent<S, I>).event(
+            viewModel.viewStateFlow,
             intents
           )
         } else {

@@ -12,6 +12,7 @@ import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,7 +26,6 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
-import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.ui.components.BranchItem
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.thread.ui.screen.thread.ViewState.CreateBranchPayload
@@ -37,8 +37,8 @@ import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 import ru.sla.resourcerefs.resRef
 
-internal fun showBranchCreationSheet(commit: Commit.Message): ScreenViewEvent<ViewIntents> {
-  return ScreenViewEvent { intents ->
+internal fun showBranchCreationSheet(commit: Commit.Message): ScreenViewEvent<ViewState, ViewIntents> {
+  return ScreenViewEvent { _, intents ->
     object : ViewEvent.BottomSheet {
       override val sheetState = mutableStateOf<SheetState?>(null)
 
@@ -101,14 +101,15 @@ internal fun showBranchCreationSheet(commit: Commit.Message): ScreenViewEvent<Vi
   }
 }
 
-internal fun showBranchesListSheet(branches: List<Branch>): ScreenViewEvent<ViewIntents> {
-  return ScreenViewEvent { intents ->
+internal fun showBranchesListSheet(): ScreenViewEvent<ViewState, ViewIntents> {
+  return ScreenViewEvent { stateFlow, intents ->
     object : ViewEvent.BottomSheet {
       override val sheetState = mutableStateOf<SheetState?>(null)
 
       @OptIn(ExperimentalMaterial3Api::class)
       @Composable
       override fun ViewEventHostScope.Content() {
+        val state by stateFlow.collectAsState()
         BackHandler { dismissEventPresentation() }
         ModalBottomSheet(
           visible = true,
@@ -128,7 +129,7 @@ internal fun showBranchesListSheet(branches: List<Branch>): ScreenViewEvent<View
               )
               VSpacer(16.dp)
             }
-            if (branches.isEmpty()) {
+            if (state.branches.isEmpty()) {
               item {
                 Text(
                   modifier = Modifier.padding(horizontal = 8.dp),
@@ -140,7 +141,7 @@ internal fun showBranchesListSheet(branches: List<Branch>): ScreenViewEvent<View
             } else {
               itemsIndexed(
                 key = { _, branch -> branch.id.value },
-                items = branches
+                items = state.branches
               ) { index, item ->
                 BranchItem(
                   modifier = Modifier.fillMaxWidth(),
@@ -150,7 +151,7 @@ internal fun showBranchesListSheet(branches: List<Branch>): ScreenViewEvent<View
                     dismissEventPresentation()
                   }
                 )
-                if (index != branches.lastIndex) {
+                if (index != state.branches.lastIndex) {
                   VSpacer(12.dp)
                 }
               }

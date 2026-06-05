@@ -104,11 +104,11 @@ private fun LeadingBlock(
         modifier = modifier
           .background(
             shape = AppTheme.shapes.round16,
-            color = AppTheme.colors.successPrimary
+            color = AppTheme.colors.successSecondary
           )
           .padding(8.dp),
         painter = painterResource(R.drawable.ic_branch_merged_24),
-        tint = AppTheme.colors.successSecondary,
+        tint = AppTheme.colors.contentSecondary,
         contentDescription = null
       )
     }
@@ -136,34 +136,6 @@ private fun TrailingBlock(
     )
   }
 }
-
-// @Composable
-// private fun MergeRequestStatus(
-//  status: Branch.MergeRequest.Status?,
-//  modifier: Modifier = Modifier
-// ) {
-//  AnimatedVisibility(status != null) {
-//    if (status == null) {
-//      return@AnimatedVisibility
-//    }
-//    Text(
-//      modifier = modifier,
-//      text = when (status) {
-//        Branch.MergeRequest.Status.Open -> {
-//          stringResource(R.string.thread_branches_modal_open_merge_request_label)
-//        }
-//        Branch.MergeRequest.Status.ReadyToMerge -> {
-//          stringResource(R.string.thread_branches_modal_open_ready_to_merge_label)
-//        }
-//        Branch.MergeRequest.Status.Merged -> {
-//          stringResource(R.string.thread_branches_modal_open_merged_label)
-//        }
-//      },
-//      color = AppTheme.colors.successPrimary,
-//      style = AppTheme.typography.label3Bold
-//    )
-//  }
-// }
 
 @Preview
 @Composable

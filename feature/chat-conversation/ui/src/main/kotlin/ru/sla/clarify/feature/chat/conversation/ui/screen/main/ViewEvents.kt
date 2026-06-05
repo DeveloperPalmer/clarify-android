@@ -28,7 +28,7 @@ import ru.sla.clarify.uikit.event.Dialog
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.resRef
 
-internal fun showDeleteConversationDialog() = ScreenViewEvent<ViewIntents> { intents ->
+internal fun showDeleteConversationDialog() = ScreenViewEvent<ViewState, ViewIntents> { _, intents ->
   Dialog.Decision(
     isDestructive = true,
     title = resRef(R.string.conversation_delete_dialog_title),
@@ -40,7 +40,7 @@ internal fun showDeleteConversationDialog() = ScreenViewEvent<ViewIntents> { int
   )
 }
 
-internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
+internal fun showNewChatDialog() = ScreenViewEvent<ViewState, ViewIntents> { _, intents ->
   object : ViewEvent.Content() {
     @Composable
     override fun ViewEventHostScope.Content() {
