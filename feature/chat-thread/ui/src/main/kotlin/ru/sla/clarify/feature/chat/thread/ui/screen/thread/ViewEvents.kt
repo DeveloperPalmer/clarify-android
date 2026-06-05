@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
@@ -32,19 +31,20 @@ import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.thread.ui.screen.thread.ViewState.CreateBranchPayload
 import ru.sla.clarify.uikit.component.bottomsheet.ModalBottomSheet
-import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
+import ru.sla.clarify.uikit.component.button.PrimaryButton
+import ru.sla.clarify.uikit.component.textfield.PrimaryTextField
 import ru.sla.clarify.uikit.keyboard.rememberKeyboardController
 import ru.sla.clarify.uikit.theme.AppTheme
+import ru.sla.clarify.uikit.theme.VSpacer
+import ru.sla.resourcerefs.resRef
 
-internal fun showBranchCreationSheet(commit: Commit.Message) =
-  ScreenViewEvent<ViewIntents> { intents ->
+internal fun showBranchCreationSheet(commit: Commit.Message): ScreenViewEvent<ViewIntents> {
+  return ScreenViewEvent { intents ->
     object : ViewEvent.BottomSheet {
       override val sheetState = mutableStateOf<SheetState?>(null)
 
-      @OptIn(ExperimentalMaterial3Api::class)
       @Composable
       override fun ViewEventHostScope.Content() {
-        var name by remember { mutableStateOf("") }
         ModalBottomSheet(
           visible = true,
           onUpdateState = { sheetState.value = it },
@@ -54,41 +54,53 @@ internal fun showBranchCreationSheet(commit: Commit.Message) =
           Column(
             modifier = Modifier
               .fillMaxWidth()
-              .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+              .padding(horizontal = 16.dp, vertical = 8.dp)
           ) {
+            val scope = rememberCoroutineScope()
+            var branchName by remember { mutableStateOf("") }
+            val keyboardController = rememberKeyboardController()
             Text(
               text = stringResource(R.string.thread_create_branch_sheet_title),
-              style = AppTheme.typography.title1
+              color = AppTheme.colors.contentPrimary,
+              style = AppTheme.typography.title1Bold
             )
-            OutlinedTextField(
-              modifier = Modifier.fillMaxWidth(),
-              value = name,
-              onValueChange = { name = it },
-              placeholder = { Text(stringResource(R.string.thread_create_branch_sheet_name_placeholder)) }
+            VSpacer(6.dp)
+            Text(
+              text = stringResource(R.string.thread_create_branch_sheet_description),
+              color = AppTheme.colors.contentSecondary,
+              style = AppTheme.typography.body2
             )
-            val scope = rememberCoroutineScope()
-            val keyboardController = rememberKeyboardController()
-            Button(
+            VSpacer(12.dp)
+            PrimaryTextField(
               modifier = Modifier.fillMaxWidth(),
-              enabled = name.isNotBlank(),
+              value = branchName,
+              onValueChange = { branchName = it },
+              placeholder = resRef(R.string.thread_create_branch_sheet_field_name_placeholder)
+            )
+            VSpacer(12.dp)
+            PrimaryButton(
+              modifier = Modifier.fillMaxWidth(),
+              enabled = branchName.isNotBlank(),
+              text = stringResource(R.string.thread_create_branch_sheet_create_button),
               onClick = {
                 scope.launch {
+                  val payload = CreateBranchPayload(
+                    commit = commit,
+                    name = branchName.trim()
+                  )
                   keyboardController.awaitHide()
                   sheetState.value?.hide()
-                  intents.createBranch(CreateBranchPayload(commit = commit, name = name.trim()))
+                  intents.confirmCreateBranch(payload)
                   dismissEventPresentation()
                 }
               }
-            ) {
-              Text(stringResource(R.string.thread_create_branch_sheet_create_button))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
+            )
           }
         }
       }
     }
   }
+}
 
 internal fun showBranchesListSheet(branches: List<Branch>) =
   ScreenViewEvent<ViewIntents> { intents ->

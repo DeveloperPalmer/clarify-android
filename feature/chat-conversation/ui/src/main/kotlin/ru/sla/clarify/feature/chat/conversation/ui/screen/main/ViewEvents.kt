@@ -23,7 +23,7 @@ import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
 import ru.sla.clarify.uikit.component.button.PrimaryButtonSmall
 import ru.sla.clarify.uikit.component.button.TextButtonSmall
-import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
+import ru.sla.clarify.uikit.component.textfield.PrimaryTextField
 import ru.sla.clarify.uikit.event.Dialog
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.resRef
@@ -67,19 +67,21 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
               color = AppTheme.colors.contentSecondary,
               style = AppTheme.typography.body2
             )
-            OutlinedTextField(
+            PrimaryTextField(
               modifier = Modifier.fillMaxWidth(),
               value = inputValue,
               onValueChange = { inputValue = it },
-              singleLine = true,
-              placeholder = {
-                Text(
-                  text = stringResource(R.string.conversation_new_chat_dialog_email_placeholder)
-                )
-              },
+              placeholder = resRef(R.string.conversation_new_chat_dialog_email_placeholder),
               keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
           }
+        },
+        dismissButton = {
+          TextButtonSmall(
+            onClick = { dismissEventPresentation() },
+            isError = false,
+            text = stringResource(R.string.action_cancel)
+          )
         },
         confirmButton = {
           PrimaryButtonSmall(
@@ -89,13 +91,6 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewIntents> { intents ->
             },
             enabled = isValidEmail,
             text = stringResource(R.string.conversation_new_chat_dialog_start)
-          )
-        },
-        dismissButton = {
-          TextButtonSmall(
-            onClick = { dismissEventPresentation() },
-            isError = false,
-            text = stringResource(R.string.action_cancel)
           )
         }
       )

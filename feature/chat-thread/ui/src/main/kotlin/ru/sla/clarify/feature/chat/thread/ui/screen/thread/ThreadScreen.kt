@@ -64,7 +64,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
         unreadCount = state.unreadCount,
         onBack = intents.navigateBack,
         onShowBranches = intents.showBranchesList,
-        onCommitLongClick = intents.showBranches,
+        onCommitLongClick = intents.createBranch,
         onCommitsRead = intents.markReadUpTo,
         onSend = intents.sendMessage
       )

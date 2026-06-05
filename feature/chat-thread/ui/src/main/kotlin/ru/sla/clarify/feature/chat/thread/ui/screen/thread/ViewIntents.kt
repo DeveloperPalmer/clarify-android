@@ -10,8 +10,8 @@ class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
   val sendMessage = intent<String>(name = "sendMessage")
   val markReadUpTo = intent<LocalDateTime>(name = "markReadUpTo")
-  val showBranches = intent<Commit.Message>(name = "showBranches")
-  val createBranch = intent<CreateBranchPayload>(name = "createBranch")
+  val createBranch = intent<Commit.Message>(name = "createBranch")
+  val confirmCreateBranch = intent<CreateBranchPayload>(name = "confirmCreateBranch")
   val showBranchesList = intent(name = "showBranchesList")
   val openBranch = intent<Branch.Id>(name = "openBranch")
 }

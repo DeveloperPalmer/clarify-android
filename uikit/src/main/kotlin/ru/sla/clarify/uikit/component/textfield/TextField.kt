@@ -1,167 +1,166 @@
 package ru.sla.clarify.uikit.component.textfield
 
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
+import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
-import androidx.compose.material3.OutlinedTextField as MaterialOutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults as MaterialOutlinedTextFieldDefaults
-import androidx.compose.material3.TextField as MaterialTextField
-import androidx.compose.material3.TextFieldDefaults as MaterialTextFieldDefaults
+import ru.sla.resourcerefs.TextRef
+import ru.sla.resourcerefs.compose.resolveTextRef
+import ru.sla.resourcerefs.resRef
 
 @Composable
-fun TextField(
+internal fun TextFieldInternal(
   value: String,
   onValueChange: (String) -> Unit,
   modifier: Modifier = Modifier,
+  shape: Shape = RoundedCornerShape(16.dp),
   enabled: Boolean = true,
-  readOnly: Boolean = false,
   isError: Boolean = false,
-  visualTransformation: VisualTransformation = VisualTransformation.None,
+  placeholder: TextRef = resRef(R.string.chat_input_placeholder),
+  maxVisibleLines: Int = DEFAULT_MAX_VISIBLE_LINES,
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-  keyboardActions: KeyboardActions = KeyboardActions.Default,
-  singleLine: Boolean = false,
-  maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
-  minLines: Int = 1,
-  interactionSource: MutableInteractionSource? = null,
-  label: @Composable (() -> Unit)? = null,
-  placeholder: @Composable (() -> Unit)? = null,
-  leadingIcon: @Composable (() -> Unit)? = null,
-  trailingIcon: @Composable (() -> Unit)? = null,
-  prefix: @Composable (() -> Unit)? = null,
-  suffix: @Composable (() -> Unit)? = null,
-  supportingText: @Composable (() -> Unit)? = null
+  keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
-  MaterialTextField(
+  BasicTextField(
     modifier = modifier,
     value = value,
     onValueChange = onValueChange,
     enabled = enabled,
-    readOnly = readOnly,
-    label = label,
-    placeholder = placeholder,
-    leadingIcon = leadingIcon,
-    trailingIcon = trailingIcon,
-    prefix = prefix,
-    suffix = suffix,
-    supportingText = supportingText,
-    isError = isError,
-    visualTransformation = visualTransformation,
+    minLines = 1,
+    maxLines = maxVisibleLines,
+    textStyle = AppTheme.typography.body1.copy(
+      color = AppTheme.colors.contentPrimary
+    ),
+    cursorBrush = SolidColor(
+      value = AppTheme.colors.contentAccentPrimary
+    ),
     keyboardOptions = keyboardOptions,
     keyboardActions = keyboardActions,
-    minLines = minLines,
-    maxLines = maxLines,
-    interactionSource = interactionSource,
-    colors = TextFieldDefaults.textFieldColors()
+    decorationBox = { innerTextField ->
+      TextFieldDecoration(
+        value = value,
+        shape = shape,
+        isError = isError,
+        placeholder = placeholder,
+        innerTextField = innerTextField
+      )
+    }
   )
 }
 
 @Composable
-fun OutlinedTextField(
+private fun TextFieldDecoration(
   value: String,
-  onValueChange: (String) -> Unit,
+  shape: Shape,
+  isError: Boolean,
+  placeholder: TextRef,
   modifier: Modifier = Modifier,
-  enabled: Boolean = true,
-  readOnly: Boolean = false,
-  isError: Boolean = false,
-  visualTransformation: VisualTransformation = VisualTransformation.None,
-  keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-  keyboardActions: KeyboardActions = KeyboardActions.Default,
-  singleLine: Boolean = false,
-  maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
-  minLines: Int = 1,
-  interactionSource: MutableInteractionSource? = null,
-  label: @Composable (() -> Unit)? = null,
-  placeholder: @Composable (() -> Unit)? = null,
-  leadingIcon: @Composable (() -> Unit)? = null,
-  trailingIcon: @Composable (() -> Unit)? = null,
-  prefix: @Composable (() -> Unit)? = null,
-  suffix: @Composable (() -> Unit)? = null,
-  supportingText: @Composable (() -> Unit)? = null
+  innerTextField: @Composable () -> Unit
 ) {
-  MaterialOutlinedTextField(
-    modifier = modifier,
-    value = value,
-    onValueChange = onValueChange,
-    enabled = enabled,
-    readOnly = readOnly,
-    label = label,
-    placeholder = placeholder,
-    leadingIcon = leadingIcon,
-    trailingIcon = trailingIcon,
-    prefix = prefix,
-    suffix = suffix,
-    supportingText = supportingText,
-    isError = isError,
-    visualTransformation = visualTransformation,
-    keyboardOptions = keyboardOptions,
-    keyboardActions = keyboardActions,
-    minLines = minLines,
-    maxLines = maxLines,
-    interactionSource = interactionSource,
-    colors = TextFieldDefaults.outlinedTextFieldColors()
+  Box(
+    modifier = modifier
+      .surface(
+        shape = shape,
+        backgroundColor = AppTheme.colors.cardSecondary
+      )
+      .heightIn(
+        min = SendButtonSize
+      )
+      .padding(
+        vertical = 12.dp,
+        horizontal = 16.dp
+      ),
+    contentAlignment = Alignment.CenterStart
+  ) {
+    if (value.isEmpty()) {
+      Text(
+        text = resolveTextRef(placeholder),
+        style = AppTheme.typography.body1,
+        color = if (isError) AppTheme.colors.errorPrimary else AppTheme.colors.contentSecondary
+      )
+    }
+    innerTextField()
+  }
+}
+
+internal val SendButtonSize = 44.dp
+internal const val DEFAULT_MAX_VISIBLE_LINES = 7
+
+internal data class TextFieldPreviewState(
+  val label: String,
+  val text: String,
+  val enabled: Boolean,
+  val isError: Boolean
+)
+
+internal class TextFieldPreviewStateProvider :
+  PreviewParameterProvider<TextFieldPreviewState> {
+  override val values = sequenceOf(
+    TextFieldPreviewState(
+      label = "empty",
+      text = "",
+      enabled = true,
+      isError = false
+    ),
+    TextFieldPreviewState(
+      label = "single line",
+      text = "Привет!",
+      enabled = true,
+      isError = false
+    ),
+    TextFieldPreviewState(
+      label = "multiline",
+      text = PREVIEW_MULTILINE_TEXT,
+      enabled = true,
+      isError = false
+    ),
+    TextFieldPreviewState(
+      label = "overflow",
+      text = PREVIEW_OVERFLOW_TEXT,
+      enabled = true,
+      isError = false
+    ),
+    TextFieldPreviewState(
+      label = "scroll",
+      text = PREVIEW_SCROLL_TEXT,
+      enabled = true,
+      isError = false
+    ),
+    TextFieldPreviewState(
+      label = "error",
+      text = "",
+      enabled = true,
+      isError = true
+    ),
+    TextFieldPreviewState(
+      label = "disabled",
+      text = "Сообщение нельзя отправить",
+      enabled = false,
+      isError = false
+    )
   )
 }
 
-internal object TextFieldDefaults {
-  @Composable
-  fun textFieldColors(): TextFieldColors {
-    return MaterialTextFieldDefaults.colors(
-      focusedTextColor = AppTheme.colors.contentPrimary,
-      unfocusedTextColor = AppTheme.colors.contentPrimary,
-      disabledTextColor = AppTheme.colors.contentTertiary,
-      errorTextColor = AppTheme.colors.contentPrimary,
-      focusedContainerColor = AppTheme.colors.cardSecondary,
-      unfocusedContainerColor = AppTheme.colors.cardSecondary,
-      disabledContainerColor = AppTheme.colors.cardSecondary,
-      errorContainerColor = AppTheme.colors.cardSecondary,
-      cursorColor = AppTheme.colors.contentAccentPrimary,
-      errorCursorColor = AppTheme.colors.errorPrimary,
-      focusedIndicatorColor = AppTheme.colors.contentAccentPrimary,
-      unfocusedIndicatorColor = AppTheme.colors.contentTertiary,
-      disabledIndicatorColor = AppTheme.colors.contentQuaternary,
-      errorIndicatorColor = AppTheme.colors.errorPrimary,
-      focusedPlaceholderColor = AppTheme.colors.contentSecondary,
-      unfocusedPlaceholderColor = AppTheme.colors.contentSecondary,
-      disabledPlaceholderColor = AppTheme.colors.contentTertiary,
-      errorPlaceholderColor = AppTheme.colors.contentSecondary,
-      focusedLabelColor = AppTheme.colors.contentAccentPrimary,
-      unfocusedLabelColor = AppTheme.colors.contentSecondary,
-      disabledLabelColor = AppTheme.colors.contentTertiary,
-      errorLabelColor = AppTheme.colors.errorPrimary
-    )
-  }
-
-  @Composable
-  fun outlinedTextFieldColors(): TextFieldColors {
-    return MaterialOutlinedTextFieldDefaults.colors(
-      focusedTextColor = AppTheme.colors.contentPrimary,
-      unfocusedTextColor = AppTheme.colors.contentPrimary,
-      disabledTextColor = AppTheme.colors.contentTertiary,
-      errorTextColor = AppTheme.colors.contentPrimary,
-      focusedContainerColor = Color.Transparent,
-      unfocusedContainerColor = Color.Transparent,
-      disabledContainerColor = Color.Transparent,
-      errorContainerColor = Color.Transparent,
-      cursorColor = AppTheme.colors.contentAccentPrimary,
-      errorCursorColor = AppTheme.colors.errorPrimary,
-      focusedBorderColor = AppTheme.colors.contentAccentPrimary,
-      unfocusedBorderColor = AppTheme.colors.contentTertiary,
-      disabledBorderColor = AppTheme.colors.contentQuaternary,
-      errorBorderColor = AppTheme.colors.errorPrimary,
-      focusedPlaceholderColor = AppTheme.colors.contentSecondary,
-      unfocusedPlaceholderColor = AppTheme.colors.contentSecondary,
-      disabledPlaceholderColor = AppTheme.colors.contentTertiary,
-      errorPlaceholderColor = AppTheme.colors.contentSecondary,
-      focusedLabelColor = AppTheme.colors.contentAccentPrimary,
-      unfocusedLabelColor = AppTheme.colors.contentSecondary,
-      disabledLabelColor = AppTheme.colors.contentTertiary,
-      errorLabelColor = AppTheme.colors.errorPrimary
-    )
-  }
-}
+private const val PREVIEW_MULTILINE_TEXT = "Первая строка\nВторая строка\nТретья строка"
+private const val PREVIEW_OVERFLOW_TEXT =
+  "Сейчас пришлю последнюю версию. Здесь намеренно много текста, чтобы поле выросло до семи строк, " +
+    "а затем перестало расти и начало скроллиться по вертикали, как в Telegram, " +
+    "оставляя каретку в зоне видимости при наборе новых строк сообщения. " +
+    "Дальше текст продолжается, чтобы строк точно стало больше семи."
+private const val PREVIEW_SCROLL_TEXT =
+  "Строка 1\nСтрока 2\nСтрока 3\nСтрока 4\nСтрока 5\nСтрока 6\n" +
+    "Строка 7\nСтрока 8\nСтрока 9\nСтрока 10\nСтрока 11\nСтрока 12"

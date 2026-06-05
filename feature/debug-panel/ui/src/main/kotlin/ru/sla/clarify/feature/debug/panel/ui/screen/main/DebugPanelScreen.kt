@@ -17,7 +17,7 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.feature.debug.panel.domain.entity.UserJsonError
 import ru.sla.clarify.uikit.component.button.PrimaryButton
-import ru.sla.clarify.uikit.component.textfield.OutlinedTextField
+import ru.sla.clarify.uikit.component.textfield.PrimaryTextField
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -43,13 +43,11 @@ fun DebugPanelScreen(viewModel: DebugPanelViewModel) {
           text = stringResource(R.string.debug_panel_title),
           style = AppTheme.typography.display3
         )
-        OutlinedTextField(
+        PrimaryTextField(
           modifier = Modifier.fillMaxWidth(),
           value = state.userField,
           onValueChange = intents.changeUserField,
-          label = { Text(stringResource(R.string.debug_panel_json_hint)) },
-          isError = state.userJsonError != null,
-          supportingText = state.userJsonError?.let { { Text(it.message()) } }
+          isError = state.userJsonError != null
         )
         PrimaryButton(
           modifier = Modifier.fillMaxWidth(),

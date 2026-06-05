@@ -104,7 +104,7 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(intent(ViewIntents::showBranches)) {
+    onEach(intent(ViewIntents::createBranch)) {
       action { _, _, commit ->
         sendViewEvent(showBranchCreationSheet(commit))
       }
@@ -122,7 +122,7 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(intent(ViewIntents::createBranch)) {
+    onEach(intent(ViewIntents::confirmCreateBranch)) {
       action { _, _, createBranch ->
         threadModel.createBranch.start(
           argument1 = null,
