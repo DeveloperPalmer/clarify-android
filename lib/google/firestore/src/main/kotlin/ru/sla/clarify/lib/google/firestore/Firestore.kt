@@ -31,6 +31,7 @@ import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
 import ru.sla.clarify.lib.google.firestore.entity.ParticipantNM
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchOpenMergeParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchReadWatermarkParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadCountParams
@@ -46,6 +47,7 @@ import ru.sla.clarify.lib.google.firestore.mapper.toFirestoreDocumentResult
 import java.time.LocalDateTime
 import javax.inject.Inject
 
+@Suppress("TooManyFunctions")
 @SingleIn(AppScope::class)
 class Firestore @Inject constructor(
   firestoreWrapper: FirestoreWrapper,
@@ -203,7 +205,7 @@ class Firestore @Inject constructor(
     }
   }
 
-  suspend fun patchUnreadCount(conversationId: String) {
+  suspend fun patchClearUnreadCount(conversationId: String) {
     val userId = requireUserId()
     unreadCommitsDocumentRef(conversationId, userId)
       .set(
@@ -387,6 +389,26 @@ class Firestore @Inject constructor(
             SetOptions.merge()
           )
         }
+    } else {
+      batch.set(
+        branchDocumentRef(conversationId, resolvedBranchId),
+        codec.encodeToMap(
+          PatchBranchLastCommitParams(
+            lastCommitText = text,
+            lastCommitAt = createdAt
+          )
+        ),
+        SetOptions.merge()
+      )
+      participantIds
+        .filter { it != senderId.value }
+        .forEach { peerId ->
+          batch.set(
+            branchUnreadCommitsDocumentRef(conversationId, resolvedBranchId, UserId(peerId)),
+            codec.encodeToMap(PatchUnreadIncrementParams()),
+            SetOptions.merge()
+          )
+        }
     }
 
     batch.commit().await()
@@ -416,6 +438,41 @@ class Firestore @Inject constructor(
 
       awaitClose { listener.remove() }
     }
+  }
+
+  fun branchUnreadCountLive(
+    conversationId: String,
+    branchId: String
+  ): Flow<Long> {
+    return callbackFlow {
+      val userId = requireUserId()
+      val listener = branchUnreadCommitsDocumentRef(
+        conversationId = conversationId,
+        branchId = branchId,
+        userId = userId
+      ).addSnapshotListener { snapshot, error ->
+        if (error != null) {
+          close(error)
+          return@addSnapshotListener
+        }
+        trySend(snapshot?.getLong(FirestoreSchema.UNREAD_COMMITS_COUNT) ?: 0L)
+      }
+
+      awaitClose { listener.remove() }
+    }
+  }
+
+  suspend fun patchBranchClearUnreadCount(
+    conversationId: String,
+    branchId: String
+  ) {
+    val userId = requireUserId()
+    branchUnreadCommitsDocumentRef(conversationId, branchId, userId)
+      .set(
+        codec.encodeToMap(PatchUnreadCountParams(count = 0L)),
+        SetOptions.merge()
+      )
+      .await()
   }
 
   suspend fun postBranch(
@@ -449,6 +506,7 @@ class Firestore @Inject constructor(
       branchedFromCommitId = branchedFromCommitId,
       name = name,
       createdAt = createdAt,
+      lastCommitAt = null,
       createdByUid = createdByUserId.value,
       mergeRequest = null
     )

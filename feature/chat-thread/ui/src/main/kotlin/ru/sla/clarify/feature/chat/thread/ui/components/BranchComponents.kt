@@ -24,6 +24,8 @@ import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
+import ru.sla.resourcerefs.compose.resolveTextRef
+import ru.sla.resourcerefs.strRef
 
 @Composable
 internal fun BranchItem(
@@ -53,15 +55,18 @@ internal fun BranchItem(
         color = AppTheme.colors.contentPrimary,
         style = AppTheme.typography.title2Bold
       )
-      Text(
-        text = "!Last message",
-        color = AppTheme.colors.contentSecondary,
-        style = AppTheme.typography.body3
-      )
+      val lastCommit = branch.lastCommit
+      if (lastCommit != null) {
+        Text(
+          text = lastCommit,
+          color = AppTheme.colors.contentSecondary,
+          style = AppTheme.typography.body3
+        )
+      }
     }
     TrailingBlock(
-      date = "!lastMessageTimestamp",
-      unreadCount = 1
+      date = resolveTextRef(branch.lastCommitAt),
+      unreadCount = branch.unreadCount
     )
   }
 }
@@ -200,14 +205,18 @@ private fun previewBranch(
     parentBranchId = Branch.Id("main"),
     branchedFromCommitId = Commit.Id("commit"),
     name = name,
+    lastCommit = "lastCommit",
+    lastCommitAt = strRef("lastCommitAt"),
+    lastCommitTimestamp = 0L,
     createdAt = 0L,
-    createdByUid = author,
+    unreadCount = 0L,
+    createdById = author,
     mergeRequest = status?.let {
       Branch.MergeRequest(
         status = it,
-        initiatorUid = author,
+        initiatorId = author,
         requestedAt = 0L,
-        approvedByUids = setOf(author),
+        approvedByIds = setOf(author),
         mergedAt = if (it == Branch.MergeRequest.Status.Merged) 0L else null,
         mergedIntoBranchId = if (it == Branch.MergeRequest.Status.Merged) Branch.Id("main") else null
       )

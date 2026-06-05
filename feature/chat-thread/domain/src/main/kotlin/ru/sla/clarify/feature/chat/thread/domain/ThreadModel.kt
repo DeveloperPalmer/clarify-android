@@ -1,14 +1,12 @@
 package ru.sla.clarify.feature.chat.thread.domain
 
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
-import ru.sla.clarify.core.domain.mapDistinctChanges
+import ru.sla.clarify.core.domain.mapDistinctNotNullChanges
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
@@ -27,17 +25,11 @@ class ThreadModel @Inject constructor(
 
   override fun onPostStart() {
     super.onPostStart()
-    scope.launch {
-      coroutineScope {
-        launch { threadRepository.subscribeOnPeerChanges() }
-        launch { branchRepository.subscribeOnBranchChanges() }
-        launch { threadRepository.subscribeOnCommitChanges(null) }
-      }
-    }
+    scope.launch { threadRepository.subscribeOnPeerChanges() }
+    scope.launch { threadRepository.subscribeOnCommitChanges(null) }
+    scope.launch { branchRepository.subscribeOnBranchChanges() }
+    scope.launch { branchRepository.subscribeOnBranchesUnreadCounts() }
   }
-
-  val user: Flow<User?> = conversationRepository.user
-  val peer: Flow<Peer?> = threadRepository.peer
 
   fun subscribeOnCommitChanges(branchId: Branch.Id) {
     scope.launch { threadRepository.subscribeOnCommitChanges(branchId) }
@@ -47,56 +39,16 @@ class ThreadModel @Inject constructor(
     return threadRepository.commits(branchId)
   }
 
-  fun unreadCount(): Flow<Long> {
-    return threadRepository.unreadCount()
-  }
-
   fun markReadCommits() {
     scope.launch { threadRepository.markAsRead() }
   }
 
+  fun markReadCommits(branchId: Branch.Id) {
+    scope.launch { branchRepository.markAsRead(branchId) }
+  }
+
   fun markReadUpTo(lastReadAt: LocalDateTime) {
     scope.launch { threadRepository.markReadUpTo(lastReadAt) }
-  }
-
-  fun branches(): Flow<List<Branch>> {
-    return branchRepository.branches()
-  }
-
-  fun branch(id: Branch.Id): Flow<Branch?> {
-    return branchRepository.branch(id)
-  }
-
-  fun mergeRequestInitiator(id: Branch.Id): Flow<Participant?> {
-    return branchRepository.branch(id)
-      .mapDistinctChanges { branch ->
-        branch?.mergeRequest?.initiatorUid?.let { it to branch.conversationId }
-      }
-      .flatMapLatest { pair ->
-        if (pair == null) {
-          flowOf<Participant?>(null)
-        } else {
-          val (initiatorUid, conversationId) = pair
-          conversationRepository.participant(conversationId, initiatorUid)
-        }
-      }
-  }
-
-  /**
-   * Список всех участников conversation'а ветки. Используется UI'ем чтобы
-   * отрисовать строку approver'ов с индикатором (approved / pending) — пересекая
-   * с `mergeRequest.approvedByUids`.
-   */
-  fun branchParticipants(id: Branch.Id): Flow<List<Participant>> {
-    return branchRepository.branch(id)
-      .mapDistinctChanges { it?.conversationId }
-      .flatMapLatest { conversationId ->
-        if (conversationId == null) {
-          flowOf(emptyList())
-        } else {
-          conversationRepository.participants(conversationId)
-        }
-      }
   }
 
   val fetchHistoryCommits = task<Unit>(
@@ -132,7 +84,7 @@ class ThreadModel @Inject constructor(
   ) { parentBranchId, branchedFromCommitId, name ->
     branchRepository.createBranch(
       parentId = parentBranchId,
-      branchedFrom = branchedFromCommitId.id,
+      from = branchedFromCommitId.id,
       name = name
     )
   }
@@ -166,6 +118,20 @@ class ThreadModel @Inject constructor(
   ) { branchId ->
     branchRepository.finalizeMergeRequest(branchId)
   }
+
+  val user: Flow<User?> = conversationRepository.user
+  val peer: Flow<Peer?> = threadRepository.peer
+
+  val unreadCount: Flow<Long> = threadRepository.unreadCount
+
+  val participants: Flow<List<Participant>> = threadRepository.participants
+
+  val branches: Flow<List<Branch>> = branchRepository.branches
+  fun branch(id: Branch.Id): Flow<Branch?> = branchRepository.branch(id)
+
+  fun mergeRequestInitiator(id: Branch.Id): Flow<Participant?> = branchRepository.branch(id)
+    .mapDistinctNotNullChanges { it?.mergeRequest?.initiatorId }
+    .flatMapLatest(threadRepository::participant)
 }
 
 private const val DEFAULT_HISTORY_PAGE_SIZE: Int = 20

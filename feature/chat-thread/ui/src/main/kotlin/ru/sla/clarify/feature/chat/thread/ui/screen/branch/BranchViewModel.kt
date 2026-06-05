@@ -37,7 +37,7 @@ class BranchViewModel @AssistedInject constructor(
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState(branchId = branchId) to {
       threadModel.subscribeOnCommitChanges(branchId)
-      threadModel.markReadCommits()
+      threadModel.markReadCommits(branchId)
       threadModel.fetchHistoryBranchCommits.startOnSubscribe(branchId)
     }
 
@@ -117,7 +117,7 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
-    onEach(threadModel.unreadCount()) {
+    onEach(threadModel.unreadCount) {
       transitionTo { state, unreadCount ->
         state.copy(unreadCount = unreadCount.toInt())
       }
@@ -164,15 +164,12 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
-    // Approvers: участники conversation'а с флагом — пересечение с
-    // mergeRequest.approvedByUids делаем тут, чтобы Composable получал
-    // готовый UI-state без логики на стороне рендера.
     onEach(
       combine(
-        threadModel.branchParticipants(branchId),
+        threadModel.participants,
         threadModel.branch(branchId)
       ) { participants, branch ->
-        val approvedUids = branch?.mergeRequest?.approvedByUids.orEmpty()
+        val approvedUids = branch?.mergeRequest?.approvedByIds.orEmpty()
         val approvers = participants.map { participant ->
           val userId = UserId(participant.id.value)
           Approver(

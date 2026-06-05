@@ -51,6 +51,12 @@ interface FirestoreWrapperProvider {
     branchId: String
   ): DocumentReference
 
+  fun branchUnreadCommitsDocumentRef(
+    conversationId: String,
+    branchId: String,
+    userId: UserId
+  ): DocumentReference
+
   fun participantsCollectionRef(
     conversationId: String
   ): CollectionReference

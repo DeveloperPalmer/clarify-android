@@ -10,6 +10,7 @@ android {
 dependencies {
   implementation project(":lib:google:firestore")
   implementation project(":database")
+  implementation project(":core:resources")
   implementation project(":feature:chat-thread:data:common")
   implementation project(":feature:chat-thread:domain")
 }

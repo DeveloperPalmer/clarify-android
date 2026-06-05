@@ -122,6 +122,20 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .document(branchId)
   }
 
+  override fun branchUnreadCommitsDocumentRef(
+    conversationId: String,
+    branchId: String,
+    userId: UserId
+  ): DocumentReference {
+    return remoteDB
+      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .document(conversationId)
+      .collection(FirestoreSchema.BRANCHES_COLLECTION)
+      .document(branchId)
+      .collection(FirestoreSchema.UNREAD_COMMITS_COLLECTION)
+      .document(userId.value)
+  }
+
   override fun participantsCollectionRef(
     conversationId: String
   ): CollectionReference {

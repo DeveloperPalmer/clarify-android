@@ -22,5 +22,5 @@ data class ViewState(
   val isCurrentUserApproved: Boolean
     get() = mergeRequest != null &&
       currentUserId != null &&
-      currentUserId in mergeRequest.approvedByUids
+      currentUserId in mergeRequest.approvedByIds
 }

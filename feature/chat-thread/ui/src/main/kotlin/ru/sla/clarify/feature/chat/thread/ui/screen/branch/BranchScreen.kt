@@ -227,7 +227,7 @@ private fun MergeBanner(
     Text(
       text = stringResource(
         R.string.branch_merge_request_summary,
-        state.initiatorName?.takeIf { it.isNotBlank() } ?: mergeRequest.initiatorUid.value
+        state.initiatorName?.takeIf { it.isNotBlank() } ?: mergeRequest.initiatorId.value
       ),
       style = AppTheme.typography.body2,
       color = AppTheme.colors.contentPrimary

@@ -4,6 +4,9 @@ CREATE TABLE Branch(
   parentBranchId TEXT NOT NULL,
   branchedFromCommitId TEXT NOT NULL,
   name TEXT NOT NULL,
+  lastCommit TEXT,
+  lastCommitTimestamp INTEGER NOT NULL,
+  unreadCount INTEGER NOT NULL DEFAULT 0,
   createdAt INTEGER NOT NULL,
   createdByUid TEXT NOT NULL,
   FOREIGN KEY(conversationId) REFERENCES ChatConversation(id) ON DELETE CASCADE ON UPDATE CASCADE
@@ -14,10 +17,39 @@ CREATE INDEX Branch_conversationId ON Branch(conversationId);
 insertOrReplace:
 INSERT OR REPLACE
 INTO Branch(
-  id, conversationId, parentBranchId, branchedFromCommitId, name,
-  createdAt, createdByUid
+  id,
+  conversationId,
+  parentBranchId,
+  branchedFromCommitId,
+  name,
+  lastCommit,
+  lastCommitTimestamp,
+  unreadCount,
+  createdAt,
+  createdByUid
 )
-VALUES (?, ?, ?, ?, ?, ?, ?);
+VALUES (
+  :id,
+  :conversationId,
+  :parentBranchId,
+  :branchedFromCommitId,
+  :name,
+  :lastCommit,
+  :lastCommitTimestamp,
+  COALESCE((SELECT unreadCount FROM Branch WHERE id = :id), 0),
+  :createdAt,
+  :createdByUid
+);
+
+updateUnreadCount:
+UPDATE Branch
+SET unreadCount = :unreadCount
+WHERE id = :id;
+
+selectIdsByConversationId:
+SELECT id
+FROM Branch
+WHERE conversationId = :conversationId;
 
 selectByConversationId:
 SELECT
@@ -26,6 +58,9 @@ SELECT
   b.parentBranchId,
   b.branchedFromCommitId,
   b.name,
+  b.lastCommit,
+  b.lastCommitTimestamp,
+  b.unreadCount,
   b.createdAt,
   b.createdByUid,
   mr.status AS mergeRequestStatus,
@@ -46,6 +81,9 @@ SELECT
   b.parentBranchId,
   b.branchedFromCommitId,
   b.name,
+  b.lastCommit,
+  b.lastCommitTimestamp,
+  b.unreadCount,
   b.createdAt,
   b.createdByUid,
   mr.status AS mergeRequestStatus,

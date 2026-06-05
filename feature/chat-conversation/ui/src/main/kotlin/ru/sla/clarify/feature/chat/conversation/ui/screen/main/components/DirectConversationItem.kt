@@ -76,10 +76,10 @@ internal fun DirectConversationItem(
           maxLines = 1,
           overflow = TextOverflow.Ellipsis
         )
-        val lastMessage = direct.lastMessage
-        if (lastMessage != null) {
+        val lastCommit = direct.lastCommit
+        if (lastCommit != null) {
           Text(
-            text = lastMessage,
+            text = lastCommit,
             style = AppTheme.typography.body3,
             color = AppTheme.colors.contentPrimary,
             maxLines = 1,
@@ -88,7 +88,7 @@ internal fun DirectConversationItem(
         }
       }
       TrailingBlock(
-        date = resolveTextRef(direct.lastMessageTimestamp),
+        date = resolveTextRef(direct.lastCommitAt),
         unreadCount = direct.unreadCount
       )
     }

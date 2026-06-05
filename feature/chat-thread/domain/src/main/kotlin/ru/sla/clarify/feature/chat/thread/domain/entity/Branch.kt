@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.resourcerefs.TextRef
 
 @Immutable
 data class Branch(
@@ -12,27 +13,23 @@ data class Branch(
   val parentBranchId: Id,
   val branchedFromCommitId: Commit.Id,
   val name: String,
+  val lastCommit: String?,
+  val lastCommitAt: TextRef,
+  val lastCommitTimestamp: Long,
+  val unreadCount: Long,
   val createdAt: Long,
-  val createdByUid: UserId,
+  val createdById: UserId,
   val mergeRequest: MergeRequest? = null
 ) {
   @JvmInline
   value class Id(val value: String)
 
-  /**
-   * Состояние merge-предложения ветки. Отсутствие [MergeRequest] означает что ветка живая
-   * и принимает commit'ы. Если объект есть — поведение ветки определяется [status]:
-   *
-   *  - [Status.Open]            — MR открыт, идёт сбор approvals.
-   *  - [Status.ReadyToMerge]    — все участники approved, ждём явный finalize.
-   *  - [Status.Merged]          — ветка замерджена в [mergedIntoBranchId] в [mergedAt].
-   */
   @Immutable
   data class MergeRequest(
     val status: Status,
-    val initiatorUid: UserId,
+    val initiatorId: UserId,
     val requestedAt: Long,
-    val approvedByUids: Set<UserId>,
+    val approvedByIds: Set<UserId>,
     val mergedAt: Long? = null,
     val mergedIntoBranchId: Id? = null
   ) {

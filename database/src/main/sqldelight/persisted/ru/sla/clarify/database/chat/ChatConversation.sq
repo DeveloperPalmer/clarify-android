@@ -37,9 +37,9 @@ SELECT
   peerProfile.displayName AS peerDisplayName,
   peerProfile.photoUrl AS peerPhotoUrl
 FROM ChatConversation
-LEFT JOIN ChatConversationParticipant AS peerLink
+INNER JOIN ChatConversationParticipant AS peerLink
   ON peerLink.conversationId = ChatConversation.id AND peerLink.id != :currentUserId
-LEFT JOIN User AS peerProfile
+INNER JOIN User AS peerProfile
   ON peerProfile.id = peerLink.id
 ORDER BY ChatConversation.lastCommitTimestamp DESC;
 

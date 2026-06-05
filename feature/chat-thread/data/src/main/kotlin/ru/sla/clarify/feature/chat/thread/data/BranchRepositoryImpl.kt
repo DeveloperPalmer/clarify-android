@@ -2,9 +2,12 @@ package ru.sla.clarify.feature.chat.thread.data
 
 import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.PersistedDB
@@ -35,14 +38,111 @@ class BranchRepositoryImpl @Inject constructor(
     val conversationId = threadMediator.awaitConversationId()
     firestore.branchesLive(conversationId)
       .flowOn(Dispatchers.IO)
-      .collect { handleBranchChanges(conversationId, it) }
+      .collect(::applyBranchesChanges)
   }
 
-  override fun branches(): Flow<List<Branch>> = flow {
+  override suspend fun subscribeOnBranchesUnreadCounts() {
+    val conversationId = threadMediator.awaitConversationId()
+    persistedDB.branchQueries
+      .selectIdsByConversationId(conversationId)
+      .observeList()
+      .flowOn(Dispatchers.IO)
+      .collectLatest(::subscribeOnBranchesUnreadCount)
+  }
+
+  private suspend fun subscribeOnBranchesUnreadCount(ids: List<String>) = coroutineScope {
+    val conversationId = threadMediator.awaitConversationId()
+    ids.forEach { branchId ->
+      launch {
+        firestore.branchUnreadCountLive(
+          conversationId = conversationId,
+          branchId = branchId
+        ).collect { unreadCount ->
+          applyUpdateUnreadCount(
+            branchId = branchId,
+            unreadCount = unreadCount
+          )
+        }
+      }
+    }
+  }
+
+  override suspend fun markAsRead(branchId: Branch.Id) {
+    return withContext(Dispatchers.IO) {
+      firestore.patchBranchClearUnreadCount(
+        conversationId = threadMediator.requireConversationId(),
+        branchId = branchId.value
+      )
+    }
+  }
+
+  override suspend fun createBranch(parentId: Branch.Id?, from: Commit.Id, name: String): Branch {
+    return withContext(Dispatchers.IO) {
+      val conversationId = threadMediator.requireConversationId()
+      val remote = firestore.postBranch(
+        conversationId = conversationId,
+        parentBranchId = resolveBranchId(parentId),
+        branchedFromCommitId = from.value,
+        name = name
+      )
+      val branch = remote.toDomain(conversationId)
+      applyInsertOrReplace(branch)
+      branch
+    }
+  }
+
+  override suspend fun openMergeRequest(branchId: Branch.Id) {
+    return withContext(Dispatchers.IO) {
+      firestore.postMergeRequest(
+        conversationId = threadMediator.requireConversationId(),
+        branchId = branchId.value
+      )
+    }
+  }
+
+  override suspend fun approveMergeRequest(branchId: Branch.Id) {
+    return withContext(Dispatchers.IO) {
+      firestore.patchMergeApproval(
+        conversationId = threadMediator.requireConversationId(),
+        branchId = branchId.value,
+        participantUids = threadMediator.directParticipantIds()
+      )
+    }
+  }
+
+  override suspend fun revokeApprovalMergeRequest(branchId: Branch.Id) {
+    return withContext(Dispatchers.IO) {
+      firestore.deleteMergeApproval(
+        conversationId = threadMediator.requireConversationId(),
+        branchId = branchId.value
+      )
+    }
+  }
+
+  override suspend fun cancelMergeRequest(branchId: Branch.Id) {
+    return withContext(Dispatchers.IO) {
+      firestore.deleteMergeRequest(
+        conversationId = threadMediator.requireConversationId(),
+        branchId = branchId.value
+      )
+    }
+  }
+
+  override suspend fun finalizeMergeRequest(branchId: Branch.Id) {
+    return withContext(Dispatchers.IO) {
+      firestore.patchMergeFinalize(
+        conversationId = threadMediator.requireConversationId(),
+        branchId = branchId.value
+      )
+    }
+  }
+
+  override val branches: Flow<List<Branch>> = flow {
     val conversationId = threadMediator.awaitConversationId()
     persistedDB.branchQueries
       .selectByConversationId(conversationId, ::mapToBranch)
       .observeList()
+      .flowOn(Dispatchers.IO)
       .collect { emit(it) }
   }
 
@@ -52,97 +152,43 @@ class BranchRepositoryImpl @Inject constructor(
       .observeOneOrNull()
   }
 
-  override suspend fun createBranch(
-    parentId: Branch.Id?,
-    branchedFrom: Commit.Id,
-    name: String
-  ): Branch = withContext(Dispatchers.IO) {
-    val conversationId = threadMediator.requireConversationId()
-    val remote = firestore.postBranch(
-      conversationId = conversationId,
-      parentBranchId = resolveBranchId(parentId),
-      branchedFromCommitId = branchedFrom.value,
-      name = name
-    )
-    val branch = remote.toDomain(conversationId)
-    insertOrReplace(branch)
-    branch
-  }
-
-  override suspend fun openMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
-    firestore.postMergeRequest(
-      conversationId = threadMediator.requireConversationId(),
-      branchId = branchId.value
-    )
-  }
-
-  override suspend fun approveMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
-    firestore.patchMergeApproval(
-      conversationId = threadMediator.requireConversationId(),
-      branchId = branchId.value,
-      participantUids = threadMediator.directParticipantIds()
-    )
-  }
-
-  override suspend fun revokeApprovalMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
-    firestore.deleteMergeApproval(
-      conversationId = threadMediator.requireConversationId(),
-      branchId = branchId.value
-    )
-  }
-
-  override suspend fun cancelMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
-    firestore.deleteMergeRequest(
-      conversationId = threadMediator.requireConversationId(),
-      branchId = branchId.value
-    )
-  }
-
-  override suspend fun finalizeMergeRequest(branchId: Branch.Id) = withContext(Dispatchers.IO) {
-    firestore.patchMergeFinalize(
-      conversationId = threadMediator.requireConversationId(),
-      branchId = branchId.value
-    )
-  }
-
-  private fun handleBranchChanges(
-    conversationId: String,
-    changes: List<FirestoreChange<BranchNM>>
-  ) {
+  private suspend fun applyBranchesChanges(changes: List<FirestoreChange<BranchNM>>) {
+    val conversationId = threadMediator.awaitConversationId()
     persistedDB.transaction {
       changes.forEach { change ->
-        val branch = change.data
         when (change.changeType) {
           FirestoreDocumentResult.Removed -> {
-            persistedDB.branchQueries.deleteById(id = branch.id)
+            persistedDB.branchQueries.deleteById(change.data.id)
           }
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
-            insertOrReplace(branch.toDomain(conversationId))
+            applyInsertOrReplace(change.data.toDomain(conversationId))
           }
         }
       }
     }
   }
 
-  private fun insertOrReplace(branch: Branch) {
+  private fun applyInsertOrReplace(branch: Branch) {
     persistedDB.branchQueries.insertOrReplace(
       id = branch.id.value,
       conversationId = branch.conversationId.value,
       parentBranchId = branch.parentBranchId.value,
       branchedFromCommitId = branch.branchedFromCommitId.value,
       name = branch.name,
+      lastCommit = branch.lastCommit,
+      lastCommitTimestamp = branch.lastCommitTimestamp,
       createdAt = branch.createdAt,
-      createdByUid = branch.createdByUid.value
+      createdByUid = branch.createdById.value
     )
     val mergeRequest = branch.mergeRequest
     if (mergeRequest != null) {
       persistedDB.mergeRequestQueries.insertOrReplace(
         branchId = branch.id.value,
         status = mergeRequest.status.value,
-        initiatorUid = mergeRequest.initiatorUid.value,
+        initiatorUid = mergeRequest.initiatorId.value,
         requestedAt = mergeRequest.requestedAt,
-        approvedByUids = mergeRequest.approvedByUids.map { it.value },
+        approvedByUids = mergeRequest.approvedByIds.map { it.value },
         mergedAt = mergeRequest.mergedAt,
         mergedIntoBranchId = mergeRequest.mergedIntoBranchId?.value
       )
@@ -151,10 +197,16 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
+  private fun applyUpdateUnreadCount(branchId: String, unreadCount: Long) {
+    persistedDB.branchQueries.updateUnreadCount(
+      id = branchId,
+      unreadCount = unreadCount
+    )
+  }
+
   private suspend fun resolveBranchId(branchId: Branch.Id?): String {
     if (branchId != null) return branchId.value
-    val conversation = threadMediator.conversationId()
-      ?: error("conversationId not found")
+    val conversation = threadMediator.conversationId() ?: error("conversationId not found")
     return conversation
   }
 }

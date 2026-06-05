@@ -71,7 +71,7 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(threadModel.unreadCount()) {
+    onEach(threadModel.unreadCount) {
       transitionTo { state, unreadCount ->
         state.copy(unreadCount = unreadCount.toInt())
       }
@@ -98,7 +98,7 @@ class ThreadViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureBranchTransitions() {
-    onEach(threadModel.branches()) {
+    onEach(threadModel.branches) {
       transitionTo { state, branches ->
         state.copy(branches = branches)
       }
@@ -106,13 +106,13 @@ class ThreadViewModel @Inject constructor(
 
     onEach(intent(ViewIntents::createBranch)) {
       action { _, _, commit ->
-        sendViewEvent(showBranchCreationSheet(commit))
+        sendViewEvent(showBranchCreationModalSheet(commit))
       }
     }
 
     onEach(intent(ViewIntents::showBranchesList)) {
       action { _, _, _ ->
-        sendViewEvent(showBranchesListSheet())
+        sendViewEvent(showBranchesModalSheet())
       }
     }
 

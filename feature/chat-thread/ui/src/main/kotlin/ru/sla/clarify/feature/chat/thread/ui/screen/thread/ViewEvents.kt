@@ -37,7 +37,7 @@ import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 import ru.sla.resourcerefs.resRef
 
-internal fun showBranchCreationSheet(commit: Commit.Message): ScreenViewEvent<ViewState, ViewIntents> {
+internal fun showBranchCreationModalSheet(commit: Commit.Message): ScreenViewEvent<ViewState, ViewIntents> {
   return ScreenViewEvent { _, intents ->
     object : ViewEvent.BottomSheet {
       override val sheetState = mutableStateOf<SheetState?>(null)
@@ -101,7 +101,7 @@ internal fun showBranchCreationSheet(commit: Commit.Message): ScreenViewEvent<Vi
   }
 }
 
-internal fun showBranchesListSheet(): ScreenViewEvent<ViewState, ViewIntents> {
+internal fun showBranchesModalSheet(): ScreenViewEvent<ViewState, ViewIntents> {
   return ScreenViewEvent { stateFlow, intents ->
     object : ViewEvent.BottomSheet {
       override val sheetState = mutableStateOf<SheetState?>(null)

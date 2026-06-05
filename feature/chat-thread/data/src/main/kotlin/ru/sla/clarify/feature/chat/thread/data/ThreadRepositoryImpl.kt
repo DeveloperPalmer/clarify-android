@@ -15,9 +15,12 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.chat.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.thread.data.mapper.mapToCommit
+import ru.sla.clarify.feature.chat.thread.data.mapper.mapToParticipant
+import ru.sla.clarify.feature.chat.thread.data.mapper.mapToPeer
 import ru.sla.clarify.feature.chat.thread.data.mapper.toLocalDateTime
 import ru.sla.clarify.feature.chat.thread.data.mapper.withReadStatus
 import ru.sla.clarify.feature.chat.thread.domain.ThreadRepository
@@ -45,48 +48,17 @@ class ThreadRepositoryImpl @Inject constructor(
 
   private var lastReadWatermark: LocalDateTime? = null
 
-  override val peer: Flow<Peer?> = persistedDB.userQueries
-    .selectById(peerId.value)
-    .observeOneOrNull()
-    .map { peer ->
-      peer?.let {
-        Peer(
-          id = peerId,
-          displayName = peer.displayName,
-          photoUrl = peer.photoUrl
-        )
-      }
-    }
-
-  override fun commits(branchId: Branch.Id?): Flow<List<Commit>> = flow {
-    val conversationId = threadMediator.awaitConversationId()
-    val effectiveBranchId = branchId?.value ?: conversationId
-    val commitsFlow = persistedDB.chatCommitQueries
-      .selectByBranchId(
-        conversationId = conversationId,
-        branchId = effectiveBranchId,
-        mapper = ::mapToCommit
-      )
-      .observeList()
-    val peerReadAtFlow = firestore
-      .participantLive(conversationId, UserId(peerId.value))
-      .map { it?.lastReadAt?.toLocalDateTime() }
-
-    emitAll(
-      combine(commitsFlow, peerReadAtFlow) { commits, peerReadAt ->
-        commits.map { it.withReadStatus(peerReadAt) }
-      }
-    )
-  }
-
-  override fun unreadCount(): Flow<Long> = flow {
-    val conversationId = threadMediator.awaitConversationId()
-    emitAll(firestore.unreadCountLive(conversationId))
+  override suspend fun subscribeOnPeerChanges() {
+    val peerId = UserId(peerId.value)
+    firestore.userLive(peerId)
+      .filterNotNull()
+      .flowOn(Dispatchers.IO)
+      .collect(::applyPeerChanges)
   }
 
   override suspend fun subscribeOnCommitChanges(branchId: Branch.Id?) {
-    val conversationId = threadMediator.awaitConversationId()
     val userId = threadMediator.requireUserId()
+    val conversationId = threadMediator.awaitConversationId()
     val resolvedBranchId = branchId?.value ?: conversationId
     firestore.directCommitsLive(
       peerId = peerId,
@@ -103,20 +75,12 @@ class ThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun subscribeOnPeerChanges() {
-    val peerId = UserId(peerId.value)
-    firestore.userLive(peerId)
-      .flowOn(Dispatchers.IO)
-      .filterNotNull()
-      .collect { applyPeerChanges(it) }
-  }
-
   override suspend fun fetchHistoryCommits(
     branchId: Branch.Id?,
     count: Int,
     before: Commit?
   ) {
-    val conversationId = threadMediator.conversationId() ?: return
+    val conversationId = threadMediator.awaitConversationId()
     val effectiveBranchId = branchId?.value ?: conversationId
     val historyCommits = firestore.getCommits(
       conversationId = conversationId,
@@ -124,7 +88,9 @@ class ThreadRepositoryImpl @Inject constructor(
       count = count,
       before = before?.timestamp
     )
-    saveHistoryCommits(conversationId, historyCommits)
+    applyInsertOrReplaceCommits(
+      commits = historyCommits
+    )
   }
 
   override suspend fun sendCommit(
@@ -143,7 +109,7 @@ class ThreadRepositoryImpl @Inject constructor(
 
   override suspend fun markAsRead() {
     val conversationId = threadMediator.conversationId() ?: return
-    firestore.patchUnreadCount(conversationId)
+    firestore.patchClearUnreadCount(conversationId)
   }
 
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
@@ -152,17 +118,71 @@ class ThreadRepositoryImpl @Inject constructor(
     if (current != null && !lastReadAt.isAfter(current)) return
     lastReadWatermark = lastReadAt
     firestore.patchReadWatermark(conversationId, lastReadAt)
-    firestore.patchUnreadCount(conversationId)
+    firestore.patchClearUnreadCount(conversationId)
   }
 
-  private suspend fun saveHistoryCommits(
-    conversationId: String,
-    commitNMS: List<CommitNM>
-  ): Unit = withContext(Dispatchers.IO) {
-    val userId = threadMediator.requireUserId()
-    persistedDB.transaction {
-      commitNMS.forEach { item ->
-        insertOrReplaceCommit(conversationId, item, userId, hasPendingWrites = false)
+  override val peer: Flow<Peer?> = persistedDB.userQueries
+    .selectById(peerId.value, ::mapToPeer)
+    .observeOneOrNull()
+
+  override fun commits(branchId: Branch.Id?): Flow<List<Commit>> = flow {
+    val peerId = UserId(peerId.value)
+    val conversationId = threadMediator.awaitConversationId()
+    val effectiveBranchId = branchId?.value ?: conversationId
+
+    val commitsFlow = persistedDB.chatCommitQueries
+      .selectByBranchId(conversationId, effectiveBranchId, ::mapToCommit)
+      .observeList()
+
+    val peerReadAtFlow = firestore
+      .participantLive(conversationId, peerId)
+      .map { it?.lastReadAt?.toLocalDateTime() }
+
+    val result = combine(
+      flow = commitsFlow,
+      flow2 = peerReadAtFlow
+    ) { commits, peerReadAt ->
+      commits.map { it.withReadStatus(peerReadAt) }
+    }
+
+    emitAll(result)
+  }
+
+  override val participants: Flow<List<Participant>> = flow {
+    val conversationId = threadMediator.awaitConversationId()
+    persistedDB.chatConversationParticipantQueries
+      .selectByConversation(conversationId, ::mapToParticipant)
+      .observeList()
+      .collect { emit(it) }
+  }
+
+  override fun participant(initiator: UserId): Flow<Participant?> = flow {
+    val conversationId = threadMediator.awaitConversationId()
+    persistedDB.chatConversationParticipantQueries
+      .selectByConversationAndId(conversationId, initiator.value, ::mapToParticipant)
+      .observeOneOrNull()
+      .collect { emit(it) }
+  }
+
+  override val unreadCount: Flow<Long> = flow {
+    val conversationId = threadMediator.awaitConversationId()
+    firestore.unreadCountLive(conversationId)
+      .collect { emit(it) }
+  }
+
+  private suspend fun applyInsertOrReplaceCommits(commits: List<CommitNM>) {
+    return withContext(Dispatchers.IO) {
+      val userId = threadMediator.requireUserId()
+      val conversationId = threadMediator.awaitConversationId()
+      persistedDB.transaction {
+        commits.forEach { item ->
+          applyInsertOrReplaceCommit(
+            conversationId = conversationId,
+            commit = item,
+            userId = userId,
+            hasPendingWrites = false
+          )
+        }
       }
     }
   }
@@ -186,35 +206,42 @@ class ThreadRepositoryImpl @Inject constructor(
         val commit = change.data
         when (change.changeType) {
           FirestoreDocumentResult.Removed -> {
-            persistedDB.chatCommitQueries.deleteById(id = commit.id)
+            persistedDB.chatCommitQueries.deleteById(commit.id)
           }
-
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
-            insertOrReplaceCommit(conversationId, commit, userId, change.hasPendingWrites)
+            applyInsertOrReplaceCommit(
+              conversationId = conversationId,
+              commit = commit,
+              userId = userId,
+              hasPendingWrites = change.hasPendingWrites
+            )
           }
         }
       }
     }
   }
 
-  private fun insertOrReplaceCommit(
+  private fun applyInsertOrReplaceCommit(
     conversationId: String,
-    commitNM: CommitNM,
-    currentUserId: UserId,
+    commit: CommitNM,
+    userId: UserId,
     hasPendingWrites: Boolean
   ) {
-    val status = if (hasPendingWrites) Commit.Status.Sending else Commit.Status.Sent
     persistedDB.chatCommitQueries.insertOrReplace(
-      id = commitNM.id,
+      id = commit.id,
       conversationId = conversationId,
-      branchId = commitNM.branchId,
-      senderId = commitNM.senderUid,
-      text = commitNM.text.orEmpty(),
-      colorHex = commitNM.colorHex,
-      timestamp = commitNM.createdAt?.toEpochSeconds() ?: 0L,
-      isSelf = commitNM.senderUid == currentUserId.value,
-      status = status.value
+      branchId = commit.branchId,
+      senderId = commit.senderUid,
+      text = commit.text.orEmpty(),
+      colorHex = commit.colorHex,
+      timestamp = commit.createdAt?.toEpochSeconds() ?: 0L,
+      isSelf = commit.senderUid == userId.value,
+      status = if (hasPendingWrites) {
+        Commit.Status.Sending.value
+      } else {
+        Commit.Status.Sent.value
+      }
     )
   }
 }

@@ -3,24 +3,19 @@ package ru.sla.clarify.feature.chat.conversation.domain
 import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.User
-import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.entity.chat.Peer
 
 interface ConversationRepository {
+  suspend fun subscribeOnConversations()
+  suspend fun subscribeOnParticipantProfiles()
+  suspend fun subscribeOnConversationsUnreadCounts()
 
-  val user: Flow<User?>
   suspend fun fetchCurrentUser()
   suspend fun getPeerByEmail(email: Email): Peer.Id
-
-  val conversations: Flow<List<Conversation>?>
-  fun subscribeOnConversations(): Flow<Unit>
   suspend fun deleteConversations(ids: List<Conversation.Id>)
 
-  fun subscribeOnUnreadCounts(): Flow<Unit>
+  val user: Flow<User?>
 
-  fun participant(conversationId: Conversation.Id, userId: UserId): Flow<Participant?>
-
-  fun participants(conversationId: Conversation.Id): Flow<List<Participant>>
+  val conversations: Flow<List<Conversation>?>
 }

@@ -9,6 +9,12 @@ INSERT OR REPLACE
 INTO ChatConversationParticipant(conversationId, id)
 VALUES (?, ?);
 
+selectParticipantsWithoutProfile:
+SELECT DISTINCT participant.id
+FROM ChatConversationParticipant AS participant
+LEFT JOIN User AS profile ON profile.id = participant.id
+WHERE profile.id IS NULL AND participant.id != :currentUserId;
+
 selectByConversation:
 SELECT
   participant.id,

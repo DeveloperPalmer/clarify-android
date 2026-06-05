@@ -7,14 +7,16 @@ import ru.sla.resourcerefs.TextRef
 @Immutable
 sealed interface Conversation {
   val id: Id
-  val lastMessage: String?
-  val lastMessageTimestamp: TextRef
+  val lastCommit: String?
+  val lastCommitAt: TextRef
+  val lastCommitTimestamp: Long
   val unreadCount: Long
 
   data class Direct(
     override val id: Id,
-    override val lastMessage: String?,
-    override val lastMessageTimestamp: TextRef,
+    override val lastCommit: String?,
+    override val lastCommitAt: TextRef,
+    override val lastCommitTimestamp: Long,
     override val unreadCount: Long,
     val peer: Peer
   ) : Conversation

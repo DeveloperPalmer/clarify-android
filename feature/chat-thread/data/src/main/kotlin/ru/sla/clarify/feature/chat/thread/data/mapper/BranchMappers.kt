@@ -1,12 +1,22 @@
 package ru.sla.clarify.feature.chat.thread.data.mapper
 
+import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.database.adapter.StringList
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
+import ru.sla.resourcerefs.TextRef
+import ru.sla.resourcerefs.resRef
+import ru.sla.resourcerefs.strRef
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Suppress("LongParameterList")
 internal fun mapToBranch(
@@ -15,6 +25,9 @@ internal fun mapToBranch(
   parentBranchId: String,
   branchedFromCommitId: String,
   name: String,
+  lastCommit: String?,
+  lastCommitTimestamp: Long,
+  unreadCount: Long,
   createdAt: Long,
   createdByUid: String,
   mergeRequestStatus: String?,
@@ -30,8 +43,12 @@ internal fun mapToBranch(
     parentBranchId = Branch.Id(parentBranchId),
     branchedFromCommitId = Commit.Id(branchedFromCommitId),
     name = name,
+    lastCommit = lastCommit,
+    lastCommitAt = formatLastCommitTimestamp(lastCommitTimestamp),
+    lastCommitTimestamp = lastCommitTimestamp,
+    unreadCount = unreadCount,
     createdAt = createdAt,
-    createdByUid = UserId(createdByUid),
+    createdById = UserId(createdByUid),
     mergeRequest = buildMergeRequest(
       status = mergeRequestStatus,
       initiatorUid = mergeRequestInitiatorUid,
@@ -44,20 +61,26 @@ internal fun mapToBranch(
 }
 
 internal fun BranchNM.toDomain(conversationId: String): Branch {
+  val createdAt = createdAt?.toEpochSeconds() ?: 0L
+  val lastCommitAt = lastCommitAt?.toEpochSeconds() ?: 0L
   return Branch(
     id = Branch.Id(id),
     conversationId = Conversation.Id(conversationId),
     parentBranchId = Branch.Id(parentBranchId),
     branchedFromCommitId = Commit.Id(branchedFromCommitId),
     name = name,
-    createdAt = createdAt?.toEpochSeconds() ?: 0L,
-    createdByUid = UserId(createdByUid),
+    lastCommit = lastCommitText,
+    lastCommitAt = formatLastCommitTimestamp(lastCommitAt),
+    lastCommitTimestamp = lastCommitAt,
+    unreadCount = 0L,
+    createdAt = createdAt,
+    createdById = UserId(createdByUid),
     mergeRequest = mergeRequest?.let { mr ->
       Branch.MergeRequest(
         status = Branch.MergeRequest.Status.fromValue(mr.status.value),
-        initiatorUid = UserId(mr.initiatorUid),
+        initiatorId = UserId(mr.initiatorUid),
         requestedAt = mr.requestedAt.toEpochSeconds(),
-        approvedByUids = mr.approvedByUids.map(::UserId).toSet(),
+        approvedByIds = mr.approvedByUids.map(::UserId).toSet(),
         mergedAt = mr.mergedAt?.toEpochSeconds(),
         mergedIntoBranchId = mr.mergedIntoBranchId?.let(Branch::Id)
       )
@@ -77,10 +100,22 @@ private fun buildMergeRequest(
   if (status == null || initiatorUid == null || requestedAt == null) return null
   return Branch.MergeRequest(
     status = Branch.MergeRequest.Status.fromValue(status),
-    initiatorUid = UserId(initiatorUid),
+    initiatorId = UserId(initiatorUid),
     requestedAt = requestedAt,
-    approvedByUids = approvedByUids.orEmpty().map(::UserId).toSet(),
+    approvedByIds = approvedByUids.orEmpty().map(::UserId).toSet(),
     mergedAt = mergedAt,
     mergedIntoBranchId = mergedIntoBranchId?.let(Branch::Id)
   )
+}
+
+private fun formatLastCommitTimestamp(epochSeconds: Long): TextRef {
+  val zone = ZoneId.systemDefault()
+  val dateTime = Instant.ofEpochSecond(epochSeconds).atZone(zone).toLocalDateTime()
+  val date = dateTime.toLocalDate()
+  val today = LocalDate.now(zone)
+  return when (date) {
+    today -> strRef(dateTime.format(TIME_FORMATTER_HOUR_MINUTE))
+    today.minusDays(1) -> resRef(R.string.yesterday)
+    else -> strRef(date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()))
+  }
 }

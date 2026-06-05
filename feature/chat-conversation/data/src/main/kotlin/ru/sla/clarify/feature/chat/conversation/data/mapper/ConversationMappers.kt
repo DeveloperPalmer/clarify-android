@@ -2,6 +2,8 @@ package ru.sla.clarify.feature.chat.conversation.data.mapper
 
 import app.cash.sqldelight.Query
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
+import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.database.chat.ChatConversationQueries
@@ -28,18 +30,18 @@ internal fun ChatConversationQueries.selectAll(userId: UserId): Query<Conversati
       peerDisplayName,
       peerPhotoUrl
     ->
-
     when (type) {
       Type.Direct.value -> {
         Conversation.Direct(
           id = Conversation.Id(id),
           peer = Peer(
-            id = Peer.Id(requireNotNull(peerId)),
-            displayName = requireNotNull(peerDisplayName),
+            id = Peer.Id(peerId),
+            displayName = peerDisplayName,
             photoUrl = peerPhotoUrl
           ),
-          lastMessage = lastCommit,
-          lastMessageTimestamp = formatLastMessageTimestamp(lastCommitTimestamp),
+          lastCommit = lastCommit,
+          lastCommitAt = formatLastCommitTimestamp(lastCommitTimestamp),
+          lastCommitTimestamp = lastCommitTimestamp,
           unreadCount = unreadCount
         )
       }
@@ -48,12 +50,25 @@ internal fun ChatConversationQueries.selectAll(userId: UserId): Query<Conversati
   }
 }
 
-private fun formatLastMessageTimestamp(epochSeconds: Long): TextRef {
+internal fun mapToUser(
+  id: String,
+  email: String,
+  displayName: String,
+  photoUrl: String?
+): User {
+  return User(
+    id = UserId(id),
+    email = Email(email),
+    displayName = displayName,
+    photoUrl = photoUrl
+  )
+}
+
+private fun formatLastCommitTimestamp(epochSeconds: Long): TextRef {
   val zone = ZoneId.systemDefault()
   val dateTime = Instant.ofEpochSecond(epochSeconds).atZone(zone).toLocalDateTime()
   val date = dateTime.toLocalDate()
   val today = LocalDate.now(zone)
-
   return when (date) {
     today -> strRef(dateTime.format(TIME_FORMATTER_HOUR_MINUTE))
     today.minusDays(1) -> resRef(R.string.yesterday)
