@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.uikit.component.Avatar
+import ru.sla.clarify.uikit.component.UnreadCountBadge
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.compose.resolveTextRef
 
@@ -144,30 +145,3 @@ private fun TrailingBlock(
     )
   }
 }
-
-@Composable
-private fun UnreadCountBadge(
-  unreadCount: Long,
-  modifier: Modifier = Modifier
-) {
-  AnimatedVisibility(
-    modifier = modifier,
-    visible = unreadCount > 0
-  ) {
-    Box(
-      modifier = Modifier
-        .size(20.dp)
-        .clip(CircleShape)
-        .background(AppTheme.colors.contentAccentPrimary),
-      contentAlignment = Alignment.Center
-    ) {
-      Text(
-        text = unreadCount.coerceAtMost(MAX_UNREAD_BADGE).toString(),
-        style = AppTheme.typography.label3,
-        color = AppTheme.colors.contentAccentSecondary
-      )
-    }
-  }
-}
-
-private const val MAX_UNREAD_BADGE = 99L

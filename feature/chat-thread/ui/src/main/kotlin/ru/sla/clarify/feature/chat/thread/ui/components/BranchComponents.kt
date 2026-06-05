@@ -1,0 +1,244 @@
+package ru.sla.clarify.feature.chat.thread.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.uikit.component.UnreadCountBadge
+import ru.sla.clarify.uikit.modifier.surface
+import ru.sla.clarify.uikit.preview.PreviewColumn
+import ru.sla.clarify.uikit.theme.AppTheme
+import ru.sla.clarify.uikit.theme.ColorTheme
+
+@Composable
+internal fun BranchItem(
+  branch: Branch,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Row(
+    modifier = modifier
+      .surface(
+        shape = AppTheme.shapes.round16,
+        backgroundColor = Color.Transparent,
+        onClick = onClick
+      )
+      .padding(8.dp),
+    horizontalArrangement = Arrangement.spacedBy(12.dp)
+  ) {
+    LeadingBlock(
+      status = branch.mergeRequest?.status
+    )
+    Column(
+      modifier = Modifier.weight(1f),
+      verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+      Text(
+        text = branch.name,
+        color = AppTheme.colors.contentPrimary,
+        style = AppTheme.typography.title2Bold
+      )
+      Text(
+        text = "!Last message",
+        color = AppTheme.colors.contentSecondary,
+        style = AppTheme.typography.body3
+      )
+    }
+    TrailingBlock(
+      date = "!lastMessageTimestamp",
+      unreadCount = 1
+    )
+  }
+}
+
+@Composable
+private fun LeadingBlock(
+  status: Branch.MergeRequest.Status?,
+  modifier: Modifier = Modifier
+) {
+  when (status) {
+    null,
+    Branch.MergeRequest.Status.Open -> {
+      Icon(
+        modifier = modifier
+          .background(
+            shape = AppTheme.shapes.round16,
+            color = AppTheme.colors.backgroundAccentPrimary
+          )
+          .padding(8.dp),
+        painter = painterResource(R.drawable.ic_branch_24),
+        tint = AppTheme.colors.contentAccentPrimary,
+        contentDescription = null
+      )
+    }
+    Branch.MergeRequest.Status.ReadyToMerge -> {
+      Icon(
+        modifier = modifier
+          .background(
+            shape = AppTheme.shapes.round16,
+            color = AppTheme.colors.backgroundAccentPrimary
+          )
+          .padding(8.dp),
+        painter = painterResource(R.drawable.ic_branch_24),
+        tint = AppTheme.colors.contentAccentPrimary,
+        contentDescription = null
+      )
+    }
+    Branch.MergeRequest.Status.Merged -> {
+      Icon(
+        modifier = modifier
+          .background(
+            shape = AppTheme.shapes.round16,
+            color = AppTheme.colors.successPrimary
+          )
+          .padding(8.dp),
+        painter = painterResource(R.drawable.ic_branch_merged_24),
+        tint = AppTheme.colors.successSecondary,
+        contentDescription = null
+      )
+    }
+  }
+}
+
+@Composable
+private fun TrailingBlock(
+  date: String,
+  unreadCount: Long,
+  modifier: Modifier = Modifier
+) {
+  Column(
+    modifier = modifier,
+    horizontalAlignment = Alignment.End,
+    verticalArrangement = Arrangement.spacedBy(4.dp)
+  ) {
+    Text(
+      text = date,
+      style = AppTheme.typography.label3,
+      color = AppTheme.colors.contentAccentPrimary
+    )
+    UnreadCountBadge(
+      unreadCount = unreadCount
+    )
+  }
+}
+
+// @Composable
+// private fun MergeRequestStatus(
+//  status: Branch.MergeRequest.Status?,
+//  modifier: Modifier = Modifier
+// ) {
+//  AnimatedVisibility(status != null) {
+//    if (status == null) {
+//      return@AnimatedVisibility
+//    }
+//    Text(
+//      modifier = modifier,
+//      text = when (status) {
+//        Branch.MergeRequest.Status.Open -> {
+//          stringResource(R.string.thread_branches_modal_open_merge_request_label)
+//        }
+//        Branch.MergeRequest.Status.ReadyToMerge -> {
+//          stringResource(R.string.thread_branches_modal_open_ready_to_merge_label)
+//        }
+//        Branch.MergeRequest.Status.Merged -> {
+//          stringResource(R.string.thread_branches_modal_open_merged_label)
+//        }
+//      },
+//      color = AppTheme.colors.successPrimary,
+//      style = AppTheme.typography.label3Bold
+//    )
+//  }
+// }
+
+@Preview
+@Composable
+private fun BranchItemPreviewLight() {
+  PreviewColumn(colorTheme = ColorTheme.Light) {
+    BranchItemPreviewContent()
+  }
+}
+
+@Preview
+@Composable
+private fun BranchItemPreviewDark() {
+  PreviewColumn(colorTheme = ColorTheme.Dark) {
+    BranchItemPreviewContent()
+  }
+}
+
+@Composable
+private fun BranchItemPreviewContent() {
+  BranchItem(
+    modifier = Modifier.padding(horizontal = 8.dp),
+    branch = previewBranch(
+      name = "feature/login",
+      status = null
+    ),
+    onClick = {}
+  )
+  BranchItem(
+    modifier = Modifier.padding(horizontal = 8.dp),
+    branch = previewBranch(
+      name = "fix/crash-on-start",
+      status = Branch.MergeRequest.Status.Open
+    ),
+    onClick = {}
+  )
+  BranchItem(
+    modifier = Modifier.padding(horizontal = 8.dp),
+    branch = previewBranch(
+      name = "feature/payments",
+      status = Branch.MergeRequest.Status.ReadyToMerge
+    ),
+    onClick = {}
+  )
+  BranchItem(
+    modifier = Modifier.padding(horizontal = 8.dp),
+    branch = previewBranch(
+      name = "chore/cleanup",
+      status = Branch.MergeRequest.Status.Merged
+    ),
+    onClick = {}
+  )
+}
+
+private fun previewBranch(
+  name: String,
+  status: Branch.MergeRequest.Status?
+): Branch {
+  val author = UserId("author")
+  return Branch(
+    id = Branch.Id("branch-$name"),
+    conversationId = Conversation.Id("conversation"),
+    parentBranchId = Branch.Id("main"),
+    branchedFromCommitId = Commit.Id("commit"),
+    name = name,
+    createdAt = 0L,
+    createdByUid = author,
+    mergeRequest = status?.let {
+      Branch.MergeRequest(
+        status = it,
+        initiatorUid = author,
+        requestedAt = 0L,
+        approvedByUids = setOf(author),
+        mergedAt = if (it == Branch.MergeRequest.Status.Merged) 0L else null,
+        mergedIntoBranchId = if (it == Branch.MergeRequest.Status.Merged) Branch.Id("main") else null
+      )
+    }
+  )
+}

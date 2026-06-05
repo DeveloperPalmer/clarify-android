@@ -1,18 +1,16 @@
 package ru.sla.clarify.feature.chat.thread.ui.screen.thread
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +26,7 @@ import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.thread.ui.components.BranchItem
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.thread.ui.screen.thread.ViewState.CreateBranchPayload
 import ru.sla.clarify.uikit.component.bottomsheet.ModalBottomSheet
@@ -102,10 +101,9 @@ internal fun showBranchCreationSheet(commit: Commit.Message): ScreenViewEvent<Vi
   }
 }
 
-internal fun showBranchesListSheet(branches: List<Branch>) =
-  ScreenViewEvent<ViewIntents> { intents ->
+internal fun showBranchesListSheet(branches: List<Branch>): ScreenViewEvent<ViewIntents> {
+  return ScreenViewEvent { intents ->
     object : ViewEvent.BottomSheet {
-
       override val sheetState = mutableStateOf<SheetState?>(null)
 
       @OptIn(ExperimentalMaterial3Api::class)
@@ -117,44 +115,49 @@ internal fun showBranchesListSheet(branches: List<Branch>) =
           onUpdateState = { sheetState.value = it },
           onDismissRequest = { dismissEventPresentation() }
         ) {
-          Column(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+          LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
           ) {
-            Text(
-              text = stringResource(R.string.thread_branches_list_sheet_title),
-              style = AppTheme.typography.title1
-            )
-            if (branches.isEmpty()) {
+            item {
               Text(
-                text = stringResource(R.string.thread_branches_list_sheet_empty),
-                style = AppTheme.typography.body2,
-                color = AppTheme.colors.contentPrimary
+                modifier = Modifier.padding(horizontal = 8.dp),
+                text = stringResource(R.string.thread_branches_modal_sheet_title),
+                color = AppTheme.colors.contentPrimary,
+                style = AppTheme.typography.title1Bold
               )
+              VSpacer(16.dp)
+            }
+            if (branches.isEmpty()) {
+              item {
+                Text(
+                  modifier = Modifier.padding(horizontal = 8.dp),
+                  text = stringResource(R.string.thread_branches_modal_sheet_empty),
+                  style = AppTheme.typography.body2,
+                  color = AppTheme.colors.contentPrimary
+                )
+              }
             } else {
-              branches.forEach { branch ->
-                TextButton(
+              itemsIndexed(
+                key = { _, branch -> branch.id.value },
+                items = branches
+              ) { index, item ->
+                BranchItem(
                   modifier = Modifier.fillMaxWidth(),
+                  branch = item,
                   onClick = {
-                    intents.openBranch(branch.id)
+                    intents.openBranch(item.id)
                     dismissEventPresentation()
                   }
-                ) {
-                  Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                  ) {
-                    Text(text = branch.name)
-                    Text(text = branch.mergeRequest?.status?.name.orEmpty())
-                  }
+                )
+                if (index != branches.lastIndex) {
+                  VSpacer(12.dp)
                 }
               }
             }
-            Spacer(modifier = Modifier.height(8.dp))
           }
         }
       }
     }
   }
+}

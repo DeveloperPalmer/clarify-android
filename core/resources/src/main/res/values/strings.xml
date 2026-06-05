@@ -56,9 +56,6 @@
     <!-- Thread screen -->
     <string name="thread_branches_count">Branches · %1$d</string>
     <string name="thread_empty_state">Say hi!</string>
-    <string name="thread_branches_list_sheet_title">Branches</string>
-    <string name="thread_branches_list_sheet_empty">No branches yet. Long-press a message to create one.</string>
-    <string name="thread_branch_creation_failed">Branch creation failed</string>
     <string name="thread_scroll_to_bottom">Scroll to latest messages</string>
     <string name="thread_commit_status_sending">%1$s • sending</string>
     <string name="thread_commit_status_failed">%1$s • failed</string>
@@ -68,6 +65,14 @@
     <string name="thread_create_branch_sheet_description">Вынесите это сообщение в отдельный тред и дайте ему название.</string>
     <string name="thread_create_branch_sheet_field_name_placeholder">Название ветки</string>
     <string name="thread_create_branch_sheet_create_button">Создать</string>
+    <string name="thread_create_branch_creation_failed">Не удалось создать ветку</string>
+
+    <!-- Branches modal sheet -->
+    <string name="thread_branches_modal_sheet_title">Ветки</string>
+    <string name="thread_branches_modal_sheet_empty">Веток пока нет. Зажмите сообщение, чтобы создать ветку.</string>
+    <string name="thread_branches_modal_open_merge_request_label">Открыт merge request</string>
+    <string name="thread_branches_modal_open_ready_to_merge_label">Готова к слиянию</string>
+    <string name="thread_branches_modal_open_merged_label">Готово</string>
 
     <!-- Branch screen -->
     <string name="branch_default_name">Branch</string>

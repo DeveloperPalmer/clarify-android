@@ -143,7 +143,7 @@ class ThreadViewModel @Inject constructor(
         sendViewEvent(
           Snackbar(
             isError = true,
-            message = resRef(R.string.thread_branch_creation_failed)
+            message = resRef(R.string.thread_create_branch_creation_failed)
           )
         )
       }
