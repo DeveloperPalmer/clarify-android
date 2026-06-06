@@ -11,5 +11,9 @@ android {
 dependencies {
   implementation project(":uikit")
   implementation project(":feature:chat-thread:domain")
+
+  implementation libs.arrow.core
   implementation libs.androidx.activity.compose // for BackHandler
+
+  ksp libs.arrow.optics.ksp
 }

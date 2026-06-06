@@ -43,9 +43,9 @@ class FirestoreFormat(override val serializersModule: SerializersModule) : Seria
     deserializer: DeserializationStrategy<T>,
     snapshot: DocumentSnapshot
   ): T {
-    val data = snapshot.data ?: throw DataMappingException.missingField(
-      "[document '${snapshot.id}'].data"
-    )
+    val data = snapshot
+      .getData(DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
+      ?: throw DataMappingException.missingField("[document '${snapshot.id}'].data")
     return decodeFromMap(deserializer, data + (DOCUMENT_ID_FIELD to snapshot.id))
   }
 

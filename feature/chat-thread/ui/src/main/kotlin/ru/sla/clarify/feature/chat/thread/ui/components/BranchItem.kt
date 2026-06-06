@@ -41,6 +41,7 @@ internal fun BranchItem(
         onClick = onClick
       )
       .padding(8.dp),
+    verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(12.dp)
   ) {
     LeadingBlock(
@@ -65,7 +66,7 @@ internal fun BranchItem(
       }
     }
     TrailingBlock(
-      date = resolveTextRef(branch.lastCommitAt),
+      date = branch.lastCommitAt?.let { resolveTextRef(it) },
       unreadCount = branch.unreadCount
     )
   }
@@ -122,7 +123,7 @@ private fun LeadingBlock(
 
 @Composable
 private fun TrailingBlock(
-  date: String,
+  date: String?,
   unreadCount: Long,
   modifier: Modifier = Modifier
 ) {
@@ -131,11 +132,13 @@ private fun TrailingBlock(
     horizontalAlignment = Alignment.End,
     verticalArrangement = Arrangement.spacedBy(4.dp)
   ) {
-    Text(
-      text = date,
-      style = AppTheme.typography.label3,
-      color = AppTheme.colors.contentAccentPrimary
-    )
+    if (date != null) {
+      Text(
+        text = date,
+        style = AppTheme.typography.label3,
+        color = AppTheme.colors.contentAccentPrimary
+      )
+    }
     UnreadCountBadge(
       unreadCount = unreadCount
     )

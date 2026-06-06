@@ -9,12 +9,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
@@ -38,7 +36,6 @@ fun ChatTextField(
   onClear: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  isError: Boolean = false,
   placeholder: TextRef = resRef(R.string.chat_input_placeholder),
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
   keyboardActions: KeyboardActions = KeyboardActions.Default
@@ -48,13 +45,11 @@ fun ChatTextField(
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    TextFieldInternal(
+    PrimaryTextField(
       modifier = Modifier.weight(1f),
       value = value,
       onValueChange = onValueChange,
-      shape = RoundedCornerShape(28.dp),
       enabled = enabled,
-      isError = isError,
       placeholder = placeholder,
       keyboardOptions = keyboardOptions,
       keyboardActions = keyboardActions
@@ -62,11 +57,8 @@ fun ChatTextField(
     SendButton(
       enabled = enabled && value.isNotBlank(),
       onClick = {
-        val text = value.trim()
-        if (text.isNotEmpty()) {
-          onSend()
-          onClear()
-        }
+        onSend()
+        onClear()
       }
     )
   }
@@ -78,7 +70,7 @@ private fun SendButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val backgroundColor by animateColorAsState(
+  val backgroundColor = animateColorAsState(
     label = "backgroundColor",
     targetValue = if (enabled) {
       AppTheme.colors.buttonPrimaryBg
@@ -86,30 +78,30 @@ private fun SendButton(
       AppTheme.colors.buttonPrimaryBgDisabled
     }
   )
-  val iconTint by animateColorAsState(
-    label = "iconTint",
-    targetValue = if (enabled) {
-      AppTheme.colors.buttonPrimaryContent
-    } else {
-      AppTheme.colors.buttonPrimaryContentDisabled
-    }
-  )
   Box(
     modifier = modifier
       .size(SendButtonSize)
       .focusProperties { canFocus = false }
       .surface(
-        backgroundColor = backgroundColor,
+        backgroundColor = { backgroundColor.value },
         shape = CircleShape,
         enabled = enabled,
         onClick = onClick
       ),
     contentAlignment = Alignment.Center
   ) {
+    val iconTint = animateColorAsState(
+      label = "iconTint",
+      targetValue = if (enabled) {
+        AppTheme.colors.buttonPrimaryContent
+      } else {
+        AppTheme.colors.buttonPrimaryContentDisabled
+      }
+    )
     Icon(
       painter = painterResource(R.drawable.ic_send_24),
-      tint = iconTint,
-      contentDescription = stringResource(R.string.chat_input_send_button)
+      contentDescription = stringResource(R.string.chat_input_send_button),
+      tint = { iconTint.value }
     )
   }
 }
@@ -148,8 +140,7 @@ private fun ChatTextFieldPreviewContent(state: TextFieldPreviewState) {
       onValueChange = {},
       onSend = {},
       onClear = {},
-      enabled = state.enabled,
-      isError = state.isError
+      enabled = state.enabled
     )
   }
 }

@@ -13,8 +13,11 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -23,17 +26,17 @@ import kotlinx.coroutines.launch
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
+import ru.sla.clarify.feature.chat.thread.ui.components.ChatCommits
 import ru.sla.clarify.feature.chat.thread.ui.components.ChatEmptyState
-import ru.sla.clarify.feature.chat.thread.ui.components.ChatInput
-import ru.sla.clarify.feature.chat.thread.ui.components.Commits
-import ru.sla.clarify.feature.chat.thread.ui.components.ScrollToBottomFab
-import ru.sla.clarify.feature.chat.thread.ui.components.rememberTopBarElevation
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.component.Avatar
+import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
 import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
+import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
+import ru.sla.clarify.uikit.component.topappbar.rememberTopBarElevation
 import ru.sla.clarify.uikit.keyboard.rememberKeyboardController
 import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
@@ -52,7 +55,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
     BackHandler(
       onBack = intents.navigateBack
     )
-    ScreenScaffold(state = scaffoldState) {
+    ScreenScaffold(scaffoldState) {
       ThreadReadyContent(
         modifier = Modifier
           .fillMaxSize()
@@ -73,7 +76,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
 }
 
 @Composable
-internal fun ThreadReadyContent(
+private fun ThreadReadyContent(
   peer: Peer?,
   commits: List<Commit>,
   branchesCount: Int,
@@ -85,18 +88,15 @@ internal fun ThreadReadyContent(
   onCommitsRead: (LocalDateTime) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val scope = rememberCoroutineScope()
-  val keyboardController = rememberKeyboardController()
-  val listState = rememberLazyListState()
-  val topBarElevation = rememberTopBarElevation(listState)
-  val topBarModifier = remember(topBarElevation) {
-    Modifier.bottomShadow { topBarElevation.value }
-  }
   Column(modifier) {
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val topBarElevation = rememberTopBarElevation(listState)
+    val keyboardController = rememberKeyboardController()
     TopAppBar(
-      modifier = topBarModifier,
+      modifier = Modifier.bottomShadow { topBarElevation.value },
       navigationIcon = { TopAppBarDefaults.NavigationIcon(onBack) },
-      title = { peer?.let { TopAppBarContent(peer = peer) } },
+      title = { peer?.let { TopAppBarCenterContent(peer = peer) } },
       actions = {
         TertiaryIconButtonSmall(
           modifier = Modifier.padding(end = 4.dp),
@@ -111,49 +111,43 @@ internal fun ThreadReadyContent(
         )
       }
     )
-    if (commits.isEmpty()) {
-      ChatEmptyState(
-        text = stringResource(R.string.thread_empty_state),
-        modifier = Modifier
-          .weight(1f)
-          .fillMaxWidth()
-      )
-    } else {
-      Box(
-        modifier = Modifier
-          .weight(1f)
-          .fillMaxWidth()
-      ) {
-        Commits(
-          modifier = Modifier.fillMaxSize(),
-          listState = listState,
-          commits = commits,
-          onCommitsRead = onCommitsRead,
-          onCommitLongClick = { commit ->
-            scope.launch {
-              keyboardController.awaitHide()
-              onCommitLongClick(commit)
-            }
+    Box(modifier = Modifier.weight(1f)) {
+      ChatCommits(
+        modifier = Modifier.fillMaxSize(),
+        listState = listState,
+        commits = commits,
+        onCommitsRead = onCommitsRead,
+        onCommitLongClick = { commit ->
+          scope.launch {
+            keyboardController.awaitHide()
+            onCommitLongClick(commit)
           }
-        )
-        ScrollToBottomFab(
-          modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .padding(end = 16.dp, bottom = 16.dp),
-          listState = listState,
-          unreadCount = unreadCount
-        )
-      }
+        }
+      )
+      ChatScrollToBottomButton(
+        modifier = Modifier
+          .align(Alignment.BottomEnd)
+          .padding(end = 16.dp, bottom = 16.dp),
+        listState = listState,
+        unreadCount = unreadCount
+      )
+      ChatEmptyState(
+        modifier = Modifier.fillMaxSize(),
+        visible = commits.isEmpty(),
+        text = stringResource(R.string.thread_empty_state)
+      )
     }
-    ChatInput(
-      onSend = onSend,
-      modifier = Modifier.fillMaxWidth()
+    BottomArea(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 8.dp, vertical = 8.dp),
+      onSend = onSend
     )
   }
 }
 
 @Composable
-private fun TopAppBarContent(
+private fun TopAppBarCenterContent(
   peer: Peer,
   modifier: Modifier = Modifier
 ) {
@@ -174,4 +168,19 @@ private fun TopAppBarContent(
       )
     }
   }
+}
+
+@Composable
+private fun BottomArea(
+  modifier: Modifier = Modifier,
+  onSend: (String) -> Unit
+) {
+  var inputValue by rememberSaveable { mutableStateOf("") }
+  ChatTextField(
+    modifier = modifier,
+    value = inputValue,
+    onValueChange = { inputValue = it },
+    onSend = { onSend(inputValue) },
+    onClear = { inputValue = "" }
+  )
 }

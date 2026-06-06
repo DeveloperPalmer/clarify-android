@@ -21,6 +21,8 @@ import ru.sla.clarify.uikit.component.textfield.PrimaryTextField
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
+import ru.sla.resourcerefs.TextRef
+import ru.sla.resourcerefs.resRef
 
 @Composable
 fun DebugPanelScreen(viewModel: DebugPanelViewModel) {
@@ -47,7 +49,7 @@ fun DebugPanelScreen(viewModel: DebugPanelViewModel) {
           modifier = Modifier.fillMaxWidth(),
           value = state.userField,
           onValueChange = intents.changeUserField,
-          isError = state.userJsonError != null
+          errorText = state.userJsonError?.message()
         )
         PrimaryButton(
           modifier = Modifier.fillMaxWidth(),
@@ -61,21 +63,22 @@ fun DebugPanelScreen(viewModel: DebugPanelViewModel) {
   }
 }
 
-@Composable
-private fun UserJsonError.message(): String = when (this) {
-  is UserJsonError.MalformedJson -> {
-    stringResource(R.string.debug_panel_error_malformed_json)
-  }
-  is UserJsonError.MissingField -> {
-    stringResource(R.string.debug_panel_error_missing_field, field)
-  }
-  is UserJsonError.UnknownField -> {
-    stringResource(R.string.debug_panel_error_unknown_field, field)
-  }
-  is UserJsonError.InvalidPhotoUrl -> {
-    stringResource(R.string.debug_panel_error_invalid_photo_url)
-  }
-  is UserJsonError.UserAlreadyExist -> {
-    stringResource(R.string.debug_panel_error_invalid_email)
+private fun UserJsonError.message(): TextRef {
+  return when (this) {
+    is UserJsonError.MalformedJson -> {
+      resRef(R.string.debug_panel_error_malformed_json)
+    }
+    is UserJsonError.MissingField -> {
+      resRef(R.string.debug_panel_error_missing_field, field)
+    }
+    is UserJsonError.UnknownField -> {
+      resRef(R.string.debug_panel_error_unknown_field, field)
+    }
+    is UserJsonError.InvalidPhotoUrl -> {
+      resRef(R.string.debug_panel_error_invalid_photo_url)
+    }
+    is UserJsonError.UserAlreadyExist -> {
+      resRef(R.string.debug_panel_error_invalid_email)
+    }
   }
 }

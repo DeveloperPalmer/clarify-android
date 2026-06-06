@@ -62,7 +62,7 @@ internal fun mapToBranch(
 
 internal fun BranchNM.toDomain(conversationId: String): Branch {
   val createdAt = createdAt?.toEpochSeconds() ?: 0L
-  val lastCommitAt = lastCommitAt?.toEpochSeconds() ?: 0L
+  val lastCommitAt = lastCommitAt?.toEpochSeconds()
   return Branch(
     id = Branch.Id(id),
     conversationId = Conversation.Id(conversationId),
@@ -71,7 +71,7 @@ internal fun BranchNM.toDomain(conversationId: String): Branch {
     name = name,
     lastCommit = lastCommitText,
     lastCommitAt = formatLastCommitTimestamp(lastCommitAt),
-    lastCommitTimestamp = lastCommitAt,
+    lastCommitTimestamp = lastCommitAt ?: 0L,
     unreadCount = 0L,
     createdAt = createdAt,
     createdById = UserId(createdByUid),
@@ -108,7 +108,8 @@ private fun buildMergeRequest(
   )
 }
 
-private fun formatLastCommitTimestamp(epochSeconds: Long): TextRef {
+private fun formatLastCommitTimestamp(epochSeconds: Long?): TextRef? {
+  if (epochSeconds == null || epochSeconds <= 0L) return null
   val zone = ZoneId.systemDefault()
   val dateTime = Instant.ofEpochSecond(epochSeconds).atZone(zone).toLocalDateTime()
   val date = dateTime.toLocalDate()

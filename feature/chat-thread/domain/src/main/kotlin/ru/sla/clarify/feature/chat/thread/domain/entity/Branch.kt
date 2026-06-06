@@ -14,7 +14,7 @@ data class Branch(
   val branchedFromCommitId: Commit.Id,
   val name: String,
   val lastCommit: String?,
-  val lastCommitAt: TextRef,
+  val lastCommitAt: TextRef?,
   val lastCommitTimestamp: Long,
   val unreadCount: Long,
   val createdAt: Long,

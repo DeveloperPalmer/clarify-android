@@ -64,7 +64,8 @@ internal fun mapToUser(
   )
 }
 
-private fun formatLastCommitTimestamp(epochSeconds: Long): TextRef {
+private fun formatLastCommitTimestamp(epochSeconds: Long?): TextRef? {
+  if (epochSeconds == null || epochSeconds <= 0L) return null
   val zone = ZoneId.systemDefault()
   val dateTime = Instant.ofEpochSecond(epochSeconds).atZone(zone).toLocalDateTime()
   val date = dateTime.toLocalDate()

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.thread.ui.entity.Approver
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 
 @Immutable

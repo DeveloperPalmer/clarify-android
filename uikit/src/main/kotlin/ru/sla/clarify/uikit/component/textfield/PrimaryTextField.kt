@@ -1,11 +1,14 @@
 package ru.sla.clarify.uikit.component.textfield
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,7 +19,9 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.resourcerefs.TextRef
+import ru.sla.resourcerefs.compose.resolveTextRef
 import ru.sla.resourcerefs.resRef
+import ru.sla.resourcerefs.strRef
 
 @Composable
 fun PrimaryTextField(
@@ -24,22 +29,32 @@ fun PrimaryTextField(
   onValueChange: (String) -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  isError: Boolean = false,
+  errorText: TextRef? = null,
   placeholder: TextRef = resRef(R.string.chat_input_placeholder),
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
   keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
-  TextFieldInternal(
-    modifier = modifier,
-    value = value,
-    onValueChange = onValueChange,
-    shape = RoundedCornerShape(16.dp),
-    enabled = enabled,
-    isError = isError,
-    placeholder = placeholder,
-    keyboardOptions = keyboardOptions,
-    keyboardActions = keyboardActions
-  )
+  Column(modifier = modifier.animateContentSize()) {
+    TextFieldInternal(
+      modifier = Modifier.fillMaxWidth(),
+      value = value,
+      onValueChange = onValueChange,
+      shape = RoundedCornerShape(16.dp),
+      enabled = enabled,
+      isError = errorText != null,
+      placeholder = placeholder,
+      keyboardOptions = keyboardOptions,
+      keyboardActions = keyboardActions
+    )
+    if (errorText != null) {
+      Text(
+        modifier = Modifier.padding(top = 6.dp, start = 12.dp),
+        text = resolveTextRef(errorText),
+        style = AppTheme.typography.body3,
+        color = AppTheme.colors.errorPrimary
+      )
+    }
+  }
 }
 
 @Preview
@@ -75,7 +90,7 @@ private fun PrimaryTextFieldPreviewContent(state: TextFieldPreviewState) {
       value = state.text,
       onValueChange = {},
       enabled = state.enabled,
-      isError = state.isError
+      errorText = if (state.isError) strRef("Ошибка валидации") else null
     )
   }
 }

@@ -88,7 +88,7 @@ internal fun DirectConversationItem(
         }
       }
       TrailingBlock(
-        date = resolveTextRef(direct.lastCommitAt),
+        date = direct.lastCommitAt?.let { resolveTextRef(it) },
         unreadCount = direct.unreadCount
       )
     }
@@ -126,7 +126,7 @@ private fun DoneBadge(
 
 @Composable
 private fun TrailingBlock(
-  date: String,
+  date: String?,
   unreadCount: Long,
   modifier: Modifier = Modifier
 ) {
@@ -135,11 +135,13 @@ private fun TrailingBlock(
     horizontalAlignment = Alignment.End,
     verticalArrangement = Arrangement.spacedBy(4.dp)
   ) {
-    Text(
-      text = date,
-      style = AppTheme.typography.label3,
-      color = AppTheme.colors.contentAccentPrimary
-    )
+    if (date != null) {
+      Text(
+        text = date,
+        style = AppTheme.typography.label3,
+        color = AppTheme.colors.contentAccentPrimary
+      )
+    }
     UnreadCountBadge(
       unreadCount = unreadCount
     )

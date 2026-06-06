@@ -132,6 +132,18 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
+    onEach(intent(ViewIntents::showCreateBranchError)) {
+      transitionTo { state, createBranchError ->
+        state.copy(createBranchError = createBranchError)
+      }
+    }
+
+    onEach(intent(ViewIntents::clearCreateBranchError)) {
+      transitionTo { state, _ ->
+        state.copy(createBranchError = null)
+      }
+    }
+
     onEach(threadModel.createBranch.jobFlow.successResults()) {
       action { state, _, branch ->
         eventSink.sendEvent(FlowEvent.BranchRequested(branch.id))

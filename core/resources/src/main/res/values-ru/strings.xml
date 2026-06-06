@@ -63,6 +63,10 @@
     <string name="thread_create_branch_sheet_field_name_placeholder">Название ветки</string>
     <string name="thread_create_branch_sheet_create_button">Создать</string>
     <string name="thread_create_branch_creation_failed">Не удалось создать ветку</string>
+    <string name="thread_create_branch_error_empty">Введите название ветки</string>
+    <string name="thread_create_branch_error_invalid">Только латиница, цифры, дефис и подчёркивание</string>
+    <string name="thread_create_branch_error_max_length">Максимальная длина имени %1$d</string>
+    <string name="thread_create_branch_error_already_exists">Ветка с таким названием уже есть</string>
 
     <!-- Branches modal sheet -->
     <string name="thread_branches_modal_sheet_title">Ветки</string>

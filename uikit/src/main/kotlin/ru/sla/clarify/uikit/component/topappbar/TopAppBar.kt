@@ -1,9 +1,17 @@
 package ru.sla.clarify.uikit.component.topappbar
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -52,4 +60,15 @@ object TopAppBarDefaults {
       actionIconContentColor = AppTheme.colors.contentPrimary
     )
   }
+}
+
+@Composable
+fun rememberTopBarElevation(listState: LazyListState): State<Dp> {
+  val isScrolledUnderTopBar by remember {
+    derivedStateOf { listState.canScrollForward }
+  }
+  return animateDpAsState(
+    label = "topBarElevation",
+    targetValue = if (isScrolledUnderTopBar) 4.dp else 0.dp
+  )
 }

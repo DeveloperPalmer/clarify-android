@@ -75,15 +75,44 @@ fun BubbleMessage(
     BubbleMessage.Type.Bottom -> bottomShape(bubble.side)
   }
 
+  BubbleMessageLayout(
+    side = bubble.side,
+    shape = shape,
+    backgroundColor = backgroundColor,
+    modifier = modifier,
+    onClick = onClick,
+    onLongClick = onLongClick,
+    text = bubble.text,
+    textColor = contentColor,
+    time = bubble.time,
+    timeColor = timeColor,
+    statusReadColor = statusReadColor
+  )
+}
+
+@Composable
+private fun BubbleMessageLayout(
+  side: BubbleMessage.Side,
+  shape: Shape,
+  backgroundColor: Color,
+  text: String,
+  textColor: Color,
+  time: String,
+  timeColor: Color,
+  statusReadColor: Color,
+  modifier: Modifier = Modifier,
+  onClick: (() -> Unit)? = null,
+  onLongClick: (() -> Unit)? = null
+) {
   Box(
     modifier = modifier.fillMaxWidth(),
-    contentAlignment = if (bubble.side is BubbleMessage.Side.Right) {
+    contentAlignment = if (side is BubbleMessage.Side.Right) {
       Alignment.CenterEnd
     } else {
       Alignment.CenterStart
     }
   ) {
-    BubbleMessageContent(
+    SubcomposeLayout(
       modifier = Modifier
         .widthIn(max = 280.dp)
         .surface(
@@ -95,79 +124,65 @@ fun BubbleMessage(
         .padding(
           vertical = 8.dp,
           horizontal = 12.dp
-        ),
-      text = bubble.text,
-      textColor = contentColor
-    ) {
-      BubbleTimeStatus(
-        time = bubble.time,
-        timeColor = timeColor,
-        status = (bubble.side as? BubbleMessage.Side.Right)?.status,
-        statusMutedColor = timeColor,
-        statusReadColor = statusReadColor
-      )
-    }
-  }
-}
-
-@Composable
-private fun BubbleMessageContent(
-  text: String,
-  textColor: Color,
-  modifier: Modifier = Modifier,
-  timeStatus: @Composable () -> Unit
-) {
-  SubcomposeLayout(modifier) { constraints ->
-    val looseConstraints = constraints.copy(
-      minWidth = 0,
-      minHeight = 0
-    )
-
-    val timeStatusPlaceable = subcompose(BubbleSlot.TimeStatus, timeStatus)
-      .first()
-      .measure(looseConstraints)
-
-    var textLayoutResult: TextLayoutResult? = null
-    val textPlaceable = subcompose(BubbleSlot.Text) {
-      Text(
-        text = text,
-        style = AppTheme.typography.body1,
-        color = textColor,
-        onTextLayout = { textLayoutResult = it }
-      )
-    }.first().measure(looseConstraints)
-
-    val layoutResult = requireNotNull(textLayoutResult)
-    val lastLineRight = layoutResult.getLineRight(layoutResult.lineCount - 1)
-    val sameLineWidth = lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
-    val fitsSameLine = sameLineWidth <= constraints.maxWidth.toFloat()
-
-    if (fitsSameLine) {
-      val height = textPlaceable.height
-      val width = max(textPlaceable.width.toFloat(), sameLineWidth)
-        .roundToInt()
-        .coerceIn(constraints.minWidth, constraints.maxWidth)
-
-      layout(width, height) {
-        textPlaceable.place(0, 0)
-        timeStatusPlaceable.place(
-          x = width - timeStatusPlaceable.width,
-          y = height - timeStatusPlaceable.height
         )
-      }
-    } else {
-      val height = textPlaceable.height + timeStatusPlaceable.height
-      val width = max(textPlaceable.width, timeStatusPlaceable.width).coerceIn(
-        minimumValue = constraints.minWidth,
-        maximumValue = constraints.maxWidth
+    ) { constraints ->
+      val looseConstraints = constraints.copy(
+        minWidth = 0,
+        minHeight = 0
       )
 
-      layout(width, height) {
-        textPlaceable.place(0, 0)
-        timeStatusPlaceable.place(
-          x = width - timeStatusPlaceable.width,
-          y = textPlaceable.height
+      val timeStatusPlaceable = subcompose(BubbleSlot.TimeStatus) {
+        BubbleTimeStatus(
+          time = time,
+          timeColor = timeColor,
+          status = (side as? BubbleMessage.Side.Right)?.status,
+          statusMutedColor = timeColor,
+          statusReadColor = statusReadColor
         )
+      }.first().measure(looseConstraints)
+
+      var textLayoutResult: TextLayoutResult? = null
+      val textPlaceable = subcompose(BubbleSlot.Text) {
+        Text(
+          text = text,
+          style = AppTheme.typography.body1,
+          color = textColor,
+          onTextLayout = { textLayoutResult = it }
+        )
+      }.first().measure(looseConstraints)
+
+      val layoutResult = requireNotNull(textLayoutResult)
+      val lastLineRight = layoutResult.getLineRight(layoutResult.lineCount - 1)
+      val sameLineWidth = lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
+      val fitsSameLine = sameLineWidth <= constraints.maxWidth.toFloat()
+
+      if (fitsSameLine) {
+        val height = textPlaceable.height
+        val width = max(textPlaceable.width.toFloat(), sameLineWidth)
+          .roundToInt()
+          .coerceIn(constraints.minWidth, constraints.maxWidth)
+
+        layout(width, height) {
+          textPlaceable.place(0, 0)
+          timeStatusPlaceable.place(
+            x = width - timeStatusPlaceable.width,
+            y = height - timeStatusPlaceable.height
+          )
+        }
+      } else {
+        val height = textPlaceable.height + timeStatusPlaceable.height
+        val width = max(textPlaceable.width, timeStatusPlaceable.width).coerceIn(
+          minimumValue = constraints.minWidth,
+          maximumValue = constraints.maxWidth
+        )
+
+        layout(width, height) {
+          textPlaceable.place(0, 0)
+          timeStatusPlaceable.place(
+            x = width - timeStatusPlaceable.width,
+            y = textPlaceable.height
+          )
+        }
       }
     }
   }

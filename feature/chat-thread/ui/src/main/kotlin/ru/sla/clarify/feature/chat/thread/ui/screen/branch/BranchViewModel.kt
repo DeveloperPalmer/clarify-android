@@ -19,6 +19,7 @@ import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.thread.domain.ThreadModel
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.thread.ui.entity.Approver
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.thread.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.thread.ui.routing.FlowEvent
