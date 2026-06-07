@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,13 +22,13 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
-import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch.MergeRequest.Status
 import ru.sla.clarify.feature.chat.thread.ui.components.ChatCommits
 import ru.sla.clarify.feature.chat.thread.ui.components.ChatEmptyState
-import ru.sla.clarify.feature.chat.thread.ui.components.MergeBanner
-import ru.sla.clarify.feature.chat.thread.ui.components.MergeStatusLabel
+import ru.sla.clarify.feature.chat.thread.ui.components.MergeRequestButton
+import ru.sla.clarify.feature.chat.thread.ui.components.MergeRequestCard
 import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
+import ru.sla.clarify.uikit.component.scrim.ScrimEffect
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
@@ -59,6 +58,27 @@ fun BranchScreen(viewModel: BranchViewModel) {
         state = state,
         intents = intents
       )
+      if (state.mergeRequest != null) {
+        ScrimEffect(
+          visible = state.mergeRequestVisible,
+          onFinish = intents.hideMergeRequest
+        )
+        MergeRequestCard(
+          modifier = Modifier
+            .systemBarsPadding()
+            .padding(start = 12.dp, end = 12.dp),
+          visible = state.mergeRequestVisible,
+          mergeRequest = state.mergeRequest,
+          initiatorName = state.initiatorName,
+          approvers = state.approvers,
+          isCurrentUserApproved = state.isCurrentUserApproved,
+          mergeRequestInProgress = state.mergeRequestInProgress,
+          onApprove = intents.approveMergeRequest,
+          onRevoke = intents.revokeApprovalMergeRequest,
+          onCancel = intents.cancelMergeRequest,
+          onFinalize = intents.finalizeMergeRequest
+        )
+      }
     }
   }
 }
@@ -69,6 +89,9 @@ internal fun BranchReadyContent(
   intents: ViewIntents,
   modifier: Modifier = Modifier
 ) {
+  BackHandler(enabled = state.mergeRequestVisible) {
+    intents.hideMergeRequest()
+  }
   Column(modifier = modifier) {
     val listState = rememberLazyListState()
     val topBarElevation = rememberTopBarElevation(listState)
@@ -77,21 +100,14 @@ internal fun BranchReadyContent(
       navigationIcon = { TopAppBarDefaults.NavigationIcon(intents.navigateBack) },
       title = { state.branchName?.let { TopAppBarCenterContent(branchName = it) } },
       actions = {
-        TopAppBarTrailingContent(
-          mergeRequest = state.mergeRequest,
+        MergeRequestButton(
+          visible = !state.mergeRequestVisible,
+          inProgress = state.mergeRequestInProgress,
+          status = state.mergeRequest?.status,
           onOpenMergeRequest = intents.openMergeRequest
         )
       }
     )
-    if (state.mergeRequest != null && state.mergeRequest.status != Status.Merged) {
-      MergeBanner(
-        state = state,
-        onApprove = intents.approveMergeRequest,
-        onRevoke = intents.revokeApprovalMergeRequest,
-        onCancel = intents.cancelMergeRequest,
-        onFinalize = intents.finalizeMergeRequest
-      )
-    }
     Box(modifier = Modifier.weight(1f)) {
       ChatCommits(
         modifier = Modifier.fillMaxSize(),
@@ -113,7 +129,7 @@ internal fun BranchReadyContent(
       )
     }
     BottomArea(
-      state = state,
+      mergeRequestStatus = state.mergeRequest?.status,
       onSend = intents.sendCommit
     )
   }
@@ -132,43 +148,11 @@ private fun TopAppBarCenterContent(
 }
 
 @Composable
-private fun TopAppBarTrailingContent(
-  mergeRequest: Branch.MergeRequest?,
-  onOpenMergeRequest: () -> Unit,
-  modifier: Modifier = Modifier
-) {
-  when (mergeRequest?.status) {
-    null -> {
-      Button(
-        modifier = modifier,
-        onClick = onOpenMergeRequest
-      ) {
-        Text(stringResource(R.string.branch_open_mr_button))
-      }
-    }
-    Status.Open -> {
-      MergeStatusLabel(
-        modifier = modifier,
-        text = stringResource(R.string.branch_merge_in_progress)
-      )
-    }
-    Status.ReadyToMerge -> {
-      MergeStatusLabel(
-        modifier = modifier,
-        text = stringResource(R.string.branch_merge_ready),
-        showProgress = false
-      )
-    }
-    Status.Merged -> Unit
-  }
-}
-
-@Composable
 private fun BottomArea(
-  state: ViewState,
+  mergeRequestStatus: Status?,
   onSend: (String) -> Unit
 ) {
-  when (state.mergeRequest?.status) {
+  when (mergeRequestStatus) {
     null -> {
       var inputValue by rememberSaveable { mutableStateOf("") }
       ChatTextField(

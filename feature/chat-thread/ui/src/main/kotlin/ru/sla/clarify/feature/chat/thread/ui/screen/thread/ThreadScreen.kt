@@ -100,7 +100,7 @@ private fun ThreadReadyContent(
       actions = {
         TertiaryIconButtonSmall(
           modifier = Modifier.padding(end = 4.dp),
-          iconRes = R.drawable.ic_branch_24,
+          iconRes = R.drawable.ic_git_branch_24,
           text = stringResource(R.string.thread_branches_count, branchesCount),
           onClick = {
             scope.launch {

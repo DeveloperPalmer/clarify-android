@@ -1,5 +1,11 @@
 package ru.sla.clarify.feature.chat.thread.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,84 +24,122 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch.MergeRequest.Status
 import ru.sla.clarify.feature.chat.thread.ui.entity.Approver
-import ru.sla.clarify.feature.chat.thread.ui.screen.branch.ViewState
+import ru.sla.clarify.feature.chat.thread.ui.screen.branch.MERGE_REQUEST_MOTION_KEY
+import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
+import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
+import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
-internal fun MergeStatusLabel(
-  text: String,
-  modifier: Modifier = Modifier,
-  showProgress: Boolean = true
-) {
-  Row(
+internal fun MergeRequestCard(
+  visible: Boolean,
+  mergeRequest: Branch.MergeRequest,
+  initiatorName: String?,
+  isCurrentUserApproved: Boolean,
+  mergeRequestInProgress: Boolean,
+  approvers: List<Approver>,
+  onApprove: () -> Unit,
+  onRevoke: () -> Unit,
+  onCancel: () -> Unit,
+  onFinalize: () -> Unit,
+  modifier: Modifier = Modifier
+) = with(LocalSharedTransitionScope.current) {
+  AnimatedVisibility(
     modifier = modifier,
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(8.dp)
+    visible = visible,
+    enter = fadeIn(tween(AppTheme.motion.shortMillis)),
+    exit = fadeOut(tween(AppTheme.motion.shortMillis))
   ) {
-    Text(
-      text = text,
-      style = AppTheme.typography.body2,
-      color = AppTheme.colors.contentPrimary
-    )
-    if (showProgress) {
-      CircularProgressIndicator(
-        modifier = Modifier.size(24.dp)
+    Column(
+      modifier = Modifier
+        .sharedBounds(
+          sharedContentState = rememberSharedContentState(MERGE_REQUEST_MOTION_KEY),
+          animatedVisibilityScope = this,
+          boundsTransform = AppTheme.motion.mediumBoundsTransform(),
+          resizeMode = RemeasureToBounds
+        )
+        .surface(
+          shape = AppTheme.shapes.round16,
+          elevation = AppTheme.elevation.largest,
+          backgroundColor = AppTheme.colors.cardPrimary
+        )
+    ) {
+      VSpacer(8.dp)
+      IslandHandle()
+      MergeRequestBanner(
+        modifier = Modifier
+          .animateContentSize(AppTheme.motion.mediumTween())
+          .fillMaxWidth()
+          .padding(16.dp, 12.dp),
+        mergeRequest = mergeRequest,
+        initiatorName = initiatorName,
+        isCurrentUserApproved = isCurrentUserApproved,
+        mergeRequestRunning = mergeRequestInProgress,
+        approvers = approvers,
+        onApprove = onApprove,
+        onRevoke = onRevoke,
+        onCancel = onCancel,
+        onFinalize = onFinalize
       )
+      VSpacer(8.dp)
     }
   }
 }
 
 @Composable
-internal fun MergeBanner(
-  state: ViewState,
+private fun MergeRequestBanner(
+  mergeRequest: Branch.MergeRequest,
+  initiatorName: String?,
+  isCurrentUserApproved: Boolean,
+  mergeRequestRunning: Boolean,
+  approvers: List<Approver>,
   onApprove: () -> Unit,
   onRevoke: () -> Unit,
   onCancel: () -> Unit,
-  onFinalize: () -> Unit
+  onFinalize: () -> Unit,
+  modifier: Modifier = Modifier
 ) {
-  val mergeRequest = state.mergeRequest ?: return
   Column(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(horizontal = 16.dp, vertical = 12.dp),
+    modifier = modifier,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     Text(
       text = stringResource(
         R.string.branch_merge_request_summary,
-        state.initiatorName?.takeIf { it.isNotBlank() } ?: mergeRequest.initiatorId.value
+        initiatorName?.takeIf { it.isNotBlank() } ?: mergeRequest.initiatorId.value
       ),
       style = AppTheme.typography.body2,
       color = AppTheme.colors.contentPrimary
     )
-    if (state.isCurrentUserApproved) {
+    if (isCurrentUserApproved) {
       Text(
         text = stringResource(R.string.branch_merge_approved_waiting),
         style = AppTheme.typography.body2,
         color = AppTheme.colors.contentPrimary
       )
     }
-    if (state.approvers.isNotEmpty()) {
-      ApproversRow(approvers = state.approvers)
+    if (approvers.isNotEmpty()) {
+      ApproversRow(approvers = approvers)
     }
     Row(
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-      verticalAlignment = Alignment.CenterVertically
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
       // Approve / Revoke: видна на статусах Open и ReadyToMerge.
-      if (!state.isCurrentUserApproved) {
+      if (!isCurrentUserApproved) {
         Button(
           onClick = onApprove,
-          enabled = !state.mergeRequestRunning
+          enabled = !mergeRequestRunning
         ) {
           Text(stringResource(R.string.branch_merge_approve_button))
         }
       } else {
         TextButton(
           onClick = onRevoke,
-          enabled = !state.mergeRequestRunning
+          enabled = !mergeRequestRunning
         ) {
           Text(stringResource(R.string.branch_merge_revoke_approval))
         }
@@ -106,7 +148,7 @@ internal fun MergeBanner(
       if (mergeRequest.status == Status.ReadyToMerge) {
         Button(
           onClick = onFinalize,
-          enabled = !state.mergeRequestRunning
+          enabled = !mergeRequestRunning
         ) {
           Text(stringResource(R.string.branch_merge_finalize_button))
         }
@@ -114,13 +156,12 @@ internal fun MergeBanner(
       // Cancel: доступна любому участнику, не зависит от инициатора.
       TextButton(
         onClick = onCancel,
-        enabled = !state.mergeRequestRunning
+        enabled = !mergeRequestRunning
       ) {
         Text(stringResource(R.string.branch_merge_cancel_request))
       }
     }
   }
-  HorizontalDivider()
 }
 
 @Composable
@@ -153,5 +194,21 @@ private fun ApproversRow(approvers: List<Approver>) {
         )
       }
     }
+  }
+}
+
+@Composable
+private fun IslandHandle() {
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(vertical = 8.dp),
+    contentAlignment = Alignment.Center
+  ) {
+    Box(
+      modifier = Modifier
+        .size(width = 32.dp, height = 4.dp)
+        .background(color = AppTheme.colors.contentTertiary, shape = CircleShape)
+    )
   }
 }
