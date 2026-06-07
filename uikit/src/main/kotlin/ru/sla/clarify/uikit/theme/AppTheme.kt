@@ -24,7 +24,15 @@ object AppTheme {
     @ReadOnlyComposable
     get() = LocalAppTypography.current
 
-  val shapes: AppShapes = AppShapes
+  val shapes: AppShapes
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalAppShapes.current
+
+  val motion: AppMotion
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalAppMotion.current
 }
 
 @Composable
@@ -38,6 +46,8 @@ fun AppTheme(
       ColorTheme.Dark -> DarkColors
     }
   }
+  val shapes = remember { AppShapes() }
+  val motion = remember { AppMotion() }
   val elevation = remember { AppElevation() }
   val typography = remember { AppTypography() }
 
@@ -47,6 +57,8 @@ fun AppTheme(
   )
   CompositionLocalProvider(
     LocalAppColors provides colors,
+    LocalAppShapes provides shapes,
+    LocalAppMotion provides motion,
     LocalAppElevation provides elevation,
     LocalAppTypography provides typography,
     LocalContentColor provides colors.cardPrimary,
