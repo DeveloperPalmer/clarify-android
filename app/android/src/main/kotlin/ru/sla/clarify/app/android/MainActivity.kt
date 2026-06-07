@@ -14,8 +14,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
@@ -64,6 +64,7 @@ import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.LocalViewEventsHostMediator
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.debug.panel.routing.DebugPanelFlow
+import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.event.ViewEventsHost
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -148,11 +149,12 @@ class MainActivity : ComponentActivity() {
             isAppearanceLightNavigationBars = !isDarkTheme
           }
         }
-        CompositionLocalProvider(
-          LocalDropdownMenuAnchor provides remember { DropdownMenuAnchorState() },
-          LocalViewEventsHostMediator provides component.viewEventsHostMediator()
-        ) {
-          Box(modifier = Modifier.fillMaxSize()) {
+        SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
+          CompositionLocalProvider(
+            LocalSharedTransitionScope provides this,
+            LocalDropdownMenuAnchor provides remember { DropdownMenuAnchorState() },
+            LocalViewEventsHostMediator provides component.viewEventsHostMediator()
+          ) {
             NodeHost(
               service = service,
               transitionSpec = rememberTransitionSpec {
