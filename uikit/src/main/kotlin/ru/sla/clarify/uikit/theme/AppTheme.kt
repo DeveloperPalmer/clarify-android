@@ -14,6 +14,11 @@ object AppTheme {
     @ReadOnlyComposable
     get() = LocalAppColors.current
 
+  val elevation: AppElevation
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalAppElevation.current
+
   val typography: AppTypography
     @Composable
     @ReadOnlyComposable
@@ -33,6 +38,7 @@ fun AppTheme(
       ColorTheme.Dark -> DarkColors
     }
   }
+  val elevation = remember { AppElevation() }
   val typography = remember { AppTypography() }
 
   val textSelectionColors = TextSelectionColors(
@@ -41,6 +47,7 @@ fun AppTheme(
   )
   CompositionLocalProvider(
     LocalAppColors provides colors,
+    LocalAppElevation provides elevation,
     LocalAppTypography provides typography,
     LocalContentColor provides colors.cardPrimary,
     LocalTextSelectionColors provides textSelectionColors,
