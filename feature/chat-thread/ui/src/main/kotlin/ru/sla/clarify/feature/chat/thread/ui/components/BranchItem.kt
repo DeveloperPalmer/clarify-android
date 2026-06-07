@@ -87,7 +87,7 @@ private fun LeadingBlock(
             color = AppTheme.colors.backgroundAccentPrimary
           )
           .padding(8.dp),
-        painter = painterResource(R.drawable.ic_branch_24),
+        painter = painterResource(R.drawable.ic_git_branch_24),
         tint = AppTheme.colors.contentAccentPrimary,
         contentDescription = null
       )
@@ -100,7 +100,7 @@ private fun LeadingBlock(
             color = AppTheme.colors.backgroundAccentPrimary
           )
           .padding(8.dp),
-        painter = painterResource(R.drawable.ic_branch_24),
+        painter = painterResource(R.drawable.ic_git_branch_24),
         tint = AppTheme.colors.contentAccentPrimary,
         contentDescription = null
       )
@@ -113,7 +113,7 @@ private fun LeadingBlock(
             color = AppTheme.colors.successSecondary
           )
           .padding(8.dp),
-        painter = painterResource(R.drawable.ic_branch_merged_24),
+        painter = painterResource(R.drawable.ic_git_merged_24),
         tint = AppTheme.colors.contentSecondary,
         contentDescription = null
       )

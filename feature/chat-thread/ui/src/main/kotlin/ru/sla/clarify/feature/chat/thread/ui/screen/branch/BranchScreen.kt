@@ -1,6 +1,8 @@
 package ru.sla.clarify.feature.chat.thread.ui.screen.branch
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,18 +20,19 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
-import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch.MergeRequest.Status
 import ru.sla.clarify.feature.chat.thread.ui.components.ChatCommits
 import ru.sla.clarify.feature.chat.thread.ui.components.ChatEmptyState
-import ru.sla.clarify.feature.chat.thread.ui.components.MergeBanner
-import ru.sla.clarify.feature.chat.thread.ui.components.MergeStatusLabel
+import ru.sla.clarify.feature.chat.thread.ui.components.MergeRequestButton
+import ru.sla.clarify.feature.chat.thread.ui.components.MergeRequestCard
 import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
+import ru.sla.clarify.uikit.component.scrim.ScrimEffect
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
@@ -69,6 +72,9 @@ internal fun BranchReadyContent(
   intents: ViewIntents,
   modifier: Modifier = Modifier
 ) {
+  BackHandler(enabled = state.mergeRequestVisible) {
+    intents.hideMergeRequest()
+  }
   Column(modifier = modifier) {
     val listState = rememberLazyListState()
     val topBarElevation = rememberTopBarElevation(listState)
@@ -77,45 +83,85 @@ internal fun BranchReadyContent(
       navigationIcon = { TopAppBarDefaults.NavigationIcon(intents.navigateBack) },
       title = { state.branchName?.let { TopAppBarCenterContent(branchName = it) } },
       actions = {
-        TopAppBarTrailingContent(
-          mergeRequest = state.mergeRequest,
+        MergeRequestButton(
+          visible = !state.mergeRequestVisible,
+          inProgress = !state.mergeRequestInProgress,
+          status = state.mergeRequest?.status,
           onOpenMergeRequest = intents.openMergeRequest
         )
       }
     )
-    if (state.mergeRequest != null && state.mergeRequest.status != Status.Merged) {
-      MergeBanner(
-        state = state,
+    BranchCommits(
+      modifier = Modifier.weight(1f),
+      state = state,
+      intents = intents,
+      listState = listState,
+      expanded = state.mergeRequestVisible,
+      onCollapse = intents.hideMergeRequest
+    )
+    BottomArea(
+      mergeRequestStatus = state.mergeRequest?.status,
+      onSend = intents.sendCommit
+    )
+  }
+}
+
+@Composable
+private fun BranchCommits(
+  state: ViewState,
+  intents: ViewIntents,
+  listState: LazyListState,
+  expanded: Boolean,
+  onCollapse: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Box(modifier = modifier) {
+    val listAlpha = animateFloatAsState(
+      label = "branch-list-dim",
+      targetValue = if (expanded) LIST_DIM_ALPHA else 1f,
+      animationSpec = tween(SCRIM_DURATION_MILLIS)
+    )
+    ChatCommits(
+      modifier = Modifier
+        .fillMaxSize()
+        .graphicsLayer { alpha = listAlpha.value },
+      listState = listState,
+      commits = state.commits,
+      onCommitsRead = intents.markReadUpTo
+    )
+    ChatScrollToBottomButton(
+      modifier = Modifier
+        .align(Alignment.BottomEnd)
+        .padding(end = 16.dp, bottom = 16.dp),
+      listState = listState,
+      unreadCount = state.unreadCount
+    )
+    ChatEmptyState(
+      modifier = Modifier.fillMaxSize(),
+      visible = state.commits.isEmpty(),
+      text = stringResource(R.string.branch_empty_state)
+    )
+    if (state.mergeRequest != null) {
+      ScrimEffect(
+        visible = expanded,
+        onFinish = onCollapse
+      )
+      MergeRequestCard(
+        modifier = Modifier
+          .align(Alignment.TopEnd)
+          .padding(top = 12.dp, start = 12.dp, end = 12.dp),
+        visible = state.mergeRequestVisible,
+        mergeRequest = state.mergeRequest,
+        initiatorName = state.initiatorName,
+        approvers = state.approvers,
+        isCurrentUserApproved = state.isCurrentUserApproved,
+        mergeRequestRunning = state.mergeRequestInProgress,
         onApprove = intents.approveMergeRequest,
         onRevoke = intents.revokeApprovalMergeRequest,
         onCancel = intents.cancelMergeRequest,
         onFinalize = intents.finalizeMergeRequest
       )
     }
-    Box(modifier = Modifier.weight(1f)) {
-      ChatCommits(
-        modifier = Modifier.fillMaxSize(),
-        listState = listState,
-        commits = state.commits,
-        onCommitsRead = intents.markReadUpTo
-      )
-      ChatScrollToBottomButton(
-        modifier = Modifier
-          .align(Alignment.BottomEnd)
-          .padding(end = 16.dp, bottom = 16.dp),
-        listState = listState,
-        unreadCount = state.unreadCount
-      )
-      ChatEmptyState(
-        modifier = Modifier.fillMaxSize(),
-        visible = state.commits.isEmpty(),
-        text = stringResource(R.string.branch_empty_state)
-      )
-    }
-    BottomArea(
-      state = state,
-      onSend = intents.sendCommit
-    )
   }
 }
 
@@ -132,43 +178,11 @@ private fun TopAppBarCenterContent(
 }
 
 @Composable
-private fun TopAppBarTrailingContent(
-  mergeRequest: Branch.MergeRequest?,
-  onOpenMergeRequest: () -> Unit,
-  modifier: Modifier = Modifier
-) {
-  when (mergeRequest?.status) {
-    null -> {
-      Button(
-        modifier = modifier,
-        onClick = onOpenMergeRequest
-      ) {
-        Text(stringResource(R.string.branch_open_mr_button))
-      }
-    }
-    Status.Open -> {
-      MergeStatusLabel(
-        modifier = modifier,
-        text = stringResource(R.string.branch_merge_in_progress)
-      )
-    }
-    Status.ReadyToMerge -> {
-      MergeStatusLabel(
-        modifier = modifier,
-        text = stringResource(R.string.branch_merge_ready),
-        showProgress = false
-      )
-    }
-    Status.Merged -> Unit
-  }
-}
-
-@Composable
 private fun BottomArea(
-  state: ViewState,
+  mergeRequestStatus: Status?,
   onSend: (String) -> Unit
 ) {
-  when (state.mergeRequest?.status) {
+  when (mergeRequestStatus) {
     null -> {
       var inputValue by rememberSaveable { mutableStateOf("") }
       ChatTextField(
@@ -188,6 +202,7 @@ private fun BottomArea(
         text = stringResource(R.string.branch_locked_merge_in_progress)
       )
     }
+
     Status.Merged -> {
       LockedMessage(
         modifier = Modifier.fillMaxWidth(),
@@ -213,3 +228,6 @@ private fun LockedMessage(
     )
   }
 }
+
+private const val SCRIM_DURATION_MILLIS = 220
+private const val LIST_DIM_ALPHA = 0.45f

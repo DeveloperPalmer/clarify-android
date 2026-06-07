@@ -81,9 +81,8 @@
     <!-- Branch screen -->
     <string name="branch_default_name">Branch</string>
     <string name="branch_empty_state">Start the branch</string>
-    <string name="branch_open_mr_button">Open MR</string>
-    <string name="branch_merge_in_progress">Merge request in progress…</string>
-    <string name="branch_merge_ready">Ready to merge</string>
+
+
     <string name="branch_merge_finalize_button">Merge now</string>
     <string name="branch_merge_cancel_request">Cancel merge request</string>
     <string name="branch_merge_approved_waiting">You approved. Waiting for other participants.</string>
@@ -97,6 +96,15 @@
     <string name="branch_merge_revoke_failed">Failed to revoke approval</string>
     <string name="branch_merge_cancel_failed">Failed to cancel merge request</string>
     <string name="branch_merge_finalize_failed">Failed to finalize merge</string>
+
+    <!-- Merge request -->
+    <string name="merge_request_open_button">Open MR</string>
+    <string name="merge_request_opened_button">Active MR</string>
+    <string name="merge_request_in_progress_button">In progress</string>
+    <string name="merge_request_approved_button">You approved</string>
+    <string name="merge_request_ready_button">Ready to merge</string>
+    <string name="merge_request_merged_button">Merged</string>
+    <string name="merge_island_collapse_cd">Collapse merge request</string>
 
     <!-- Debug panel -->
     <string name="debug_panel_title">Debug panel</string>

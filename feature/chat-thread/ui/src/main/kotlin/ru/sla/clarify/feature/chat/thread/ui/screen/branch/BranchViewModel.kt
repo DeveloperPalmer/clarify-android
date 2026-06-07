@@ -10,6 +10,7 @@ import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
 import ru.kode.remo.JobState
 import ru.kode.remo.errors
+import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.startOnSubscribe
@@ -70,7 +71,10 @@ class BranchViewModel @AssistedInject constructor(
       transitionTo { state, branch ->
         state.copy(
           branchName = branch.name,
-          mergeRequest = branch.mergeRequest
+          mergeRequest = branch.mergeRequest,
+          mergeRequestVisible = state.mergeRequestVisible
+            .takeIf { branch.mergeRequest != null }
+            ?: false
         )
       }
     }
@@ -127,11 +131,26 @@ class BranchViewModel @AssistedInject constructor(
 
   private fun MachineDsl<ViewState>.configureMergeRequestTransitions() {
     onEach(intent(ViewIntents::openMergeRequest)) {
+      transitionTo { state, _ ->
+        if (state.mergeRequest != null) {
+          state.copy(mergeRequestVisible = true)
+        } else {
+          state
+        }
+      }
       action { state, _, _ ->
-        if (state.mergeRequest != null) return@action
-        threadModel.openMergeRequest.start(branchId)
+        if (state.mergeRequest == null) {
+          threadModel.openMergeRequest.start(branchId)
+        }
       }
     }
+
+    onEach(intent(ViewIntents::hideMergeRequest)) {
+      transitionTo { state, _ ->
+        state.copy(mergeRequestVisible = false)
+      }
+    }
+
     onEach(intent(ViewIntents::approveMergeRequest)) {
       action { state, _, _ ->
         if (!state.mergeRequest.isPending()) return@action
@@ -139,6 +158,7 @@ class BranchViewModel @AssistedInject constructor(
         threadModel.approveMergeRequest.start(branchId)
       }
     }
+
     onEach(intent(ViewIntents::revokeApprovalMergeRequest)) {
       action { state, _, _ ->
         if (!state.mergeRequest.isPending()) return@action
@@ -146,12 +166,14 @@ class BranchViewModel @AssistedInject constructor(
         threadModel.revokeApprovalMergeRequest.start(branchId)
       }
     }
+
     onEach(intent(ViewIntents::cancelMergeRequest)) {
       action { state, _, _ ->
         if (!state.mergeRequest.isPending()) return@action
         threadModel.cancelMergeRequest.start(branchId)
       }
     }
+
     onEach(intent(ViewIntents::finalizeMergeRequest)) {
       action { state, _, _ ->
         if (state.mergeRequest?.status != Branch.MergeRequest.Status.ReadyToMerge) return@action
@@ -198,11 +220,16 @@ class BranchViewModel @AssistedInject constructor(
       ) { states -> states.any { it == JobState.Running } }
     ) {
       transitionTo { state, pending ->
-        state.copy(mergeRequestRunning = pending)
+        state.copy(mergeRequestInProgress = pending)
       }
     }
 
-    // Ошибки показываем снэкбарами; recovery — пользователь повторяет вручную.
+    onEach(threadModel.openMergeRequest.jobFlow.successResults()) {
+      transitionTo { state, _ ->
+        state.copy(mergeRequestVisible = true)
+      }
+    }
+
     onEach(threadModel.openMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_request_failed)
@@ -249,3 +276,5 @@ class BranchViewModel @AssistedInject constructor(
     )
   }
 }
+
+internal const val MERGE_REQUEST_MOTION_KEY: String = "merge-request-motion-key"

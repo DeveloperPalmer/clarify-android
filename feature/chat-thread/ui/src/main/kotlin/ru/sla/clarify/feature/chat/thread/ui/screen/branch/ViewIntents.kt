@@ -12,4 +12,6 @@ class ViewIntents : BaseViewIntents() {
   val revokeApprovalMergeRequest = intent(name = "revokeApprovalMergeRequest")
   val cancelMergeRequest = intent(name = "cancelMergeRequest")
   val finalizeMergeRequest = intent(name = "finalizeMergeRequest")
+
+  val hideMergeRequest = intent(name = "hideMergeRequest")
 }

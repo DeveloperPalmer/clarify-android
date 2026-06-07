@@ -78,9 +78,6 @@
     <!-- Branch screen -->
     <string name="branch_default_name">Ветка</string>
     <string name="branch_empty_state">Начните ветку</string>
-    <string name="branch_open_mr_button">Открыть MR</string>
-    <string name="branch_merge_in_progress">Идёт merge request…</string>
-    <string name="branch_merge_ready">Готово к мерджу</string>
     <string name="branch_merge_finalize_button">Смерджить</string>
     <string name="branch_merge_cancel_request">Отменить merge request</string>
     <string name="branch_merge_approved_waiting">Вы одобрили. Ждём остальных участников.</string>
@@ -94,6 +91,16 @@
     <string name="branch_merge_revoke_failed">Не удалось отозвать одобрение</string>
     <string name="branch_merge_cancel_failed">Не удалось отменить merge request</string>
     <string name="branch_merge_finalize_failed">Не удалось завершить мердж</string>
+
+    <!-- Merge request -->
+    <!-- Keep english translate. -->
+    <string name="merge_request_open_button">Open MR</string>
+    <string name="merge_request_opened_button">Active MR</string>
+    <string name="merge_request_in_progress_button">In progress</string>
+    <string name="merge_request_approved_button">You approved</string>
+    <string name="merge_request_ready_button">Ready to merge</string>
+    <string name="merge_request_merged_button">Merged</string>
+    <string name="merge_island_collapse_cd">Collapse merge request</string>
 
     <!-- Debug panel -->
     <string name="debug_panel_title">Панель отладки</string>

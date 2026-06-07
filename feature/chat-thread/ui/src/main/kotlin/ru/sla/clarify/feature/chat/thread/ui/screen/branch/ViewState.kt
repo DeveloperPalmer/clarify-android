@@ -12,13 +12,14 @@ data class ViewState(
   val branchId: Branch.Id,
   val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
   val branchName: String? = null,
-  val mergeRequest: Branch.MergeRequest? = null,
-  val mergeRequestRunning: Boolean = false,
   val initiatorName: String? = null,
   val approvers: List<Approver> = emptyList(),
   val currentUserId: UserId? = null,
   val commits: List<Commit> = emptyList(),
-  val unreadCount: Int = 0
+  val unreadCount: Int = 0,
+  val mergeRequest: Branch.MergeRequest? = null,
+  val mergeRequestVisible: Boolean = false,
+  val mergeRequestInProgress: Boolean = false
 ) {
   val isCurrentUserApproved: Boolean
     get() = mergeRequest != null &&

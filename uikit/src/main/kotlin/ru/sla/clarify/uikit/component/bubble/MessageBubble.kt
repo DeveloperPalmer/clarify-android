@@ -151,12 +151,12 @@ private fun BubbleMessageLayout(
         )
       }.first().measure(looseConstraints)
 
-      val layoutResult = requireNotNull(textLayoutResult)
-      val lastLineRight = layoutResult.getLineRight(layoutResult.lineCount - 1)
-      val sameLineWidth = lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
-      val fitsSameLine = sameLineWidth <= constraints.maxWidth.toFloat()
+      val sameLineWidth = textLayoutResult?.let { result ->
+        val lastLineRight = result.getLineRight(result.lineCount - 1)
+        lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
+      }
 
-      if (fitsSameLine) {
+      if (sameLineWidth != null && sameLineWidth <= constraints.maxWidth.toFloat()) {
         val height = textPlaceable.height
         val width = max(textPlaceable.width.toFloat(), sameLineWidth)
           .roundToInt()
