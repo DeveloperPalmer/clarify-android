@@ -11,7 +11,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 
 @Immutable
 class AppMotion {
-  val shortMillis = 150
   val mediumMillis = 250
 
   @Composable
@@ -34,7 +33,7 @@ class AppMotion {
     )
   }
 
-  private val emphasized: Easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+  val emphasized: Easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 }
 
 internal val LocalAppMotion = staticCompositionLocalOf<AppMotion> {

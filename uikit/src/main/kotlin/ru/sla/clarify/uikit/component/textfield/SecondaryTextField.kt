@@ -24,7 +24,7 @@ import ru.sla.resourcerefs.resRef
 import ru.sla.resourcerefs.strRef
 
 @Composable
-fun PrimaryTextField(
+fun SecondaryTextField(
   value: String,
   onValueChange: (String) -> Unit,
   modifier: Modifier = Modifier,
@@ -45,7 +45,7 @@ fun PrimaryTextField(
       placeholder = placeholder,
       keyboardOptions = keyboardOptions,
       keyboardActions = keyboardActions,
-      colors = TextFieldDefaults.primaryDefaultColors()
+      colors = TextFieldDefaults.secondaryDefaultColors()
     )
     if (errorText != null) {
       Text(
@@ -60,33 +60,33 @@ fun PrimaryTextField(
 
 @Preview
 @Composable
-private fun PrimaryTextFieldPreviewLight(
+private fun SecondaryTextFieldPreviewLight(
   @PreviewParameter(TextFieldPreviewStateProvider::class)
   state: TextFieldPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Light) {
-    PrimaryTextFieldPreviewContent(state)
+    SecondaryTextFieldPreviewContent(state)
   }
 }
 
 @Preview
 @Composable
-private fun PrimaryTextFieldPreviewDark(
+private fun SecondaryTextFieldPreviewDark(
   @PreviewParameter(TextFieldPreviewStateProvider::class)
   state: TextFieldPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Dark) {
-    PrimaryTextFieldPreviewContent(state)
+    SecondaryTextFieldPreviewContent(state)
   }
 }
 
 @Composable
-private fun PrimaryTextFieldPreviewContent(state: TextFieldPreviewState) {
+private fun SecondaryTextFieldPreviewContent(state: TextFieldPreviewState) {
   Column(
-    modifier = Modifier.background(AppTheme.colors.backgroundPrimary),
+    modifier = Modifier.background(AppTheme.colors.cardSecondary),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    PrimaryTextField(
+    SecondaryTextField(
       modifier = Modifier.fillMaxWidth(),
       value = state.text,
       onValueChange = {},

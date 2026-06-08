@@ -9,6 +9,7 @@ import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
 import ru.kode.remo.JobState
+import ru.kode.remo.QueueingStrategy
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
@@ -20,6 +21,7 @@ import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.thread.domain.ThreadModel
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.thread.domain.entity.Branch.MergeRequest.Status
 import ru.sla.clarify.feature.chat.thread.ui.entity.Approver
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.thread.ui.mapper.toUiCommits
@@ -67,13 +69,19 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
+    onEach(threadModel.participants) {
+      transitionTo { state, participants ->
+        state.copy(participants = participants)
+      }
+    }
+
     onEach(threadModel.branch(branchId).filterNotNull()) {
       transitionTo { state, branch ->
         state.copy(
           branchName = branch.name,
           mergeRequest = branch.mergeRequest,
           mergeRequestVisible = state.mergeRequestVisible
-            .takeIf { branch.mergeRequest != null }
+            .takeIf { branch.mergeRequest != null && branch.mergeRequest?.status != Status.Merged }
             ?: false
         )
       }
@@ -132,15 +140,14 @@ class BranchViewModel @AssistedInject constructor(
   private fun MachineDsl<ViewState>.configureMergeRequestTransitions() {
     onEach(intent(ViewIntents::openMergeRequest)) {
       transitionTo { state, _ ->
-        if (state.mergeRequest != null) {
-          state.copy(mergeRequestVisible = true)
-        } else {
-          state
-        }
+        state.copy(mergeRequestVisible = true)
       }
       action { state, _, _ ->
         if (state.mergeRequest == null) {
-          threadModel.openMergeRequest.start(branchId)
+          threadModel.openMergeRequest.start(
+            argument = branchId,
+            queueingStrategy = QueueingStrategy.SkipNew
+          )
         }
       }
     }
@@ -155,7 +162,10 @@ class BranchViewModel @AssistedInject constructor(
       action { state, _, _ ->
         if (!state.mergeRequest.isPending()) return@action
         if (state.isCurrentUserApproved) return@action
-        threadModel.approveMergeRequest.start(branchId)
+        threadModel.approveMergeRequest.start(
+          argument = branchId,
+          queueingStrategy = QueueingStrategy.SkipNew
+        )
       }
     }
 
@@ -163,21 +173,30 @@ class BranchViewModel @AssistedInject constructor(
       action { state, _, _ ->
         if (!state.mergeRequest.isPending()) return@action
         if (!state.isCurrentUserApproved) return@action
-        threadModel.revokeApprovalMergeRequest.start(branchId)
+        threadModel.revokeApprovalMergeRequest.start(
+          argument = branchId,
+          queueingStrategy = QueueingStrategy.SkipNew
+        )
       }
     }
 
     onEach(intent(ViewIntents::cancelMergeRequest)) {
       action { state, _, _ ->
         if (!state.mergeRequest.isPending()) return@action
-        threadModel.cancelMergeRequest.start(branchId)
+        threadModel.cancelMergeRequest.start(
+          argument = branchId,
+          queueingStrategy = QueueingStrategy.SkipNew
+        )
       }
     }
 
     onEach(intent(ViewIntents::finalizeMergeRequest)) {
       action { state, _, _ ->
-        if (state.mergeRequest?.status != Branch.MergeRequest.Status.ReadyToMerge) return@action
-        threadModel.finalizeMergeRequest.start(branchId)
+        if (state.mergeRequest?.status != Status.ReadyToMerge) return@action
+        threadModel.finalizeMergeRequest.start(
+          argument = branchId,
+          queueingStrategy = QueueingStrategy.SkipNew
+        )
       }
     }
 
@@ -224,13 +243,10 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
-    onEach(threadModel.openMergeRequest.jobFlow.successResults()) {
-      transitionTo { state, _ ->
-        state.copy(mergeRequestVisible = true)
-      }
-    }
-
     onEach(threadModel.openMergeRequest.jobFlow.errors()) {
+      transitionTo { state, _ ->
+        state.copy(mergeRequestVisible = false)
+      }
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_request_failed)
       }
@@ -254,6 +270,12 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
+    onEach(threadModel.finalizeMergeRequest.jobFlow.successResults()) {
+      action { _, _, _ ->
+        showMergeError(R.string.branch_merge_finalize_failed)
+      }
+    }
+
     onEach(threadModel.finalizeMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_finalize_failed)
@@ -263,8 +285,8 @@ class BranchViewModel @AssistedInject constructor(
 
   /** Pending = MR открыт и ещё не зафинализирован (можно approve/revoke/cancel). */
   private fun Branch.MergeRequest?.isPending(): Boolean {
-    return this?.status == Branch.MergeRequest.Status.Open ||
-      this?.status == Branch.MergeRequest.Status.ReadyToMerge
+    return this?.status == Status.Open ||
+      this?.status == Status.ReadyToMerge
   }
 
   private fun showMergeError(messageId: Int) {

@@ -2,9 +2,9 @@ package ru.sla.clarify.feature.chat.thread.domain
 
 import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.feature.entity.chat.Participant
 import ru.sla.clarify.feature.entity.chat.Peer
 import java.time.LocalDateTime
 

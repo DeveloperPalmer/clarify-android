@@ -28,7 +28,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage.ReadStatus
 import ru.sla.clarify.uikit.modifier.surface
@@ -104,6 +104,8 @@ private fun BubbleMessageLayout(
   onClick: (() -> Unit)? = null,
   onLongClick: (() -> Unit)? = null
 ) {
+  val textMeasurer = rememberTextMeasurer()
+  val textStyle = AppTheme.typography.body1
   Box(
     modifier = modifier.fillMaxWidth(),
     contentAlignment = if (side is BubbleMessage.Side.Right) {
@@ -141,22 +143,23 @@ private fun BubbleMessageLayout(
         )
       }.first().measure(looseConstraints)
 
-      var textLayoutResult: TextLayoutResult? = null
       val textPlaceable = subcompose(BubbleSlot.Text) {
         Text(
           text = text,
-          style = AppTheme.typography.body1,
-          color = textColor,
-          onTextLayout = { textLayoutResult = it }
+          style = textStyle,
+          color = textColor
         )
       }.first().measure(looseConstraints)
 
-      val sameLineWidth = textLayoutResult?.let { result ->
-        val lastLineRight = result.getLineRight(result.lineCount - 1)
-        lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
-      }
+      val textLayoutResult = textMeasurer.measure(
+        text = text,
+        style = textStyle,
+        constraints = looseConstraints
+      )
+      val lastLineRight = textLayoutResult.getLineRight(textLayoutResult.lineCount - 1)
+      val sameLineWidth = lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
 
-      if (sameLineWidth != null && sameLineWidth <= constraints.maxWidth.toFloat()) {
+      if (sameLineWidth <= constraints.maxWidth.toFloat()) {
         val height = textPlaceable.height
         val width = max(textPlaceable.width.toFloat(), sameLineWidth)
           .roundToInt()

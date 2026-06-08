@@ -2,8 +2,8 @@ package ru.sla.clarify.feature.chat.thread.data.mapper
 
 import com.google.firebase.Timestamp
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.feature.entity.chat.Participant
 import ru.sla.clarify.feature.entity.chat.Peer
 import java.time.Instant
 import java.time.LocalDateTime

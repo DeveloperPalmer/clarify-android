@@ -6,6 +6,7 @@ import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.thread.ui.entity.Approver
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
+import ru.sla.clarify.feature.entity.chat.Participant
 
 @Immutable
 data class ViewState(
@@ -13,6 +14,7 @@ data class ViewState(
   val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
   val branchName: String? = null,
   val initiatorName: String? = null,
+  val participants: List<Participant> = emptyList(),
   val approvers: List<Approver> = emptyList(),
   val currentUserId: UserId? = null,
   val commits: List<Commit> = emptyList(),
@@ -25,4 +27,7 @@ data class ViewState(
     get() = mergeRequest != null &&
       currentUserId != null &&
       currentUserId in mergeRequest.approvedByIds
+
+  val cardShown: Boolean
+    get() = mergeRequestVisible && mergeRequest != null
 }

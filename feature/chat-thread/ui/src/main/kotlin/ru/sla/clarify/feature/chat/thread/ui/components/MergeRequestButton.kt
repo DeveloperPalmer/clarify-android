@@ -1,21 +1,14 @@
 package ru.sla.clarify.feature.chat.thread.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -31,12 +24,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch.MergeRequest.Status
 import ru.sla.clarify.feature.chat.thread.ui.screen.branch.MERGE_REQUEST_MOTION_KEY
 import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
-import ru.sla.clarify.uikit.modifier.surface
+import ru.sla.clarify.uikit.animation.SharedContainer
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 
@@ -47,48 +41,41 @@ internal fun MergeRequestButton(
   status: Status?,
   onOpenMergeRequest: () -> Unit,
   modifier: Modifier = Modifier
-) = with(LocalSharedTransitionScope.current) {
-  AnimatedVisibility(
+) {
+  SharedContainer(
     modifier = modifier,
+    key = MERGE_REQUEST_MOTION_KEY,
     visible = visible,
-    enter = fadeIn(tween(AppTheme.motion.shortMillis)),
-    exit = fadeOut(tween(AppTheme.motion.shortMillis))
+    restingCorner = MERGE_REQUEST_BUTTON_CORNER,
+    morphedCorner = MERGE_REQUEST_CARD_CORNER
   ) {
-    Row(
-      modifier = Modifier
-        .sharedBounds(
-          sharedContentState = rememberSharedContentState(MERGE_REQUEST_MOTION_KEY),
-          animatedVisibilityScope = this@AnimatedVisibility,
-          boundsTransform = AppTheme.motion.mediumBoundsTransform(),
-          resizeMode = RemeasureToBounds
-        )
-        .heightIn(min = 38.dp)
-        .widthIn(max = 196.dp)
-        .surface(
-          shape = CircleShape,
-          elevation = AppTheme.elevation.small,
-          backgroundColor = AppTheme.colors.cardPrimary,
-          onClick = onOpenMergeRequest
-        )
-        .padding(8.dp, 8.dp, 12.dp, 8.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Box(
+      modifier = Modifier.sharedSurface(
+        elevation = AppTheme.elevation.small,
+        color = AppTheme.colors.cardPrimary,
+        enabled = status != Status.Merged,
+        onClick = onOpenMergeRequest
+      )
     ) {
-      LeadingIcon(
-        status = status,
-        inProgress = inProgress
-      )
-      Text(
-        text = if (inProgress) {
-          stringResource(R.string.branch_locked_merge_in_progress)
-        } else {
-          status.text()
-        },
-        style = AppTheme.typography.title3Bold,
-        color = AppTheme.colors.contentPrimary,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
+      Row(
+        modifier = Modifier
+          .revealContent(MERGE_REQUEST_BUTTON_REVEAL_WINDOW)
+          .padding(8.dp, 8.dp, 12.dp, 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        LeadingIcon(
+          status = status,
+          inProgress = inProgress
+        )
+        Text(
+          text = status.text(),
+          style = AppTheme.typography.title3Bold,
+          color = AppTheme.colors.contentPrimary,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
+      }
     }
   }
 }
@@ -256,16 +243,37 @@ private class StatusPreviewProvider : PreviewParameterProvider<StatusPreview> {
       inProgress = false
     ),
     StatusPreview(
+      status = null,
+      inProgress = true
+    ),
+    StatusPreview(
       status = Status.Open,
       inProgress = false
+    ),
+    StatusPreview(
+      status = Status.Open,
+      inProgress = true
     ),
     StatusPreview(
       status = Status.ReadyToMerge,
       inProgress = false
     ),
     StatusPreview(
+      status = Status.ReadyToMerge,
+      inProgress = true
+    ),
+    StatusPreview(
       status = Status.Merged,
       inProgress = false
+    ),
+    StatusPreview(
+      status = Status.Merged,
+      inProgress = true
     )
   )
 }
+
+internal val MERGE_REQUEST_BUTTON_CORNER: Dp = 19.dp
+internal val MERGE_REQUEST_CARD_CORNER: Dp = 16.dp
+internal val MERGE_REQUEST_BUTTON_REVEAL_WINDOW: ClosedFloatingPointRange<Float> = 0f..0.1f
+internal val MERGE_REQUEST_CARD_REVEAL_WINDOW: ClosedFloatingPointRange<Float> = 0.2f..1f

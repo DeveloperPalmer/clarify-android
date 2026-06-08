@@ -23,8 +23,8 @@ fun ScrimEffect(
   AnimatedVisibility(
     modifier = modifier,
     visible = visible,
-    enter = fadeIn(tween(SCRIM_DURATION_MILLIS)),
-    exit = fadeOut(tween(SCRIM_DURATION_MILLIS))
+    enter = fadeIn(tween(AppTheme.motion.mediumMillis)),
+    exit = fadeOut(tween(AppTheme.motion.mediumMillis))
   ) {
     Box(
       modifier = Modifier
@@ -38,5 +38,3 @@ fun ScrimEffect(
     )
   }
 }
-
-private const val SCRIM_DURATION_MILLIS = 220

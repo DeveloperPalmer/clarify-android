@@ -21,7 +21,8 @@ import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent.Snackbar.Duration
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
-import ru.sla.clarify.uikit.component.button.TextButtonSmall
+import ru.sla.clarify.uikit.component.button.ButtonStyle
+import ru.sla.clarify.uikit.component.button.PrimaryTextButton
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.compose.resolveTextRef
@@ -67,9 +68,9 @@ data class Snackbar(
         contentColor = contentColor,
         action = actionLabel?.let { label ->
           {
-            TextButtonSmall(
+            PrimaryTextButton(
               text = resolveTextRef(label),
-              isError = isError,
+              style = if (isError) ButtonStyle.Error else ButtonStyle.Default,
               onClick = {
                 action()
                 dismissEventPresentation()
@@ -196,9 +197,9 @@ sealed class Dialog : ViewEvent.Content() {
           }
         },
         confirmButton = {
-          TextButtonSmall(
+          PrimaryTextButton(
             text = resolveTextRef(primaryActionTitle),
-            isError = isDestructive,
+            style = if (isDestructive) ButtonStyle.Error else ButtonStyle.Default,
             onClick = {
               primaryAction?.invoke()
               dismissEventPresentation()
@@ -206,9 +207,9 @@ sealed class Dialog : ViewEvent.Content() {
           )
         },
         dismissButton = {
-          TextButtonSmall(
+          PrimaryTextButton(
             text = resolveTextRef(secondaryActionTitle),
-            isError = false,
+            style = if (isDestructive) ButtonStyle.Error else ButtonStyle.Default,
             onClick = {
               secondaryAction?.invoke()
               dismissEventPresentation()
@@ -245,9 +246,8 @@ sealed class Dialog : ViewEvent.Content() {
         title = { Text(resolveTextRef(title)) },
         text = text?.let { textRef -> { Text(resolveTextRef(textRef)) } },
         confirmButton = {
-          TextButtonSmall(
+          PrimaryTextButton(
             text = resolveTextRef(buttonText),
-            isError = false,
             onClick = {
               onButtonClick?.invoke()
               dismissEventPresentation()
@@ -281,9 +281,8 @@ sealed class Dialog : ViewEvent.Content() {
         title = { Text(resolveTextRef(title)) },
         text = { Text(resolveTextRef(text)) },
         confirmButton = {
-          TextButtonSmall(
+          PrimaryTextButton(
             text = resolveTextRef(buttonText),
-            isError = false,
             onClick = {
               onButtonClick?.invoke()
               dismissEventPresentation()

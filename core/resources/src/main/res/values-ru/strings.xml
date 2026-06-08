@@ -93,6 +93,12 @@
     <string name="branch_merge_finalize_failed">Не удалось завершить мердж</string>
 
     <!-- Merge request -->
+    <string name="merge_request_approvers_count">%1$d of %2$d approved</string>
+    <string name="merge_request_opened_by_into_branch">Opened by %1$s</string>
+    <string name="merge_request_merge_button">Merge</string>
+    <string name="merge_request_approve_button">Approve</string>
+    <string name="merge_request_revoke_approval_button">Revoke approval</string>
+
     <!-- Keep english translate. -->
     <string name="merge_request_open_button">Open MR</string>
     <string name="merge_request_opened_button">Active MR</string>
@@ -100,7 +106,7 @@
     <string name="merge_request_approved_button">You approved</string>
     <string name="merge_request_ready_button">Ready to merge</string>
     <string name="merge_request_merged_button">Merged</string>
-    <string name="merge_island_collapse_cd">Collapse merge request</string>
+    <string name="merge_request_island_collapse_cd">Collapse merge request</string>
 
     <!-- Debug panel -->
     <string name="debug_panel_title">Панель отладки</string>

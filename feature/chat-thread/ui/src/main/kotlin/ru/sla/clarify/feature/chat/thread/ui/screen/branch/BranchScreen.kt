@@ -58,27 +58,25 @@ fun BranchScreen(viewModel: BranchViewModel) {
         state = state,
         intents = intents
       )
-      if (state.mergeRequest != null) {
-        ScrimEffect(
-          visible = state.mergeRequestVisible,
-          onFinish = intents.hideMergeRequest
-        )
-        MergeRequestCard(
-          modifier = Modifier
-            .systemBarsPadding()
-            .padding(start = 12.dp, end = 12.dp),
-          visible = state.mergeRequestVisible,
-          mergeRequest = state.mergeRequest,
-          initiatorName = state.initiatorName,
-          approvers = state.approvers,
-          isCurrentUserApproved = state.isCurrentUserApproved,
-          mergeRequestInProgress = state.mergeRequestInProgress,
-          onApprove = intents.approveMergeRequest,
-          onRevoke = intents.revokeApprovalMergeRequest,
-          onCancel = intents.cancelMergeRequest,
-          onFinalize = intents.finalizeMergeRequest
-        )
-      }
+      ScrimEffect(
+        visible = state.cardShown,
+        onFinish = intents.hideMergeRequest
+      )
+      MergeRequestCard(
+        modifier = Modifier
+          .systemBarsPadding()
+          .padding(start = 12.dp, end = 12.dp),
+        visible = state.cardShown,
+        mergeRequest = state.mergeRequest,
+        participants = state.participants,
+        approvers = state.approvers,
+        isCurrentUserApproved = state.isCurrentUserApproved,
+        mergeRequestInProgress = state.mergeRequestInProgress,
+        onApprove = intents.approveMergeRequest,
+        onRevoke = intents.revokeApprovalMergeRequest,
+        onCancel = intents.cancelMergeRequest,
+        onFinalize = intents.finalizeMergeRequest
+      )
     }
   }
 }
@@ -89,7 +87,7 @@ internal fun BranchReadyContent(
   intents: ViewIntents,
   modifier: Modifier = Modifier
 ) {
-  BackHandler(enabled = state.mergeRequestVisible) {
+  BackHandler(enabled = state.cardShown) {
     intents.hideMergeRequest()
   }
   Column(modifier = modifier) {
@@ -101,7 +99,7 @@ internal fun BranchReadyContent(
       title = { state.branchName?.let { TopAppBarCenterContent(branchName = it) } },
       actions = {
         MergeRequestButton(
-          visible = !state.mergeRequestVisible,
+          visible = !state.cardShown,
           inProgress = state.mergeRequestInProgress,
           status = state.mergeRequest?.status,
           onOpenMergeRequest = intents.openMergeRequest

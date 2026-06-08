@@ -1,5 +1,7 @@
 package ru.sla.clarify.uikit.component.textfield
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -8,9 +10,14 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -21,11 +28,13 @@ import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.compose.resolveTextRef
 import ru.sla.resourcerefs.resRef
+import androidx.compose.material3.TextFieldDefaults as TextFieldDefaultsInternal
 
 @Composable
 internal fun TextFieldInternal(
   value: String,
   onValueChange: (String) -> Unit,
+  colors: TextFieldColors,
   modifier: Modifier = Modifier,
   shape: Shape = RoundedCornerShape(16.dp),
   enabled: Boolean = true,
@@ -33,8 +42,28 @@ internal fun TextFieldInternal(
   placeholder: TextRef = resRef(R.string.chat_input_placeholder),
   maxVisibleLines: Int = DEFAULT_MAX_VISIBLE_LINES,
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-  keyboardActions: KeyboardActions = KeyboardActions.Default
+  keyboardActions: KeyboardActions = KeyboardActions.Default,
+  interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
+  val focused = interactionSource.collectIsFocusedAsState().value
+  val textColor = colors.textColor(
+    enabled = enabled,
+    isError = isError,
+    focused = focused
+  )
+  val containerColor = colors.containerColor(
+    enabled = enabled,
+    isError = isError,
+    focused = focused
+  )
+  val placeholderColor = colors.placeholderColor(
+    enabled = enabled,
+    isError = isError,
+    focused = focused
+  )
+  val cursorColor = colors.cursorColor(
+    isError = isError
+  )
   BasicTextField(
     modifier = modifier,
     value = value,
@@ -43,18 +72,20 @@ internal fun TextFieldInternal(
     minLines = 1,
     maxLines = maxVisibleLines,
     textStyle = AppTheme.typography.body1.copy(
-      color = AppTheme.colors.contentPrimary
+      color = textColor.value
     ),
     cursorBrush = SolidColor(
-      value = AppTheme.colors.contentAccentPrimary
+      value = cursorColor.value
     ),
     keyboardOptions = keyboardOptions,
     keyboardActions = keyboardActions,
+    interactionSource = interactionSource,
     decorationBox = { innerTextField ->
       TextFieldDecoration(
         value = value,
         shape = shape,
-        isError = isError,
+        containerColor = containerColor.value,
+        placeholderColor = placeholderColor.value,
         placeholder = placeholder,
         innerTextField = innerTextField
       )
@@ -66,7 +97,8 @@ internal fun TextFieldInternal(
 private fun TextFieldDecoration(
   value: String,
   shape: Shape,
-  isError: Boolean,
+  containerColor: Color,
+  placeholderColor: Color,
   placeholder: TextRef,
   modifier: Modifier = Modifier,
   innerTextField: @Composable () -> Unit
@@ -75,7 +107,7 @@ private fun TextFieldDecoration(
     modifier = modifier
       .surface(
         shape = shape,
-        backgroundColor = AppTheme.colors.cardSecondary
+        backgroundColor = containerColor
       )
       .heightIn(
         min = SendButtonSize
@@ -90,11 +122,114 @@ private fun TextFieldDecoration(
       Text(
         text = resolveTextRef(placeholder),
         style = AppTheme.typography.body1,
-        color = if (isError) AppTheme.colors.errorPrimary else AppTheme.colors.contentSecondary
+        color = placeholderColor
       )
     }
     innerTextField()
   }
+}
+
+internal object TextFieldDefaults {
+  @Composable
+  fun primaryDefaultColors(): TextFieldColors {
+    return TextFieldDefaultsInternal.colors(
+      focusedTextColor = AppTheme.colors.contentPrimary,
+      unfocusedTextColor = AppTheme.colors.contentPrimary,
+      disabledTextColor = AppTheme.colors.contentTertiary,
+      errorTextColor = AppTheme.colors.contentPrimary,
+      focusedContainerColor = AppTheme.colors.cardSecondary,
+      unfocusedContainerColor = AppTheme.colors.cardSecondary,
+      disabledContainerColor = AppTheme.colors.cardSecondary,
+      errorContainerColor = AppTheme.colors.cardSecondary,
+      cursorColor = AppTheme.colors.contentAccentPrimary,
+      errorCursorColor = AppTheme.colors.errorPrimary,
+      focusedIndicatorColor = Color.Transparent,
+      unfocusedIndicatorColor = Color.Transparent,
+      disabledIndicatorColor = Color.Transparent,
+      errorIndicatorColor = Color.Transparent,
+      focusedPlaceholderColor = AppTheme.colors.contentSecondary,
+      unfocusedPlaceholderColor = AppTheme.colors.contentSecondary,
+      disabledPlaceholderColor = AppTheme.colors.contentTertiary,
+      errorPlaceholderColor = AppTheme.colors.errorPrimary
+    )
+  }
+
+  @Composable
+  fun secondaryDefaultColors(): TextFieldColors {
+    return TextFieldDefaultsInternal.colors(
+      focusedTextColor = AppTheme.colors.contentPrimary,
+      unfocusedTextColor = AppTheme.colors.contentPrimary,
+      disabledTextColor = AppTheme.colors.contentTertiary,
+      errorTextColor = AppTheme.colors.contentPrimary,
+      focusedContainerColor = AppTheme.colors.cardTertiary,
+      unfocusedContainerColor = AppTheme.colors.cardTertiary,
+      disabledContainerColor = AppTheme.colors.cardTertiary,
+      errorContainerColor = AppTheme.colors.cardTertiary,
+      cursorColor = AppTheme.colors.contentAccentPrimary,
+      errorCursorColor = AppTheme.colors.errorPrimary,
+      focusedIndicatorColor = Color.Transparent,
+      unfocusedIndicatorColor = Color.Transparent,
+      disabledIndicatorColor = Color.Transparent,
+      errorIndicatorColor = Color.Transparent,
+      focusedPlaceholderColor = AppTheme.colors.contentSecondary,
+      unfocusedPlaceholderColor = AppTheme.colors.contentSecondary,
+      disabledPlaceholderColor = AppTheme.colors.contentTertiary,
+      errorPlaceholderColor = AppTheme.colors.errorPrimary
+    )
+  }
+}
+
+@Composable
+private fun TextFieldColors.textColor(
+  enabled: Boolean,
+  isError: Boolean,
+  focused: Boolean
+): State<Color> {
+  return rememberUpdatedState(
+    when {
+      !enabled -> disabledTextColor
+      isError -> errorTextColor
+      focused -> focusedTextColor
+      else -> unfocusedTextColor
+    }
+  )
+}
+
+@Composable
+private fun TextFieldColors.containerColor(
+  enabled: Boolean,
+  isError: Boolean,
+  focused: Boolean
+): State<Color> {
+  return rememberUpdatedState(
+    when {
+      !enabled -> disabledContainerColor
+      isError -> errorContainerColor
+      focused -> focusedContainerColor
+      else -> unfocusedContainerColor
+    }
+  )
+}
+
+@Composable
+private fun TextFieldColors.placeholderColor(
+  enabled: Boolean,
+  isError: Boolean,
+  focused: Boolean
+): State<Color> {
+  return rememberUpdatedState(
+    when {
+      !enabled -> disabledPlaceholderColor
+      isError -> errorPlaceholderColor
+      focused -> focusedPlaceholderColor
+      else -> unfocusedPlaceholderColor
+    }
+  )
+}
+
+@Composable
+private fun TextFieldColors.cursorColor(isError: Boolean): State<Color> {
+  return rememberUpdatedState(if (isError) errorCursorColor else cursorColor)
 }
 
 internal val SendButtonSize = 44.dp
@@ -107,8 +242,7 @@ internal data class TextFieldPreviewState(
   val isError: Boolean
 )
 
-internal class TextFieldPreviewStateProvider :
-  PreviewParameterProvider<TextFieldPreviewState> {
+internal class TextFieldPreviewStateProvider : PreviewParameterProvider<TextFieldPreviewState> {
   override val values = sequenceOf(
     TextFieldPreviewState(
       label = "empty",

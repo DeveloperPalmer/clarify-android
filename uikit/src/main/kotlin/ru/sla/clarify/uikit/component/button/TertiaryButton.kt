@@ -19,6 +19,7 @@ fun TertiaryButtonSmall(
   text: String,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
   showLoading: Boolean = false,
   showElevation: Boolean = false
@@ -30,7 +31,11 @@ fun TertiaryButtonSmall(
     enabled = enabled,
     showLoading = showLoading,
     showElevation = showElevation,
-    colors = ButtonDefaults.tertiaryButtonColors(),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.tertiaryDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.tertiaryDefaultColors()
+      ButtonStyle.Success -> ButtonDefaults.tertiaryDefaultColors()
+    },
     onClick = onClick
   )
 }
@@ -40,6 +45,7 @@ fun TertiaryButton(
   text: String,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
   showLoading: Boolean = false,
   showElevation: Boolean = false
@@ -51,7 +57,11 @@ fun TertiaryButton(
     enabled = enabled,
     showLoading = showLoading,
     showElevation = showElevation,
-    colors = ButtonDefaults.tertiaryButtonColors(),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.tertiaryDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.tertiaryDefaultColors()
+      ButtonStyle.Success -> ButtonDefaults.tertiaryDefaultColors()
+    },
     onClick = onClick
   )
 }
@@ -90,6 +100,7 @@ private fun TertiaryButtonsPreviewContent(state: ButtonPreviewState) {
     TertiaryButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
+      style = state.style,
       enabled = state.enabled,
       showLoading = state.showLoading,
       showElevation = state.showElevation,
@@ -99,6 +110,7 @@ private fun TertiaryButtonsPreviewContent(state: ButtonPreviewState) {
     TertiaryButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
+      style = state.style,
       enabled = state.enabled,
       showLoading = state.showLoading,
       showElevation = state.showElevation,

@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.thread.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,16 +26,19 @@ internal fun BranchesContent(
     modifier = modifier.fillMaxWidth(),
     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
   ) {
-    item {
+    stickyHeader {
       Text(
-        modifier = Modifier.padding(horizontal = 8.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .background(AppTheme.colors.backgroundPrimary)
+          .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
         text = stringResource(R.string.thread_branches_modal_sheet_title),
         color = AppTheme.colors.contentPrimary,
         style = AppTheme.typography.title1Bold
       )
-      VSpacer(16.dp)
     }
     if (branches.isEmpty()) {
+      item { VSpacer(8.dp) }
       item {
         Text(
           modifier = Modifier.padding(horizontal = 8.dp),
@@ -44,6 +48,7 @@ internal fun BranchesContent(
         )
       }
     } else {
+      item { VSpacer(8.dp) }
       itemsIndexed(
         key = { _, branch -> branch.id.value },
         items = branches

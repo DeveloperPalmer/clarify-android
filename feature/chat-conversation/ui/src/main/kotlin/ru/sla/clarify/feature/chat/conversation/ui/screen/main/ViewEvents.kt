@@ -22,10 +22,11 @@ import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
 import ru.sla.clarify.uikit.component.button.PrimaryButtonSmall
-import ru.sla.clarify.uikit.component.button.TextButtonSmall
-import ru.sla.clarify.uikit.component.textfield.PrimaryTextField
+import ru.sla.clarify.uikit.component.button.PrimaryTextButtonSmall
+import ru.sla.clarify.uikit.component.textfield.SecondaryTextField
 import ru.sla.clarify.uikit.event.Dialog
 import ru.sla.clarify.uikit.theme.AppTheme
+import ru.sla.clarify.uikit.theme.VSpacer
 import ru.sla.resourcerefs.resRef
 
 internal fun showDeleteConversationDialog() = ScreenViewEvent<ViewState, ViewIntents> { _, intents ->
@@ -67,7 +68,8 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewState, ViewIntents> { _, 
               color = AppTheme.colors.contentSecondary,
               style = AppTheme.typography.body2
             )
-            PrimaryTextField(
+            VSpacer(8.dp)
+            SecondaryTextField(
               modifier = Modifier.fillMaxWidth(),
               value = inputValue,
               onValueChange = { inputValue = it },
@@ -77,9 +79,8 @@ internal fun showNewChatDialog() = ScreenViewEvent<ViewState, ViewIntents> { _, 
           }
         },
         dismissButton = {
-          TextButtonSmall(
+          PrimaryTextButtonSmall(
             onClick = { dismissEventPresentation() },
-            isError = false,
             text = stringResource(R.string.action_cancel)
           )
         },

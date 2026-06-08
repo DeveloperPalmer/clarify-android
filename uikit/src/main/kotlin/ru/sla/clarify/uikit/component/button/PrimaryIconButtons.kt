@@ -23,6 +23,7 @@ fun PrimaryIconButtonSmall(
   text: String,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
   showLoading: Boolean = false,
   showElevation: Boolean = false
@@ -35,7 +36,11 @@ fun PrimaryIconButtonSmall(
     enabled = enabled,
     showLoading = showLoading,
     showElevation = showElevation,
-    colors = ButtonDefaults.primaryButtonColors(),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.primaryDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.primaryErrorColors()
+      ButtonStyle.Success -> ButtonDefaults.primarySuccessColors()
+    },
     onClick = onClick
   )
 }
@@ -47,6 +52,7 @@ fun PrimaryIconButton(
   text: String,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
   showLoading: Boolean = false,
   showElevation: Boolean = false
@@ -59,7 +65,11 @@ fun PrimaryIconButton(
     enabled = enabled,
     showLoading = showLoading,
     showElevation = showElevation,
-    colors = ButtonDefaults.primaryButtonColors(),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.primaryDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.primaryErrorColors()
+      ButtonStyle.Success -> ButtonDefaults.primarySuccessColors()
+    },
     onClick = onClick
   )
 }
@@ -99,6 +109,7 @@ private fun PrimaryIconButtonsPreviewContent(state: ButtonPreviewState) {
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
+      style = state.style,
       enabled = state.enabled,
       showLoading = state.showLoading,
       showElevation = state.showElevation,
@@ -109,6 +120,7 @@ private fun PrimaryIconButtonsPreviewContent(state: ButtonPreviewState) {
       modifier = Modifier.fillMaxWidth(),
       iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
+      style = state.style,
       enabled = state.enabled,
       showLoading = state.showLoading,
       showElevation = state.showElevation,

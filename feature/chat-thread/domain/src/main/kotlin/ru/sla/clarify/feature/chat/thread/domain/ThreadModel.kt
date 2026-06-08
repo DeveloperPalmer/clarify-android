@@ -8,10 +8,10 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.mapDistinctNotNullChanges
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Participant
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.feature.entity.chat.Participant
 import ru.sla.clarify.feature.entity.chat.Peer
 import java.time.LocalDateTime
 import javax.inject.Inject

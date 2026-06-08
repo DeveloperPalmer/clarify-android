@@ -2,6 +2,8 @@ package ru.sla.clarify.uikit.component.button
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -36,6 +38,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.theme.AppTheme
 import androidx.compose.material3.ButtonDefaults as ButtonDefaultsInternal
+
+enum class ButtonStyle {
+  Default,
+  Error,
+  Success
+}
 
 @Composable
 internal fun ButtonInternal(
@@ -201,6 +209,32 @@ internal fun TextButtonInternal(
 }
 
 @Composable
+internal fun OutlinedTextButtonInternal(
+  text: String,
+  size: ButtonSize,
+  colors: ButtonColors,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showLoading: Boolean = false,
+  showElevation: Boolean = false
+) {
+  OutlinedButton(
+    border = BorderStroke(Dp.Hairline, AppTheme.colors.cardSecondary),
+    modifier = modifier,
+    iconRes = null,
+    text = text,
+    size = size,
+    shape = AppTheme.shapes.round16,
+    enabled = enabled,
+    showLoading = showLoading,
+    showElevation = showElevation,
+    colors = colors,
+    onClick = { if (!showLoading) onClick() }
+  )
+}
+
+@Composable
 private fun Button(
   @DrawableRes
   iconRes: Int?,
@@ -242,7 +276,11 @@ private fun Button(
     AnimatedContent(
       modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
       targetState = showLoading,
-      transitionSpec = { fadeIn() togetherWith fadeOut() }
+      transitionSpec = {
+        fadeIn() togetherWith fadeOut() using SizeTransform(clip = false) { _, _ ->
+          snap()
+        }
+      }
     ) { loading ->
       Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -302,7 +340,7 @@ private fun ButtonSize.iconSize(): Dp {
 
 internal object ButtonDefaults {
   @Composable
-  fun primaryButtonColors(): ButtonColors {
+  fun primaryDefaultColors(): ButtonColors {
     return ButtonDefaultsInternal.buttonColors(
       containerColor = AppTheme.colors.buttonPrimaryBg,
       contentColor = AppTheme.colors.buttonPrimaryContent,
@@ -312,27 +350,7 @@ internal object ButtonDefaults {
   }
 
   @Composable
-  fun secondaryButtonColors(): ButtonColors {
-    return ButtonDefaultsInternal.buttonColors(
-      containerColor = AppTheme.colors.buttonSecondaryBg,
-      contentColor = AppTheme.colors.buttonSecondaryContent,
-      disabledContainerColor = AppTheme.colors.buttonSecondaryBgDisabled,
-      disabledContentColor = AppTheme.colors.buttonSecondaryContentDisabled
-    )
-  }
-
-  @Composable
-  fun tertiaryButtonColors(): ButtonColors {
-    return ButtonDefaultsInternal.buttonColors(
-      containerColor = AppTheme.colors.backgroundAccentPrimary,
-      contentColor = AppTheme.colors.cardAccent,
-      disabledContainerColor = AppTheme.colors.buttonPrimaryBgDisabled,
-      disabledContentColor = AppTheme.colors.backgroundPrimary
-    )
-  }
-
-  @Composable
-  fun errorButtonColors(): ButtonColors {
+  fun primaryErrorColors(): ButtonColors {
     return ButtonDefaultsInternal.buttonColors(
       containerColor = AppTheme.colors.errorPrimary,
       contentColor = AppTheme.colors.backgroundPrimary,
@@ -342,13 +360,75 @@ internal object ButtonDefaults {
   }
 
   @Composable
-  fun textButtonColors(isError: Boolean): ButtonColors {
+  fun primarySuccessColors(): ButtonColors {
+    return ButtonDefaultsInternal.buttonColors(
+      containerColor = AppTheme.colors.successPrimary,
+      contentColor = AppTheme.colors.backgroundPrimary,
+      disabledContainerColor = AppTheme.colors.buttonPrimaryBgDisabled,
+      disabledContentColor = AppTheme.colors.buttonPrimaryContentDisabled
+    )
+  }
+
+  @Composable
+  fun secondaryDefaultColors(): ButtonColors {
+    return ButtonDefaultsInternal.buttonColors(
+      containerColor = AppTheme.colors.buttonSecondaryBg,
+      contentColor = AppTheme.colors.contentPrimary,
+      disabledContainerColor = AppTheme.colors.buttonSecondaryBgDisabled,
+      disabledContentColor = AppTheme.colors.buttonSecondaryContentDisabled
+    )
+  }
+
+  @Composable
+  fun secondaryErrorColors(): ButtonColors {
+    return ButtonDefaultsInternal.buttonColors(
+      containerColor = AppTheme.colors.buttonSecondaryBg,
+      contentColor = AppTheme.colors.errorPrimary,
+      disabledContainerColor = AppTheme.colors.buttonSecondaryBgDisabled,
+      disabledContentColor = AppTheme.colors.buttonSecondaryContentDisabled
+    )
+  }
+
+  @Composable
+  fun secondarySuccessColors(): ButtonColors {
+    return ButtonDefaultsInternal.buttonColors(
+      containerColor = AppTheme.colors.buttonSecondaryBg,
+      contentColor = AppTheme.colors.successPrimary,
+      disabledContainerColor = AppTheme.colors.buttonSecondaryBgDisabled,
+      disabledContentColor = AppTheme.colors.buttonSecondaryContentDisabled
+    )
+  }
+
+  @Composable
+  fun tertiaryDefaultColors(): ButtonColors {
+    return ButtonDefaultsInternal.buttonColors(
+      containerColor = AppTheme.colors.backgroundAccentPrimary,
+      contentColor = AppTheme.colors.cardAccent,
+      disabledContainerColor = AppTheme.colors.buttonPrimaryBgDisabled,
+      disabledContentColor = AppTheme.colors.backgroundPrimary
+    )
+  }
+
+  @Composable
+  fun textDefaultColors(): ButtonColors {
     return ButtonDefaultsInternal.textButtonColors(
-      contentColor = if (isError) {
-        AppTheme.colors.errorPrimary
-      } else {
-        AppTheme.colors.buttonTertiaryContent
-      },
+      contentColor = AppTheme.colors.buttonTertiaryContent,
+      disabledContentColor = AppTheme.colors.buttonTertiaryContentDisabled
+    )
+  }
+
+  @Composable
+  fun textErrorColors(): ButtonColors {
+    return ButtonDefaultsInternal.textButtonColors(
+      contentColor = AppTheme.colors.errorPrimary,
+      disabledContentColor = AppTheme.colors.buttonTertiaryContentDisabled
+    )
+  }
+
+  @Composable
+  fun textSuccessColors(): ButtonColors {
+    return ButtonDefaultsInternal.textButtonColors(
+      contentColor = AppTheme.colors.successPrimary,
       disabledContentColor = AppTheme.colors.buttonTertiaryContentDisabled
     )
   }
@@ -378,6 +458,7 @@ internal enum class ButtonSize {
 }
 
 internal data class ButtonPreviewState(
+  val style: ButtonStyle,
   val label: String,
   val enabled: Boolean,
   val showLoading: Boolean,
@@ -386,35 +467,49 @@ internal data class ButtonPreviewState(
 
 internal class ButtonPreviewStateProvider : PreviewParameterProvider<ButtonPreviewState> {
   override val values = sequenceOf(
-    ButtonPreviewState(
-      label = "default",
-      enabled = true,
-      showLoading = false,
-      showElevation = false
-    ),
-    ButtonPreviewState(
-      label = "default",
-      enabled = true,
-      showLoading = true,
-      showElevation = false
-    ),
-    ButtonPreviewState(
-      label = "disabled",
-      enabled = false,
-      showLoading = false,
-      showElevation = false
-    ),
-    ButtonPreviewState(
-      label = "disabled",
-      enabled = false,
-      showLoading = true,
-      showElevation = false
-    ),
-    ButtonPreviewState(
-      label = "default",
-      enabled = true,
-      showLoading = false,
-      showElevation = true
-    )
+    // Disabled Style
+    disabled.copy(style = ButtonStyle.Default),
+    disabledShowLoading.copy(style = ButtonStyle.Default),
+    // Default Style
+    default.copy(style = ButtonStyle.Default),
+    showLoading.copy(style = ButtonStyle.Default),
+    // Error Style
+    default.copy(style = ButtonStyle.Error),
+    showLoading.copy(style = ButtonStyle.Error),
+    // Success Style
+    default.copy(style = ButtonStyle.Success),
+    showLoading.copy(style = ButtonStyle.Success)
   )
 }
+
+private val default = ButtonPreviewState(
+  label = "default",
+  style = ButtonStyle.Default,
+  enabled = true,
+  showLoading = false,
+  showElevation = true
+)
+
+private val showLoading = ButtonPreviewState(
+  label = "showLoading",
+  style = ButtonStyle.Default,
+  enabled = true,
+  showLoading = true,
+  showElevation = false
+)
+
+private val disabled = ButtonPreviewState(
+  label = "disabled",
+  style = ButtonStyle.Default,
+  enabled = false,
+  showLoading = false,
+  showElevation = false
+)
+
+private val disabledShowLoading = ButtonPreviewState(
+  label = "disabled",
+  style = ButtonStyle.Default,
+  enabled = false,
+  showLoading = true,
+  showElevation = false
+)

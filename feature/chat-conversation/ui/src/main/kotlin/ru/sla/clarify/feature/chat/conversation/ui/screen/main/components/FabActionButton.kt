@@ -22,7 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
-import ru.sla.clarify.uikit.component.button.ErrorButton
+import ru.sla.clarify.uikit.component.button.ButtonStyle
+import ru.sla.clarify.uikit.component.button.PrimaryButton
 import ru.sla.clarify.uikit.component.button.TertiaryButton
 
 @Composable
@@ -66,9 +67,10 @@ internal fun FabActionButton(
           enter = fadeIn() + scaleIn(),
           exit = fadeOut() + scaleOut()
         ) {
-          ErrorButton(
+          PrimaryButton(
             onClick = onShowDeleteConfirmation,
             text = stringResource(R.string.delete),
+            style = ButtonStyle.Error,
             showElevation = true
           )
         }

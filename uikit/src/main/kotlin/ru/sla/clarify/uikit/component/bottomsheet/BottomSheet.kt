@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ModalBottomSheet
@@ -57,7 +58,7 @@ fun ModalBottomSheet(
     }
     val isLightTheme = AppTheme.colors.isLight
     ModalBottomSheet(
-      modifier = modifier,
+      modifier = modifier.statusBarsPadding(),
       sheetState = sheetState,
       shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
       dragHandle = {},

@@ -9,18 +9,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
-fun TextButtonSmall(
+fun PrimaryTextButtonSmall(
   text: String,
-  isError: Boolean,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
   showLoading: Boolean = false
 ) {
@@ -30,17 +29,21 @@ fun TextButtonSmall(
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    colors = ButtonDefaults.textButtonColors(isError),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.textDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.textErrorColors()
+      ButtonStyle.Success -> ButtonDefaults.textSuccessColors()
+    },
     onClick = onClick
   )
 }
 
 @Composable
-fun TextButton(
+fun PrimaryTextButton(
   text: String,
-  isError: Boolean,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
   showLoading: Boolean = false
 ) {
@@ -50,35 +53,39 @@ fun TextButton(
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    colors = ButtonDefaults.textButtonColors(isError),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.textDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.textErrorColors()
+      ButtonStyle.Success -> ButtonDefaults.textSuccessColors()
+    },
     onClick = onClick
   )
 }
 
 @Preview
 @Composable
-private fun TextButtonsPreviewLight(
-  @PreviewParameter(TextButtonPreviewStateProvider::class)
-  state: TextButtonPreviewState
+private fun PrimaryTextButtonsPreviewLight(
+  @PreviewParameter(ButtonPreviewStateProvider::class)
+  preview: ButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Light) {
-    TextButtonsPreviewContent(state)
+    PrimaryTextButtonsPreviewContent(preview)
   }
 }
 
 @Preview
 @Composable
-private fun TextButtonsPreviewDark(
-  @PreviewParameter(TextButtonPreviewStateProvider::class)
-  state: TextButtonPreviewState
+private fun PrimaryTextButtonsPreviewDark(
+  @PreviewParameter(ButtonPreviewStateProvider::class)
+  preview: ButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Dark) {
-    TextButtonsPreviewContent(state)
+    PrimaryTextButtonsPreviewContent(preview)
   }
 }
 
 @Composable
-private fun TextButtonsPreviewContent(state: TextButtonPreviewState) {
+private fun PrimaryTextButtonsPreviewContent(preview: ButtonPreviewState) {
   Column(
     modifier = Modifier
       .background(AppTheme.colors.backgroundPrimary)
@@ -86,65 +93,23 @@ private fun TextButtonsPreviewContent(state: TextButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    TextButtonSmall(
+    PrimaryTextButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      isError = state.isError,
-      enabled = state.enabled,
-      showLoading = state.showLoading,
+      style = preview.style,
+      enabled = preview.enabled,
+      showLoading = preview.showLoading,
       onClick = {}
     )
     VSpacer(8.dp)
-    TextButton(
+    PrimaryTextButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
-      isError = state.isError,
-      enabled = state.enabled,
-      showLoading = state.showLoading,
+      style = preview.style,
+      enabled = preview.enabled,
+      showLoading = preview.showLoading,
       onClick = {}
     )
     VSpacer(8.dp)
   }
-}
-
-internal data class TextButtonPreviewState(
-  val label: String,
-  val isError: Boolean,
-  val enabled: Boolean,
-  val showLoading: Boolean
-)
-
-internal class TextButtonPreviewStateProvider : PreviewParameterProvider<TextButtonPreviewState> {
-  override val values = sequenceOf(
-    TextButtonPreviewState(
-      label = "default",
-      isError = true,
-      enabled = true,
-      showLoading = false
-    ),
-    TextButtonPreviewState(
-      label = "default",
-      isError = true,
-      enabled = true,
-      showLoading = true
-    ),
-    TextButtonPreviewState(
-      label = "disabled",
-      isError = true,
-      enabled = false,
-      showLoading = false
-    ),
-    TextButtonPreviewState(
-      label = "disabled",
-      isError = true,
-      enabled = false,
-      showLoading = true
-    ),
-    TextButtonPreviewState(
-      label = "elevation",
-      isError = true,
-      enabled = true,
-      showLoading = false
-    )
-  )
 }

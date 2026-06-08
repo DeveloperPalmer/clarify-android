@@ -19,6 +19,7 @@ fun PrimaryButtonSmall(
   text: String,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
   showLoading: Boolean = false,
   showElevation: Boolean = false
@@ -30,7 +31,11 @@ fun PrimaryButtonSmall(
     enabled = enabled,
     showLoading = showLoading,
     showElevation = showElevation,
-    colors = ButtonDefaults.primaryButtonColors(),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.primaryDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.primaryErrorColors()
+      ButtonStyle.Success -> ButtonDefaults.primarySuccessColors()
+    },
     onClick = onClick
   )
 }
@@ -40,6 +45,7 @@ fun PrimaryButton(
   text: String,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
   showLoading: Boolean = false,
   showElevation: Boolean = false
@@ -51,12 +57,16 @@ fun PrimaryButton(
     enabled = enabled,
     showLoading = showLoading,
     showElevation = showElevation,
-    colors = ButtonDefaults.primaryButtonColors(),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.primaryDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.primaryErrorColors()
+      ButtonStyle.Success -> ButtonDefaults.primarySuccessColors()
+    },
     onClick = onClick
   )
 }
 
-@Preview(name = "Light", showBackground = true, widthDp = 360)
+@Preview
 @Composable
 private fun PrimaryButtonsPreviewLight(
   @PreviewParameter(ButtonPreviewStateProvider::class)
@@ -67,7 +77,7 @@ private fun PrimaryButtonsPreviewLight(
   }
 }
 
-@Preview(name = "Dark", showBackground = true, widthDp = 360)
+@Preview
 @Composable
 private fun PrimaryButtonsPreviewDark(
   @PreviewParameter(ButtonPreviewStateProvider::class)
@@ -90,6 +100,7 @@ private fun PrimaryButtonsPreviewContent(state: ButtonPreviewState) {
     PrimaryButtonSmall(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
+      style = state.style,
       enabled = state.enabled,
       showLoading = state.showLoading,
       showElevation = state.showElevation,
@@ -99,6 +110,7 @@ private fun PrimaryButtonsPreviewContent(state: ButtonPreviewState) {
     PrimaryButton(
       modifier = Modifier.fillMaxWidth(),
       text = "Продолжить",
+      style = state.style,
       enabled = state.enabled,
       showLoading = state.showLoading,
       showElevation = state.showElevation,

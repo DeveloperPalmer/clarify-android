@@ -1,6 +1,5 @@
 package ru.sla.clarify.uikit.component.button
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,83 +10,82 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 
 @Composable
-fun ErrorIconButtonSmall(
-  @DrawableRes
-  iconRes: Int,
+fun SecondaryTextButtonSmall(
   text: String,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
-  showLoading: Boolean = false,
-  showElevation: Boolean = false
+  showLoading: Boolean = false
 ) {
-  IconButtonInternal(
+  OutlinedTextButtonInternal(
     modifier = modifier,
     size = ButtonSize.Small,
-    iconRes = iconRes,
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    showElevation = showElevation,
-    colors = ButtonDefaults.errorButtonColors(),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.textDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.textErrorColors()
+      ButtonStyle.Success -> ButtonDefaults.textSuccessColors()
+    },
     onClick = onClick
   )
 }
 
 @Composable
-fun ErrorIconButton(
-  @DrawableRes
-  iconRes: Int,
+fun SecondaryTextButton(
   text: String,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  style: ButtonStyle = ButtonStyle.Default,
   enabled: Boolean = true,
-  showLoading: Boolean = false,
-  showElevation: Boolean = false
+  showLoading: Boolean = false
 ) {
-  IconButtonInternal(
+  OutlinedTextButtonInternal(
     modifier = modifier,
     size = ButtonSize.Medium,
-    iconRes = iconRes,
     text = text,
     enabled = enabled,
     showLoading = showLoading,
-    showElevation = showElevation,
-    colors = ButtonDefaults.errorButtonColors(),
+    colors = when (style) {
+      ButtonStyle.Default -> ButtonDefaults.textDefaultColors()
+      ButtonStyle.Error -> ButtonDefaults.textErrorColors()
+      ButtonStyle.Success -> ButtonDefaults.textSuccessColors()
+    },
     onClick = onClick
   )
 }
 
 @Preview
 @Composable
-private fun ErrorIconButtonsPreviewLight(
+private fun SecondaryTextButtonsPreviewLight(
   @PreviewParameter(ButtonPreviewStateProvider::class)
-  state: ButtonPreviewState
+  preview: ButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Light) {
-    ErrorIconButtonsPreviewContent(state)
+    SecondaryTextButtonsPreviewContent(preview)
   }
 }
 
 @Preview
 @Composable
-private fun ErrorIconButtonsPreviewDark(
+private fun SecondaryTextButtonsPreviewDark(
   @PreviewParameter(ButtonPreviewStateProvider::class)
-  state: ButtonPreviewState
+  preview: ButtonPreviewState
 ) {
   AppTheme(currentTheme = ColorTheme.Dark) {
-    ErrorIconButtonsPreviewContent(state)
+    SecondaryTextButtonsPreviewContent(preview)
   }
 }
 
 @Composable
-private fun ErrorIconButtonsPreviewContent(state: ButtonPreviewState) {
+private fun SecondaryTextButtonsPreviewContent(preview: ButtonPreviewState) {
   Column(
     modifier = Modifier
       .background(AppTheme.colors.backgroundPrimary)
@@ -95,23 +93,21 @@ private fun ErrorIconButtonsPreviewContent(state: ButtonPreviewState) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     VSpacer(8.dp)
-    ErrorIconButtonSmall(
+    SecondaryTextButtonSmall(
       modifier = Modifier.fillMaxWidth(),
-      iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
-      enabled = state.enabled,
-      showLoading = state.showLoading,
-      showElevation = state.showElevation,
+      style = preview.style,
+      enabled = preview.enabled,
+      showLoading = preview.showLoading,
       onClick = {}
     )
     VSpacer(8.dp)
-    ErrorIconButton(
+    SecondaryTextButton(
       modifier = Modifier.fillMaxWidth(),
-      iconRes = R.drawable.ic_back_24,
       text = "Продолжить",
-      enabled = state.enabled,
-      showLoading = state.showLoading,
-      showElevation = state.showElevation,
+      style = preview.style,
+      enabled = preview.enabled,
+      showLoading = preview.showLoading,
       onClick = {}
     )
     VSpacer(8.dp)
