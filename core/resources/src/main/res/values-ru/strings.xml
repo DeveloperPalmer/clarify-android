@@ -61,6 +61,24 @@
     <string name="thread_scroll_to_bottom">Прокрутить к новым сообщениям</string>
     <string name="thread_commit_status_sending">%1$s • отправляется</string>
     <string name="thread_commit_status_failed">%1$s • ошибка</string>
+    <string name="thread_system_member_invited">%1$s пригласил(а) %2$s</string>
+
+    <!-- Group thread / info / invite -->
+    <string name="group_thread_empty">Сообщений пока нет</string>
+    <string name="group_info_title">О группе</string>
+    <string name="group_info_add_members">Добавить участников</string>
+    <string name="group_info_owner_badge">Владелец</string>
+    <string name="group_info_you_badge">Вы</string>
+    <string name="group_info_remove_member">Удалить из группы</string>
+    <string name="group_info_leave">Покинуть группу</string>
+    <string name="group_info_delete">Удалить группу</string>
+    <string name="group_info_rename">Переименовать</string>
+    <string name="invite_members_title">Добавить участников</string>
+    <string name="invite_members_search_placeholder">Поиск по email</string>
+    <string name="invite_members_already_member">Уже в группе</string>
+    <string name="invite_members_limit_reached">В группе максимум 10 участников</string>
+    <string name="invite_members_confirm_button">Добавить (%1$d)</string>
+    <string name="invite_members_empty">Никого не нашли</string>
 
     <!-- Create branch modal sheet -->
     <string name="thread_create_branch_sheet_title">Новая ветка</string>

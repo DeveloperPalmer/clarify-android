@@ -64,6 +64,24 @@
     <string name="thread_scroll_to_bottom">Scroll to latest messages</string>
     <string name="thread_commit_status_sending">%1$s • sending</string>
     <string name="thread_commit_status_failed">%1$s • failed</string>
+    <string name="thread_system_member_invited">%1$s invited %2$s</string>
+
+    <!-- Group thread / info / invite -->
+    <string name="group_thread_empty">No messages yet</string>
+    <string name="group_info_title">Group info</string>
+    <string name="group_info_add_members">Add members</string>
+    <string name="group_info_owner_badge">Owner</string>
+    <string name="group_info_you_badge">You</string>
+    <string name="group_info_remove_member">Remove from group</string>
+    <string name="group_info_leave">Leave group</string>
+    <string name="group_info_delete">Delete group</string>
+    <string name="group_info_rename">Rename</string>
+    <string name="invite_members_title">Add members</string>
+    <string name="invite_members_search_placeholder">Search by email</string>
+    <string name="invite_members_already_member">Already in group</string>
+    <string name="invite_members_limit_reached">Group limit is 10 members</string>
+    <string name="invite_members_confirm_button">Add (%1$d)</string>
+    <string name="invite_members_empty">No users found</string>
 
     <!-- Create branch modal sheet -->
     <string name="thread_create_branch_sheet_title">New branch</string>
