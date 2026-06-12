@@ -4,7 +4,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.BindsInstance
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
-import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.feature.chat.thread.domain.entity.ThreadTarget
 
 @SingleIn(ThreadScope::class)
 @MergeSubcomponent(ThreadScope::class)
@@ -14,7 +14,7 @@ interface ThreadFlowComponent {
   @MergeSubcomponent.Builder
   interface Builder {
     @BindsInstance
-    fun peerId(id: Peer.Id): Builder
+    fun target(target: ThreadTarget): Builder
     fun build(): ThreadFlowComponent
   }
 }

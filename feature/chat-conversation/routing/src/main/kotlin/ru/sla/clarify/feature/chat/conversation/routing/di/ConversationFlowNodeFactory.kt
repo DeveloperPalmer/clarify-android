@@ -9,6 +9,7 @@ import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlowNode
 import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlowNodeBuilder
 import ru.sla.clarify.feature.chat.conversation.ui.di.Screen
 import ru.sla.clarify.feature.chat.conversation.ui.di.WiredScreen
+import ru.sla.clarify.feature.chat.thread.domain.entity.ThreadTarget
 import ru.sla.clarify.feature.chat.thread.routing.ThreadFlow
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.feature.profile.routing.ProfileFlow
@@ -32,7 +33,7 @@ class ConversationFlowNodeFactory @Inject constructor(
 
   override fun createThreadFlowNodeBuilder(id: Peer.Id): NodeBuilder {
     val component = component.threadFlowComponent()
-      .peerId(id)
+      .target(ThreadTarget.Direct(peerId = id.value))
       .build()
     return ThreadFlow.nodeBuilder(component)
   }
