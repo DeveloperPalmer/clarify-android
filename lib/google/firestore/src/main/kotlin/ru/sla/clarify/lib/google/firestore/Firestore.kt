@@ -33,6 +33,7 @@ import ru.sla.clarify.lib.google.firestore.entity.ParticipantNM
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchOpenMergeParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchConversationLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchConversationNameParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchReadWatermarkParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadCountParams
@@ -561,6 +562,76 @@ class Firestore @Inject constructor(
           )
         }
     }
+
+    batch.commit().await()
+  }
+
+  fun groupCommitsLive(
+    conversationId: String,
+    limit: Long
+  ): Flow<List<FirestoreChange<CommitNM>>> {
+    return conversationMessagesLive(
+      id = conversationId,
+      branchId = conversationId,
+      limit = limit
+    )
+  }
+
+  /**
+   * Отправляет сообщение в группу. В отличие от direct-версии [postCommit] — conversation
+   * уже существует, поэтому ни создания документа, ни participant-документов не нужно:
+   * только commit + merge lastCommit-полей + unread-инкременты всем кроме отправителя.
+   * [participantUids] передаёт caller (актуальный состав из локального кэша).
+   */
+  suspend fun postGroupCommit(
+    conversationId: String,
+    text: String,
+    colorHex: String,
+    participantUids: List<String>
+  ) {
+    val senderId = requireUserId()
+    val commitId = randomUuid()
+    val createdAt = Timestamp.now()
+
+    val batch = writeBatch()
+    val conversationRef = conversationDocumentRef(conversationId)
+
+    batch.set(
+      conversationRef
+        .collection(FirestoreSchema.COMMITS_COLLECTION)
+        .document(commitId),
+      codec.encodeToMap(
+        PostCommitParams(
+          clientCommitId = commitId,
+          senderUid = senderId,
+          text = text,
+          type = CommitNM.Type.Text,
+          createdAt = createdAt,
+          colorHex = colorHex,
+          branchId = conversationId
+        )
+      )
+    )
+    batch.set(
+      conversationRef,
+      codec.encodeToMap(
+        PatchConversationLastCommitParams(
+          lastCommitText = text,
+          lastCommitSenderUid = senderId.value,
+          lastCommitAt = createdAt
+        )
+      ),
+      SetOptions.merge()
+    )
+    participantUids
+      .filter { it != senderId.value }
+      .forEach { uid ->
+        batch.set(
+          unreadCommitsDocumentRef(conversationId, UserId(uid)),
+          codec.encodeToMap(PatchUnreadIncrementParams()),
+          SetOptions.merge()
+        )
+      }
 
     batch.commit().await()
   }
