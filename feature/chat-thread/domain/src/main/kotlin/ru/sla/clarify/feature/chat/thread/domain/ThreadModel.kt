@@ -6,8 +6,13 @@ import kotlinx.coroutines.launch
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.mapDistinctNotNullChanges
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.chat.conversation.domain.entity.FoundUser
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Group
+import ru.sla.clarify.feature.chat.conversation.domain.entity.GroupMember
 import ru.sla.clarify.feature.chat.thread.domain.di.ThreadScope
 import ru.sla.clarify.feature.chat.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
@@ -117,6 +122,51 @@ class ThreadModel @Inject constructor(
     name = "finalizeMergeRequest"
   ) { branchId ->
     branchRepository.finalizeMergeRequest(branchId)
+  }
+
+  fun subscribeOnGroupParticipants(id: Conversation.Id) {
+    scope.launch { conversationRepository.subscribeOnGroupParticipants(id) }
+  }
+
+  fun group(id: Conversation.Id): Flow<Group?> = conversationRepository.observeGroup(id)
+
+  fun groupMembers(id: Conversation.Id): Flow<List<GroupMember>> =
+    conversationRepository.observeGroupMembers(id)
+
+  val renameGroup = task<Conversation.Id, String, Unit>(
+    name = "renameGroup"
+  ) { id, name ->
+    conversationRepository.renameGroup(id = id, name = name)
+  }
+
+  val deleteGroup = task<Conversation.Id, Unit>(
+    name = "deleteGroup"
+  ) { id ->
+    conversationRepository.deleteGroup(id)
+  }
+
+  val leaveGroup = task<Conversation.Id, Unit>(
+    name = "leaveGroup"
+  ) { id ->
+    conversationRepository.leaveGroup(id)
+  }
+
+  val inviteMembers = task<Conversation.Id, List<UserId>, Unit>(
+    name = "inviteMembers"
+  ) { id, userIds ->
+    conversationRepository.inviteMembers(id = id, userIds = userIds)
+  }
+
+  val removeMember = task<Conversation.Id, UserId, Unit>(
+    name = "removeMember"
+  ) { id, userId ->
+    conversationRepository.removeMember(id = id, userId = userId)
+  }
+
+  val searchUsers = task<String, List<FoundUser>>(
+    name = "searchUsers"
+  ) { prefix ->
+    conversationRepository.searchUsersByEmailPrefix(prefix)
   }
 
   val user: Flow<User?> = conversationRepository.user

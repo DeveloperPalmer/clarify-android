@@ -37,5 +37,9 @@ deleteByConversation:
 DELETE FROM ChatConversationParticipant
 WHERE conversationId = ?;
 
+deleteByConversationAndId:
+DELETE FROM ChatConversationParticipant
+WHERE conversationId = :conversationId AND id = :id;
+
 deleteAll:
 DELETE FROM ChatConversationParticipant;

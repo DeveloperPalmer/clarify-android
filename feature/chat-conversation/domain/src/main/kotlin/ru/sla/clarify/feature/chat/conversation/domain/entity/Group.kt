@@ -20,3 +20,11 @@ data class GroupMember(
   val isOwner: Boolean,
   val isMe: Boolean
 )
+
+@Immutable
+data class FoundUser(
+  val id: UserId,
+  val displayName: String,
+  val email: String,
+  val photoUrl: String?
+)

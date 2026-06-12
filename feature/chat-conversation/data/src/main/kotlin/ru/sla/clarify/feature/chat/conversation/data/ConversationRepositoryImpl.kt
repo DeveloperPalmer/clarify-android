@@ -25,6 +25,7 @@ import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAllGroupsAsCon
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.chat.conversation.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Group
 import ru.sla.clarify.feature.chat.conversation.domain.entity.GroupMember
 import ru.sla.clarify.feature.entity.chat.Peer
@@ -111,6 +112,95 @@ class ConversationRepositoryImpl @Inject constructor(
       val conversationId = firestore.postGroupConversation(name)
       Conversation.Id(conversationId)
     }
+  }
+
+  override suspend fun renameGroup(id: Conversation.Id, name: String) {
+    withContext(Dispatchers.IO) {
+      firestore.patchGroupName(conversationId = id.value, name = name)
+      persistedDB.chatConversationQueries.updateGroupName(id = id.value, name = name)
+    }
+  }
+
+  override suspend fun deleteGroup(id: Conversation.Id) {
+    withContext(Dispatchers.IO) {
+      firestore.deleteGroupConversation(id.value)
+      persistedDB.transaction {
+        persistedDB.chatConversationQueries.deleteById(id.value)
+        persistedDB.chatConversationParticipantQueries.deleteByConversation(id.value)
+      }
+    }
+  }
+
+  override suspend fun leaveGroup(id: Conversation.Id) {
+    withContext(Dispatchers.IO) {
+      firestore.leaveGroup(id.value)
+      persistedDB.transaction {
+        persistedDB.chatConversationQueries.deleteById(id.value)
+        persistedDB.chatConversationParticipantQueries.deleteByConversation(id.value)
+      }
+    }
+  }
+
+  override suspend fun inviteMembers(id: Conversation.Id, userIds: List<UserId>) {
+    withContext(Dispatchers.IO) {
+      userIds.forEach { userId ->
+        firestore.postInviteParticipant(
+          conversationId = id.value,
+          invitedUserId = userId
+        )
+      }
+    }
+  }
+
+  override suspend fun removeMember(id: Conversation.Id, userId: UserId) {
+    withContext(Dispatchers.IO) {
+      firestore.deleteParticipant(conversationId = id.value, userId = userId)
+      persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
+        conversationId = id.value,
+        id = userId.value
+      )
+    }
+  }
+
+  override suspend fun searchUsersByEmailPrefix(prefix: String): List<FoundUser> {
+    return withContext(Dispatchers.IO) {
+      firestore.getUsersByEmailPrefix(prefix = prefix.lowercase(), limit = USER_SEARCH_LIMIT)
+        .map { user ->
+          FoundUser(
+            id = UserId(user.id),
+            displayName = user.displayName,
+            email = user.email,
+            photoUrl = user.photoUrl
+          )
+        }
+    }
+  }
+
+  override suspend fun subscribeOnGroupParticipants(id: Conversation.Id) {
+    firestore.participantsLive(id.value)
+      .flowOn(Dispatchers.IO)
+      .collect { changes ->
+        persistedDB.transaction {
+          changes.forEach { change ->
+            when (change.changeType) {
+              FirestoreDocumentResult.Added,
+              FirestoreDocumentResult.Modified -> {
+                persistedDB.chatConversationParticipantQueries.insertOrReplace(
+                  conversationId = id.value,
+                  id = change.data.id
+                )
+              }
+
+              FirestoreDocumentResult.Removed -> {
+                persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
+                  conversationId = id.value,
+                  id = change.data.id
+                )
+              }
+            }
+          }
+        }
+      }
   }
 
   override suspend fun deleteConversations(ids: List<Conversation.Id>) {
@@ -261,3 +351,5 @@ class ConversationRepositoryImpl @Inject constructor(
     )
   }
 }
+
+private const val USER_SEARCH_LIMIT = 10L
