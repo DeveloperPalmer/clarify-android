@@ -33,6 +33,7 @@ import ru.sla.clarify.lib.google.firestore.entity.ParticipantNM
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchOpenMergeParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PatchConversationNameParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchReadWatermarkParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadCountParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchUnreadIncrementParams
@@ -47,7 +48,7 @@ import ru.sla.clarify.lib.google.firestore.mapper.toFirestoreDocumentResult
 import java.time.LocalDateTime
 import javax.inject.Inject
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 @SingleIn(AppScope::class)
 class Firestore @Inject constructor(
   firestoreWrapper: FirestoreWrapper,
@@ -267,6 +268,71 @@ class Firestore @Inject constructor(
 
       awaitClose { listener.remove() }
     }
+  }
+
+  /**
+   * Создаёт групповой conversation. В отличие от direct'а (ленивая инициация при первом
+   * сообщении) — группа материализуется сразу: документ + participant-документ для
+   * создателя одной транзакцией. Подколлекции commits/branches/unreadCommits появляются
+   * лениво при первом сообщении.
+   */
+  suspend fun postGroupConversation(name: String): String {
+    val ownerId = requireUserId()
+    val conversationId = randomUuid()
+
+    val batch = writeBatch()
+    val conversationRef = conversationDocumentRef(conversationId)
+    batch.set(
+      conversationRef,
+      codec.encodeToMap(
+        PostConversationParams(
+          type = ConversationNM.Type.Group,
+          participantUids = listOf(ownerId.value),
+          name = name,
+          ownerUid = ownerId.value
+        )
+      )
+    )
+    batch.set(
+      participantDocumentRef(conversationId, ownerId),
+      codec.encodeToMap(PostParticipantParams(id = ownerId.value))
+    )
+    batch.commit().await()
+    return conversationId
+  }
+
+  suspend fun patchGroupName(conversationId: String, name: String) {
+    conversationDocumentRef(conversationId)
+      .set(
+        codec.encodeToMap(PatchConversationNameParams(name = name)),
+        SetOptions.merge()
+      )
+      .await()
+  }
+
+  /**
+   * Удаляет conversation-документ. Подколлекции commits/branches/participants/unreadCommits
+   * остаются сиротами — осознанный технический долг MVP: чистка через server-side trigger /
+   * recursive delete отложена.
+   */
+  suspend fun deleteGroupConversation(conversationId: String) {
+    conversationDocumentRef(conversationId)
+      .delete()
+      .await()
+  }
+
+  /**
+   * Prefix-поиск пользователей по email. email в users-документах нормализованы в
+   * lowercase, поэтому caller должен передавать query тоже в lowercase. Запрос —
+   * `orderBy(email).startAt(prefix).endAt(prefix + "")`, limit ограничивает
+   * UI-список (по дизайну — 10).
+   */
+  suspend fun getUsersByEmailPrefix(prefix: String, limit: Long): List<UserNM> {
+    return usersQueryByEmailPrefix(prefix = prefix, limit = limit)
+      .get()
+      .await()
+      .documents
+      .map { codec.decodeFromSnapshot<UserNM>(it) }
   }
 
   suspend fun deleteConversations(ids: List<String>) {

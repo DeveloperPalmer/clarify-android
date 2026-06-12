@@ -42,6 +42,15 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .whereEqualTo(FirestoreSchema.USER_EMAIL, whereEqualTo)
   }
 
+  override fun usersQueryByEmailPrefix(prefix: String, limit: Long): Query {
+    return remoteDB
+      .collection(FirestoreSchema.USERS_COLLECTION)
+      .orderBy(FirestoreSchema.USER_EMAIL)
+      .startAt(prefix)
+      .endAt(prefix + "")
+      .limit(limit)
+  }
+
   override fun conversationCollectionRef(): CollectionReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)

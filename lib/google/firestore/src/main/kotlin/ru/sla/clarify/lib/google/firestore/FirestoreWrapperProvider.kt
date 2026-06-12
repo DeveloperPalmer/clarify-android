@@ -18,6 +18,8 @@ interface FirestoreWrapperProvider {
 
   fun usersQuery(whereEqualTo: String): Query
 
+  fun usersQueryByEmailPrefix(prefix: String, limit: Long): Query
+
   fun conversationCollectionRef(): CollectionReference
 
   fun conversationsQuery(
