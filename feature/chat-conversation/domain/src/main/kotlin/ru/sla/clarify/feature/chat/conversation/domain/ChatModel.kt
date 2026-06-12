@@ -37,6 +37,12 @@ class ChatModel @Inject constructor(
     conversationRepository.deleteConversations(ids = ids)
   }
 
+  val createGroup = task<String, Conversation.Id>(
+    name = "createGroup"
+  ) { name ->
+    conversationRepository.createGroup(name = name)
+  }
+
   val user: Flow<User?> = conversationRepository.user
 
   val conversations: Flow<List<Conversation>> = conversationRepository.conversations.filterNotNull()

@@ -104,6 +104,13 @@ class ConversationRepositoryImpl @Inject constructor(
     }
   }
 
+  override suspend fun createGroup(name: String): Conversation.Id {
+    return withContext(Dispatchers.IO) {
+      val conversationId = firestore.postGroupConversation(name)
+      Conversation.Id(conversationId)
+    }
+  }
+
   override suspend fun deleteConversations(ids: List<Conversation.Id>) {
     return withContext(Dispatchers.IO) {
       val idValues = ids.map { it.value }

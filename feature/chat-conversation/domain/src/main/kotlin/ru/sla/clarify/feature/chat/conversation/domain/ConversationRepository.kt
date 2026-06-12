@@ -14,6 +14,7 @@ interface ConversationRepository {
   suspend fun fetchCurrentUser()
   suspend fun getPeerByEmail(email: Email): Peer.Id
   suspend fun deleteConversations(ids: List<Conversation.Id>)
+  suspend fun createGroup(name: String): Conversation.Id
 
   val user: Flow<User?>
 

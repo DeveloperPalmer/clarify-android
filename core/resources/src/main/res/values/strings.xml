@@ -46,6 +46,7 @@
     <string name="conversation_new_tab_group">Group</string>
     <string name="conversation_new_group_name_placeholder">Group name</string>
     <string name="conversation_new_group_create_button">Create</string>
+    <string name="conversation_new_group_create_error">Could not create group, try again</string>
     <string name="conversation_group_no_messages">No messages yet</string>
 
     <!-- Conversation: delete dialog -->

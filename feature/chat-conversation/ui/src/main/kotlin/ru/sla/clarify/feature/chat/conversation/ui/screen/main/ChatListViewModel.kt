@@ -28,7 +28,7 @@ class ChatListViewModel @Inject constructor(
       transitionTo { state, _ ->
         state.copy(
           editModeEnabled = false,
-          selectedConversationIds = emptyList()
+          selectedConversationsIds = emptyList()
         )
       }
       action { state, _, _ ->
@@ -38,15 +38,15 @@ class ChatListViewModel @Inject constructor(
       }
     }
 
-    onEach(intent(ViewIntents::openChat)) {
+    onEach(intent(ViewIntents::openDirectConversation)) {
       action { _, _, peerId ->
-        eventSink.sendEvent(FlowEvent.ThreadRequested(peerId))
+        eventSink.sendEvent(FlowEvent.DirectConversationRequested(peerId))
       }
     }
 
-    onEach(intent(ViewIntents::openGroupChat)) {
+    onEach(intent(ViewIntents::openGroupConversation)) {
       action { _, _, conversationId ->
-        eventSink.sendEvent(FlowEvent.GroupThreadRequested(conversationId))
+        eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId))
       }
     }
 
@@ -79,21 +79,50 @@ class ChatListViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureNewConversationTransitions() {
-    onEach(intent(ViewIntents::showNewChatDialog)) {
+    onEach(intent(ViewIntents::openCreateConversation)) {
       action { _, _, _ ->
         sendViewEvent(showNewChatDialog())
       }
     }
 
-    onEach(intent(ViewIntents::confirmNewChat)) {
+    onEach(intent(ViewIntents::changeCreateConversationTab)) {
+      transitionTo { state, tab ->
+        state.copy(selectedCreateConversationOption = tab)
+      }
+    }
+
+    onEach(intent(ViewIntents::confirmCreateDirect)) {
       action { _, _, value ->
         chatModel.getPeerByEmail.start(Email(value))
       }
     }
 
+    onEach(intent(ViewIntents::confirmCreateGroup)) {
+      action { _, _, name ->
+        chatModel.createGroup.start(name)
+      }
+    }
+
+    onEach(chatModel.createGroup.jobFlow.successResults()) {
+      action { _, _, conversationId ->
+        eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId))
+      }
+    }
+
+    onEach(chatModel.createGroup.jobFlow.errors()) {
+      action { _, _, _ ->
+        sendViewEvent(
+          Snackbar(
+            isError = true,
+            message = resRef(R.string.conversation_new_group_create_error)
+          )
+        )
+      }
+    }
+
     onEach(chatModel.getPeerByEmail.jobFlow.successResults()) {
       action { _, _, peerId ->
-        eventSink.sendEvent(FlowEvent.ThreadRequested(peerId))
+        eventSink.sendEvent(FlowEvent.DirectConversationRequested(peerId))
       }
     }
 
@@ -116,19 +145,19 @@ class ChatListViewModel @Inject constructor(
   private fun MachineDsl<ViewState>.configureDeleteConversationTransitions() {
     onEach(intent(ViewIntents::handleConversationLongPress)) {
       transitionTo { state, conversationId ->
-        val updated = if (state.selectedConversationIds.contains(conversationId)) {
-          state.selectedConversationIds.minus(conversationId)
+        val updated = if (state.selectedConversationsIds.contains(conversationId)) {
+          state.selectedConversationsIds.minus(conversationId)
         } else {
-          state.selectedConversationIds.plus(conversationId)
+          state.selectedConversationsIds.plus(conversationId)
         }
         state.copy(
           editModeEnabled = !state.editModeEnabled || updated.any { it != conversationId },
-          selectedConversationIds = updated
+          selectedConversationsIds = updated
         )
       }
     }
 
-    onEach(intent(ViewIntents::showDeleteConfirmation)) {
+    onEach(intent(ViewIntents::openDeleteConversation)) {
       action { _, _, _ ->
         sendViewEvent(showDeleteConversationDialog())
       }
@@ -136,7 +165,7 @@ class ChatListViewModel @Inject constructor(
 
     onEach(intent(ViewIntents::confirmDeleteConversation)) {
       action { state, _, _ ->
-        chatModel.deleteConversations.start(state.selectedConversationIds)
+        chatModel.deleteConversations.start(state.selectedConversationsIds)
       }
     }
 
@@ -144,7 +173,7 @@ class ChatListViewModel @Inject constructor(
       transitionTo { state, _ ->
         state.copy(
           editModeEnabled = false,
-          selectedConversationIds = emptyList()
+          selectedConversationsIds = emptyList()
         )
       }
     }
