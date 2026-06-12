@@ -19,6 +19,32 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 
+internal fun ChatConversationQueries.selectAllGroupsAsConversations(): Query<Conversation> {
+  return selectAllGroups {
+      id,
+      name,
+      ownerUid,
+      lastCommit,
+      _,
+      lastCommitTimestamp,
+      unreadCount,
+      memberCount,
+      lastCommitSenderDisplayName
+    ->
+    Conversation.Group(
+      id = Conversation.Id(id),
+      name = name.orEmpty(),
+      ownerId = UserId(ownerUid.orEmpty()),
+      memberCount = memberCount.toInt(),
+      lastCommit = lastCommit,
+      lastCommitSenderName = lastCommitSenderDisplayName,
+      lastCommitAt = formatLastCommitTimestamp(lastCommitTimestamp),
+      lastCommitTimestamp = lastCommitTimestamp,
+      unreadCount = unreadCount
+    )
+  }
+}
+
 internal fun ChatConversationQueries.selectAll(userId: UserId): Query<Conversation> {
   return selectAllWithPeer(currentUserId = userId.value) {
       id,

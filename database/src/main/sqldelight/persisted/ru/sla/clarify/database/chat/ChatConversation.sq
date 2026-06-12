@@ -47,6 +47,7 @@ INNER JOIN ChatConversationParticipant AS peerLink
   ON peerLink.conversationId = ChatConversation.id AND peerLink.id != :currentUserId
 INNER JOIN User AS peerProfile
   ON peerProfile.id = peerLink.id
+WHERE ChatConversation.type = 'direct'
 ORDER BY ChatConversation.lastCommitTimestamp DESC;
 
 selectAllGroups:
@@ -83,6 +84,11 @@ WHERE ChatConversation.id = :id AND ChatConversation.type = 'group';
 updateGroupName:
 UPDATE ChatConversation
 SET name = :name
+WHERE id = :id;
+
+updateParticipantUids:
+UPDATE ChatConversation
+SET participantUids = :participantUids
 WHERE id = :id;
 
 selectAllIds:

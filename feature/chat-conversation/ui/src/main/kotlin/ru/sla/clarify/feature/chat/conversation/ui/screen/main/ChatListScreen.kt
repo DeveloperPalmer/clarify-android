@@ -31,12 +31,14 @@ import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.DirectConversationItem
 import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.FabActionButton
+import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.GroupConversationItem
 import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.rememberFabVisibility
 import ru.sla.clarify.feature.entity.chat.Peer
-import ru.sla.clarify.uikit.component.Avatar
+import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.VSpacer
+import ru.sla.resourcerefs.compose.resolveTextRef
 
 @Composable
 fun ChatListScreen(viewModel: ChatListViewModel) {
@@ -51,12 +53,13 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
       user = state.user,
       editModeEnabled = state.editModeEnabled,
       conversations = state.conversations,
-      selectedConversationsIds = state.selectedConversationIds,
-      onDirectConversation = intents.openChat,
+      selectedConversationsIds = state.selectedConversationsIds,
+      onOpenProfile = intents.openProfile,
+      onDirectConversation = intents.openDirectConversation,
+      onGroupConversation = intents.openGroupConversation,
       onConversationLongPress = intents.handleConversationLongPress,
-      onShowNewChatDialog = intents.showNewChatDialog,
-      onShowDeleteConfirmation = intents.showDeleteConfirmation,
-      onOpenProfile = intents.openProfile
+      onOpenCreateConversation = intents.openCreateConversation,
+      onOpenDeleteConversation = intents.openDeleteConversation
     )
   }
 }
@@ -67,11 +70,12 @@ internal fun ChatListReadyContent(
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,
   editModeEnabled: Boolean,
-  onDirectConversation: (Peer.Id) -> Unit,
-  onConversationLongPress: (Conversation.Id) -> Unit,
-  onShowNewChatDialog: () -> Unit,
-  onShowDeleteConfirmation: () -> Unit,
   onOpenProfile: () -> Unit,
+  onDirectConversation: (Peer.Id) -> Unit,
+  onGroupConversation: (Conversation.Id) -> Unit,
+  onConversationLongPress: (Conversation.Id) -> Unit,
+  onOpenCreateConversation: () -> Unit,
+  onOpenDeleteConversation: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   Box(
@@ -104,6 +108,7 @@ internal fun ChatListReadyContent(
           conversations = conversations,
           selectedConversationsIds = selectedConversationsIds,
           onDirectConversation = onDirectConversation,
+          onGroupConversation = onGroupConversation,
           onConversationLongPress = onConversationLongPress
         )
       }
@@ -113,8 +118,8 @@ internal fun ChatListReadyContent(
       visible = { fabVisibility.value },
       editModeEnabled = editModeEnabled,
       selectedConversationsIds = selectedConversationsIds,
-      onShowNewChatDialog = onShowNewChatDialog,
-      onShowDeleteConfirmation = onShowDeleteConfirmation
+      onShowNewChatDialog = onOpenCreateConversation,
+      onShowDeleteConfirmation = onOpenDeleteConversation
     )
   }
 }
@@ -212,6 +217,7 @@ private fun ConversationReadyState(
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,
   onDirectConversation: (Peer.Id) -> Unit,
+  onGroupConversation: (Conversation.Id) -> Unit,
   onConversationLongPress: (Conversation.Id) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -226,9 +232,9 @@ private fun ConversationReadyState(
       when (item) {
         is Conversation.Direct -> {
           DirectConversationItem(
+            selected = selectedConversationsIds.contains(item.id),
             direct = item,
             editModeEnabled = editModeEnabled,
-            selected = selectedConversationsIds.contains(item.id),
             onClick = {
               if (editModeEnabled) {
                 onConversationLongPress(item.id)
@@ -239,6 +245,26 @@ private fun ConversationReadyState(
             onLongClick = {
               onConversationLongPress(item.id)
             }
+          )
+        }
+        is Conversation.Group -> {
+          GroupConversationItem(
+            selected = selectedConversationsIds.contains(item.id),
+            groupId = item.id.value,
+            groupName = item.name,
+            lastSenderName = item.lastCommitSenderName,
+            lastCommit = item.lastCommit,
+            lastCommitAt = item.lastCommitAt?.let { resolveTextRef(it) },
+            unreadCount = item.unreadCount,
+            editModeEnabled = editModeEnabled,
+            onClick = {
+              if (editModeEnabled) {
+                onConversationLongPress(item.id)
+              } else {
+                onGroupConversation(item.id)
+              }
+            },
+            onLongClick = { onConversationLongPress(item.id) }
           )
         }
       }

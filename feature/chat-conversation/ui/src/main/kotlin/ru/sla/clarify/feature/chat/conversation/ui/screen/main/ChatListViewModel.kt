@@ -44,6 +44,12 @@ class ChatListViewModel @Inject constructor(
       }
     }
 
+    onEach(intent(ViewIntents::openGroupChat)) {
+      action { _, _, conversationId ->
+        eventSink.sendEvent(FlowEvent.GroupThreadRequested(conversationId))
+      }
+    }
+
     onEach(intent(ViewIntents::openProfile)) {
       action { _, _, _ ->
         eventSink.sendEvent(FlowEvent.ProfileRequested)

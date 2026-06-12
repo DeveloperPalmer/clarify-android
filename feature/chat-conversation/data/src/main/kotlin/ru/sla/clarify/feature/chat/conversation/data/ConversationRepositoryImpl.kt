@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
@@ -20,6 +21,7 @@ import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToUser
 import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAll
+import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAllGroupsAsConversations
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
@@ -129,10 +131,15 @@ class ConversationRepositoryImpl @Inject constructor(
     val userId = authSessionPersistence.withKey { readUserId(it) }
     if (userId == null) return@flow emit(emptyList())
 
-    persistedDB.chatConversationQueries
+    val directs = persistedDB.chatConversationQueries
       .selectAll(userId)
       .observeList()
-      .collect { emit(it) }
+    val groups = persistedDB.chatConversationQueries
+      .selectAllGroupsAsConversations()
+      .observeList()
+    combine(directs, groups) { d, g ->
+      (d + g).sortedByDescending { it.lastCommitTimestamp }
+    }.collect { emit(it) }
   }
 
   private fun applyConversationsChanges(changes: List<FirestoreChange<ConversationNM>>) {
