@@ -4,19 +4,25 @@ CREATE TABLE ChatConversation(
   id TEXT PRIMARY KEY NOT NULL,
   type TEXT NOT NULL,
   participantUids TEXT AS StringList NOT NULL,
+  name TEXT,
+  ownerUid TEXT,
   lastCommit TEXT,
+  lastCommitSenderUid TEXT,
   lastCommitTimestamp INTEGER NOT NULL,
   unreadCount INTEGER NOT NULL DEFAULT 0
 );
 
 insertOrReplaceMeta:
 INSERT OR REPLACE
-INTO ChatConversation(id, type, participantUids, lastCommit, lastCommitTimestamp, unreadCount)
+INTO ChatConversation(id, type, participantUids, name, ownerUid, lastCommit, lastCommitSenderUid, lastCommitTimestamp, unreadCount)
 VALUES (
   :id,
   :type,
   :participantUids,
+  :name,
+  :ownerUid,
   :lastCommit,
+  :lastCommitSenderUid,
   :lastCommitTimestamp,
   COALESCE((SELECT unreadCount FROM ChatConversation WHERE id = :id), 0)
 );
@@ -43,6 +49,42 @@ INNER JOIN User AS peerProfile
   ON peerProfile.id = peerLink.id
 ORDER BY ChatConversation.lastCommitTimestamp DESC;
 
+selectAllGroups:
+SELECT
+  ChatConversation.id,
+  ChatConversation.name,
+  ChatConversation.ownerUid,
+  ChatConversation.lastCommit,
+  ChatConversation.lastCommitSenderUid,
+  ChatConversation.lastCommitTimestamp,
+  ChatConversation.unreadCount,
+  (SELECT COUNT(*) FROM ChatConversationParticipant WHERE conversationId = ChatConversation.id) AS memberCount,
+  senderProfile.displayName AS lastCommitSenderDisplayName
+FROM ChatConversation
+LEFT JOIN User AS senderProfile
+  ON senderProfile.id = ChatConversation.lastCommitSenderUid
+WHERE ChatConversation.type = 'group'
+ORDER BY ChatConversation.lastCommitTimestamp DESC;
+
+selectGroupById:
+SELECT
+  ChatConversation.id,
+  ChatConversation.name,
+  ChatConversation.ownerUid,
+  ChatConversation.participantUids,
+  ChatConversation.lastCommit,
+  ChatConversation.lastCommitSenderUid,
+  ChatConversation.lastCommitTimestamp,
+  ChatConversation.unreadCount,
+  (SELECT COUNT(*) FROM ChatConversationParticipant WHERE conversationId = ChatConversation.id) AS memberCount
+FROM ChatConversation
+WHERE ChatConversation.id = :id AND ChatConversation.type = 'group';
+
+updateGroupName:
+UPDATE ChatConversation
+SET name = :name
+WHERE id = :id;
+
 selectAllIds:
 SELECT ChatConversation.id
 FROM ChatConversation;
@@ -52,7 +94,10 @@ SELECT
   ChatConversation.id,
   ChatConversation.type,
   ChatConversation.participantUids,
+  ChatConversation.name,
+  ChatConversation.ownerUid,
   ChatConversation.lastCommit,
+  ChatConversation.lastCommitSenderUid,
   ChatConversation.lastCommitTimestamp,
   ChatConversation.unreadCount
 FROM ChatConversation

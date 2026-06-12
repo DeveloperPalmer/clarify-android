@@ -167,7 +167,10 @@ class ConversationRepositoryImpl @Inject constructor(
       id = conversation.id,
       type = conversation.type.value,
       participantUids = conversation.participantUids,
+      name = conversation.name,
+      ownerUid = conversation.ownerUid,
       lastCommit = conversation.lastCommitText,
+      lastCommitSenderUid = conversation.lastCommitSenderUid,
       lastCommitTimestamp = conversation.lastCommitAt?.toEpochSeconds() ?: 0L
     )
   }
@@ -187,7 +190,10 @@ class ConversationRepositoryImpl @Inject constructor(
       id = conversationNM.id,
       type = conversationNM.type.value,
       participantUids = conversationNM.participantUids,
+      name = conversationNM.name,
+      ownerUid = conversationNM.ownerUid,
       lastCommit = conversationNM.lastCommitText,
+      lastCommitSenderUid = conversationNM.lastCommitSenderUid,
       lastCommitTimestamp = conversationNM.lastCommitAt?.toEpochSeconds() ?: 0L
     )
   }
