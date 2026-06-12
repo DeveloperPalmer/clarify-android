@@ -8,8 +8,8 @@ digraph ConversationFlow {
 
   threadFlow [
     type = "schema"
-    parameterName = "id"
-    parameterType = "ru.sla.clarify.feature.entity.chat.Peer.Id"
+    parameterName = "target"
+    parameterType = "ru.sla.clarify.feature.chat.thread.domain.entity.ThreadTarget"
   ]
 
   profileFlow [

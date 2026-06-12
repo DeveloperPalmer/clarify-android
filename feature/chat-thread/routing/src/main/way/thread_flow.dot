@@ -3,8 +3,8 @@ digraph ThreadFlow {
 
   threadFlow [
     type = "flow"
-    parameterName = "id"
-    parameterType = "ru.sla.clarify.feature.entity.chat.Peer.Id"
+    parameterName = "target"
+    parameterType = "ru.sla.clarify.feature.chat.thread.domain.entity.ThreadTarget"
   ]
 
   branch [
@@ -13,4 +13,5 @@ digraph ThreadFlow {
   ]
 
   threadFlow -> thread -> branch
+  threadFlow -> groupThread -> groupInfo
 }
