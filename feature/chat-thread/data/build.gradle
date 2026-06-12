@@ -8,6 +8,7 @@ android {
 }
 
 dependencies {
+  implementation project(":auth-session:data")
   implementation project(":lib:google:firestore")
   implementation project(":database")
   implementation project(":core:resources")
