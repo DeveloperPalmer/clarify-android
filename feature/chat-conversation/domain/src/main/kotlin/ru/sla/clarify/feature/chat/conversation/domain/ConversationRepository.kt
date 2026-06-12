@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Group
+import ru.sla.clarify.feature.chat.conversation.domain.entity.GroupMember
 import ru.sla.clarify.feature.entity.chat.Peer
 
 interface ConversationRepository {
@@ -19,4 +21,7 @@ interface ConversationRepository {
   val user: Flow<User?>
 
   val conversations: Flow<List<Conversation>?>
+
+  fun observeGroup(id: Conversation.Id): Flow<Group?>
+  fun observeGroupMembers(id: Conversation.Id): Flow<List<GroupMember>>
 }

@@ -25,6 +25,8 @@ import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAllGroupsAsCon
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Group
+import ru.sla.clarify.feature.chat.conversation.domain.entity.GroupMember
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
@@ -146,6 +148,46 @@ class ConversationRepositoryImpl @Inject constructor(
       .observeList()
     combine(directs, groups) { d, g ->
       (d + g).sortedByDescending { it.lastCommitTimestamp }
+    }.collect { emit(it) }
+  }
+
+  override fun observeGroup(id: Conversation.Id): Flow<Group?> {
+    return persistedDB.chatConversationQueries
+      .selectGroupById(
+        id = id.value,
+        mapper = { rowId, name, ownerUid, participantUids, _, _, _, _, memberCount ->
+          Group(
+            id = Conversation.Id(rowId),
+            name = name.orEmpty(),
+            ownerId = UserId(ownerUid.orEmpty()),
+            memberCount = memberCount.toInt(),
+            participantIds = participantUids.map(::UserId)
+          )
+        }
+      )
+      .observeOneOrNull()
+  }
+
+  override fun observeGroupMembers(id: Conversation.Id): Flow<List<GroupMember>> = flow {
+    val currentUserId = authSessionPersistence.withKey { readUserId(it) }?.value
+    val group = observeGroup(id)
+    val members = persistedDB.chatConversationParticipantQueries
+      .selectByConversation(
+        conversationId = id.value,
+        mapper = { memberId, displayName, photoUrl -> Triple(memberId, displayName, photoUrl) }
+      )
+      .observeList()
+    combine(group, members) { groupValue, memberRows ->
+      val ownerUid = groupValue?.ownerId?.value
+      memberRows.map { (memberId, displayName, photoUrl) ->
+        GroupMember(
+          id = UserId(memberId),
+          displayName = displayName,
+          photoUrl = photoUrl,
+          isOwner = memberId == ownerUid,
+          isMe = memberId == currentUserId
+        )
+      }
     }.collect { emit(it) }
   }
 
