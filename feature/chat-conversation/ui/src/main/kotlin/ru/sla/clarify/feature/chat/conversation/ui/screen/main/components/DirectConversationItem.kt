@@ -24,8 +24,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
-import ru.sla.clarify.uikit.component.Avatar
 import ru.sla.clarify.uikit.component.UnreadCountBadge
+import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.compose.resolveTextRef
 
@@ -96,7 +96,7 @@ internal fun DirectConversationItem(
 }
 
 @Composable
-private fun DoneBadge(
+internal fun DoneBadge(
   visible: Boolean,
   modifier: Modifier = Modifier
 ) {

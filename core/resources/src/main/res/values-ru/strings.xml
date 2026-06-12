@@ -40,6 +40,11 @@
     <string name="conversation_new_chat_dialog_start">Начать</string>
     <string name="conversation_new_chat_error_user_not_found">Пользователь с таким email не найден</string>
     <string name="conversation_new_chat_error_lookup_failed">Не удалось найти пользователя, попробуйте снова</string>
+    <string name="conversation_new_tab_direct">Личный</string>
+    <string name="conversation_new_tab_group">Группа</string>
+    <string name="conversation_new_group_name_placeholder">Название группы</string>
+    <string name="conversation_new_group_create_button">Создать</string>
+    <string name="conversation_group_no_messages">Пока нет сообщений</string>
 
     <!-- Conversation: delete dialog -->
     <string name="conversation_delete_dialog_title">Удалить чат</string>

@@ -42,6 +42,11 @@
     <string name="conversation_new_chat_dialog_start">Start</string>
     <string name="conversation_new_chat_error_user_not_found">No user with this email</string>
     <string name="conversation_new_chat_error_lookup_failed">Could not look up user, try again</string>
+    <string name="conversation_new_tab_direct">Direct</string>
+    <string name="conversation_new_tab_group">Group</string>
+    <string name="conversation_new_group_name_placeholder">Group name</string>
+    <string name="conversation_new_group_create_button">Create</string>
+    <string name="conversation_group_no_messages">No messages yet</string>
 
     <!-- Conversation: delete dialog -->
     <string name="conversation_delete_dialog_title">Delete chat</string>

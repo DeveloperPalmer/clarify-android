@@ -9,6 +9,7 @@ class ViewIntents : BaseViewIntents() {
   val openChat = intent<Peer.Id>(name = "openChat")
   val showNewChatDialog = intent(name = "showNewChatDialog")
   val confirmNewChat = intent<String>(name = "confirmNewChat")
+  val confirmNewGroup = intent<String>(name = "confirmNewGroup")
   val handleConversationLongPress = intent<Conversation.Id>(name = "handleConversationLongPress")
   val showDeleteConfirmation = intent(name = "showDeleteConfirmation")
   val confirmDeleteConversation = intent(name = "confirmDeleteConversation")

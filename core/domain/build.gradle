@@ -9,4 +9,7 @@ dependencies {
   api project(":lib:resource-refs:resource-refs")
 
   implementation libs.compose.runtime
+  implementation libs.arrow.core
+
+  ksp libs.arrow.optics.ksp
 }
