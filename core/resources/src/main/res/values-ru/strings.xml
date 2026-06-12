@@ -67,6 +67,7 @@
     <string name="group_thread_empty">Сообщений пока нет</string>
     <string name="group_info_title">О группе</string>
     <string name="group_info_add_members">Добавить участников</string>
+    <string name="group_info_section_members">Участники · %1$d</string>
     <string name="group_info_owner_badge">Владелец</string>
     <string name="group_info_you_badge">Вы</string>
     <string name="group_info_remove_member">Удалить из группы</string>

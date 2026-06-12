@@ -70,6 +70,7 @@
     <string name="group_thread_empty">No messages yet</string>
     <string name="group_info_title">Group info</string>
     <string name="group_info_add_members">Add members</string>
+    <string name="group_info_section_members">Members · %1$d</string>
     <string name="group_info_owner_badge">Owner</string>
     <string name="group_info_you_badge">You</string>
     <string name="group_info_remove_member">Remove from group</string>
