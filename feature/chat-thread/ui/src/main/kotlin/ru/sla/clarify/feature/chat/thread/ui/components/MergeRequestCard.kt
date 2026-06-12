@@ -40,8 +40,8 @@ import ru.sla.clarify.feature.chat.thread.ui.screen.branch.MERGE_REQUEST_MOTION_
 import ru.sla.clarify.feature.entity.chat.Participant
 import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.animation.SharedContainer
-import ru.sla.clarify.uikit.component.Avatar
 import ru.sla.clarify.uikit.component.RevealSplitRow
+import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.component.button.ButtonStyle
 import ru.sla.clarify.uikit.component.button.PrimaryButton
 import ru.sla.clarify.uikit.component.button.SecondaryTextButton

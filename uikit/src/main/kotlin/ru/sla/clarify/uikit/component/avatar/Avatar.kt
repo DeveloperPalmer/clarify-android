@@ -1,4 +1,4 @@
-package ru.sla.clarify.uikit.component
+package ru.sla.clarify.uikit.component.avatar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

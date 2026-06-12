@@ -30,7 +30,7 @@ import ru.sla.clarify.feature.chat.thread.ui.components.ChatCommits
 import ru.sla.clarify.feature.chat.thread.ui.components.ChatEmptyState
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
 import ru.sla.clarify.feature.entity.chat.Peer
-import ru.sla.clarify.uikit.component.Avatar
+import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
 import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
 import ru.sla.clarify.uikit.component.textfield.ChatTextField

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +30,10 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.uikit.component.avatar.stableSeedHash
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage.ReadStatus
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -41,7 +45,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 @Composable
-fun BubbleMessage(
+fun BubbleMessageItem(
   bubble: BubbleMessage,
   modifier: Modifier = Modifier,
   onClick: (() -> Unit)? = null,
@@ -75,6 +79,13 @@ fun BubbleMessage(
     BubbleMessage.Type.Bottom -> bottomShape(bubble.side)
   }
 
+  val senderLabel = bubble.sender?.let { sender ->
+    SenderLabel(
+      name = sender.name,
+      color = senderNameColor(sender.id)
+    )
+  }
+
   BubbleMessageLayout(
     side = bubble.side,
     shape = shape,
@@ -82,6 +93,7 @@ fun BubbleMessage(
     modifier = modifier,
     onClick = onClick,
     onLongClick = onLongClick,
+    senderLabel = senderLabel,
     text = bubble.text,
     textColor = contentColor,
     time = bubble.time,
@@ -91,10 +103,22 @@ fun BubbleMessage(
 }
 
 @Composable
+private fun senderNameColor(senderId: UserId): Color {
+  val palette = listOf(
+    colors.contentAccentPrimary,
+    colors.successPrimary,
+    colors.contentBlue,
+    colors.contentGoldPrimary
+  )
+  return palette[stableSeedHash(senderId.value).mod(palette.size)]
+}
+
+@Composable
 private fun BubbleMessageLayout(
   side: BubbleMessage.Side,
   shape: Shape,
   backgroundColor: Color,
+  senderLabel: SenderLabel?,
   text: String,
   textColor: Color,
   time: String,
@@ -143,6 +167,23 @@ private fun BubbleMessageLayout(
         )
       }.first().measure(looseConstraints)
 
+      val senderPlaceable = senderLabel?.let { label ->
+        subcompose(BubbleSlot.Sender) {
+          Text(
+            text = label.name,
+            style = AppTheme.typography.label3Bold,
+            color = label.color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+          )
+        }.first().measure(looseConstraints)
+      }
+      val senderHeight = if (senderPlaceable != null) {
+        senderPlaceable.height + senderNameSpacing.roundToPx()
+      } else {
+        0
+      }
+
       val textPlaceable = subcompose(BubbleSlot.Text) {
         Text(
           text = text,
@@ -160,30 +201,35 @@ private fun BubbleMessageLayout(
       val sameLineWidth = lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
 
       if (sameLineWidth <= constraints.maxWidth.toFloat()) {
-        val height = textPlaceable.height
+        val height = senderHeight + textPlaceable.height
         val width = max(textPlaceable.width.toFloat(), sameLineWidth)
           .roundToInt()
+          .coerceAtLeast(senderPlaceable?.width ?: 0)
           .coerceIn(constraints.minWidth, constraints.maxWidth)
 
         layout(width, height) {
-          textPlaceable.place(0, 0)
+          senderPlaceable?.place(0, 0)
+          textPlaceable.place(0, senderHeight)
           timeStatusPlaceable.place(
             x = width - timeStatusPlaceable.width,
             y = height - timeStatusPlaceable.height
           )
         }
       } else {
-        val height = textPlaceable.height + timeStatusPlaceable.height
-        val width = max(textPlaceable.width, timeStatusPlaceable.width).coerceIn(
-          minimumValue = constraints.minWidth,
-          maximumValue = constraints.maxWidth
-        )
+        val height = senderHeight + textPlaceable.height + timeStatusPlaceable.height
+        val width = max(textPlaceable.width, timeStatusPlaceable.width)
+          .coerceAtLeast(senderPlaceable?.width ?: 0)
+          .coerceIn(
+            minimumValue = constraints.minWidth,
+            maximumValue = constraints.maxWidth
+          )
 
         layout(width, height) {
-          textPlaceable.place(0, 0)
+          senderPlaceable?.place(0, 0)
+          textPlaceable.place(0, senderHeight)
           timeStatusPlaceable.place(
             x = width - timeStatusPlaceable.width,
-            y = textPlaceable.height
+            y = senderHeight + textPlaceable.height
           )
         }
       }
@@ -355,15 +401,23 @@ private fun bottomShape(side: BubbleMessage.Side): Shape {
 }
 
 private enum class BubbleSlot {
+  Sender,
   Text,
   TimeStatus
 }
+
+@Immutable
+private data class SenderLabel(
+  val name: String,
+  val color: Color
+)
 
 private val bubbleHardCorner = 5.dp
 private val bubbleSoftCorner = 20.dp
 
 private val timeStatusPadding = 8.dp
 private val timeStatusTopPadding = 2.dp
+private val senderNameSpacing = 2.dp
 
 private val checkMarkSize = 12.dp
 private val checkMarkStrokeWidth = 1.5.dp

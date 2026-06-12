@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.AppTheme.colors
@@ -96,10 +97,105 @@ private fun ColumnScope.ClusterBubblePreview(bubble: BubbleMessage) {
     is BubbleMessage.Side.Left -> Alignment.Start
     is BubbleMessage.Side.Right -> Alignment.End
   }
-  BubbleMessage(
+  BubbleMessageItem(
     bubble = bubble,
     modifier = Modifier
       .align(alignment)
       .widthIn(max = 260.dp)
   )
+}
+
+@Preview
+@Composable
+private fun GroupBubbleMessagePreviewLight() {
+  AppTheme(currentTheme = ColorTheme.Light) {
+    GroupBubbleMessageConversation()
+  }
+}
+
+@Preview
+@Composable
+private fun GroupBubbleMessagePreviewDark() {
+  AppTheme(currentTheme = ColorTheme.Dark) {
+    GroupBubbleMessageConversation()
+  }
+}
+
+@Composable
+private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
+  val anna = BubbleMessage.Sender(
+    id = UserId("anna"),
+    name = "Аня Котова"
+  )
+  val ilya = BubbleMessage.Sender(
+    id = UserId("ilya"),
+    name = "Илья Соколов"
+  )
+  val maria = BubbleMessage.Sender(
+    id = UserId("maria"),
+    name = "María García с очень длинным именем"
+  )
+  Column(
+    modifier = modifier
+      .background(colors.backgroundPrimary)
+      .padding(16.dp),
+    verticalArrangement = Arrangement.spacedBy(2.dp)
+  ) {
+    ClusterBubblePreview(
+      BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
+        type = BubbleMessage.Type.Top,
+        side = BubbleMessage.Side.Left,
+        text = "Привет всем! Спасибо что собрали",
+        time = "18:02",
+        sender = anna
+      )
+    )
+    ClusterBubblePreview(
+      BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
+        type = BubbleMessage.Type.Bottom,
+        side = BubbleMessage.Side.Left,
+        text = "Давайте сюда скидывать всё по веткам",
+        time = "18:02",
+        sender = anna
+      )
+    )
+    VSpacer(12.dp)
+    ClusterBubblePreview(
+      BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
+        type = BubbleMessage.Type.Top,
+        side = BubbleMessage.Side.Left,
+        text = "Ок",
+        time = "18:14",
+        sender = ilya
+      )
+    )
+    VSpacer(12.dp)
+    ClusterBubblePreview(
+      BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
+        type = BubbleMessage.Type.Top,
+        side = BubbleMessage.Side.Left,
+        text = "Включаюсь",
+        time = "10:30",
+        sender = maria
+      )
+    )
+    VSpacer(12.dp)
+    ClusterBubblePreview(
+      BubbleMessage(
+        id = BubbleMessage.Id(randomUuid()),
+        type = BubbleMessage.Type.Top,
+        side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Read),
+        text = "Супер, посмотрю после обеда и соберу мердж",
+        time = "12:51",
+        sender = BubbleMessage.Sender(
+          id = UserId("me"),
+          name = "Сергей Лановой"
+        )
+      )
+    )
+  }
 }

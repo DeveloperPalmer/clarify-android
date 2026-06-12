@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -23,7 +25,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import ru.sla.clarify.feature.chat.thread.ui.entity.Commit
-import ru.sla.clarify.uikit.component.bubble.BubbleMessage
+import ru.sla.clarify.uikit.component.InviteParticipantItem
+import ru.sla.clarify.uikit.component.bubble.BubbleMessageItem
+import ru.sla.resourcerefs.compose.resolveTextRef
 import java.time.LocalDateTime
 
 @Composable
@@ -88,6 +92,14 @@ internal fun ChatCommits(
             onLongClick = onCommitLongClick
           )
         }
+        is Commit.InviteParticipant -> {
+          InviteParticipantItem(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(vertical = 8.dp),
+            text = resolveTextRef(commit.text)
+          )
+        }
       }
     }
   }
@@ -112,7 +124,7 @@ private fun LazyItemScope.AnimatedBubbleMessage(
     visibleState = viewState,
     enter = slideInVertically(initialOffsetY = { it }) + fadeIn()
   ) {
-    BubbleMessage(
+    BubbleMessageItem(
       bubble = commit.bubble,
       onLongClick = onLongClick?.let { handler -> { handler(commit) } }
     )
