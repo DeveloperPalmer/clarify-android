@@ -11,13 +11,18 @@ data class CommitNM(
   val senderUid: String,
   val branchId: String,
   val colorHex: String,
+  val type: Type = Type.Text,
   val text: String? = null,
+  val invitedUid: String? = null,
   @Contextual
   val createdAt: Timestamp? = null
 ) {
   @Serializable
   enum class Type(val value: String) {
     @SerialName("text")
-    Text("text")
+    Text("text"),
+
+    @SerialName("inviteParticipant")
+    InviteParticipant("inviteParticipant")
   }
 }

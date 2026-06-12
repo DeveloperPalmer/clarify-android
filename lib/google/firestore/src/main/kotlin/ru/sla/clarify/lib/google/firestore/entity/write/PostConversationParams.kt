@@ -14,6 +14,10 @@ data class PostConversationParams(
   val type: Type,
   val participantUids: List<String>,
   @EncodeDefault(EncodeDefault.Mode.NEVER)
+  val name: String? = null,
+  @EncodeDefault(EncodeDefault.Mode.NEVER)
+  val ownerUid: String? = null,
+  @EncodeDefault(EncodeDefault.Mode.NEVER)
   val lastCommitText: String? = null,
   @EncodeDefault(EncodeDefault.Mode.NEVER)
   val lastCommitSenderUid: String? = null,

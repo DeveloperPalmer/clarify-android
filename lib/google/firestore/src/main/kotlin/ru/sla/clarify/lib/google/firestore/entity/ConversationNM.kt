@@ -10,13 +10,19 @@ data class ConversationNM(
   val id: String,
   val type: Type,
   val participantUids: List<String> = emptyList(),
+  val name: String? = null,
+  val ownerUid: String? = null,
   val lastCommitText: String? = null,
+  val lastCommitSenderUid: String? = null,
   @Contextual
   val lastCommitAt: Timestamp? = null
 ) {
   @Serializable
   enum class Type(val value: String) {
     @SerialName("direct")
-    Direct("direct")
+    Direct("direct"),
+
+    @SerialName("group")
+    Group("group")
   }
 }
