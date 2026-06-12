@@ -59,33 +59,12 @@ class ConversationRepositoryImpl @Inject constructor(
       .collect(::applyParticipantProfiles)
   }
 
-  private suspend fun applyParticipantProfiles(ids: List<String>) = coroutineScope {
-    ids.forEach { participantId ->
-      launch { applyInsertOrReplaceUsers(participantId) }
-    }
-  }
-
   override suspend fun subscribeOnConversationsUnreadCounts() {
     persistedDB.chatConversationQueries
       .selectAllIds()
       .observeList()
       .flowOn(Dispatchers.IO)
       .collectLatest(::subscribeOnConversationsUnreadCounts)
-  }
-
-  private suspend fun subscribeOnConversationsUnreadCounts(ids: List<String>) = coroutineScope {
-    ids.forEach { conversationId ->
-      launch {
-        firestore.unreadCountLive(
-          conversationId = conversationId
-        ).collect { unreadCount ->
-          applyUpdateUnreadCount(
-            conversationId = conversationId,
-            unreadCount = unreadCount
-          )
-        }
-      }
-    }
   }
 
   override suspend fun fetchCurrentUser() {
@@ -110,6 +89,28 @@ class ConversationRepositoryImpl @Inject constructor(
   override suspend fun createGroup(name: String): Conversation.Id {
     return withContext(Dispatchers.IO) {
       val conversationId = firestore.postGroupConversation(name)
+      // Материализуем группу локально сразу, чтобы экран треда не открывался пустым
+      // до прихода conversationsLive-синка. Запись идемпотентна: последующий синк
+      // (applyConversationChanges) перезапишет её актуальными данными через INSERT OR REPLACE.
+      val ownerId = authSessionPersistence.withKey { readUserId(it) }
+      if (ownerId != null) {
+        persistedDB.transaction {
+          persistedDB.chatConversationParticipantQueries.insertOrReplace(
+            conversationId = conversationId,
+            id = ownerId.value
+          )
+          persistedDB.chatConversationQueries.insertOrReplaceMeta(
+            id = conversationId,
+            type = ConversationNM.Type.Group.value,
+            participantUids = listOf(ownerId.value),
+            name = name,
+            ownerUid = ownerId.value,
+            lastCommit = null,
+            lastCommitSenderUid = null,
+            lastCommitTimestamp = 0L
+          )
+        }
+      }
       Conversation.Id(conversationId)
     }
   }
@@ -141,7 +142,7 @@ class ConversationRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun inviteMembers(id: Conversation.Id, userIds: List<UserId>) {
+  override suspend fun inviteGroupMembers(id: Conversation.Id, userIds: List<UserId>) {
     withContext(Dispatchers.IO) {
       userIds.forEach { userId ->
         firestore.postInviteParticipant(
@@ -149,20 +150,53 @@ class ConversationRepositoryImpl @Inject constructor(
           invitedUserId = userId
         )
       }
+      // Локально добавляем участников и обновляем денормализованный participantUids,
+      // из которого sendCommit берёт получателей unread-инкрементов. Иначе колонка
+      // отстаёт до прихода participantsLive-синка.
+      persistedDB.transaction {
+        userIds.forEach { userId ->
+          persistedDB.chatConversationParticipantQueries.insertOrReplace(
+            conversationId = id.value,
+            id = userId.value
+          )
+        }
+        val merged = (currentParticipantUids(id.value) + userIds.map { it.value }).distinct()
+        persistedDB.chatConversationQueries.updateParticipantUids(
+          id = id.value,
+          participantUids = merged
+        )
+      }
     }
   }
 
-  override suspend fun removeMember(id: Conversation.Id, userId: UserId) {
+  override suspend fun removeGroupMember(id: Conversation.Id, userId: UserId) {
     withContext(Dispatchers.IO) {
       firestore.deleteParticipant(conversationId = id.value, userId = userId)
-      persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
-        conversationId = id.value,
-        id = userId.value
-      )
+      persistedDB.transaction {
+        persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
+          conversationId = id.value,
+          id = userId.value
+        )
+        val remaining = currentParticipantUids(id.value) - userId.value
+        persistedDB.chatConversationQueries.updateParticipantUids(
+          id = id.value,
+          participantUids = remaining
+        )
+      }
     }
   }
 
-  override suspend fun searchUsersByEmailPrefix(prefix: String): List<FoundUser> {
+  private fun currentParticipantUids(conversationId: String): List<String> {
+    return persistedDB.chatConversationQueries
+      .selectGroupById(
+        id = conversationId,
+        mapper = { _, _, _, participantUids, _, _, _, _, _ -> participantUids }
+      )
+      .executeAsOneOrNull()
+      .orEmpty()
+  }
+
+  override suspend fun searchMemberByPrefix(prefix: String): List<FoundUser> {
     return withContext(Dispatchers.IO) {
       firestore.getUsersByEmailPrefix(prefix = prefix.lowercase(), limit = USER_SEARCH_LIMIT)
         .map { user ->
@@ -262,23 +296,49 @@ class ConversationRepositoryImpl @Inject constructor(
     val currentUserId = authSessionPersistence.withKey { readUserId(it) }?.value
     val group = observeGroup(id)
     val members = persistedDB.chatConversationParticipantQueries
-      .selectByConversation(
+      .selectByConversationWithEmail(
         conversationId = id.value,
-        mapper = { memberId, displayName, photoUrl -> Triple(memberId, displayName, photoUrl) }
+        mapper = { memberId, displayName, email, photoUrl ->
+          GroupMember(
+            id = UserId(memberId),
+            displayName = displayName,
+            email = email,
+            photoUrl = photoUrl,
+            isOwner = false,
+            isMe = memberId == currentUserId
+          )
+        }
       )
       .observeList()
     combine(group, members) { groupValue, memberRows ->
       val ownerUid = groupValue?.ownerId?.value
-      memberRows.map { (memberId, displayName, photoUrl) ->
-        GroupMember(
-          id = UserId(memberId),
-          displayName = displayName,
-          photoUrl = photoUrl,
-          isOwner = memberId == ownerUid,
-          isMe = memberId == currentUserId
-        )
+      memberRows.map { member ->
+        member.copy(isOwner = member.id.value == ownerUid)
       }
     }.collect { emit(it) }
+  }
+
+  private suspend fun applyParticipantProfiles(ids: List<String>) = coroutineScope {
+    ids.forEach { participantId ->
+      launch { applyInsertOrReplaceUsers(participantId) }
+    }
+  }
+
+  private suspend fun subscribeOnConversationsUnreadCounts(ids: List<String>) {
+    return coroutineScope {
+      ids.forEach { conversationId ->
+        launch {
+          firestore.unreadCountLive(
+            conversationId = conversationId
+          ).collect { unreadCount ->
+            applyUpdateUnreadCount(
+              conversationId = conversationId,
+              unreadCount = unreadCount
+            )
+          }
+        }
+      }
+    }
   }
 
   private fun applyConversationsChanges(changes: List<FirestoreChange<ConversationNM>>) {

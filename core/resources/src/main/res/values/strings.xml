@@ -69,6 +69,7 @@
 
     <!-- Group thread / info / invite -->
     <string name="group_thread_empty">No messages yet</string>
+    <string name="group_thread_send_error">Could not send message, try again</string>
     <string name="group_info_title">Group info</string>
     <string name="group_info_add_members">Add members</string>
     <string name="group_info_section_members">Members · %1$d</string>
@@ -84,6 +85,14 @@
     <string name="invite_members_limit_reached">Group limit is 10 members</string>
     <string name="invite_members_confirm_button">Add (%1$d)</string>
     <string name="invite_members_empty">No users found</string>
+    <string name="group_info_rename_dialog_title">Rename group</string>
+    <string name="group_info_delete_confirm_title">Delete group</string>
+    <string name="group_info_delete_confirm_text">The group and its messages will be deleted for all members. This action cannot be undone.</string>
+    <string name="group_info_leave_confirm_title">Leave group</string>
+    <string name="group_info_leave_confirm_text">You will no longer see messages from this group.</string>
+    <string name="group_info_remove_confirm_title">Remove from group</string>
+    <string name="group_info_remove_confirm_text">%1$s will no longer have access to this group.</string>
+    <string name="group_info_action_failed">Something went wrong, try again</string>
 
     <!-- Create branch modal sheet -->
     <string name="thread_create_branch_sheet_title">New branch</string>

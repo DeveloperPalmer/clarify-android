@@ -1,19 +1,21 @@
 package ru.sla.clarify.feature.chat.thread.ui.screen.groupthread
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -22,64 +24,124 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.thread.ui.entity.GroupUi
-import ru.sla.clarify.uikit.component.GroupAvatar
-import ru.sla.clarify.uikit.component.SystemMessageItem
-import ru.sla.clarify.uikit.component.bubble.BubbleMessage
+import ru.sla.clarify.core.ui.screen.MviComponent
+import ru.sla.clarify.core.ui.screen.rememberViewIntents
+import ru.sla.clarify.feature.chat.thread.ui.components.ChatCommits
+import ru.sla.clarify.feature.chat.thread.ui.entity.Group
+import ru.sla.clarify.uikit.component.avatar.GroupAvatar
+import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
+import ru.sla.clarify.uikit.component.topappbar.rememberTopBarElevation
+import ru.sla.clarify.uikit.keyboard.rememberKeyboardController
+import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.modifier.surface
-import ru.sla.clarify.uikit.preview.PreviewColumn
+import ru.sla.clarify.uikit.scaffold.ScreenScaffold
+import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
-import ru.sla.clarify.uikit.theme.ColorTheme
 
 @Composable
-fun GroupThreadContent(
-  group: GroupUi,
-  items: List<GroupThreadItem>,
-  inputValue: String,
-  onInputChange: (String) -> Unit,
-  onBack: () -> Unit,
-  onSend: () -> Unit,
-  onOpenGroupInfo: () -> Unit,
+fun GroupThreadScreen(viewModel: GroupThreadViewModel) {
+  MviComponent(
+    viewModel = viewModel,
+    intents = rememberViewIntents()
+  ) { state, intents ->
+    val scaffoldState = rememberScreenScaffoldState()
+    scaffoldState.contentLoadState = state.contentLoadState
+    BackHandler(onBack = intents.navigateBack)
+    ScreenScaffold(scaffoldState) {
+      GroupThreadContent(
+        modifier = Modifier
+          .fillMaxSize()
+          .systemBarsPadding()
+          .imePadding(),
+        state = state,
+        intents = intents
+      )
+    }
+  }
+}
+
+@Composable
+private fun GroupThreadContent(
+  state: ViewState,
+  intents: ViewIntents,
   modifier: Modifier = Modifier
 ) {
   Column(modifier = modifier.fillMaxSize()) {
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val topBarElevation = rememberTopBarElevation(listState)
+    val keyboardController = rememberKeyboardController()
     TopAppBar(
-      navigationIcon = { TopAppBarDefaults.NavigationIcon(onBack) },
+      modifier = Modifier.bottomShadow { topBarElevation.value },
+      navigationIcon = { TopAppBarDefaults.NavigationIcon(intents.navigateBack) },
       title = {
-        GroupHeader(
-          group = group,
-          onClick = onOpenGroupInfo
+        if (state.group != null) {
+          GroupHeader(
+            group = state.group,
+            onClick = intents.openGroupInfo
+          )
+        }
+      },
+      actions = {
+        // TODO: @sla Group logic. Add branch logic as ThreadScreen
+        TertiaryIconButtonSmall(
+          modifier = Modifier.padding(end = 4.dp),
+          iconRes = R.drawable.ic_git_branch_24,
+          text = stringResource(R.string.thread_branches_count, 0),
+          onClick = {
+            scope.launch {
+              keyboardController.awaitHide()
+              // TODO: @sla Group logic. Add intents.showBranches() logic as ThreadScreen
+            }
+          }
         )
       }
     )
     Box(modifier = Modifier.weight(1f)) {
-      if (items.isEmpty()) {
-        EmptyState(group = group)
-      } else {
-        ThreadList(items = items)
+      if (state.group != null && state.commits.isEmpty()) {
+        EmptyState(
+          group = state.group
+        )
+      } else if (state.commits.isNotEmpty()) {
+        ChatCommits(
+          modifier = Modifier.fillMaxSize(),
+          listState = listState,
+          commits = state.commits,
+          onCommitsRead = {
+            // TODO: @sla Group logic. Add onCommitsRead logic as ThreadScreen
+          }
+        )
       }
     }
+    var inputValue by rememberSaveable { mutableStateOf("") }
     ChatTextField(
       modifier = Modifier
         .fillMaxWidth()
         .padding(horizontal = 8.dp, vertical = 8.dp),
       value = inputValue,
-      onValueChange = onInputChange,
-      onSend = onSend,
-      onClear = { onInputChange("") }
+      onValueChange = {
+        inputValue = it
+      },
+      onClear = {
+        inputValue = ""
+      },
+      onSend = {
+        intents.sendMessage(inputValue)
+        inputValue = ""
+      }
     )
   }
 }
 
 @Composable
 private fun GroupHeader(
-  group: GroupUi,
+  group: Group,
   onClick: () -> Unit
 ) {
   Row(
@@ -123,32 +185,7 @@ private fun GroupHeader(
 }
 
 @Composable
-private fun ThreadList(items: List<GroupThreadItem>) {
-  val listState = rememberLazyListState()
-  LazyColumn(
-    modifier = Modifier.fillMaxSize(),
-    state = listState,
-    reverseLayout = true,
-    contentPadding = PaddingValues(8.dp),
-    verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.Bottom)
-  ) {
-    items(
-      count = items.size,
-      key = { items[it].key }
-    ) { index ->
-      when (val item = items[index]) {
-        is GroupThreadItem.Bubble -> BubbleMessage(bubble = item.bubble)
-        is GroupThreadItem.System -> SystemMessageItem(
-          modifier = Modifier.fillMaxWidth(),
-          text = item.text
-        )
-      }
-    }
-  }
-}
-
-@Composable
-private fun EmptyState(group: GroupUi) {
+private fun EmptyState(group: Group) {
   Box(
     modifier = Modifier.fillMaxSize(),
     contentAlignment = Alignment.Center
@@ -186,68 +223,4 @@ private fun EmptyState(group: GroupUi) {
       )
     }
   }
-}
-
-@Preview
-@Composable
-private fun GroupThreadContentPreviewLight() {
-  PreviewColumn {
-    GroupThreadContentPreviewContent()
-  }
-}
-
-@Preview
-@Composable
-private fun GroupThreadContentPreviewDark() {
-  PreviewColumn(colorTheme = ColorTheme.Dark) {
-    GroupThreadContentPreviewContent()
-  }
-}
-
-@Composable
-private fun GroupThreadContentPreviewContent() {
-  var input by rememberSaveable { mutableStateOf("") }
-  val anna = BubbleMessage.Sender(id = "anna", name = "Аня Котова")
-  val ilya = BubbleMessage.Sender(id = "ilya", name = "Илья Соколов")
-  val items = listOf(
-    GroupThreadItem.Bubble(
-      BubbleMessage(
-        id = BubbleMessage.Id("m1"),
-        type = BubbleMessage.Type.Top,
-        side = BubbleMessage.Side.Left,
-        text = "Привет команде!",
-        time = "12:30",
-        sender = anna
-      )
-    ),
-    GroupThreadItem.System(id = "s1", text = "Аня пригласила Илью"),
-    GroupThreadItem.Bubble(
-      BubbleMessage(
-        id = BubbleMessage.Id("m2"),
-        type = BubbleMessage.Type.Top,
-        side = BubbleMessage.Side.Left,
-        text = "Здарова",
-        time = "12:31",
-        sender = ilya
-      )
-    ),
-    GroupThreadItem.Bubble(
-      BubbleMessage(
-        id = BubbleMessage.Id("m3"),
-        type = BubbleMessage.Type.Bottom,
-        side = BubbleMessage.Side.Right(status = BubbleMessage.ReadStatus.Read),
-        text = "Стартуем",
-        time = "12:32"
-      )
-    )
-  ).reversed()
-  GroupThreadContent(
-    group = GroupUi(id = "g-1", name = "Команда дизайна", memberCount = 5),
-    items = items,
-    inputValue = input,
-    onInputChange = { input = it },
-    onBack = {},
-    onSend = {},
-    onOpenGroupInfo = {}
-  )
 }

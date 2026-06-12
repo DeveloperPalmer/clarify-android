@@ -66,6 +66,7 @@
 
     <!-- Group thread / info / invite -->
     <string name="group_thread_empty">Сообщений пока нет</string>
+    <string name="group_thread_send_error">Не удалось отправить сообщение, попробуйте снова</string>
     <string name="group_info_title">О группе</string>
     <string name="group_info_add_members">Добавить участников</string>
     <string name="group_info_section_members">Участники · %1$d</string>
@@ -81,6 +82,14 @@
     <string name="invite_members_limit_reached">В группе максимум 10 участников</string>
     <string name="invite_members_confirm_button">Добавить (%1$d)</string>
     <string name="invite_members_empty">Никого не нашли</string>
+    <string name="group_info_rename_dialog_title">Переименовать группу</string>
+    <string name="group_info_delete_confirm_title">Удалить группу</string>
+    <string name="group_info_delete_confirm_text">Группа и её сообщения будут удалены у всех участников. Это действие нельзя отменить.</string>
+    <string name="group_info_leave_confirm_title">Покинуть группу</string>
+    <string name="group_info_leave_confirm_text">Вы больше не будете видеть сообщения этой группы.</string>
+    <string name="group_info_remove_confirm_title">Удалить из группы</string>
+    <string name="group_info_remove_confirm_text">%1$s больше не будет иметь доступ к этой группе.</string>
+    <string name="group_info_action_failed">Что-то пошло не так, попробуйте снова</string>
 
     <!-- Create branch modal sheet -->
     <string name="thread_create_branch_sheet_title">Новая ветка</string>

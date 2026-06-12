@@ -24,6 +24,16 @@ FROM ChatConversationParticipant AS participant
 LEFT JOIN User AS profile ON profile.id = participant.id
 WHERE participant.conversationId = :conversationId;
 
+selectByConversationWithEmail:
+SELECT
+  participant.id,
+  profile.displayName,
+  profile.email,
+  profile.photoUrl
+FROM ChatConversationParticipant AS participant
+LEFT JOIN User AS profile ON profile.id = participant.id
+WHERE participant.conversationId = :conversationId;
+
 selectByConversationAndId:
 SELECT
   participant.id,

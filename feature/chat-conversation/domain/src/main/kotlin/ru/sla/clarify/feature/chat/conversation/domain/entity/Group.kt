@@ -16,6 +16,7 @@ data class Group(
 data class GroupMember(
   val id: UserId,
   val displayName: String?,
+  val email: String?,
   val photoUrl: String?,
   val isOwner: Boolean,
   val isMe: Boolean
