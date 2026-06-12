@@ -234,7 +234,7 @@ class ThreadRepositoryImpl @Inject constructor(
       branchId = commit.branchId,
       senderId = commit.senderUid,
       text = commit.text.orEmpty(),
-      colorHex = commit.colorHex,
+      colorHex = commit.colorHex.orEmpty(),
       timestamp = commit.createdAt?.toEpochSeconds() ?: 0L,
       isSelf = commit.senderUid == userId.value,
       status = if (hasPendingWrites) {

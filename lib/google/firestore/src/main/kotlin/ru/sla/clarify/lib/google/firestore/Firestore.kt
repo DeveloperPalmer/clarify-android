@@ -41,6 +41,7 @@ import ru.sla.clarify.lib.google.firestore.entity.write.PatchUserParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostBranchParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostConversationParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PostInviteParticipantCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostParticipantParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostUserParams
 import ru.sla.clarify.lib.google.firestore.mapper.mapDocumentChanges
@@ -308,6 +309,90 @@ class Firestore @Inject constructor(
         SetOptions.merge()
       )
       .await()
+  }
+
+  /**
+   * Приглашает пользователя в группу: одной транзакцией добавляет uid в `participantUids`
+   * (arrayUnion), создаёт participant-документ и записывает системный commit типа
+   * `inviteParticipant`. Такой commit НЕ обновляет `lastCommitText/lastCommitAt` и НЕ
+   * инкрементит unread — поэтому только эти три записи в batch'е.
+   */
+  suspend fun postInviteParticipant(conversationId: String, invitedUserId: UserId) {
+    val senderId = requireUserId()
+    val createdAt = Timestamp.now()
+    val commitId = randomUuid()
+
+    val batch = writeBatch()
+    val conversationRef = conversationDocumentRef(conversationId)
+    batch.update(
+      conversationRef,
+      FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS,
+      FieldValue.arrayUnion(invitedUserId.value)
+    )
+    batch.set(
+      participantDocumentRef(conversationId, invitedUserId),
+      codec.encodeToMap(PostParticipantParams(id = invitedUserId.value))
+    )
+    batch.set(
+      conversationRef
+        .collection(FirestoreSchema.COMMITS_COLLECTION)
+        .document(commitId),
+      codec.encodeToMap(
+        PostInviteParticipantCommitParams(
+          clientCommitId = commitId,
+          senderUid = senderId,
+          invitedUid = invitedUserId.value,
+          branchId = conversationId,
+          createdAt = createdAt
+        )
+      )
+    )
+    batch.commit().await()
+  }
+
+  /**
+   * Удаляет участника из группы: arrayRemove из `participantUids` + удаление
+   * participant-документа + unreadCommits-документа конкретного пользователя.
+   * Остальные коллекции (commits, branches) остаются как есть.
+   */
+  suspend fun deleteParticipant(conversationId: String, userId: UserId) {
+    val batch = writeBatch()
+    val conversationRef = conversationDocumentRef(conversationId)
+    batch.update(
+      conversationRef,
+      FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS,
+      FieldValue.arrayRemove(userId.value)
+    )
+    batch.delete(participantDocumentRef(conversationId, userId))
+    batch.delete(unreadCommitsDocumentRef(conversationId, userId))
+    batch.commit().await()
+  }
+
+  suspend fun leaveGroup(conversationId: String) {
+    deleteParticipant(conversationId, requireUserId())
+  }
+
+  fun participantsLive(conversationId: String): Flow<List<FirestoreChange<ParticipantNM>>> {
+    return callbackFlow {
+      listenerGuard.trackOpen("participantsLive:$conversationId")
+
+      val listener = participantsCollectionRef(conversationId)
+        .addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            close(error)
+            return@addSnapshotListener
+          }
+          val response = snapshot.mapDocumentChanges { change ->
+            FirestoreChange(
+              changeType = change.type.toFirestoreDocumentResult(),
+              data = codec.decodeFromSnapshot<ParticipantNM>(change.document)
+            )
+          }
+          trySend(response)
+        }
+
+      awaitClose { listener.remove() }
+    }
   }
 
   /**
