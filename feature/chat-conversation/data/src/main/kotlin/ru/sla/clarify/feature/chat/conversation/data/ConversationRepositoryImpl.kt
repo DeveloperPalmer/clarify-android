@@ -45,7 +45,7 @@ class ConversationRepositoryImpl @Inject constructor(
 ) : ConversationRepository {
 
   override suspend fun subscribeOnConversations() {
-    firestore.conversationsLive()
+    firestore.observeConversations()
       .flowOn(Dispatchers.IO)
       .collect(::applyConversationsChanges)
   }
@@ -90,7 +90,7 @@ class ConversationRepositoryImpl @Inject constructor(
     return withContext(Dispatchers.IO) {
       val conversationId = firestore.postGroupConversation(name)
       // Материализуем группу локально сразу, чтобы экран треда не открывался пустым
-      // до прихода conversationsLive-синка. Запись идемпотентна: последующий синк
+      // до прихода observeConversations-синка. Запись идемпотентна: последующий синк
       // (applyConversationChanges) перезапишет её актуальными данными через INSERT OR REPLACE.
       val ownerId = authSessionPersistence.withKey { readUserId(it) }
       if (ownerId != null) {
@@ -152,7 +152,7 @@ class ConversationRepositoryImpl @Inject constructor(
       }
       // Локально добавляем участников и обновляем денормализованный participantUids,
       // из которого sendCommit берёт получателей unread-инкрементов. Иначе колонка
-      // отстаёт до прихода participantsLive-синка.
+      // отстаёт до прихода observeParticipants-синка.
       persistedDB.transaction {
         userIds.forEach { userId ->
           persistedDB.chatConversationParticipantQueries.insertOrReplace(
@@ -211,7 +211,7 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   override suspend fun subscribeOnGroupParticipants(id: Conversation.Id) {
-    firestore.participantsLive(id.value)
+    firestore.observeParticipants(id.value)
       .flowOn(Dispatchers.IO)
       .collect { changes ->
         persistedDB.transaction {
@@ -328,7 +328,7 @@ class ConversationRepositoryImpl @Inject constructor(
     return coroutineScope {
       ids.forEach { conversationId ->
         launch {
-          firestore.unreadCountLive(
+          firestore.observeUnreadCount(
             conversationId = conversationId
           ).collect { unreadCount ->
             applyUpdateUnreadCount(

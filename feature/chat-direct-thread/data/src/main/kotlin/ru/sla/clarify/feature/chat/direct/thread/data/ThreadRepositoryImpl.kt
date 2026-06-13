@@ -49,7 +49,7 @@ class ThreadRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnPeerChanges() {
     val peerId = UserId(peerId.value)
-    firestore.userLive(peerId)
+    firestore.observeUser(peerId)
       .filterNotNull()
       .flowOn(Dispatchers.IO)
       .collect(::applyPeerChanges)
@@ -58,7 +58,7 @@ class ThreadRepositoryImpl @Inject constructor(
   override suspend fun subscribeOnCommitChanges() {
     val userId = threadMediator.requireUserId()
     val conversationId = threadMediator.awaitConversationId()
-    firestore.directCommitsLive(
+    firestore.observeDirectCommits(
       peerId = peerId,
       branchId = conversationId,
       limit = LIVE_COMMIT_LIMIT
@@ -129,7 +129,7 @@ class ThreadRepositoryImpl @Inject constructor(
       .observeList()
 
     val peerReadAtFlow = firestore
-      .participantLive(conversationId, peerId)
+      .observeParticipant(conversationId, peerId)
       .map { it?.lastReadAt?.toLocalDateTime() }
 
     val result = combine(
@@ -160,7 +160,7 @@ class ThreadRepositoryImpl @Inject constructor(
 
   override val unreadCount: Flow<Long> = flow {
     val conversationId = threadMediator.awaitConversationId()
-    firestore.unreadCountLive(conversationId)
+    firestore.observeUnreadCount(conversationId)
       .collect { emit(it) }
   }
 

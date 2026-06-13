@@ -40,7 +40,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnCommitChanges() {
     val userId = requireUserId()
-    firestore.groupCommitsLive(
+    firestore.observeGroupCommits(
       conversationId = conversationId.value,
       limit = LIVE_COMMIT_LIMIT
     ).flowOn(
@@ -103,7 +103,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   override val unreadCount: Flow<Long> = flow {
-    firestore.unreadCountLive(conversationId.value)
+    firestore.observeUnreadCount(conversationId.value)
       .collect { emit(it) }
   }
 

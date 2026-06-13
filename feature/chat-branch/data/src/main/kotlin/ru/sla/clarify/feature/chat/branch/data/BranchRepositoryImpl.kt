@@ -54,7 +54,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnChanges() {
     val conversationId = awaitConversationId()
-    firestore.branchesLive(conversationId)
+    firestore.observeBranches(conversationId)
       .flowOn(Dispatchers.IO)
       .collect { changes -> applyBranchesChanges(conversationId, changes) }
   }
@@ -62,7 +62,7 @@ class BranchRepositoryImpl @Inject constructor(
   override suspend fun subscribeOnCommitChanges() {
     val userId = requireUserId()
     val conversationId = awaitConversationId()
-    firestore.commitsLive(
+    firestore.observeCommits(
       conversationId = conversationId,
       branchId = branchId.value,
       limit = LIVE_COMMIT_LIMIT
@@ -79,7 +79,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnUnreadCount() {
     val conversationId = awaitConversationId()
-    firestore.branchUnreadCountLive(
+    firestore.observeBranchUnreadCount(
       conversationId = conversationId,
       branchId = branchId.value
     ).flowOn(Dispatchers.IO)
@@ -213,7 +213,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   override val unreadCount: Flow<Long> = flow {
     val conversationId = awaitConversationId()
-    firestore.unreadCountLive(conversationId)
+    firestore.observeUnreadCount(conversationId)
       .collect { emit(it) }
   }
 
@@ -250,7 +250,7 @@ class BranchRepositoryImpl @Inject constructor(
     return if (peerUid == null) {
       flowOf(null)
     } else {
-      firestore.participantLive(conversationId, UserId(peerUid))
+      firestore.observeParticipant(conversationId, UserId(peerUid))
         .map { it?.lastReadAt?.toLocalDateTime() }
     }
   }

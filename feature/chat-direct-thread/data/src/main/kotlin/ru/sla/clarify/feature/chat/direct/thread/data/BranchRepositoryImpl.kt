@@ -35,7 +35,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnBranchChanges() {
     val conversationId = threadMediator.awaitConversationId()
-    firestore.branchesLive(conversationId)
+    firestore.observeBranches(conversationId)
       .flowOn(Dispatchers.IO)
       .collect(::applyBranchesChanges)
   }
@@ -53,7 +53,7 @@ class BranchRepositoryImpl @Inject constructor(
     val conversationId = threadMediator.awaitConversationId()
     ids.forEach { branchId ->
       launch {
-        firestore.branchUnreadCountLive(
+        firestore.observeBranchUnreadCount(
           conversationId = conversationId,
           branchId = branchId
         ).collect { unreadCount ->
