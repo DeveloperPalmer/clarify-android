@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.direct.thread.ui.screen.branch
+package ru.sla.clarify.feature.chat.branch.ui.screen
 
 import java.time.LocalDateTime
 import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents

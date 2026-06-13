@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.direct.thread.ui.components
+package ru.sla.clarify.feature.chat.branch.ui.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
@@ -34,9 +34,8 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch
-import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Approver
-import ru.sla.clarify.feature.chat.direct.thread.ui.screen.branch.MERGE_REQUEST_MOTION_KEY
+import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
+import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
 import ru.sla.clarify.feature.entity.chat.Participant
 import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.animation.SharedContainer

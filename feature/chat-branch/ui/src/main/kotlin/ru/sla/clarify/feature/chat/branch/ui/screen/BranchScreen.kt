@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.direct.thread.ui.screen.branch
+package ru.sla.clarify.feature.chat.branch.ui.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -22,11 +22,11 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch.MergeRequest.Status
-import ru.sla.clarify.feature.chat.direct.thread.ui.components.ChatCommits
-import ru.sla.clarify.feature.chat.direct.thread.ui.components.ChatEmptyState
-import ru.sla.clarify.feature.chat.direct.thread.ui.components.MergeRequestButton
-import ru.sla.clarify.feature.chat.direct.thread.ui.components.MergeRequestCard
+import ru.sla.clarify.feature.chat.branch.domain.entity.Branch.MergeRequest.Status
+import ru.sla.clarify.feature.chat.branch.ui.components.ChatCommits
+import ru.sla.clarify.feature.chat.branch.ui.components.ChatEmptyState
+import ru.sla.clarify.feature.chat.branch.ui.components.MergeRequestButton
+import ru.sla.clarify.feature.chat.branch.ui.components.MergeRequestCard
 import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
 import ru.sla.clarify.uikit.component.scrim.ScrimEffect
 import ru.sla.clarify.uikit.component.textfield.ChatTextField

@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.direct.thread.ui.entity
+package ru.sla.clarify.feature.chat.branch.ui.entity
 
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.UserId

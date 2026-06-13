@@ -1,0 +1,11 @@
+digraph BranchFlow {
+  package = "ru.sla.clarify.feature.chat.branch.routing"
+
+  branchFlow [
+    type = "flow"
+    parameterName = "id"
+    parameterType = "ru.sla.clarify.feature.chat.branch.domain.entity.Branch.Id"
+  ]
+
+  branchFlow -> branch
+}

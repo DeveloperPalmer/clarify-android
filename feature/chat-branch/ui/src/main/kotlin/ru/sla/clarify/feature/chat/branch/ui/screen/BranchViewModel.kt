@@ -1,7 +1,5 @@
-package ru.sla.clarify.feature.chat.direct.thread.ui.screen.branch
+package ru.sla.clarify.feature.chat.branch.ui.screen
 
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
@@ -19,30 +17,27 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
-import ru.sla.clarify.feature.chat.direct.thread.domain.ThreadModel
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch.MergeRequest.Status
-import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Approver
-import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Commit
-import ru.sla.clarify.feature.chat.direct.thread.ui.mapper.toUiCommits
-import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
+import ru.sla.clarify.feature.chat.branch.domain.BranchModel
+import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
+import ru.sla.clarify.feature.chat.branch.domain.entity.Branch.MergeRequest.Status
+import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
+import ru.sla.clarify.feature.chat.branch.ui.entity.Commit
+import ru.sla.clarify.feature.chat.branch.ui.mapper.toUiCommits
+import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
+import javax.inject.Inject
 
-class BranchViewModel @AssistedInject constructor(
+class BranchViewModel @Inject constructor(
   private val eventSink: FlowEventSink,
-  private val threadModel: ThreadModel,
-  @Assisted
-  branchIdValue: String
+  private val branchModel: BranchModel,
+  private val branchId: Branch.Id
 ) : ViewModel<ViewState, ViewIntents>() {
-
-  private val branchId: Branch.Id = Branch.Id(branchIdValue)
 
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState(branchId = branchId) to {
-      threadModel.subscribeOnCommitChanges(branchId)
-      threadModel.markReadCommits(branchId)
-      threadModel.fetchHistoryBranchCommits.startOnSubscribe(branchId)
+      branchModel.markReadCommits()
+      branchModel.fetchHistoryCommits.startOnSubscribe()
     }
 
     onEach(intent(ViewIntents::navigateBack)) {
@@ -52,7 +47,7 @@ class BranchViewModel @AssistedInject constructor(
     }
 
     onEach(
-      threadModel.fetchHistoryBranchCommits.jobFlow
+      branchModel.fetchHistoryCommits.jobFlow
         .asLceState()
         .map { it.toUiLceState() }
     ) {
@@ -63,19 +58,19 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
-    onEach(threadModel.user.filterNotNull()) {
+    onEach(branchModel.user.filterNotNull()) {
       transitionTo { state, user ->
         state.copy(currentUserId = user.id)
       }
     }
 
-    onEach(threadModel.participants) {
+    onEach(branchModel.participants) {
       transitionTo { state, participants ->
         state.copy(participants = participants)
       }
     }
 
-    onEach(threadModel.branch(branchId).filterNotNull()) {
+    onEach(branchModel.branch.filterNotNull()) {
       transitionTo { state, branch ->
         state.copy(
           branchName = branch.name,
@@ -104,10 +99,9 @@ class BranchViewModel @AssistedInject constructor(
         val parentCommit = state.commits
           .filterIsInstance<Commit.Message>()
           .firstOrNull()
-        threadModel.sendMessage.start(
-          argument1 = branchId,
-          argument2 = requireNotNull(text.trim().ifBlank { null }),
-          argument3 = parentCommit?.source?.colorHex
+        branchModel.sendMessage.start(
+          argument1 = requireNotNull(text.trim().ifBlank { null }),
+          argument2 = parentCommit?.source?.colorHex
         )
       }
     }
@@ -115,7 +109,7 @@ class BranchViewModel @AssistedInject constructor(
 
   private fun MachineDsl<ViewState>.configurePeerCommitTransitions() {
     onEach(
-      threadModel.commits(branchId)
+      branchModel.commits
         .map { it.toUiCommits() }
     ) {
       transitionTo { state, commits ->
@@ -126,11 +120,11 @@ class BranchViewModel @AssistedInject constructor(
 
     onEach(intent(ViewIntents::markReadUpTo)) {
       action { _, _, lastReadAt ->
-        threadModel.markReadUpTo(lastReadAt)
+        branchModel.markReadUpTo(lastReadAt)
       }
     }
 
-    onEach(threadModel.unreadCount) {
+    onEach(branchModel.unreadCount) {
       transitionTo { state, unreadCount ->
         state.copy(unreadCount = unreadCount.toInt())
       }
@@ -144,8 +138,7 @@ class BranchViewModel @AssistedInject constructor(
       }
       action { state, _, _ ->
         if (state.mergeRequest == null) {
-          threadModel.openMergeRequest.start(
-            argument = branchId,
+          branchModel.openMergeRequest.start(
             queueingStrategy = QueueingStrategy.SkipNew
           )
         }
@@ -162,8 +155,7 @@ class BranchViewModel @AssistedInject constructor(
       action { state, _, _ ->
         if (!state.mergeRequest.isPending()) return@action
         if (state.isCurrentUserApproved) return@action
-        threadModel.approveMergeRequest.start(
-          argument = branchId,
+        branchModel.approveMergeRequest.start(
           queueingStrategy = QueueingStrategy.SkipNew
         )
       }
@@ -173,8 +165,7 @@ class BranchViewModel @AssistedInject constructor(
       action { state, _, _ ->
         if (!state.mergeRequest.isPending()) return@action
         if (!state.isCurrentUserApproved) return@action
-        threadModel.revokeApprovalMergeRequest.start(
-          argument = branchId,
+        branchModel.revokeApprovalMergeRequest.start(
           queueingStrategy = QueueingStrategy.SkipNew
         )
       }
@@ -183,8 +174,7 @@ class BranchViewModel @AssistedInject constructor(
     onEach(intent(ViewIntents::cancelMergeRequest)) {
       action { state, _, _ ->
         if (!state.mergeRequest.isPending()) return@action
-        threadModel.cancelMergeRequest.start(
-          argument = branchId,
+        branchModel.cancelMergeRequest.start(
           queueingStrategy = QueueingStrategy.SkipNew
         )
       }
@@ -193,14 +183,13 @@ class BranchViewModel @AssistedInject constructor(
     onEach(intent(ViewIntents::finalizeMergeRequest)) {
       action { state, _, _ ->
         if (state.mergeRequest?.status != Status.ReadyToMerge) return@action
-        threadModel.finalizeMergeRequest.start(
-          argument = branchId,
+        branchModel.finalizeMergeRequest.start(
           queueingStrategy = QueueingStrategy.SkipNew
         )
       }
     }
 
-    onEach(threadModel.mergeRequestInitiator(branchId)) {
+    onEach(branchModel.mergeRequestInitiator) {
       transitionTo { state, participant ->
         state.copy(initiatorName = participant?.displayName)
       }
@@ -208,8 +197,8 @@ class BranchViewModel @AssistedInject constructor(
 
     onEach(
       combine(
-        threadModel.participants,
-        threadModel.branch(branchId)
+        branchModel.participants,
+        branchModel.branch
       ) { participants, branch ->
         val approvedUids = branch?.mergeRequest?.approvedByIds.orEmpty()
         val approvers = participants.map { participant ->
@@ -231,11 +220,11 @@ class BranchViewModel @AssistedInject constructor(
 
     onEach(
       combine(
-        threadModel.openMergeRequest.jobFlow.state,
-        threadModel.approveMergeRequest.jobFlow.state,
-        threadModel.revokeApprovalMergeRequest.jobFlow.state,
-        threadModel.cancelMergeRequest.jobFlow.state,
-        threadModel.finalizeMergeRequest.jobFlow.state
+        branchModel.openMergeRequest.jobFlow.state,
+        branchModel.approveMergeRequest.jobFlow.state,
+        branchModel.revokeApprovalMergeRequest.jobFlow.state,
+        branchModel.cancelMergeRequest.jobFlow.state,
+        branchModel.finalizeMergeRequest.jobFlow.state
       ) { states -> states.any { it == JobState.Running } }
     ) {
       transitionTo { state, pending ->
@@ -243,7 +232,7 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
-    onEach(threadModel.openMergeRequest.jobFlow.errors()) {
+    onEach(branchModel.openMergeRequest.jobFlow.errors()) {
       transitionTo { state, _ ->
         state.copy(mergeRequestVisible = false)
       }
@@ -252,31 +241,31 @@ class BranchViewModel @AssistedInject constructor(
       }
     }
 
-    onEach(threadModel.approveMergeRequest.jobFlow.errors()) {
+    onEach(branchModel.approveMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_approve_failed)
       }
     }
 
-    onEach(threadModel.revokeApprovalMergeRequest.jobFlow.errors()) {
+    onEach(branchModel.revokeApprovalMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_revoke_failed)
       }
     }
 
-    onEach(threadModel.cancelMergeRequest.jobFlow.errors()) {
+    onEach(branchModel.cancelMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_cancel_failed)
       }
     }
 
-    onEach(threadModel.finalizeMergeRequest.jobFlow.successResults()) {
+    onEach(branchModel.finalizeMergeRequest.jobFlow.successResults()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_finalize_failed)
       }
     }
 
-    onEach(threadModel.finalizeMergeRequest.jobFlow.errors()) {
+    onEach(branchModel.finalizeMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_finalize_failed)
       }
@@ -298,5 +287,3 @@ class BranchViewModel @AssistedInject constructor(
     )
   }
 }
-
-internal const val MERGE_REQUEST_MOTION_KEY: String = "merge-request-motion-key"

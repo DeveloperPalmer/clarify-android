@@ -5,11 +5,12 @@ import kotlinx.coroutines.CoroutineScope
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
+import ru.kode.way.Ignore
 import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
-import ru.kode.way.whenFlowEvent
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
+import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
 import ru.sla.clarify.feature.chat.direct.thread.domain.GroupThreadModel
 import ru.sla.clarify.feature.chat.direct.thread.domain.ThreadModel
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget
@@ -43,15 +44,16 @@ class ThreadFlowNode @Inject constructor(
   }
 
   override fun transition(event: Event): FlowTransition<Unit> {
-    return event.whenFlowEvent { e: FlowEvent ->
-      when (e) {
-        is FlowEvent.ThreadDismissed -> Finish(Unit)
-        is FlowEvent.BranchDismissed -> NavigateTo(Target.threadFlow.thread)
-        is FlowEvent.BranchRequested -> NavigateTo(Target.threadFlow.branch(e.branchId))
-        is FlowEvent.GroupInfoRequested -> NavigateTo(Target.threadFlow.groupInfo)
-        is FlowEvent.GroupInfoDismissed -> NavigateTo(Target.threadFlow.groupThread)
-        is FlowEvent.GroupClosed -> Finish(Unit)
-      }
+    return when (event) {
+      is FlowEvent.ThreadDismissed -> Finish(Unit)
+      is FlowEvent.BranchRequested -> NavigateTo(
+        Target.threadFlow.branchFlow(Branch.Id(event.branchId.value))
+      )
+      is FlowEvent.GroupInfoRequested -> NavigateTo(Target.threadFlow.groupInfo)
+      is FlowEvent.GroupInfoDismissed -> NavigateTo(Target.threadFlow.groupThread)
+      is FlowEvent.GroupClosed -> Finish(Unit)
+      is ThreadFlowChildFinishRequest.BranchFlow -> NavigateTo(Target.threadFlow.thread)
+      else -> Ignore
     }
   }
 }

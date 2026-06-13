@@ -57,7 +57,7 @@ class ThreadViewModel @Inject constructor(
     }
 
     onEach(
-      threadModel.commits(branchId = null)
+      threadModel.commits()
         .map { it.toUiCommits() }
     ) {
       transitionTo { state, commits ->
@@ -89,9 +89,8 @@ class ThreadViewModel @Inject constructor(
           .filterIsInstance<Commit.Message>()
           .firstOrNull()
         threadModel.sendMessage.start(
-          argument1 = null,
-          argument2 = requireNotNull(text.trim().ifBlank { null }),
-          argument3 = parentCommit?.source?.colorHex
+          argument1 = requireNotNull(text.trim().ifBlank { null }),
+          argument2 = parentCommit?.source?.colorHex
         )
       }
     }

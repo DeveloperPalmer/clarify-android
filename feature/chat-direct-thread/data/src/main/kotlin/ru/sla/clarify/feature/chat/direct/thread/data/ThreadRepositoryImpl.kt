@@ -24,7 +24,6 @@ import ru.sla.clarify.feature.chat.direct.thread.data.mapper.toLocalDateTime
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.withReadStatus
 import ru.sla.clarify.feature.chat.direct.thread.domain.ThreadRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.ThreadScope
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.feature.entity.chat.Participant
 import ru.sla.clarify.feature.entity.chat.Peer
@@ -56,13 +55,12 @@ class ThreadRepositoryImpl @Inject constructor(
       .collect(::applyPeerChanges)
   }
 
-  override suspend fun subscribeOnCommitChanges(branchId: Branch.Id?) {
+  override suspend fun subscribeOnCommitChanges() {
     val userId = threadMediator.requireUserId()
     val conversationId = threadMediator.awaitConversationId()
-    val resolvedBranchId = branchId?.value ?: conversationId
     firestore.directCommitsLive(
       peerId = peerId,
-      branchId = resolvedBranchId,
+      branchId = conversationId,
       limit = LIVE_COMMIT_LIMIT
     ).flowOn(
       context = Dispatchers.IO
@@ -76,15 +74,13 @@ class ThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun fetchHistoryCommits(
-    branchId: Branch.Id?,
     count: Int,
     before: Commit?
   ) {
     val conversationId = threadMediator.awaitConversationId()
-    val effectiveBranchId = branchId?.value ?: conversationId
     val historyCommits = firestore.getCommits(
       conversationId = conversationId,
-      branchId = effectiveBranchId,
+      branchId = conversationId,
       count = count,
       before = before?.timestamp
     )
@@ -94,7 +90,6 @@ class ThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun sendCommit(
-    branchId: Branch.Id?,
     colorHex: String?,
     text: String
   ) {
@@ -102,7 +97,7 @@ class ThreadRepositoryImpl @Inject constructor(
       conversationId = threadMediator.conversationId(),
       text = text,
       peerId = peerId,
-      branchId = branchId?.value,
+      branchId = null,
       colorHex = colorHex ?: generateColorHex()
     )
   }
@@ -125,13 +120,12 @@ class ThreadRepositoryImpl @Inject constructor(
     .selectById(peerId.value, ::mapToPeer)
     .observeOneOrNull()
 
-  override fun commits(branchId: Branch.Id?): Flow<List<Commit>> = flow {
+  override fun commits(): Flow<List<Commit>> = flow {
     val peerId = UserId(peerId.value)
     val conversationId = threadMediator.awaitConversationId()
-    val effectiveBranchId = branchId?.value ?: conversationId
 
     val commitsFlow = persistedDB.chatCommitQueries
-      .selectByBranchId(conversationId, effectiveBranchId, ::mapToCommit)
+      .selectByBranchId(conversationId, conversationId, ::mapToCommit)
       .observeList()
 
     val peerReadAtFlow = firestore

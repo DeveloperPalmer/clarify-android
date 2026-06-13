@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.direct.thread.ui.components
+package ru.sla.clarify.feature.chat.branch.ui.components
 
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.animateColorAsState
@@ -27,8 +27,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch.MergeRequest.Status
-import ru.sla.clarify.feature.chat.direct.thread.ui.screen.branch.MERGE_REQUEST_MOTION_KEY
+import ru.sla.clarify.feature.chat.branch.domain.entity.Branch.MergeRequest.Status
 import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.animation.SharedContainer
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -272,6 +271,8 @@ private class StatusPreviewProvider : PreviewParameterProvider<StatusPreview> {
     )
   )
 }
+
+internal const val MERGE_REQUEST_MOTION_KEY: String = "merge-request-motion-key"
 
 internal val MERGE_REQUEST_BUTTON_CORNER: Dp = 19.dp
 internal val MERGE_REQUEST_CARD_CORNER: Dp = 16.dp

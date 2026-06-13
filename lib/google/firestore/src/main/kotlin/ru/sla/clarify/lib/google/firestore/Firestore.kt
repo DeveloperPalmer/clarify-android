@@ -636,6 +636,82 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
+  /**
+   * Живая подписка на commit'ы конкретной ветки по `conversationId`+`branchId`.
+   * В отличие от [directCommitsLive] не требует `peerId` (conversation уже известна),
+   * поэтому используется branch-фичей, которая знает только свой `branchId`.
+   */
+  fun commitsLive(
+    conversationId: String,
+    branchId: String,
+    limit: Long
+  ): Flow<List<FirestoreChange<CommitNM>>> {
+    return conversationMessagesLive(
+      id = conversationId,
+      branchId = branchId,
+      limit = limit
+    )
+  }
+
+  /**
+   * Отправляет commit в ветку. Аналог non-root ветки [postCommit], но без `peerId`:
+   * conversation уже существует, состав участников ([participantUids]) передаёт caller
+   * (локальный кэш). Пишет commit с `branchId`, мерджит `lastCommit`-поля ветки и
+   * инкрементит branch-unread всем участникам кроме отправителя.
+   */
+  suspend fun postBranchCommit(
+    conversationId: String,
+    branchId: String,
+    text: String,
+    colorHex: String,
+    participantUids: List<String>
+  ) {
+    val senderId = requireUserId()
+    val commitId = randomUuid()
+    val createdAt = Timestamp.now()
+
+    val batch = writeBatch()
+    val conversationRef = conversationDocumentRef(conversationId)
+
+    batch.set(
+      conversationRef
+        .collection(FirestoreSchema.COMMITS_COLLECTION)
+        .document(commitId),
+      codec.encodeToMap(
+        PostCommitParams(
+          clientCommitId = commitId,
+          senderUid = senderId,
+          text = text,
+          type = CommitNM.Type.Text,
+          createdAt = createdAt,
+          colorHex = colorHex,
+          branchId = branchId
+        )
+      )
+    )
+    batch.set(
+      branchDocumentRef(conversationId, branchId),
+      codec.encodeToMap(
+        PatchBranchLastCommitParams(
+          lastCommitText = text,
+          lastCommitAt = createdAt
+        )
+      ),
+      SetOptions.merge()
+    )
+    participantUids
+      .filter { it != senderId.value }
+      .forEach { uid ->
+        batch.set(
+          branchUnreadCommitsDocumentRef(conversationId, branchId, UserId(uid)),
+          codec.encodeToMap(PatchUnreadIncrementParams()),
+          SetOptions.merge()
+        )
+      }
+
+    batch.commit().await()
+  }
+
   fun branchesLive(
     conversationId: String
   ): Flow<List<FirestoreChange<BranchNM>>> {

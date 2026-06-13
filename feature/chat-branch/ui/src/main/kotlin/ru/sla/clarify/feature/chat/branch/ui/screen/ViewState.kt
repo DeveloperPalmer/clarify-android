@@ -1,11 +1,11 @@
-package ru.sla.clarify.feature.chat.direct.thread.ui.screen.branch
+package ru.sla.clarify.feature.chat.branch.ui.screen
 
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.ui.entity.ContentLoadState
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch
-import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Approver
-import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Commit
+import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
+import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
+import ru.sla.clarify.feature.chat.branch.ui.entity.Commit
 import ru.sla.clarify.feature.entity.chat.Participant
 
 @Immutable
