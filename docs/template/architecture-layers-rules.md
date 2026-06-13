@@ -123,4 +123,4 @@ class BranchRepositoryImpl @Inject constructor(
 - [`firestore-wrapper-rules.md`](firestore-wrapper-rules.md) — как `Firestore.kt` обращается к `FirestoreWrapper`.
 - [`reactive-model-tasks-rules.md`](reactive-model-tasks-rules.md) — `task<I, O>` требует non-null O; «не нашли» — через exception.
 - [`sqldelight-naming-rules.md`](sqldelight-naming-rules.md) — имя `.sq`-запроса = SQL-операция.
-- [`docs-template.md`](template/docs-template.md) — скелет, по которому пишутся документы в `docs/`.
+- [`docs-template.md`](docs-template.md) — скелет, по которому пишутся документы в `docs/`.

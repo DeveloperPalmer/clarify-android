@@ -1,0 +1,15 @@
+{
+  "//": "Composite-индексы Firestore. Группы новых индексов НЕ добавляют: их запросы либо single-field (auto), либо переиспользуют индекс commits (branchId, createdAt), который уже нужен direct-чату. Этот файл фиксирует требуемые индексы как infra-as-code; сверьте с тем, что уже задеплоено в проекте clarify-ba6ae.",
+  "indexes": [
+    {
+      "//": "commits: whereEqualTo(branchId) + orderBy(createdAt DESC) [+ whereLessThan(createdAt)]. Используется conversationMessagesLive/getCommits и для direct, и для group-тредов (branchId = conversationId у группы).",
+      "collectionGroup": "commits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "branchId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

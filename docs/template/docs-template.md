@@ -53,7 +53,7 @@ Skeleton нового документа:
 - [`other-doc.md`](other-doc.md) — короткое описание.
 ```
 
-Образец «как должно выглядеть» — [`architecture-layers-rules.md`](../architecture-layers-rules.md).
+Образец «как должно выглядеть» — [`architecture-layers-rules.md`](architecture-layers-rules.md).
 
 ## Антипаттерны
 
@@ -79,6 +79,6 @@ Skeleton нового документа:
 
 ## Связанные документы
 
-- [`architecture-layers-rules.md`](../architecture-layers-rules.md) — образец оформления.
-- [`firestore-naming-rules.md`](../firestore-naming-rules.md) — образец naming-документа.
-- [`sqldelight-naming-rules.md`](../sqldelight-naming-rules.md) — ещё один naming-документ.
+- [`architecture-layers-rules.md`](architecture-layers-rules.md) — образец оформления.
+- [`firestore-naming-rules.md`](firestore-naming-rules.md) — образец naming-документа.
+- [`sqldelight-naming-rules.md`](sqldelight-naming-rules.md) — ещё один naming-документ.

@@ -117,4 +117,4 @@ override suspend fun markAsRead(id: Conversation.Id) {
 
 - [`architecture-layers-rules.md`](architecture-layers-rules.md) — слои и доступ к Repository.
 - [`firestore-naming-rules.md`](firestore-naming-rules.md) — REST-нейминг для `Firestore.kt`.
-- [`docs-template.md`](template/docs-template.md) — скелет, по которому пишутся документы в `docs/`.
+- [`docs-template.md`](docs-template.md) — скелет, по которому пишутся документы в `docs/`.
