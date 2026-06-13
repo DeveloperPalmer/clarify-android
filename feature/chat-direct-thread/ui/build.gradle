@@ -1,0 +1,19 @@
+plugins {
+  id 'android-library-convention'
+  id 'android-compose-convention'
+  id 'dagger-convention'
+}
+
+android {
+  namespace "ru.sla.clarify.feature.chat.direct.thread.ui"
+}
+
+dependencies {
+  implementation project(":uikit")
+  implementation project(":feature:chat-direct-thread:domain")
+
+  implementation libs.arrow.core
+  implementation libs.androidx.activity.compose // for BackHandler
+
+  ksp libs.arrow.optics.ksp
+}

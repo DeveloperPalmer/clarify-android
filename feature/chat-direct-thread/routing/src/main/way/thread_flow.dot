@@ -1,0 +1,17 @@
+digraph ThreadFlow {
+  package = "ru.sla.clarify.feature.chat.direct.thread.routing"
+
+  threadFlow [
+    type = "flow"
+    parameterName = "target"
+    parameterType = "ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget"
+  ]
+
+  branch [
+    parameterName = "id",
+    parameterType = "ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch.Id"
+  ]
+
+  threadFlow -> thread -> branch
+  threadFlow -> groupThread -> groupInfo
+}

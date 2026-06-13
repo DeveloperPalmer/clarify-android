@@ -1,7 +1,7 @@
 package ru.sla.clarify.feature.chat.conversation.routing
 
 import ru.sla.clarify.feature.chat.conversation.routing.di.ConversationFlowComponent
-import ru.sla.clarify.feature.chat.thread.routing.ThreadFlow
+import ru.sla.clarify.feature.chat.direct.thread.routing.ThreadFlow
 import ru.sla.clarify.feature.profile.routing.ProfileFlow
 
 object ConversationFlow {

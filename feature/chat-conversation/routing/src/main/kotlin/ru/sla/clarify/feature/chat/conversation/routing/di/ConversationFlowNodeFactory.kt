@@ -9,8 +9,8 @@ import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlowNode
 import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlowNodeBuilder
 import ru.sla.clarify.feature.chat.conversation.ui.di.Screen
 import ru.sla.clarify.feature.chat.conversation.ui.di.WiredScreen
-import ru.sla.clarify.feature.chat.thread.domain.entity.ThreadTarget
-import ru.sla.clarify.feature.chat.thread.routing.ThreadFlow
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget
+import ru.sla.clarify.feature.chat.direct.thread.routing.ThreadFlow
 import ru.sla.clarify.feature.profile.routing.ProfileFlow
 import javax.inject.Inject
 import javax.inject.Provider

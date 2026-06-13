@@ -12,7 +12,7 @@ import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
 import ru.sla.clarify.feature.chat.conversation.domain.ChatModel
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
-import ru.sla.clarify.feature.chat.thread.domain.entity.ThreadTarget
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.feature.profile.routing.ProfileFlow
 import javax.inject.Inject
