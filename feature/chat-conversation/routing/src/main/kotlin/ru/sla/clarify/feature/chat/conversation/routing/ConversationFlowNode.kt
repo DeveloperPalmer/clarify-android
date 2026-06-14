@@ -9,15 +9,16 @@ import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
-import ru.sla.clarify.feature.chat.conversation.domain.ChatModel
+import ru.sla.clarify.feature.chat.conversation.domain.ConversationModel
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.feature.profile.routing.ProfileFlow
 import javax.inject.Inject
 
 class ConversationFlowNode @Inject constructor(
-  private val chatModel: ChatModel
+  private val conversationModel: ConversationModel
 ) : BaseFlowNode<ConversationFlow.Result>() {
 
   private val scope: CoroutineScope by FlowNodeCoroutineScopeHook()
@@ -27,7 +28,7 @@ class ConversationFlowNode @Inject constructor(
 
   override fun onEntry(event: Event) {
     super.onEntry(event)
-    chatModel.start(scope)
+    conversationModel.start(scope)
   }
 
   override fun transition(event: Event): FlowTransition<ConversationFlow.Result> {
@@ -42,10 +43,10 @@ class ConversationFlowNode @Inject constructor(
         NavigateTo(Target.conversationFlow.profileFlow)
       }
       is FlowEvent.DirectConversationRequested -> {
-        NavigateTo(buildDirectFlowFlow(event.id))
+        NavigateTo(buildDirectFlow(event.id))
       }
       is FlowEvent.GroupConversationRequested -> {
-        NavigateTo(Target.conversationFlow.groupThreadFlow(event.id))
+        NavigateTo(buildGroupFlow(event.id))
       }
       is ConversationFlowChildFinishRequest.GroupThreadFlow -> {
         NavigateTo(Target.conversationFlow.main)
@@ -63,7 +64,11 @@ class ConversationFlowNode @Inject constructor(
   }
 }
 
-private fun buildDirectFlowFlow(id: Peer.Id): Target {
-  val params = ThreadTarget(peerId = id)
+private fun buildDirectFlow(id: Peer.Id): Target {
+  val params = TargetParams(peerId = id)
   return Target.conversationFlow.threadFlow(params)
+}
+
+private fun buildGroupFlow(id: Conversation.Id): Target {
+  return Target.conversationFlow.groupThreadFlow(id)
 }

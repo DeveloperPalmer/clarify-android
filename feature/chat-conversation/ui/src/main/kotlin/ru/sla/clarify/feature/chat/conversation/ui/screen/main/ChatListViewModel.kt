@@ -9,8 +9,8 @@ import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
-import ru.sla.clarify.feature.chat.conversation.domain.ChatModel
-import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
+import ru.sla.clarify.feature.chat.conversation.domain.ConversationModel
+import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
@@ -18,7 +18,7 @@ import javax.inject.Inject
 
 class ChatListViewModel @Inject constructor(
   private val eventSink: FlowEventSink,
-  private val chatModel: ChatModel
+  private val conversationModel: ConversationModel
 ) : ViewModel<ViewState, ViewIntents>() {
 
   override fun buildMachine(): Machine<ViewState> = machine {
@@ -63,7 +63,7 @@ class ChatListViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureUserTransitions() {
-    onEach(chatModel.user) {
+    onEach(conversationModel.user) {
       transitionTo { state, user ->
         state.copy(user = user)
       }
@@ -71,7 +71,7 @@ class ChatListViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureConversationTransitions() {
-    onEach(chatModel.conversations) {
+    onEach(conversationModel.conversations) {
       transitionTo { state, conversations ->
         state.copy(conversations = conversations)
       }
@@ -93,23 +93,23 @@ class ChatListViewModel @Inject constructor(
 
     onEach(intent(ViewIntents::confirmCreateDirect)) {
       action { _, _, value ->
-        chatModel.getPeerByEmail.start(Email(value))
+        conversationModel.getPeerByEmail.start(Email(value))
       }
     }
 
     onEach(intent(ViewIntents::confirmCreateGroup)) {
       action { _, _, name ->
-        chatModel.createGroup.start(name)
+        conversationModel.createGroup.start(name)
       }
     }
 
-    onEach(chatModel.createGroup.jobFlow.successResults()) {
+    onEach(conversationModel.createGroup.jobFlow.successResults()) {
       action { _, _, conversationId ->
         eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId))
       }
     }
 
-    onEach(chatModel.createGroup.jobFlow.errors()) {
+    onEach(conversationModel.createGroup.jobFlow.errors()) {
       action { _, _, _ ->
         sendViewEvent(
           Snackbar(
@@ -120,13 +120,13 @@ class ChatListViewModel @Inject constructor(
       }
     }
 
-    onEach(chatModel.getPeerByEmail.jobFlow.successResults()) {
+    onEach(conversationModel.getPeerByEmail.jobFlow.successResults()) {
       action { _, _, peerId ->
         eventSink.sendEvent(FlowEvent.DirectConversationRequested(peerId))
       }
     }
 
-    onEach(chatModel.getPeerByEmail.jobFlow.errors()) {
+    onEach(conversationModel.getPeerByEmail.jobFlow.errors()) {
       action { _, _, error ->
         val messageId = when (error) {
           is PeerNotFoundException -> R.string.conversation_new_chat_error_user_not_found
@@ -165,11 +165,11 @@ class ChatListViewModel @Inject constructor(
 
     onEach(intent(ViewIntents::confirmDeleteConversation)) {
       action { state, _, _ ->
-        chatModel.deleteConversations.start(state.selectedConversationsIds)
+        conversationModel.deleteConversations.start(state.selectedConversationsIds)
       }
     }
 
-    onEach(chatModel.deleteConversations.jobFlow.successResults()) {
+    onEach(conversationModel.deleteConversations.jobFlow.successResults()) {
       transitionTo { state, _ ->
         state.copy(
           editModeEnabled = false,

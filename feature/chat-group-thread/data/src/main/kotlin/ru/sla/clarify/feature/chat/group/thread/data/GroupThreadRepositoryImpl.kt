@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chat.group.thread.data
 import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -11,10 +12,15 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
+import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.group.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.group.thread.data.mapper.mapToCommit
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadRepository
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupThreadTarget
 import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.lib.google.firestore.Firestore
@@ -35,7 +41,6 @@ class GroupThreadRepositoryImpl @Inject constructor(
 ) : GroupThreadRepository {
 
   private val conversationId = target.conversationId
-
   private var lastReadWatermark: LocalDateTime? = null
 
   override suspend fun subscribeOnCommitChanges() {
@@ -93,6 +98,171 @@ class GroupThreadRepositoryImpl @Inject constructor(
     lastReadWatermark = lastReadAt
     firestore.patchReadWatermark(conversationId.value, lastReadAt)
     firestore.patchClearUnreadCount(conversationId.value)
+  }
+
+  override suspend fun subscribeOnGroupParticipants() {
+    firestore.observeParticipants(conversationId.value)
+      .flowOn(Dispatchers.IO)
+      .collect { changes ->
+        persistedDB.transaction {
+          changes.forEach { change ->
+            when (change.changeType) {
+              FirestoreDocumentResult.Added,
+              FirestoreDocumentResult.Modified -> {
+                persistedDB.chatConversationParticipantQueries.insertOrReplace(
+                  conversationId = conversationId.value,
+                  id = change.data.id
+                )
+              }
+
+              FirestoreDocumentResult.Removed -> {
+                persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
+                  conversationId = conversationId.value,
+                  id = change.data.id
+                )
+              }
+            }
+          }
+        }
+      }
+  }
+
+  override suspend fun renameGroup(name: String) {
+    withContext(Dispatchers.IO) {
+      firestore.patchGroupName(conversationId = conversationId.value, name = name)
+      persistedDB.chatConversationQueries.updateGroupName(id = conversationId.value, name = name)
+    }
+  }
+
+  override suspend fun deleteGroup() {
+    withContext(Dispatchers.IO) {
+      firestore.deleteGroupConversation(conversationId.value)
+      persistedDB.transaction {
+        persistedDB.chatConversationQueries.deleteById(conversationId.value)
+        persistedDB.chatConversationParticipantQueries.deleteByConversation(conversationId.value)
+      }
+    }
+  }
+
+  override suspend fun leaveGroup() {
+    withContext(Dispatchers.IO) {
+      firestore.leaveGroup(conversationId.value)
+      persistedDB.transaction {
+        persistedDB.chatConversationQueries.deleteById(conversationId.value)
+        persistedDB.chatConversationParticipantQueries.deleteByConversation(conversationId.value)
+      }
+    }
+  }
+
+  override suspend fun inviteGroupMembers(userIds: List<UserId>) {
+    withContext(Dispatchers.IO) {
+      userIds.forEach { userId ->
+        firestore.postInviteParticipant(
+          conversationId = conversationId.value,
+          invitedUserId = userId
+        )
+      }
+      // Локально добавляем участников и обновляем денормализованный participantUids,
+      // из которого sendCommit берёт получателей unread-инкрементов. Иначе колонка
+      // отстаёт до прихода observeParticipants-синка.
+      persistedDB.transaction {
+        userIds.forEach { userId ->
+          persistedDB.chatConversationParticipantQueries.insertOrReplace(
+            conversationId = conversationId.value,
+            id = userId.value
+          )
+        }
+        val merged = (currentParticipantUids() + userIds.map { it.value }).distinct()
+        persistedDB.chatConversationQueries.updateParticipantUids(
+          id = conversationId.value,
+          participantUids = merged
+        )
+      }
+    }
+  }
+
+  override suspend fun removeGroupMember(userId: UserId) {
+    withContext(Dispatchers.IO) {
+      firestore.deleteParticipant(conversationId = conversationId.value, userId = userId)
+      persistedDB.transaction {
+        persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
+          conversationId = conversationId.value,
+          id = userId.value
+        )
+        val remaining = currentParticipantUids() - userId.value
+        persistedDB.chatConversationQueries.updateParticipantUids(
+          id = conversationId.value,
+          participantUids = remaining
+        )
+      }
+    }
+  }
+
+  override suspend fun searchMemberByPrefix(prefix: String): List<FoundUser> {
+    return withContext(Dispatchers.IO) {
+      firestore.getUsersByEmailPrefix(prefix = prefix.lowercase(), limit = USER_SEARCH_LIMIT)
+        .map { user ->
+          FoundUser(
+            id = UserId(user.id),
+            displayName = user.displayName,
+            email = user.email,
+            photoUrl = user.photoUrl
+          )
+        }
+    }
+  }
+
+  override fun observeGroup(): Flow<Group?> {
+    return persistedDB.chatConversationQueries
+      .selectGroupById(
+        id = conversationId.value,
+        mapper = { rowId, name, ownerUid, participantUids, _, _, _, _, memberCount ->
+          Group(
+            id = Conversation.Id(rowId),
+            name = name.orEmpty(),
+            ownerId = UserId(ownerUid.orEmpty()),
+            memberCount = memberCount.toInt(),
+            participantIds = participantUids.map(::UserId)
+          )
+        }
+      )
+      .observeOneOrNull()
+  }
+
+  override fun observeGroupMembers(): Flow<List<GroupMember>> = flow {
+    val currentUserId = authSessionPersistence.withKey { readUserId(it) }?.value
+    val group = observeGroup()
+    val members = persistedDB.chatConversationParticipantQueries
+      .selectByConversationWithEmail(
+        conversationId = conversationId.value,
+        mapper = { memberId, displayName, email, photoUrl ->
+          GroupMember(
+            id = UserId(memberId),
+            displayName = displayName,
+            email = email,
+            photoUrl = photoUrl,
+            isOwner = false,
+            isMe = memberId == currentUserId
+          )
+        }
+      )
+      .observeList()
+    combine(group, members) { groupValue, memberRows ->
+      val ownerUid = groupValue?.ownerId?.value
+      memberRows.map { member ->
+        member.copy(isOwner = member.id.value == ownerUid)
+      }
+    }.collect { emit(it) }
+  }
+
+  private fun currentParticipantUids(): List<String> {
+    return persistedDB.chatConversationQueries
+      .selectGroupById(
+        id = conversationId.value,
+        mapper = { _, _, _, participantUids, _, _, _, _, _ -> participantUids }
+      )
+      .executeAsOneOrNull()
+      .orEmpty()
   }
 
   override val commits: Flow<List<Commit>> = flow {
@@ -160,3 +330,4 @@ class GroupThreadRepositoryImpl @Inject constructor(
 }
 
 private const val LIVE_COMMIT_LIMIT = 30L
+private const val USER_SEARCH_LIMIT = 10L

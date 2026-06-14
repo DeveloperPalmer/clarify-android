@@ -56,10 +56,7 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(
-      threadModel.commits()
-        .map { it.toUiCommits() }
-    ) {
+    onEach(threadModel.commits().map { it.toUiCommits() }) {
       transitionTo { state, commits ->
         state.copy(commits = commits.asReversed())
       }

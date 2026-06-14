@@ -10,13 +10,13 @@ import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlowNode
 import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlowNodeBuilder
 import ru.sla.clarify.feature.chat.conversation.ui.di.Screen
 import ru.sla.clarify.feature.chat.conversation.ui.di.WiredScreen
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget
 import ru.sla.clarify.feature.chat.direct.thread.routing.ThreadFlow
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupThreadTarget
 import ru.sla.clarify.feature.chat.group.thread.routing.GroupThreadFlow
 import ru.sla.clarify.feature.profile.routing.ProfileFlow
 import javax.inject.Inject
 import javax.inject.Provider
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams as DirectTargetParams
 
 class ConversationFlowNodeFactory @Inject constructor(
   private val flowNode: Provider<ConversationFlowNode>,
@@ -33,8 +33,8 @@ class ConversationFlowNodeFactory @Inject constructor(
     return BasicScreenNode(mainScreen.get())
   }
 
-  override fun createThreadFlowNodeBuilder(target: ThreadTarget): NodeBuilder {
-    val component = component.threadFlowComponent()
+  override fun createThreadFlowNodeBuilder(target: DirectTargetParams): NodeBuilder {
+    val component = component.directThreadFlowComponent()
       .target(target)
       .build()
     return ThreadFlow.nodeBuilder(component)

@@ -1,32 +1,14 @@
 package ru.sla.clarify.feature.chat.direct.thread.ui.mapper
 
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
-import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.conversation.domain.entity.GroupMember
 import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Commit
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
-import ru.sla.resourcerefs.resRef
 import ru.sla.clarify.feature.entity.chat.Commit as DomainCommit
 
-internal fun List<DomainCommit>.toUiCommits(
-  members: List<GroupMember> = emptyList()
-): List<Commit> {
+internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
   val commits = this
-  val names = members.associate { it.id.value to it.displayName }
-  return commits.mapIndexed { index, commit ->
+  return commits.mapIndexedNotNull { index, commit ->
     when (commit) {
-      is DomainCommit.InviteParticipant -> {
-        Commit.InviteParticipant(
-          source = commit,
-          key = "invite-participant:${commit.id.value}",
-          text = resRef(
-            R.string.thread_system_member_invited,
-            names.displayName(commit.senderId),
-            names.displayName(commit.invitedId)
-          )
-        )
-      }
       is DomainCommit.Message -> {
         val bubbleType = bubbleType(
           index = index,
@@ -41,25 +23,22 @@ internal fun List<DomainCommit>.toUiCommits(
             side = commit.side(),
             text = commit.text,
             time = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE),
-            sender = commit.sender(
-              type = bubbleType,
-              names = names
-            )
+            sender = commit.sender(bubbleType)
           )
         )
       }
+      is DomainCommit.InviteParticipant -> null
     }
   }
 }
 
 private fun DomainCommit.sender(
-  type: BubbleMessage.Type,
-  names: Map<String, String?>
+  type: BubbleMessage.Type
 ): BubbleMessage.Sender? {
   return if (!isSelf && type == BubbleMessage.Type.Top) {
     BubbleMessage.Sender(
       id = senderId,
-      name = names.displayName(senderId)
+      name = "?"
     )
   } else {
     null
@@ -72,10 +51,6 @@ private fun DomainCommit.side(): BubbleMessage.Side {
   } else {
     BubbleMessage.Side.Left
   }
-}
-
-private fun Map<String, String?>.displayName(id: UserId): String {
-  return this[id.value].orEmpty().ifBlank { "?" }
 }
 
 private fun DomainCommit.Status.toReadStatus(): BubbleMessage.ReadStatus {

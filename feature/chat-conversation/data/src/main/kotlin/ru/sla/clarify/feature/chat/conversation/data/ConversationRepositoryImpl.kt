@@ -19,15 +19,12 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToConversation
+import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToGroup
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToUser
-import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAll
-import ru.sla.clarify.feature.chat.conversation.data.mapper.selectAllGroupsAsConversations
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
-import ru.sla.clarify.feature.chat.conversation.domain.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
-import ru.sla.clarify.feature.chat.conversation.domain.entity.FoundUser
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Group
-import ru.sla.clarify.feature.chat.conversation.domain.entity.GroupMember
+import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
@@ -89,16 +86,9 @@ class ConversationRepositoryImpl @Inject constructor(
   override suspend fun createGroup(name: String): Conversation.Id {
     return withContext(Dispatchers.IO) {
       val conversationId = firestore.postGroupConversation(name)
-      // Материализуем группу локально сразу, чтобы экран треда не открывался пустым
-      // до прихода observeConversations-синка. Запись идемпотентна: последующий синк
-      // (applyConversationChanges) перезапишет её актуальными данными через INSERT OR REPLACE.
       val ownerId = authSessionPersistence.withKey { readUserId(it) }
       if (ownerId != null) {
         persistedDB.transaction {
-          persistedDB.chatConversationParticipantQueries.insertOrReplace(
-            conversationId = conversationId,
-            id = ownerId.value
-          )
           persistedDB.chatConversationQueries.insertOrReplaceMeta(
             id = conversationId,
             type = ConversationNM.Type.Group.value,
@@ -109,140 +99,22 @@ class ConversationRepositoryImpl @Inject constructor(
             lastCommitSenderUid = null,
             lastCommitTimestamp = 0L
           )
+          persistedDB.chatConversationParticipantQueries.insertOrReplace(
+            conversationId = conversationId,
+            id = ownerId.value
+          )
         }
       }
       Conversation.Id(conversationId)
     }
   }
 
-  override suspend fun renameGroup(id: Conversation.Id, name: String) {
-    withContext(Dispatchers.IO) {
-      firestore.patchGroupName(conversationId = id.value, name = name)
-      persistedDB.chatConversationQueries.updateGroupName(id = id.value, name = name)
-    }
-  }
-
-  override suspend fun deleteGroup(id: Conversation.Id) {
-    withContext(Dispatchers.IO) {
-      firestore.deleteGroupConversation(id.value)
-      persistedDB.transaction {
-        persistedDB.chatConversationQueries.deleteById(id.value)
-        persistedDB.chatConversationParticipantQueries.deleteByConversation(id.value)
-      }
-    }
-  }
-
-  override suspend fun leaveGroup(id: Conversation.Id) {
-    withContext(Dispatchers.IO) {
-      firestore.leaveGroup(id.value)
-      persistedDB.transaction {
-        persistedDB.chatConversationQueries.deleteById(id.value)
-        persistedDB.chatConversationParticipantQueries.deleteByConversation(id.value)
-      }
-    }
-  }
-
-  override suspend fun inviteGroupMembers(id: Conversation.Id, userIds: List<UserId>) {
-    withContext(Dispatchers.IO) {
-      userIds.forEach { userId ->
-        firestore.postInviteParticipant(
-          conversationId = id.value,
-          invitedUserId = userId
-        )
-      }
-      // Локально добавляем участников и обновляем денормализованный participantUids,
-      // из которого sendCommit берёт получателей unread-инкрементов. Иначе колонка
-      // отстаёт до прихода observeParticipants-синка.
-      persistedDB.transaction {
-        userIds.forEach { userId ->
-          persistedDB.chatConversationParticipantQueries.insertOrReplace(
-            conversationId = id.value,
-            id = userId.value
-          )
-        }
-        val merged = (currentParticipantUids(id.value) + userIds.map { it.value }).distinct()
-        persistedDB.chatConversationQueries.updateParticipantUids(
-          id = id.value,
-          participantUids = merged
-        )
-      }
-    }
-  }
-
-  override suspend fun removeGroupMember(id: Conversation.Id, userId: UserId) {
-    withContext(Dispatchers.IO) {
-      firestore.deleteParticipant(conversationId = id.value, userId = userId)
-      persistedDB.transaction {
-        persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
-          conversationId = id.value,
-          id = userId.value
-        )
-        val remaining = currentParticipantUids(id.value) - userId.value
-        persistedDB.chatConversationQueries.updateParticipantUids(
-          id = id.value,
-          participantUids = remaining
-        )
-      }
-    }
-  }
-
-  private fun currentParticipantUids(conversationId: String): List<String> {
-    return persistedDB.chatConversationQueries
-      .selectGroupById(
-        id = conversationId,
-        mapper = { _, _, _, participantUids, _, _, _, _, _ -> participantUids }
-      )
-      .executeAsOneOrNull()
-      .orEmpty()
-  }
-
-  override suspend fun searchMemberByPrefix(prefix: String): List<FoundUser> {
-    return withContext(Dispatchers.IO) {
-      firestore.getUsersByEmailPrefix(prefix = prefix.lowercase(), limit = USER_SEARCH_LIMIT)
-        .map { user ->
-          FoundUser(
-            id = UserId(user.id),
-            displayName = user.displayName,
-            email = user.email,
-            photoUrl = user.photoUrl
-          )
-        }
-    }
-  }
-
-  override suspend fun subscribeOnGroupParticipants(id: Conversation.Id) {
-    firestore.observeParticipants(id.value)
-      .flowOn(Dispatchers.IO)
-      .collect { changes ->
-        persistedDB.transaction {
-          changes.forEach { change ->
-            when (change.changeType) {
-              FirestoreDocumentResult.Added,
-              FirestoreDocumentResult.Modified -> {
-                persistedDB.chatConversationParticipantQueries.insertOrReplace(
-                  conversationId = id.value,
-                  id = change.data.id
-                )
-              }
-
-              FirestoreDocumentResult.Removed -> {
-                persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
-                  conversationId = id.value,
-                  id = change.data.id
-                )
-              }
-            }
-          }
-        }
-      }
-  }
-
   override suspend fun deleteConversations(ids: List<Conversation.Id>) {
     return withContext(Dispatchers.IO) {
-      val idValues = ids.map { it.value }
-      firestore.deleteConversations(idValues)
+      val deletableIds = ids.map { it.value }
+      firestore.deleteConversations(deletableIds)
       persistedDB.transaction {
-        idValues.forEach {
+        deletableIds.forEach {
           persistedDB.chatConversationQueries.deleteById(it)
           persistedDB.chatConversationParticipantQueries.deleteByConversation(it)
         }
@@ -265,56 +137,18 @@ class ConversationRepositoryImpl @Inject constructor(
     if (userId == null) return@flow emit(emptyList())
 
     val directs = persistedDB.chatConversationQueries
-      .selectAll(userId)
+      .selectAllWithPeer(userId.value, ::mapToConversation)
       .observeList()
+
     val groups = persistedDB.chatConversationQueries
-      .selectAllGroupsAsConversations()
+      .selectAllGroups(::mapToGroup)
       .observeList()
-    combine(directs, groups) { d, g ->
-      (d + g).sortedByDescending { it.lastCommitTimestamp }
-    }.collect { emit(it) }
-  }
 
-  override fun observeGroup(id: Conversation.Id): Flow<Group?> {
-    return persistedDB.chatConversationQueries
-      .selectGroupById(
-        id = id.value,
-        mapper = { rowId, name, ownerUid, participantUids, _, _, _, _, memberCount ->
-          Group(
-            id = Conversation.Id(rowId),
-            name = name.orEmpty(),
-            ownerId = UserId(ownerUid.orEmpty()),
-            memberCount = memberCount.toInt(),
-            participantIds = participantUids.map(::UserId)
-          )
-        }
-      )
-      .observeOneOrNull()
-  }
-
-  override fun observeGroupMembers(id: Conversation.Id): Flow<List<GroupMember>> = flow {
-    val currentUserId = authSessionPersistence.withKey { readUserId(it) }?.value
-    val group = observeGroup(id)
-    val members = persistedDB.chatConversationParticipantQueries
-      .selectByConversationWithEmail(
-        conversationId = id.value,
-        mapper = { memberId, displayName, email, photoUrl ->
-          GroupMember(
-            id = UserId(memberId),
-            displayName = displayName,
-            email = email,
-            photoUrl = photoUrl,
-            isOwner = false,
-            isMe = memberId == currentUserId
-          )
-        }
-      )
-      .observeList()
-    combine(group, members) { groupValue, memberRows ->
-      val ownerUid = groupValue?.ownerId?.value
-      memberRows.map { member ->
-        member.copy(isOwner = member.id.value == ownerUid)
-      }
+    combine(
+      flow = directs,
+      flow2 = groups
+    ) { directs, groups ->
+      (directs + groups).sortedByDescending { it.lastCommitTimestamp }
     }.collect { emit(it) }
   }
 
@@ -348,11 +182,9 @@ class ConversationRepositoryImpl @Inject constructor(
           FirestoreDocumentResult.Added -> {
             applyConversationChanges(change.data)
           }
-
           FirestoreDocumentResult.Modified -> {
             applyInsertOrReplaceMetaConversation(change.data)
           }
-
           FirestoreDocumentResult.Removed -> {
             persistedDB.chatConversationQueries.deleteById(change.data.id)
             persistedDB.chatConversationParticipantQueries.deleteByConversation(change.data.id)
@@ -411,5 +243,3 @@ class ConversationRepositoryImpl @Inject constructor(
     )
   }
 }
-
-private const val USER_SEARCH_LIMIT = 10L

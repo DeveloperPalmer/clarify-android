@@ -7,7 +7,7 @@ import ru.sla.clarify.core.routing.BasicScreenNode
 import ru.sla.clarify.core.ui.WiredComposableScreen
 import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
 import ru.sla.clarify.feature.chat.branch.routing.BranchFlow
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.feature.chat.direct.thread.routing.ThreadFlowNode
 import ru.sla.clarify.feature.chat.direct.thread.routing.ThreadFlowNodeBuilder
 import ru.sla.clarify.feature.chat.direct.thread.ui.di.Screen
@@ -22,7 +22,7 @@ class ThreadFlowNodeFactory @Inject constructor(
   private val threadScreenNode: Provider<WiredComposableScreen>
 ) : ThreadFlowNodeBuilder.Factory {
 
-  override fun createRootNode(target: ThreadTarget): FlowNode<*> {
+  override fun createRootNode(target: TargetParams): FlowNode<*> {
     return flowNode.get()
   }
 

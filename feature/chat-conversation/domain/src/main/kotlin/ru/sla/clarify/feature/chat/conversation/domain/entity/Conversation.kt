@@ -1,7 +1,6 @@
 package ru.sla.clarify.feature.chat.conversation.domain.entity
 
 import androidx.compose.runtime.Immutable
-import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.resourcerefs.TextRef
 
@@ -29,8 +28,6 @@ sealed interface Conversation {
     override val lastCommitTimestamp: Long,
     override val unreadCount: Long,
     val name: String,
-    val ownerId: UserId,
-    val memberCount: Int,
     val lastCommitSenderName: String?
   ) : Conversation
 

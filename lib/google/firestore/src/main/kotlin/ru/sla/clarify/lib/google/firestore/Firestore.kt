@@ -220,20 +220,23 @@ class Firestore @Inject constructor(
 
     val batch = writeBatch()
     val conversationRef = conversationDocumentRef(conversationId)
+
+    val postConversationParams = PostConversationParams(
+      type = ConversationNM.Type.Group,
+      participantUids = listOf(ownerId.value),
+      name = name,
+      ownerUid = ownerId.value
+    )
+    val postParticipantParams = PostParticipantParams(
+      id = ownerId.value
+    )
     batch.set(
       conversationRef,
-      codec.encodeToMap(
-        PostConversationParams(
-          type = ConversationNM.Type.Group,
-          participantUids = listOf(ownerId.value),
-          name = name,
-          ownerUid = ownerId.value
-        )
-      )
+      codec.encodeToMap(postConversationParams)
     )
     batch.set(
       participantDocumentRef(conversationId, ownerId),
-      codec.encodeToMap(PostParticipantParams(id = ownerId.value))
+      codec.encodeToMap(postParticipantParams)
     )
     batch.commit().await()
     return conversationId

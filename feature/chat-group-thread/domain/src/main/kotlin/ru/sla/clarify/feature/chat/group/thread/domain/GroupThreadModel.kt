@@ -7,28 +7,24 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
-import ru.sla.clarify.feature.chat.conversation.domain.entity.FoundUser
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Group
-import ru.sla.clarify.feature.chat.conversation.domain.entity.GroupMember
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
-import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupThreadTarget
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
 import ru.sla.clarify.feature.entity.chat.Commit
 import java.time.LocalDateTime
 import javax.inject.Inject
 
 @SingleIn(GroupThreadScope::class)
 class GroupThreadModel @Inject constructor(
-  target: GroupThreadTarget,
   private val groupThreadRepository: GroupThreadRepository,
   private val conversationRepository: ConversationRepository
 ) : ReactiveModel() {
 
-  private val conversationId = target.conversationId
-
   override fun onPostStart() {
     super.onPostStart()
     scope.launch { groupThreadRepository.subscribeOnCommitChanges() }
-    scope.launch { conversationRepository.subscribeOnGroupParticipants(conversationId) }
+    scope.launch { groupThreadRepository.subscribeOnGroupParticipants() }
   }
 
   fun markReadUpTo(lastReadAt: LocalDateTime) {
@@ -50,42 +46,42 @@ class GroupThreadModel @Inject constructor(
   val renameGroup = task<String, Unit>(
     name = "renameGroup"
   ) { name ->
-    conversationRepository.renameGroup(id = conversationId, name = name)
+    groupThreadRepository.renameGroup(name = name)
   }
 
   val deleteGroup = task<Unit>(
     name = "deleteGroup"
   ) {
-    conversationRepository.deleteGroup(conversationId)
+    groupThreadRepository.deleteGroup()
   }
 
   val leaveGroup = task<Unit>(
     name = "leaveGroup"
   ) {
-    conversationRepository.leaveGroup(conversationId)
+    groupThreadRepository.leaveGroup()
   }
 
   val inviteMembers = task<List<UserId>, Unit>(
     name = "inviteMembers"
   ) { userIds ->
-    conversationRepository.inviteGroupMembers(id = conversationId, userIds = userIds)
+    groupThreadRepository.inviteGroupMembers(userIds = userIds)
   }
 
   val removeMember = task<UserId, Unit>(
     name = "removeMember"
   ) { userId ->
-    conversationRepository.removeGroupMember(id = conversationId, userId = userId)
+    groupThreadRepository.removeGroupMember(userId = userId)
   }
 
   val searchUsers = task<String, List<FoundUser>>(
     name = "searchUsers"
   ) { prefix ->
-    conversationRepository.searchMemberByPrefix(prefix)
+    groupThreadRepository.searchMemberByPrefix(prefix = prefix)
   }
 
   val user: Flow<User?> = conversationRepository.user
-  val group: Flow<Group?> = conversationRepository.observeGroup(conversationId)
-  val members: Flow<List<GroupMember>> = conversationRepository.observeGroupMembers(conversationId)
+  val group: Flow<Group?> = groupThreadRepository.observeGroup()
+  val members: Flow<List<GroupMember>> = groupThreadRepository.observeGroupMembers()
   val commits: Flow<List<Commit>> = groupThreadRepository.commits
   val unreadCount: Flow<Long> = groupThreadRepository.unreadCount
 }

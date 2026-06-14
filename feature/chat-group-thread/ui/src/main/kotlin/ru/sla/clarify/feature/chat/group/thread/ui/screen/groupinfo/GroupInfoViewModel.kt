@@ -14,8 +14,8 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
-import ru.sla.clarify.feature.chat.conversation.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadModel
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.GroupMember
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.InviteCandidate

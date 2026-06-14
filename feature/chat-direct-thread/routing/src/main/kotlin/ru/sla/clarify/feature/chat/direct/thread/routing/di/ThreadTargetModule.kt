@@ -4,7 +4,7 @@ import com.squareup.anvil.annotations.ContributesTo
 import dagger.Module
 import dagger.Provides
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.ThreadScope
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.feature.entity.chat.Peer
 
 @Module
@@ -12,7 +12,7 @@ import ru.sla.clarify.feature.entity.chat.Peer
 object ThreadTargetModule {
 
   @Provides
-  fun providePeerId(target: ThreadTarget): Peer.Id {
+  fun providePeerId(target: TargetParams): Peer.Id {
     return target.peerId
   }
 }

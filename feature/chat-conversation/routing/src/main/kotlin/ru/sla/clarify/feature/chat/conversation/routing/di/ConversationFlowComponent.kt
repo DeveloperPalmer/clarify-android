@@ -11,7 +11,7 @@ import ru.sla.clarify.feature.profile.routing.di.ProfileFlowComponent
 @MergeSubcomponent(ConversationScope::class)
 interface ConversationFlowComponent {
   fun nodeFactory(): ConversationFlowNodeFactory
-  fun threadFlowComponent(): ThreadFlowComponent.Builder
-  fun groupThreadFlowComponent(): GroupThreadFlowComponent.Builder
   fun profileFlowComponent(): ProfileFlowComponent
+  fun directThreadFlowComponent(): ThreadFlowComponent.Builder
+  fun groupThreadFlowComponent(): GroupThreadFlowComponent.Builder
 }

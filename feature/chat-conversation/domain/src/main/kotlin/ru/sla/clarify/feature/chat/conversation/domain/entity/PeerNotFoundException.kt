@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.conversation.domain
+package ru.sla.clarify.feature.chat.conversation.domain.entity
 
 import ru.sla.clarify.core.domain.entity.Email
 

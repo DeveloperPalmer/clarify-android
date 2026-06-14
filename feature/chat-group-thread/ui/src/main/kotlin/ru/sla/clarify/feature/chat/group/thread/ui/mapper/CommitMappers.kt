@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.chat.group.thread.ui.mapper
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.conversation.domain.entity.GroupMember
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.Commit
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
 import ru.sla.resourcerefs.resRef

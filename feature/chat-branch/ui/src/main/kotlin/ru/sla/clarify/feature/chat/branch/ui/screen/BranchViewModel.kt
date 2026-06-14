@@ -108,10 +108,7 @@ class BranchViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configurePeerCommitTransitions() {
-    onEach(
-      branchModel.commits
-        .map { it.toUiCommits() }
-    ) {
+    onEach(branchModel.commits.map { it.toUiCommits() }) {
       transitionTo { state, commits ->
         // SQL отдаёт ASC по timestamp; UI рендерит newest-first.
         state.copy(commits = commits.asReversed())

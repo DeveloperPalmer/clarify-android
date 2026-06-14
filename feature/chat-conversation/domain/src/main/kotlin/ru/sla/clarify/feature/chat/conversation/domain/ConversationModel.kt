@@ -13,16 +13,16 @@ import ru.sla.clarify.feature.entity.chat.Peer
 import javax.inject.Inject
 
 @SingleIn(ConversationScope::class)
-class ChatModel @Inject constructor(
+class ConversationModel @Inject constructor(
   private val conversationRepository: ConversationRepository
 ) : ReactiveModel() {
 
   override fun onPostStart() {
     super.onPostStart()
-    scope.launch { conversationRepository.subscribeOnConversations() }
-    scope.launch { conversationRepository.subscribeOnParticipantProfiles() }
-    scope.launch { conversationRepository.subscribeOnConversationsUnreadCounts() }
     scope.launch { conversationRepository.fetchCurrentUser() }
+    scope.launch { conversationRepository.subscribeOnConversations() }
+    scope.launch { conversationRepository.subscribeOnConversationsUnreadCounts() }
+    scope.launch { conversationRepository.subscribeOnParticipantProfiles() }
   }
 
   val getPeerByEmail = task<Email, Peer.Id>(
@@ -34,16 +34,17 @@ class ChatModel @Inject constructor(
   val deleteConversations = task<List<Conversation.Id>, Unit>(
     name = "deleteConversations"
   ) { ids ->
-    conversationRepository.deleteConversations(ids = ids)
+    conversationRepository.deleteConversations(ids)
   }
 
   val createGroup = task<String, Conversation.Id>(
     name = "createGroup"
   ) { name ->
-    conversationRepository.createGroup(name = name)
+    conversationRepository.createGroup(name)
   }
 
   val user: Flow<User?> = conversationRepository.user
 
-  val conversations: Flow<List<Conversation>> = conversationRepository.conversations.filterNotNull()
+  val conversations: Flow<List<Conversation>> = conversationRepository.conversations
+    .filterNotNull()
 }

@@ -5,7 +5,7 @@ import dagger.BindsInstance
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.branch.routing.di.BranchFlowComponent
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.ThreadScope
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 
 @SingleIn(ThreadScope::class)
 @MergeSubcomponent(ThreadScope::class)
@@ -16,7 +16,7 @@ interface ThreadFlowComponent {
   @MergeSubcomponent.Builder
   interface Builder {
     @BindsInstance
-    fun target(target: ThreadTarget): Builder
+    fun target(target: TargetParams): Builder
     fun build(): ThreadFlowComponent
   }
 }
