@@ -20,11 +20,11 @@ import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.branch.domain.BranchModel
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
-import ru.sla.clarify.feature.chat.branch.ui.entity.Commit
 import ru.sla.clarify.feature.chat.branch.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
 import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.feature.entity.chat.Branch.MergeRequest.Status
+import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject

@@ -1,8 +1,8 @@
 package ru.sla.clarify.feature.chat.branch.ui.mapper
 
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
-import ru.sla.clarify.feature.chat.branch.ui.entity.Commit
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
+import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.feature.entity.chat.Commit as DomainCommit
 
 internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
@@ -23,25 +23,12 @@ internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
             side = commit.side(),
             text = commit.text,
             time = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE),
-            sender = commit.sender(bubbleType)
+            sender = null
           )
         )
       }
       is DomainCommit.InviteMember -> null
     }
-  }
-}
-
-private fun DomainCommit.sender(
-  type: BubbleMessage.Type
-): BubbleMessage.Sender? {
-  return if (!isSelf && type == BubbleMessage.Type.Top) {
-    BubbleMessage.Sender(
-      id = senderId,
-      name = "?"
-    )
-  } else {
-    null
   }
 }
 

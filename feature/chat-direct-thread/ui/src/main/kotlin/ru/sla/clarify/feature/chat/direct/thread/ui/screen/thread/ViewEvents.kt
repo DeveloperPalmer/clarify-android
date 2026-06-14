@@ -17,8 +17,8 @@ import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
 import ru.sla.clarify.feature.chat.direct.thread.ui.components.BranchCreateContent
 import ru.sla.clarify.feature.chat.direct.thread.ui.components.BranchesContent
-import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Commit
 import ru.sla.clarify.uikit.component.bottomsheet.ModalBottomSheet
+import ru.sla.clarify.uikit.component.chat.Commit
 
 internal fun showBranchCreationModalSheet(commit: Commit.Message): ScreenViewEvent<ViewState, ViewIntents> {
   return ScreenViewEvent { stateFlow, intents ->

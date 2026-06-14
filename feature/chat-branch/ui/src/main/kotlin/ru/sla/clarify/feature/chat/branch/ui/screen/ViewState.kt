@@ -4,9 +4,9 @@ import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
-import ru.sla.clarify.feature.chat.branch.ui.entity.Commit
 import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.feature.entity.chat.Member
+import ru.sla.clarify.uikit.component.chat.Commit
 
 @Immutable
 data class ViewState(

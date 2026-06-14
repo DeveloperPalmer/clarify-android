@@ -29,10 +29,10 @@ import kotlinx.coroutines.launch
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
-import ru.sla.clarify.feature.chat.group.thread.ui.components.ChatCommits
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.Group
 import ru.sla.clarify.uikit.component.avatar.GroupAvatar
 import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
+import ru.sla.clarify.uikit.component.chat.ChatCommits
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults

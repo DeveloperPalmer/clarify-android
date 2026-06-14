@@ -2,8 +2,8 @@ package ru.sla.clarify.feature.chat.group.thread.ui.screen.main
 
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.ui.entity.ContentLoadState
-import ru.sla.clarify.feature.chat.group.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.Group
+import ru.sla.clarify.uikit.component.chat.Commit
 
 @Immutable
 data class ViewState(

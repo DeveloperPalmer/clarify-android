@@ -14,9 +14,9 @@ import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
-import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.direct.thread.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
+import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject

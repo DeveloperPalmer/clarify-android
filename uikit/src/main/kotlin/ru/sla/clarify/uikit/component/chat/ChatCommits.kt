@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.direct.thread.ui.components
+package ru.sla.clarify.uikit.component.chat
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
@@ -24,14 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Commit
 import ru.sla.clarify.uikit.component.InviteMemberItem
 import ru.sla.clarify.uikit.component.bubble.BubbleMessageItem
 import ru.sla.resourcerefs.compose.resolveTextRef
 import java.time.LocalDateTime
 
 @Composable
-internal fun ChatCommits(
+fun ChatCommits(
   commits: List<Commit>,
   listState: LazyListState,
   onCommitsRead: (LocalDateTime) -> Unit,
@@ -92,6 +91,7 @@ internal fun ChatCommits(
             onLongClick = onCommitLongClick
           )
         }
+
         is Commit.InviteMember -> {
           InviteMemberItem(
             modifier = Modifier

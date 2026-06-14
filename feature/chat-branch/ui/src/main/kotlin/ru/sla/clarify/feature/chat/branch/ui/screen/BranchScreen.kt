@@ -22,12 +22,12 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
-import ru.sla.clarify.feature.chat.branch.ui.components.ChatCommits
 import ru.sla.clarify.feature.chat.branch.ui.components.ChatEmptyState
 import ru.sla.clarify.feature.chat.branch.ui.components.MergeRequestButton
 import ru.sla.clarify.feature.chat.branch.ui.components.MergeRequestCard
 import ru.sla.clarify.feature.entity.chat.Branch.MergeRequest.Status
 import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
+import ru.sla.clarify.uikit.component.chat.ChatCommits
 import ru.sla.clarify.uikit.component.scrim.ScrimEffect
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar

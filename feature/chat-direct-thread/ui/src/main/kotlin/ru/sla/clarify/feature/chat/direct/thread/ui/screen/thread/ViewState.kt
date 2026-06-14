@@ -2,10 +2,10 @@ package ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread
 
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.ui.entity.ContentLoadState
-import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.direct.thread.ui.entity.CreateBranchError
 import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.uikit.component.chat.Commit
 
 @Immutable
 data class ViewState(

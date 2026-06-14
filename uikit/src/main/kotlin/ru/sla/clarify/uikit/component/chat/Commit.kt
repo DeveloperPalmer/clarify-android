@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.group.thread.ui.entity
+package ru.sla.clarify.uikit.component.chat
 
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
