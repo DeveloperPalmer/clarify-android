@@ -6,16 +6,16 @@ digraph ConversationFlow {
     resultType = "ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow.Result"
   ]
 
-  threadFlow [
+  directThreadFlow [
     type = "schema"
-    parameterName = "target"
-    parameterType = "ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget"
+    parameterName = "params"
+    parameterType = "ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams"
   ]
 
   groupThreadFlow [
     type = "schema"
-    parameterName = "conversationId"
-    parameterType = "ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation.Id"
+    parameterName = "params"
+    parameterType = "ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams"
     resultType = "ru.sla.clarify.feature.chat.group.thread.routing.GroupThreadFlow.Result"
   ]
 
@@ -26,7 +26,7 @@ digraph ConversationFlow {
 
   conversationFlow -> main
 
-  main -> threadFlow
+  main -> directThreadFlow
   main -> groupThreadFlow
   main -> profileFlow
 }

@@ -13,7 +13,7 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Выполняет Firestore-транзакцию: читает текущий документ ветки, добавляет UID текущего пользователя в `approvedByUids` (через `distinct`, чтобы избежать дублей), и проверяет покрытие: если все `participantUids` присутствуют в `approvedByUids` — статус переключается на `ReadyToMerge`. Использует dot-path обновление, чтобы не перезаписывать остальные поля `mergeRequest`. |
+| Description      | Выполняет Firestore-транзакцию: читает текущий документ ветки, добавляет UID текущего пользователя в `approvedByUids` (через `distinct`, чтобы избежать дублей), и проверяет покрытие: если все `memberUids` присутствуют в `approvedByUids` — статус переключается на `ReadyToMerge`. Использует dot-path обновление, чтобы не перезаписывать остальные поля `mergeRequest`. |
 
 
 ### Signature
@@ -22,7 +22,7 @@ tags:
 suspend fun patchMergeApproval(
   conversationId: String,
   branchId: String,
-  participantUids: List<String>
+  memberUids: List<String>
 )
 ```
 
@@ -32,7 +32,7 @@ suspend fun patchMergeApproval(
 |-----------------|-----|---------------|-----------------------------------------------------------------------------------------------------|
 | conversationId  | Y   | String        | ID conversation, в которой находится ветка.                                                         |
 | branchId        | Y   | String        | ID ветки с активным merge request'ом.                                                               |
-| participantUids | Y   | List\<String\> | Полный список UID участников conversation. Используется для проверки полноты аппрувов. |
+| memberUids | Y   | List\<String\> | Полный список UID участников conversation. Используется для проверки полноты аппрувов. |
 
 ### Response parameters
 
@@ -44,7 +44,7 @@ suspend fun patchMergeApproval(
 {
   "conversationId": "conv-xyz789",
   "branchId": "branch-ghi012",
-  "participantUids": ["uid-alice", "uid-bob"]
+  "memberUids": ["uid-alice", "uid-bob"]
 }
 ```
 

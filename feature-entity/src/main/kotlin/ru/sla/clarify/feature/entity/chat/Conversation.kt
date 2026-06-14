@@ -1,7 +1,6 @@
-package ru.sla.clarify.feature.chat.conversation.domain.entity
+package ru.sla.clarify.feature.entity.chat
 
 import androidx.compose.runtime.Immutable
-import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.resourcerefs.TextRef
 
 @Immutable

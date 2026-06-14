@@ -8,9 +8,9 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.mapDistinctNotNullChanges
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
+import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Participant
+import ru.sla.clarify.feature.entity.chat.Member
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -21,9 +21,9 @@ class BranchModel @Inject constructor(
 
   override fun onPostStart() {
     super.onPostStart()
-    scope.launch { branchRepository.subscribeOnChanges() }
-    scope.launch { branchRepository.subscribeOnCommitChanges() }
-    scope.launch { branchRepository.subscribeOnUnreadCount() }
+    scope.launch { branchRepository.subscribeOnBranchesChanges() }
+    scope.launch { branchRepository.subscribeOnBranchCommitsChanges() }
+    scope.launch { branchRepository.subscribeOnBranchUnreadCount() }
   }
 
   fun markReadCommits() {
@@ -86,13 +86,13 @@ class BranchModel @Inject constructor(
   val commits: Flow<List<Commit>> = branchRepository.commits
   val unreadCount: Flow<Long> = branchRepository.unreadCount
 
-  val participants: Flow<List<Participant>> = branchRepository.participants
+  val members: Flow<List<Member>> = branchRepository.members
 
   val branch: Flow<Branch?> = branchRepository.branch
 
-  val mergeRequestInitiator: Flow<Participant?> = branchRepository.branch
+  val mergeRequestInitiator: Flow<Member?> = branchRepository.branch
     .mapDistinctNotNullChanges { it?.mergeRequest?.initiatorId }
-    .flatMapLatest(branchRepository::participant)
+    .flatMapLatest(branchRepository::member)
 }
 
 private const val DEFAULT_HISTORY_PAGE_SIZE: Int = 20

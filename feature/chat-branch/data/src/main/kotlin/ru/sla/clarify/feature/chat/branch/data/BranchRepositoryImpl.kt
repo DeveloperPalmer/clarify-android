@@ -22,16 +22,17 @@ import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.branch.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.branch.data.mapper.mapToBranch
 import ru.sla.clarify.feature.chat.branch.data.mapper.mapToCommit
-import ru.sla.clarify.feature.chat.branch.data.mapper.mapToParticipant
+import ru.sla.clarify.feature.chat.branch.data.mapper.mapToMember
 import ru.sla.clarify.feature.chat.branch.data.mapper.mapToUser
 import ru.sla.clarify.feature.chat.branch.data.mapper.toDomain
 import ru.sla.clarify.feature.chat.branch.data.mapper.toLocalDateTime
 import ru.sla.clarify.feature.chat.branch.data.mapper.withReadStatus
 import ru.sla.clarify.feature.chat.branch.domain.BranchRepository
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
+import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
+import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Participant
+import ru.sla.clarify.feature.entity.chat.Member
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
@@ -44,22 +45,30 @@ import javax.inject.Inject
 @SingleIn(BranchScope::class)
 @ContributesBinding(BranchScope::class)
 class BranchRepositoryImpl @Inject constructor(
-  private val branchId: Branch.Id,
+  params: TargetParams,
   private val firestore: Firestore,
   private val persistedDB: PersistedDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : BranchRepository {
 
+  private val branchId = params.branchId
   private var lastReadWatermark: LocalDateTime? = null
 
-  override suspend fun subscribeOnChanges() {
+  override suspend fun subscribeOnBranchesChanges() {
     val conversationId = awaitConversationId()
-    firestore.observeBranches(conversationId)
-      .flowOn(Dispatchers.IO)
-      .collect { changes -> applyBranchesChanges(conversationId, changes) }
+    firestore.observeBranches(
+      conversationId = conversationId
+    ).flowOn(
+      context = Dispatchers.IO
+    ).collect { changes ->
+      applyBranchesChanges(
+        conversationId = conversationId,
+        changes = changes
+      )
+    }
   }
 
-  override suspend fun subscribeOnCommitChanges() {
+  override suspend fun subscribeOnBranchCommitsChanges() {
     val userId = requireUserId()
     val conversationId = awaitConversationId()
     firestore.observeCommits(
@@ -77,103 +86,112 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun subscribeOnUnreadCount() {
+  override suspend fun subscribeOnBranchUnreadCount() {
     val conversationId = awaitConversationId()
     firestore.observeBranchUnreadCount(
       conversationId = conversationId,
       branchId = branchId.value
-    ).flowOn(Dispatchers.IO)
-      .collect { unreadCount ->
-        applyUpdateUnreadCount(
-          branchId = branchId.value,
-          unreadCount = unreadCount
-        )
-      }
+    ).flowOn(
+      context = Dispatchers.IO
+    ).collect { unreadCount ->
+      applyUpdateUnreadCount(
+        branchId = branchId.value,
+        unreadCount = unreadCount
+      )
+    }
   }
 
   override suspend fun fetchHistoryCommits(count: Int, before: Commit?) {
-    val conversationId = awaitConversationId()
-    val historyCommits = firestore.getCommits(
-      conversationId = conversationId,
-      branchId = branchId.value,
-      count = count,
-      before = before?.timestamp
-    )
-    applyInsertOrReplaceCommits(conversationId, historyCommits)
+    return withContext(Dispatchers.IO) {
+      val conversationId = awaitConversationId()
+      val historyCommits = firestore.getCommits(
+        conversationId = conversationId,
+        branchId = branchId.value,
+        count = count,
+        before = before?.timestamp
+      )
+      applyInsertOrReplaceCommits(conversationId, historyCommits)
+    }
   }
 
   override suspend fun sendCommit(colorHex: String?, text: String) {
-    val conversationId = requireConversationId()
-    firestore.postBranchCommit(
-      conversationId = conversationId,
-      branchId = branchId.value,
-      text = text,
-      colorHex = colorHex ?: generateColorHex(),
-      participantUids = participantUids(conversationId)
-    )
+    return withContext(Dispatchers.IO) {
+      val conversationId = requireConversationId()
+      firestore.postBranchCommit(
+        conversationId = conversationId,
+        branchId = branchId.value,
+        text = text,
+        colorHex = colorHex ?: generateColorHex(),
+        memberUids = memberUids(conversationId)
+      )
+    }
   }
 
   override suspend fun markAsRead() {
-    withContext(Dispatchers.IO) {
+    return withContext(Dispatchers.IO) {
       firestore.patchBranchClearUnreadCount(
-        conversationId = requireConversationId(),
-        branchId = branchId.value
+        branchId = branchId.value,
+        conversationId = requireConversationId()
       )
     }
   }
 
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
-    val conversationId = requireConversationId()
-    val current = lastReadWatermark
-    if (current != null && !lastReadAt.isAfter(current)) return
-    lastReadWatermark = lastReadAt
-    firestore.patchReadWatermark(conversationId, lastReadAt)
-    firestore.patchClearUnreadCount(conversationId)
+    return withContext(Dispatchers.IO) {
+      val conversationId = requireConversationId()
+      val current = lastReadWatermark
+      if (current != null && !lastReadAt.isAfter(current)) {
+        return@withContext
+      }
+      lastReadWatermark = lastReadAt
+      firestore.patchReadWatermark(conversationId, lastReadAt)
+      firestore.patchClearUnreadCount(conversationId)
+    }
   }
 
   override suspend fun openMergeRequest() {
-    withContext(Dispatchers.IO) {
+    return withContext(Dispatchers.IO) {
       firestore.postMergeRequest(
-        conversationId = requireConversationId(),
-        branchId = branchId.value
+        branchId = branchId.value,
+        conversationId = requireConversationId()
       )
     }
   }
 
   override suspend fun approveMergeRequest() {
-    withContext(Dispatchers.IO) {
+    return withContext(Dispatchers.IO) {
       val conversationId = requireConversationId()
       firestore.patchMergeApproval(
-        conversationId = conversationId,
         branchId = branchId.value,
-        participantUids = participantUids(conversationId)
+        conversationId = conversationId,
+        memberUids = memberUids(conversationId)
       )
     }
   }
 
   override suspend fun revokeApprovalMergeRequest() {
-    withContext(Dispatchers.IO) {
+    return withContext(Dispatchers.IO) {
       firestore.deleteMergeApproval(
-        conversationId = requireConversationId(),
-        branchId = branchId.value
+        branchId = branchId.value,
+        conversationId = requireConversationId()
       )
     }
   }
 
   override suspend fun cancelMergeRequest() {
-    withContext(Dispatchers.IO) {
+    return withContext(Dispatchers.IO) {
       firestore.deleteMergeRequest(
-        conversationId = requireConversationId(),
-        branchId = branchId.value
+        branchId = branchId.value,
+        conversationId = requireConversationId()
       )
     }
   }
 
   override suspend fun finalizeMergeRequest() {
-    withContext(Dispatchers.IO) {
+    return withContext(Dispatchers.IO) {
       firestore.patchMergeFinalize(
-        conversationId = requireConversationId(),
-        branchId = branchId.value
+        branchId = branchId.value,
+        conversationId = requireConversationId()
       )
     }
   }
@@ -184,6 +202,7 @@ class BranchRepositoryImpl @Inject constructor(
     persistedDB.userQueries
       .selectById(userId.value, ::mapToUser)
       .observeOneOrNull()
+      .flowOn(Dispatchers.IO)
       .collect { emit(it) }
   }
 
@@ -217,18 +236,18 @@ class BranchRepositoryImpl @Inject constructor(
       .collect { emit(it) }
   }
 
-  override val participants: Flow<List<Participant>> = flow {
+  override val members: Flow<List<Member>> = flow {
     val conversationId = awaitConversationId()
-    persistedDB.chatConversationParticipantQueries
-      .selectByConversation(conversationId, ::mapToParticipant)
+    persistedDB.chatConversationMemberQueries
+      .selectByConversation(conversationId, ::mapToMember)
       .observeList()
       .collect { emit(it) }
   }
 
-  override fun participant(id: UserId): Flow<Participant?> = flow {
+  override fun member(id: UserId): Flow<Member?> = flow {
     val conversationId = awaitConversationId()
-    persistedDB.chatConversationParticipantQueries
-      .selectByConversationAndId(conversationId, id.value, ::mapToParticipant)
+    persistedDB.chatConversationMemberQueries
+      .selectByConversationAndId(conversationId, id.value, ::mapToMember)
       .observeOneOrNull()
       .collect { emit(it) }
   }
@@ -241,8 +260,8 @@ class BranchRepositoryImpl @Inject constructor(
     conversationId: String,
     selfId: UserId
   ): Flow<LocalDateTime?> {
-    val peerUid = persistedDB.chatConversationParticipantQueries
-      .selectByConversation(conversationId, ::mapToParticipant)
+    val peerUid = persistedDB.chatConversationMemberQueries
+      .selectByConversation(conversationId, ::mapToMember)
       .executeAsList()
       .firstOrNull { it.id.value != selfId.value }
       ?.id
@@ -250,14 +269,14 @@ class BranchRepositoryImpl @Inject constructor(
     return if (peerUid == null) {
       flowOf(null)
     } else {
-      firestore.observeParticipant(conversationId, UserId(peerUid))
+      firestore.observeMember(conversationId, UserId(peerUid))
         .map { it?.lastReadAt?.toLocalDateTime() }
     }
   }
 
-  private fun participantUids(conversationId: String): List<String> {
-    return persistedDB.chatConversationParticipantQueries
-      .selectByConversation(conversationId, ::mapToParticipant)
+  private fun memberUids(conversationId: String): List<String> {
+    return persistedDB.chatConversationMemberQueries
+      .selectByConversation(conversationId, ::mapToMember)
       .executeAsList()
       .map { it.id.value }
   }
@@ -272,6 +291,7 @@ class BranchRepositoryImpl @Inject constructor(
           FirestoreDocumentResult.Removed -> {
             persistedDB.branchQueries.deleteById(change.data.id)
           }
+
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
             applyInsertOrReplaceBranch(change.data.toDomain(conversationId))

@@ -19,7 +19,7 @@ import java.util.Date
  */
 object FirestoreSchema {
   const val USERS_COLLECTION = "users"
-  const val PARTICIPANTS_COLLECTION = "participants"
+  const val MEMBERS_COLLECTION = "members"
   const val CONVERSATIONS_COLLECTION = "conversations"
   const val COMMITS_COLLECTION = "commits"
   const val UNREAD_COMMITS_COLLECTION = "unreadCommits"
@@ -34,7 +34,7 @@ object FirestoreSchema {
 
   // conversationsQuery whereEqualTo/whereArrayContains.
   const val CONVERSATION_TYPE = "type"
-  const val CONVERSATION_PARTICIPANT_UIDS = "participantUids"
+  const val CONVERSATION_MEMBER_UIDS = "memberUids"
 
   // commitsCollectionRef-query: orderBy + whereLessThan + whereEqualTo по branchId.
   const val COMMIT_CREATED_AT = "createdAt"

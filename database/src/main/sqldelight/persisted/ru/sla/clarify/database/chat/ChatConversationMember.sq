@@ -1,0 +1,55 @@
+CREATE TABLE ChatConversationMember(
+  conversationId TEXT NOT NULL,
+  id TEXT NOT NULL,
+  PRIMARY KEY (conversationId, id)
+);
+
+insertOrReplace:
+INSERT OR REPLACE
+INTO ChatConversationMember(conversationId, id)
+VALUES (?, ?);
+
+selectMembersWithoutProfile:
+SELECT DISTINCT member.id
+FROM ChatConversationMember AS member
+LEFT JOIN User AS profile ON profile.id = member.id
+WHERE profile.id IS NULL AND member.id != :currentUserId;
+
+selectByConversation:
+SELECT
+  member.id,
+  profile.displayName,
+  profile.photoUrl
+FROM ChatConversationMember AS member
+LEFT JOIN User AS profile ON profile.id = member.id
+WHERE member.conversationId = :conversationId;
+
+selectByConversationWithEmail:
+SELECT
+  member.id,
+  profile.displayName,
+  profile.email,
+  profile.photoUrl
+FROM ChatConversationMember AS member
+LEFT JOIN User AS profile ON profile.id = member.id
+WHERE member.conversationId = :conversationId;
+
+selectByConversationAndId:
+SELECT
+  member.id,
+  profile.displayName,
+  profile.photoUrl
+FROM ChatConversationMember AS member
+LEFT JOIN User AS profile ON profile.id = member.id
+WHERE member.conversationId = :conversationId AND member.id = :id;
+
+deleteByConversation:
+DELETE FROM ChatConversationMember
+WHERE conversationId = ?;
+
+deleteByConversationAndId:
+DELETE FROM ChatConversationMember
+WHERE conversationId = :conversationId AND id = :id;
+
+deleteAll:
+DELETE FROM ChatConversationMember;

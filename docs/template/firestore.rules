@@ -5,12 +5,12 @@ rules_version = '2';
 // сверьте с тем, что уже задеплоено в Firebase Console, прежде чем публиковать:
 // здесь воспроизведена ВСЯ модель (включая direct/branches), а не только дельта
 // под группы. Если рабочие правила строже — переносите точечно (см. чат: список
-// новых требований под группы — изменение participantUids, удаление participant/
-// unread-доков, чтение подколлекции participants).
+// новых требований под группы — изменение memberUids, удаление member/
+// unread-доков, чтение подколлекции members).
 //
 // Модель доверия повторяет существующую логику клиента: операции на уровне
 // conversation разрешены ЛЮБОМУ участнику (direct уже так работает — отправитель
-// создаёт participant-доки и инкрементит чужой unreadCommits). Ограничения
+// создаёт member-доки и инкрементит чужой unreadCommits). Ограничения
 // «только владелец» (rename / удаление участника / удаление группы) сейчас
 // держатся на UI; в правилах ниже владелец-only вынесен лишь на delete группы.
 // Если нужно ужесточить до field-level/owner-level — это НОВАЯ политика, выходящая
@@ -29,7 +29,7 @@ service cloud.firestore {
 
     // ---- users -------------------------------------------------------------
     // read открыт всем аутентифицированным: нужен для prefix-поиска по email
-    // (инвайт) и для резолва профилей чужих участников (subscribeOnParticipantProfiles).
+    // (инвайт) и для резолва профилей чужих участников (subscribeOnMemberProfiles).
     match /users/{userId} {
       allow read: if signedIn();
       allow create, update: if signedIn() && uid() == userId;
@@ -39,27 +39,27 @@ service cloud.firestore {
     // ---- conversations -----------------------------------------------------
     match /conversations/{conversationId} {
 
-      // participantUids ДО операции (для read/update/delete существующего документа).
+      // memberUids ДО операции (для read/update/delete существующего документа).
       function members() {
-        return resource.data.participantUids;
+        return resource.data.memberUids;
       }
 
-      // participantUids ПОСЛЕ операции — для документов, создаваемых в том же
+      // memberUids ПОСЛЕ операции — для документов, создаваемых в том же
       // batch, что и сам conversation (ленивое создание direct'а; группа уже
       // существует к моменту отправки/инвайта, но getAfter корректен и тогда).
       function membersAfter() {
         return getAfter(
           /databases/$(database)/documents/conversations/$(conversationId)
-        ).data.participantUids;
+        ).data.memberUids;
       }
 
       allow read: if signedIn() && uid() in members();
 
       // create:
-      //  - direct: создатель присутствует в participantUids;
+      //  - direct: создатель присутствует в memberUids;
       //  - group : дополнительно ownerUid == создатель и type == 'group'.
       allow create: if signedIn()
-        && uid() in request.resource.data.participantUids
+        && uid() in request.resource.data.memberUids
         && (
           request.resource.data.type != 'group'
           || request.resource.data.ownerUid == uid()
@@ -76,20 +76,20 @@ service cloud.firestore {
         && uid() in members()
         && (resource.data.type != 'group' || resource.data.ownerUid == uid());
 
-      // ---- participants ----------------------------------------------------
+      // ---- members ----------------------------------------------------
       function parentMembers() {
         return get(
           /databases/$(database)/documents/conversations/$(conversationId)
-        ).data.participantUids;
+        ).data.memberUids;
       }
       function parentMembersAfter() {
         return getAfter(
           /databases/$(database)/documents/conversations/$(conversationId)
-        ).data.participantUids;
+        ).data.memberUids;
       }
 
-      match /participants/{participantId} {
-        // read — для participantsLive (состав группы).
+      match /members/{memberId} {
+        // read — для membersLive (состав группы).
         allow read: if signedIn() && uid() in parentMembers();
         // create — создатель direct'а заводит доки обоих участников; владелец
         // группы заводит док приглашённого (в том же batch с arrayUnion → After).
@@ -104,7 +104,7 @@ service cloud.firestore {
         allow read: if signedIn() && uid() in parentMembers();
         // create — только сам отправитель; conversation мог быть создан тем же
         // batch'ем (direct lazy) → membersAfter. Покрывает и системный
-        // inviteParticipant-commit (senderUid == текущий пользователь).
+        // inviteMember-commit (senderUid == текущий пользователь).
         allow create: if signedIn()
           && request.resource.data.senderUid == uid()
           && uid() in parentMembersAfter();

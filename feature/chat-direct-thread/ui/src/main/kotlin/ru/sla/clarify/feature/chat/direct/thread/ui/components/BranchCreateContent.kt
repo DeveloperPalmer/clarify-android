@@ -14,11 +14,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch
 import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.direct.thread.ui.entity.CreateBranch
 import ru.sla.clarify.feature.chat.direct.thread.ui.entity.CreateBranchError
 import ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread.ViewState.CreateBranchPayload
+import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.uikit.component.button.PrimaryButton
 import ru.sla.clarify.uikit.component.textfield.PrimaryTextField
 import ru.sla.clarify.uikit.keyboard.rememberKeyboardController

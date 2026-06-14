@@ -8,12 +8,12 @@ import ru.sla.clarify.lib.google.firestore.codec.sentinel.ServerTimestamp
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM.Type
 
 @Serializable
-data class PostInviteParticipantCommitParams(
+data class PostInviteMemberCommitParams(
   val clientCommitId: String,
   @Contextual
   val senderUid: UserId,
   val invitedUid: String,
-  val type: Type = Type.InviteParticipant,
+  val type: Type = Type.InviteMember,
   val branchId: String,
   @Contextual
   val createdAt: Timestamp,

@@ -1,7 +1,7 @@
 package ru.sla.clarify.feature.chat.conversation.ui.routing
 
 import ru.kode.way.Event
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.feature.entity.chat.Peer
 
 sealed interface FlowEvent : Event {

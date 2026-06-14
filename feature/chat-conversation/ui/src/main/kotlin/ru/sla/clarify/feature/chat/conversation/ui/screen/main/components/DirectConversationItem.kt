@@ -23,7 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.uikit.component.UnreadCountBadge
 import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.theme.AppTheme

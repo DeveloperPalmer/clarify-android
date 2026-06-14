@@ -5,34 +5,34 @@ import ru.kode.way.NodeBuilder
 import ru.kode.way.ScreenNode
 import ru.sla.clarify.core.routing.BasicScreenNode
 import ru.sla.clarify.core.ui.WiredComposableScreen
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
 import ru.sla.clarify.feature.chat.branch.routing.BranchFlow
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
-import ru.sla.clarify.feature.chat.direct.thread.routing.ThreadFlowNode
-import ru.sla.clarify.feature.chat.direct.thread.routing.ThreadFlowNodeBuilder
+import ru.sla.clarify.feature.chat.direct.thread.routing.DirectThreadFlowNode
+import ru.sla.clarify.feature.chat.direct.thread.routing.DirectThreadFlowNodeBuilder
 import ru.sla.clarify.feature.chat.direct.thread.ui.di.Screen
 import ru.sla.clarify.feature.chat.direct.thread.ui.di.WiredScreen
 import javax.inject.Inject
 import javax.inject.Provider
+import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams as BranchTargetParams
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams as DirectTargetParams
 
-class ThreadFlowNodeFactory @Inject constructor(
-  private val flowNode: Provider<ThreadFlowNode>,
-  private val component: ThreadFlowComponent,
+class DirectThreadFlowNodeFactory @Inject constructor(
+  private val flowNode: Provider<DirectThreadFlowNode>,
+  private val component: DirectThreadFlowComponent,
   @param:WiredScreen(Screen.Thread)
   private val threadScreenNode: Provider<WiredComposableScreen>
-) : ThreadFlowNodeBuilder.Factory {
+) : DirectThreadFlowNodeBuilder.Factory {
 
-  override fun createRootNode(target: TargetParams): FlowNode<*> {
+  override fun createRootNode(params: DirectTargetParams): FlowNode<*> {
     return flowNode.get()
   }
 
-  override fun createThreadNode(): ScreenNode {
+  override fun createMainNode(): ScreenNode {
     return BasicScreenNode(threadScreenNode.get())
   }
 
-  override fun createBranchFlowNodeBuilder(id: Branch.Id): NodeBuilder {
+  override fun createBranchFlowNodeBuilder(params: BranchTargetParams): NodeBuilder {
     val branchComponent = component.branchFlowComponent()
-      .id(id)
+      .params(params)
       .build()
     return BranchFlow.nodeBuilder(branchComponent)
   }

@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 data class ConversationNM(
   val id: String,
   val type: Type,
-  val participantUids: List<String> = emptyList(),
+  val memberUids: List<String> = emptyList(),
   val name: String? = null,
   val ownerUid: String? = null,
   val lastCommitText: String? = null,

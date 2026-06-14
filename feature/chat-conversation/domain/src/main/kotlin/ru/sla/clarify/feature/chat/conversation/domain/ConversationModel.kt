@@ -8,7 +8,7 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.feature.entity.chat.Peer
 import javax.inject.Inject
 
@@ -22,7 +22,7 @@ class ConversationModel @Inject constructor(
     scope.launch { conversationRepository.fetchCurrentUser() }
     scope.launch { conversationRepository.subscribeOnConversations() }
     scope.launch { conversationRepository.subscribeOnConversationsUnreadCounts() }
-    scope.launch { conversationRepository.subscribeOnParticipantProfiles() }
+    scope.launch { conversationRepository.subscribeOnMemberProfiles() }
   }
 
   val getPeerByEmail = task<Email, Peer.Id>(

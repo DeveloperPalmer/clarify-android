@@ -34,9 +34,9 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
-import ru.sla.clarify.feature.entity.chat.Participant
+import ru.sla.clarify.feature.entity.chat.Branch
+import ru.sla.clarify.feature.entity.chat.Member
 import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.animation.SharedContainer
 import ru.sla.clarify.uikit.component.RevealSplitRow
@@ -57,7 +57,7 @@ internal fun MergeRequestCard(
   mergeRequest: Branch.MergeRequest?,
   isCurrentUserApproved: Boolean,
   mergeRequestInProgress: Boolean,
-  participants: List<Participant>,
+  members: List<Member>,
   approvers: List<Approver>,
   onApprove: () -> Unit,
   onRevoke: () -> Unit,
@@ -90,7 +90,7 @@ internal fun MergeRequestCard(
           mergeRequest = mergeRequest,
           isCurrentUserApproved = isCurrentUserApproved,
           mergeRequestInProgress = mergeRequestInProgress,
-          participants = participants,
+          members = members,
           approvers = approvers,
           onApprove = onApprove,
           onRevoke = onRevoke,
@@ -107,7 +107,7 @@ private fun MergeRequestBanner(
   mergeRequest: Branch.MergeRequest?,
   isCurrentUserApproved: Boolean,
   mergeRequestInProgress: Boolean,
-  participants: List<Participant>,
+  members: List<Member>,
   approvers: List<Approver>,
   onApprove: () -> Unit,
   onRevoke: () -> Unit,
@@ -161,8 +161,8 @@ private fun MergeRequestBanner(
       onFinalize = onFinalize
     )
     VSpacer(14.dp)
-    val initiator = remember(participants) {
-      participants.firstOrNull { it.id.value == mergeRequest?.initiatorId?.value }
+    val initiator = remember(members) {
+      members.firstOrNull { it.id.value == mergeRequest?.initiatorId?.value }
     }
     if (initiator != null) {
       Text(
@@ -315,7 +315,7 @@ private fun MergeRequestButtonPreviewLight(
       mergeRequest = preview.mergeRequest,
       isCurrentUserApproved = preview.isCurrentUserApproved,
       mergeRequestInProgress = false,
-      participants = preview.participants,
+      members = preview.members,
       approvers = preview.approvers,
       onApprove = {},
       onRevoke = {},
@@ -330,39 +330,39 @@ private data class MergeRequestCardPreview(
   val mergeRequest: Branch.MergeRequest,
   val initiatorName: String,
   val isCurrentUserApproved: Boolean,
-  val participants: List<Participant>,
+  val members: List<Member>,
   val approvers: List<Approver>
 )
 
 @Immutable
 private class MergeRequestCardPreviewProvider : PreviewParameterProvider<MergeRequestCardPreview> {
-  val firstParticipantId = randomUuid()
-  val secondParticipantId = randomUuid()
-  val thirdParticipantId = randomUuid()
+  val firstMemberId = randomUuid()
+  val secondMemberId = randomUuid()
+  val thirdMemberId = randomUuid()
 
   private val initiatorName = "Сергей Лановой"
   private val mergeRequest = Branch.MergeRequest(
     status = Branch.MergeRequest.Status.Open,
-    initiatorId = UserId(firstParticipantId),
+    initiatorId = UserId(firstMemberId),
     requestedAt = 0,
     approvedByIds = setOf(),
     mergedAt = 0,
     mergedIntoBranchId = Branch.Id(randomUuid())
   )
 
-  private val participants = listOf(
-    Participant(
-      id = Participant.Id(firstParticipantId),
+  private val members = listOf(
+    Member(
+      id = Member.Id(firstMemberId),
       displayName = "first approver",
       photoUrl = null
     ),
-    Participant(
-      id = Participant.Id(secondParticipantId),
+    Member(
+      id = Member.Id(secondMemberId),
       displayName = "second approver",
       photoUrl = null
     ),
-    Participant(
-      id = Participant.Id(thirdParticipantId),
+    Member(
+      id = Member.Id(thirdMemberId),
       displayName = "third approver",
       photoUrl = null
     )
@@ -370,13 +370,13 @@ private class MergeRequestCardPreviewProvider : PreviewParameterProvider<MergeRe
 
   private val approvers = listOf(
     Approver(
-      userId = UserId(firstParticipantId),
+      userId = UserId(firstMemberId),
       displayName = "first approver",
       photoUrl = null,
       isApproved = false
     ),
     Approver(
-      userId = UserId(thirdParticipantId),
+      userId = UserId(thirdMemberId),
       displayName = "third approver",
       photoUrl = null,
       isApproved = false
@@ -386,21 +386,21 @@ private class MergeRequestCardPreviewProvider : PreviewParameterProvider<MergeRe
     MergeRequestCardPreview(
       mergeRequest = mergeRequest.copy(status = Branch.MergeRequest.Status.Open),
       initiatorName = initiatorName,
-      participants = participants,
+      members = members,
       approvers = emptyList(),
       isCurrentUserApproved = false
     ),
     MergeRequestCardPreview(
       mergeRequest = mergeRequest.copy(status = Branch.MergeRequest.Status.Open),
       initiatorName = initiatorName,
-      participants = participants,
+      members = members,
       approvers = approvers,
       isCurrentUserApproved = false
     ),
     MergeRequestCardPreview(
       mergeRequest = mergeRequest,
       initiatorName = initiatorName,
-      participants = participants,
+      members = members,
       approvers = approvers.mapIndexed { index, approver ->
         approver.copy(isApproved = index % 2 == 0)
       },
@@ -409,7 +409,7 @@ private class MergeRequestCardPreviewProvider : PreviewParameterProvider<MergeRe
     MergeRequestCardPreview(
       mergeRequest = mergeRequest.copy(status = Branch.MergeRequest.Status.ReadyToMerge),
       initiatorName = initiatorName,
-      participants = participants,
+      members = members,
       approvers = approvers.mapIndexed { index, approver ->
         approver.copy(isApproved = true)
       },

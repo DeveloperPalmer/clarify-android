@@ -18,24 +18,25 @@ import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.branch.domain.BranchModel
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch.MergeRequest.Status
+import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
 import ru.sla.clarify.feature.chat.branch.ui.entity.Commit
 import ru.sla.clarify.feature.chat.branch.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
+import ru.sla.clarify.feature.entity.chat.Branch
+import ru.sla.clarify.feature.entity.chat.Branch.MergeRequest.Status
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
 
 class BranchViewModel @Inject constructor(
+  private val params: TargetParams,
   private val eventSink: FlowEventSink,
-  private val branchModel: BranchModel,
-  private val branchId: Branch.Id
+  private val branchModel: BranchModel
 ) : ViewModel<ViewState, ViewIntents>() {
 
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState(branchId = branchId) to {
+    initial = ViewState(branchId = params.branchId) to {
       branchModel.markReadCommits()
       branchModel.fetchHistoryCommits.startOnSubscribe()
     }
@@ -64,9 +65,9 @@ class BranchViewModel @Inject constructor(
       }
     }
 
-    onEach(branchModel.participants) {
-      transitionTo { state, participants ->
-        state.copy(participants = participants)
+    onEach(branchModel.members) {
+      transitionTo { state, members ->
+        state.copy(members = members)
       }
     }
 
@@ -187,23 +188,23 @@ class BranchViewModel @Inject constructor(
     }
 
     onEach(branchModel.mergeRequestInitiator) {
-      transitionTo { state, participant ->
-        state.copy(initiatorName = participant?.displayName)
+      transitionTo { state, member ->
+        state.copy(initiatorName = member?.displayName)
       }
     }
 
     onEach(
       combine(
-        branchModel.participants,
+        branchModel.members,
         branchModel.branch
-      ) { participants, branch ->
+      ) { members, branch ->
         val approvedUids = branch?.mergeRequest?.approvedByIds.orEmpty()
-        val approvers = participants.map { participant ->
-          val userId = UserId(participant.id.value)
+        val approvers = members.map { member ->
+          val userId = UserId(member.id.value)
           Approver(
             userId = userId,
-            displayName = participant.displayName,
-            photoUrl = participant.photoUrl,
+            displayName = member.displayName,
+            photoUrl = member.photoUrl,
             isApproved = userId in approvedUids
           )
         }

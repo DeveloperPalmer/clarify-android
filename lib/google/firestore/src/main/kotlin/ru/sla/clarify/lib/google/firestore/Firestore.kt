@@ -8,12 +8,14 @@ import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.tasks.await
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.AppScope
@@ -28,8 +30,8 @@ import ru.sla.clarify.lib.google.firestore.codec.encodeToMap
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
+import ru.sla.clarify.lib.google.firestore.entity.MemberNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
-import ru.sla.clarify.lib.google.firestore.entity.ParticipantNM
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PatchBranchOpenMergeParams
@@ -42,8 +44,8 @@ import ru.sla.clarify.lib.google.firestore.entity.write.PatchUserParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostBranchParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostConversationParams
-import ru.sla.clarify.lib.google.firestore.entity.write.PostInviteParticipantCommitParams
-import ru.sla.clarify.lib.google.firestore.entity.write.PostParticipantParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PostInviteMemberCommitParams
+import ru.sla.clarify.lib.google.firestore.entity.write.PostMemberParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostUserParams
 import ru.sla.clarify.lib.google.firestore.mapper.mapDocumentChanges
 import ru.sla.clarify.lib.google.firestore.mapper.toFirestoreDocumentResult
@@ -130,7 +132,7 @@ class Firestore @Inject constructor(
       }
 
       awaitClose { listener.remove() }
-    }
+    }.flowOn(Dispatchers.IO)
   }
 
   suspend fun patchUser(
@@ -223,11 +225,11 @@ class Firestore @Inject constructor(
 
     val postConversationParams = PostConversationParams(
       type = ConversationNM.Type.Group,
-      participantUids = listOf(ownerId.value),
+      memberUids = listOf(ownerId.value),
       name = name,
       ownerUid = ownerId.value
     )
-    val postParticipantParams = PostParticipantParams(
+    val postMemberParams = PostMemberParams(
       id = ownerId.value
     )
     batch.set(
@@ -235,58 +237,58 @@ class Firestore @Inject constructor(
       codec.encodeToMap(postConversationParams)
     )
     batch.set(
-      participantDocumentRef(conversationId, ownerId),
-      codec.encodeToMap(postParticipantParams)
+      memberDocumentRef(conversationId, ownerId),
+      codec.encodeToMap(postMemberParams)
     )
     batch.commit().await()
     return conversationId
   }
 
-  suspend fun deleteParticipant(conversationId: String, userId: UserId) {
+  suspend fun deleteMember(conversationId: String, userId: UserId) {
     val batch = writeBatch()
     val conversationRef = conversationDocumentRef(conversationId)
     batch.update(
       conversationRef,
-      FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS,
+      FirestoreSchema.CONVERSATION_MEMBER_UIDS,
       FieldValue.arrayRemove(userId.value)
     )
-    batch.delete(participantDocumentRef(conversationId, userId))
+    batch.delete(memberDocumentRef(conversationId, userId))
     batch.delete(unreadCommitsDocumentRef(conversationId, userId))
     batch.commit().await()
   }
 
   suspend fun leaveGroup(conversationId: String) {
-    deleteParticipant(conversationId, requireUserId())
+    deleteMember(conversationId, requireUserId())
   }
 
-  fun observeParticipant(
+  fun observeMember(
     conversationId: String,
     userId: UserId
-  ): Flow<ParticipantNM?> {
+  ): Flow<MemberNM?> {
     return callbackFlow {
-      listenerGuard.trackOpen("observeParticipant:$conversationId:${userId.value}")
+      listenerGuard.trackOpen("observeMember:$conversationId:${userId.value}")
 
-      val listener = participantDocumentRef(conversationId, userId)
+      val listener = memberDocumentRef(conversationId, userId)
         .addSnapshotListener { snapshot, error ->
           if (error != null) {
             close(error)
             return@addSnapshotListener
           }
-          val participant = snapshot
+          val member = snapshot
             ?.takeIf { it.exists() }
-            ?.let { codec.decodeFromSnapshot<ParticipantNM>(it) }
-          trySend(participant)
+            ?.let { codec.decodeFromSnapshot<MemberNM>(it) }
+          trySend(member)
         }
 
       awaitClose { listener.remove() }
     }
   }
 
-  fun observeParticipants(conversationId: String): Flow<List<FirestoreChange<ParticipantNM>>> {
+  fun observeMembers(conversationId: String): Flow<List<FirestoreChange<MemberNM>>> {
     return callbackFlow {
-      listenerGuard.trackOpen("observeParticipants:$conversationId")
+      listenerGuard.trackOpen("observeMembers:$conversationId")
 
-      val listener = participantsCollectionRef(conversationId)
+      val listener = membersCollectionRef(conversationId)
         .addSnapshotListener { snapshot, error ->
           if (error != null) {
             close(error)
@@ -295,7 +297,7 @@ class Firestore @Inject constructor(
           val response = snapshot.mapDocumentChanges { change ->
             FirestoreChange(
               changeType = change.type.toFirestoreDocumentResult(),
-              data = codec.decodeFromSnapshot<ParticipantNM>(change.document)
+              data = codec.decodeFromSnapshot<MemberNM>(change.document)
             )
           }
           trySend(response)
@@ -310,7 +312,7 @@ class Firestore @Inject constructor(
     lastReadAt: LocalDateTime
   ) {
     val userId = requireUserId()
-    participantDocumentRef(conversationId, userId)
+    memberDocumentRef(conversationId, userId)
       .set(
         codec.encodeToMap(PatchReadWatermarkParams(lastReadAt = lastReadAt.toTimestamp())),
         SetOptions.merge()
@@ -318,7 +320,7 @@ class Firestore @Inject constructor(
       .await()
   }
 
-  suspend fun postInviteParticipant(conversationId: String, invitedUserId: UserId) {
+  suspend fun postInviteMember(conversationId: String, invitedUserId: UserId) {
     val senderId = requireUserId()
     val createdAt = Timestamp.now()
     val commitId = randomUuid()
@@ -327,19 +329,19 @@ class Firestore @Inject constructor(
     val conversationRef = conversationDocumentRef(conversationId)
     batch.update(
       conversationRef,
-      FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS,
+      FirestoreSchema.CONVERSATION_MEMBER_UIDS,
       FieldValue.arrayUnion(invitedUserId.value)
     )
     batch.set(
-      participantDocumentRef(conversationId, invitedUserId),
-      codec.encodeToMap(PostParticipantParams(id = invitedUserId.value))
+      memberDocumentRef(conversationId, invitedUserId),
+      codec.encodeToMap(PostMemberParams(id = invitedUserId.value))
     )
     batch.set(
       conversationRef
         .collection(FirestoreSchema.COMMITS_COLLECTION)
         .document(commitId),
       codec.encodeToMap(
-        PostInviteParticipantCommitParams(
+        PostInviteMemberCommitParams(
           clientCommitId = commitId,
           senderUid = senderId,
           invitedUid = invitedUserId.value,
@@ -403,6 +405,7 @@ class Firestore @Inject constructor(
           )
         }
       }
+      .flowOn(Dispatchers.IO)
   }
 
   fun observeGroupCommits(
@@ -421,7 +424,7 @@ class Firestore @Inject constructor(
     branchId: String,
     text: String,
     colorHex: String,
-    participantUids: List<String>
+    memberUids: List<String>
   ) {
     val senderId = requireUserId()
     val commitId = randomUuid()
@@ -456,7 +459,7 @@ class Firestore @Inject constructor(
       ),
       SetOptions.merge()
     )
-    participantUids
+    memberUids
       .filter { it != senderId.value }
       .forEach { uid ->
         batch.set(
@@ -483,7 +486,7 @@ class Firestore @Inject constructor(
 
     val commitId = randomUuid()
     val createdAt = Timestamp.now()
-    val participantIds = directParticipantIds(senderId, peerId)
+    val memberIds = directMemberIds(senderId, peerId)
     val isRoot = resolvedBranchId == conversationId
 
     val batch = writeBatch()
@@ -504,7 +507,7 @@ class Firestore @Inject constructor(
     val conversationData = codec.encodeToMap(
       PostConversationParams(
         type = ConversationNM.Type.Direct,
-        participantUids = participantIds,
+        memberUids = memberIds,
         lastCommitText = text.takeIf { isRoot },
         lastCommitSenderUid = senderId.value.takeIf { isRoot },
         lastCommitAt = createdAt.takeIf { isRoot }
@@ -519,16 +522,16 @@ class Firestore @Inject constructor(
     batch.set(messageRef, messageData)
 
     if (isNewConversation) {
-      participantIds.forEach { uid ->
+      memberIds.forEach { uid ->
         batch.set(
-          participantDocumentRef(conversationId, UserId(uid)),
-          codec.encodeToMap(PostParticipantParams(id = uid))
+          memberDocumentRef(conversationId, UserId(uid)),
+          codec.encodeToMap(PostMemberParams(id = uid))
         )
       }
     }
 
     if (isRoot) {
-      participantIds
+      memberIds
         .filter { it != senderId.value }
         .forEach { peerId ->
           batch.set(
@@ -548,7 +551,7 @@ class Firestore @Inject constructor(
         ),
         SetOptions.merge()
       )
-      participantIds
+      memberIds
         .filter { it != senderId.value }
         .forEach { peerId ->
           batch.set(
@@ -566,7 +569,7 @@ class Firestore @Inject constructor(
     conversationId: String,
     text: String,
     colorHex: String,
-    participantUids: List<String>
+    memberUids: List<String>
   ) {
     val senderId = requireUserId()
     val commitId = randomUuid()
@@ -602,7 +605,7 @@ class Firestore @Inject constructor(
       ),
       SetOptions.merge()
     )
-    participantUids
+    memberUids
       .filter { it != senderId.value }
       .forEach { uid ->
         batch.set(
@@ -701,7 +704,7 @@ class Firestore @Inject constructor(
       }
 
       awaitClose { listener.remove() }
-    }
+    }.flowOn(Dispatchers.IO)
   }
 
   suspend fun postBranch(
@@ -799,7 +802,7 @@ class Firestore @Inject constructor(
   suspend fun patchMergeApproval(
     conversationId: String,
     branchId: String,
-    participantUids: List<String>
+    memberUids: List<String>
   ) {
     val approver = requireUserId()
     val branchRef = branchDocumentRef(conversationId, branchId)
@@ -816,8 +819,8 @@ class Firestore @Inject constructor(
 
       val updatedApproved = (mergeRequest.approvedByUids + approver.value).distinct()
 
-      val ready = participantUids.isNotEmpty() &&
-        participantUids.toSet().subtract(updatedApproved.toSet()).isEmpty()
+      val ready = memberUids.isNotEmpty() &&
+        memberUids.toSet().subtract(updatedApproved.toSet()).isEmpty()
 
       txn.update(
         branchRef,
@@ -896,7 +899,7 @@ class Firestore @Inject constructor(
       val currentUid = requireUserId()
       listenerGuard.trackOpen("directConversationIdLive:${currentUid.value}:${peerId.value}")
 
-      val directParticipantIds = directParticipantIds(currentUid, peerId)
+      val directMemberIds = directMemberIds(currentUid, peerId)
 
       val listener = conversationsQuery(
         whereEqualTo = ConversationNM.Type.Direct,
@@ -906,7 +909,7 @@ class Firestore @Inject constructor(
           close(error)
           return@addSnapshotListener
         }
-        trySend(snapshot?.findDirectConversationId(directParticipantIds))
+        trySend(snapshot?.findDirectConversationId(directMemberIds))
       }
 
       awaitClose { listener.remove() }
@@ -944,16 +947,16 @@ class Firestore @Inject constructor(
     }
   }
 
-  private fun directParticipantIds(userId: UserId, peerId: Peer.Id): List<String> {
+  private fun directMemberIds(userId: UserId, peerId: Peer.Id): List<String> {
     return setOf(userId.value, peerId.value).sorted()
   }
 
   private fun QuerySnapshot?.findDirectConversationId(
-    participantIds: List<String>
+    memberIds: List<String>
   ): String? {
     return this?.documents
       ?.firstOrNull { document ->
-        codec.decodeFromSnapshot<ConversationNM>(document).participantUids == participantIds
+        codec.decodeFromSnapshot<ConversationNM>(document).memberUids == memberIds
       }
       ?.id
   }

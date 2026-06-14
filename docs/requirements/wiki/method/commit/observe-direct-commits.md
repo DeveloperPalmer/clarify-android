@@ -44,7 +44,7 @@ fun observeDirectCommits(
 | [].data.clientCommitId  | Y   | String                 | Клиентский UUID сообщения.                      |
 | [].data.senderUid       | Y   | String                 | UID отправителя.                                |
 | [].data.text            | Y   | String                 | Текст сообщения.                                |
-| [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteParticipant |        |
+| [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteMember |        |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
 | [].data.colorHex        | Y   | String                 | HEX-цвет сообщения (например `"#FF5733"`).      |
 | [].data.branchId        | Y   | String                 | ID ветки, к которой принадлежит сообщение.      |

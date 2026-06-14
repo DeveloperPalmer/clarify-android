@@ -5,7 +5,7 @@ import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.resourcerefs.TextRef

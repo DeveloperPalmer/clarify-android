@@ -1,6 +1,6 @@
 package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.component.tabsrow.Tab
 import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents

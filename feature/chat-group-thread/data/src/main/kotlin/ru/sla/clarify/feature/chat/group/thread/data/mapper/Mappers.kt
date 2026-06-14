@@ -23,8 +23,8 @@ internal fun mapToCommit(
     .ofEpochSecond(timestamp)
     .atZone(ZoneId.systemDefault())
     .toLocalDateTime()
-  return if (type == CommitNM.Type.InviteParticipant.value) {
-    Commit.InviteParticipant(
+  return if (type == CommitNM.Type.InviteMember.value) {
+    Commit.InviteMember(
       id = Commit.Id(id),
       senderId = UserId(senderId),
       timestamp = localTimestamp,

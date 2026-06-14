@@ -3,8 +3,8 @@ digraph GroupThreadFlow {
 
   groupThreadFlow [
     type = "flow"
-    parameterName = "conversationId"
-    parameterType = "ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation.Id"
+    parameterName = "params"
+    parameterType = "ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams"
     resultType = "ru.sla.clarify.feature.chat.group.thread.routing.GroupThreadFlow.Result"
   ]
 

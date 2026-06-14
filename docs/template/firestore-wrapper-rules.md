@@ -68,7 +68,7 @@ override fun conversationsQuery(
   return remoteDB
     .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
     .whereEqualTo(FirestoreSchema.CONVERSATION_TYPE, whereEqualTo.value)
-    .whereArrayContains(FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS, whereArrayContains.value)
+    .whereArrayContains(FirestoreSchema.CONVERSATION_MEMBER_UIDS, whereArrayContains.value)
 }
 ```
 
@@ -79,7 +79,7 @@ override fun conversationsQuery(
 | `branchDocumentRef` вызывает `conversationDocumentRef(...).collection(...).document(...)` | каждый метод заново пишет путь от `remoteDB` | при дебаге нужно одним взглядом видеть полный путь, без скачков по файлу |
 | В `Firestore.kt`: `remoteDB.collection(USERS).whereEqualTo(EMAIL, x).get()` | сначала `usersQuery(whereEqualTo = ...)` в wrapper'е, потом вызов | бизнес-код в `Firestore.kt` не должен знать про структуру коллекций |
 | `usersQuery(whereEqualToEmail: String)` | `usersQuery(whereEqualTo: String)` | имя параметра отражает firestore-операцию; семантика читается на месте вызова |
-| `conversationsQuery(type: ConversationType, participant: UserId)` | `conversationsQuery(whereEqualTo: ConversationType, whereArrayContains: UserId)` | по имени параметра должно быть видно, какой это фильтр |
+| `conversationsQuery(type: ConversationType, member: UserId)` | `conversationsQuery(whereEqualTo: ConversationType, whereArrayContains: UserId)` | по имени параметра должно быть видно, какой это фильтр |
 | `usersByEmailQuery(email)` | `usersQuery(whereEqualTo = email)` | имя метода — про коллекцию + вид reference, фильтр — параметром |
 
 ## Где живёт `remoteDB`

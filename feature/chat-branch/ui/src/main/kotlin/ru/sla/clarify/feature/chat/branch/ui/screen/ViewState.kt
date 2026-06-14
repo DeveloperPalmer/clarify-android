@@ -3,10 +3,10 @@ package ru.sla.clarify.feature.chat.branch.ui.screen
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.ui.entity.ContentLoadState
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
 import ru.sla.clarify.feature.chat.branch.ui.entity.Commit
-import ru.sla.clarify.feature.entity.chat.Participant
+import ru.sla.clarify.feature.entity.chat.Branch
+import ru.sla.clarify.feature.entity.chat.Member
 
 @Immutable
 data class ViewState(
@@ -14,7 +14,7 @@ data class ViewState(
   val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
   val branchName: String? = null,
   val initiatorName: String? = null,
-  val participants: List<Participant> = emptyList(),
+  val members: List<Member> = emptyList(),
   val approvers: List<Approver> = emptyList(),
   val currentUserId: UserId? = null,
   val commits: List<Commit> = emptyList(),

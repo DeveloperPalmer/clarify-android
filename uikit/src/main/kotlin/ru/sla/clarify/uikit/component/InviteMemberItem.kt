@@ -17,7 +17,7 @@ import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 
 @Composable
-fun InviteParticipantItem(
+fun InviteMemberItem(
   text: String,
   modifier: Modifier = Modifier
 ) {
@@ -59,10 +59,10 @@ private fun SystemMessageItemPreviewDark() {
 @Composable
 private fun SystemMessageItemPreviewContent() {
   Box(modifier = Modifier.padding(16.dp)) {
-    InviteParticipantItem(text = "Сергей пригласил(а) Аню Котову")
+    InviteMemberItem(text = "Сергей пригласил(а) Аню Котову")
   }
   Box(modifier = Modifier.padding(16.dp)) {
-    InviteParticipantItem(
+    InviteMemberItem(
       text = "Сергей пригласил(а) участника с очень длинным именем, " +
         "которое не помещается в одну строку капсулы"
     )

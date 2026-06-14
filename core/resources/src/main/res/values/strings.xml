@@ -118,7 +118,7 @@
 
     <string name="branch_merge_finalize_button">Merge now</string>
     <string name="branch_merge_cancel_request">Cancel merge request</string>
-    <string name="branch_merge_approved_waiting">You approved. Waiting for other participants.</string>
+    <string name="branch_merge_approved_waiting">You approved. Waiting for other members.</string>
     <string name="branch_merge_revoke_approval">Revoke approval</string>
     <string name="branch_merge_request_summary">%1$s opened a merge request for this branch.</string>
     <string name="branch_merge_approve_button">Approve merge</string>

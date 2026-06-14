@@ -13,7 +13,7 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Отличается от `postCommit` тем, что conversation уже существует — не нужно ни создавать её, ни создавать participant-документы. Одним batch'ом: (1) записывает commit; (2) merge-обновляет `lastCommit*`-поля conversation; (3) инкрементит `unreadCommits` всем участникам кроме отправителя. Список участников (`participantUids`) передаёт caller из локального кэша. |
+| Description      | Отличается от `postCommit` тем, что conversation уже существует — не нужно ни создавать её, ни создавать member-документы. Одним batch'ом: (1) записывает commit; (2) merge-обновляет `lastCommit*`-поля conversation; (3) инкрементит `unreadCommits` всем участникам кроме отправителя. Список участников (`memberUids`) передаёт caller из локального кэша. |
 
 
 ### Signature
@@ -23,7 +23,7 @@ suspend fun postGroupCommit(
   conversationId: String,
   text: String,
   colorHex: String,
-  participantUids: List<String>
+  memberUids: List<String>
 )
 ```
 
@@ -34,7 +34,7 @@ suspend fun postGroupCommit(
 | conversationId  | Y   | String        | ID групповой беседы.                                                                      |
 | text            | Y   | String        | Текст сообщения.                                                                          |
 | colorHex        | Y   | String        | HEX-цвет сообщения в формате `"#RRGGBB"`.                                                 |
-| participantUids | Y   | List\<String\> | Полный список UID участников группы из локального кэша. Нужен для инкремента unread всем кроме отправителя. |
+| memberUids | Y   | List\<String\> | Полный список UID участников группы из локального кэша. Нужен для инкремента unread всем кроме отправителя. |
 
 ### Response parameters
 
@@ -47,7 +47,7 @@ suspend fun postGroupCommit(
   "conversationId": "conv-group001",
   "text": "Good morning!",
   "colorHex": "#FF5733",
-  "participantUids": ["uid-alice", "uid-bob", "uid-carol"]
+  "memberUids": ["uid-alice", "uid-bob", "uid-carol"]
 }
 ```
 

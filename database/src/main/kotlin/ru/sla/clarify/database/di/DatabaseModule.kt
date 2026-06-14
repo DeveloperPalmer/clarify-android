@@ -23,7 +23,7 @@ object DatabaseModule {
     return PersistedDB(
       driver = driver,
       ChatConversationAdapter = ChatConversation.Adapter(
-        participantUidsAdapter = StringListAdapter
+        memberUidsAdapter = StringListAdapter
       ),
       MergeRequestAdapter = MergeRequest.Adapter(
         approvedByUidsAdapter = StringListAdapter

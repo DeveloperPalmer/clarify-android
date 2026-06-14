@@ -41,13 +41,13 @@ tags:
 - [patch-group-name](method/conversation/patch-group-name.md) — Обновить название группы
 - [post-group-conversation](method/conversation/post-group-conversation.md) — Создать групповую беседу
 
-### participant/
-- [delete-participant](method/participant/delete-participant.md) — Удалить участника из группы
-- [leave-group](method/participant/leave-group.md) — Текущий пользователь покидает группу
-- [observe-participant](method/participant/observe-participant.md) — Живая подписка на документ участника
-- [observe-participants](method/participant/observe-participants.md) — Живая подписка на список участников группы
-- [patch-read-watermark](method/participant/patch-read-watermark.md) — Записать отметку о прочтении
-- [post-invite-participant](method/participant/post-invite-participant.md) — Пригласить пользователя в группу
+### member/
+- [delete-member](method/member/delete-member.md) — Удалить участника из группы
+- [leave-group](method/member/leave-group.md) — Текущий пользователь покидает группу
+- [observe-member](method/member/observe-member.md) — Живая подписка на документ участника
+- [observe-members](method/member/observe-members.md) — Живая подписка на список участников группы
+- [patch-read-watermark](method/member/patch-read-watermark.md) — Записать отметку о прочтении
+- [post-invite-member](method/member/post-invite-member.md) — Пригласить пользователя в группу
 
 ### commit/
 - [get-commits](method/commit/get-commits.md) — Загрузить порцию сообщений ветки (пагинация)

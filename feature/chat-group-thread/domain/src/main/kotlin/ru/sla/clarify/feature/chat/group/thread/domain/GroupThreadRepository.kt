@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 
 interface GroupThreadRepository {
   suspend fun subscribeOnCommitChanges()
-  suspend fun subscribeOnGroupParticipants()
+  suspend fun subscribeOnGroupMembers()
 
   suspend fun fetchHistoryCommits(count: Int, before: Commit? = null)
   suspend fun sendCommit(text: String)

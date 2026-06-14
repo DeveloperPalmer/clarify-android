@@ -4,19 +4,19 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.BindsInstance
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.branch.routing.di.BranchFlowComponent
-import ru.sla.clarify.feature.chat.direct.thread.domain.di.ThreadScope
+import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 
-@SingleIn(ThreadScope::class)
-@MergeSubcomponent(ThreadScope::class)
-interface ThreadFlowComponent {
-  fun nodeFactory(): ThreadFlowNodeFactory
+@SingleIn(DirectThreadScope::class)
+@MergeSubcomponent(DirectThreadScope::class)
+interface DirectThreadFlowComponent {
+  fun nodeFactory(): DirectThreadFlowNodeFactory
   fun branchFlowComponent(): BranchFlowComponent.Builder
 
   @MergeSubcomponent.Builder
   interface Builder {
     @BindsInstance
-    fun target(target: TargetParams): Builder
-    fun build(): ThreadFlowComponent
+    fun params(target: TargetParams): Builder
+    fun build(): DirectThreadFlowComponent
   }
 }

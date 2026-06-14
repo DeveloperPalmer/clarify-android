@@ -24,7 +24,7 @@ class GroupThreadModel @Inject constructor(
   override fun onPostStart() {
     super.onPostStart()
     scope.launch { groupThreadRepository.subscribeOnCommitChanges() }
-    scope.launch { groupThreadRepository.subscribeOnGroupParticipants() }
+    scope.launch { groupThreadRepository.subscribeOnGroupMembers() }
   }
 
   fun markReadUpTo(lastReadAt: LocalDateTime) {

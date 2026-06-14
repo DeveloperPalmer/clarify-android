@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch
+import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.VSpacer
 

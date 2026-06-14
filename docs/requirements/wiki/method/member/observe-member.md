@@ -2,7 +2,7 @@
 tags:
   - method
 ---
-# observe-participant
+# observe-member
 
 **Summary**: Живая подписка на документ конкретного участника conversation.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
@@ -13,16 +13,16 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Открывает snapshot listener на документ `conversations/{conversationId}/participants/{userId}`. Эмитит данные участника или `null` если документ не существует. Используется для наблюдения за `lastReadAt` конкретного пользователя — например, для показа индикатора «прочитано». Открытие трекается через `FirestoreListenerGuard`. |
+| Description      | Открывает snapshot listener на документ `conversations/{conversationId}/members/{userId}`. Эмитит данные участника или `null` если документ не существует. Используется для наблюдения за `lastReadAt` конкретного пользователя — например, для показа индикатора «прочитано». Открытие трекается через `FirestoreListenerGuard`. |
 
 
 ### Signature
 
 ```kotlin
-fun observeParticipant(
+fun observeMember(
   conversationId: String,
   userId: UserId
-): Flow<ParticipantNM?>
+): Flow<MemberNM?>
 ```
 
 ### Parameters

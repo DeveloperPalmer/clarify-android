@@ -6,45 +6,40 @@ import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
-import ru.sla.clarify.feature.chat.direct.thread.domain.di.ThreadScope
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch
+import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
+import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Participant
+import ru.sla.clarify.feature.entity.chat.Member
 import ru.sla.clarify.feature.entity.chat.Peer
 import java.time.LocalDateTime
 import javax.inject.Inject
 
-@SingleIn(ThreadScope::class)
-class ThreadModel @Inject constructor(
-  private val threadRepository: ThreadRepository,
-  private val branchRepository: BranchRepository,
+@SingleIn(DirectThreadScope::class)
+class DirectThreadModel @Inject constructor(
+  private val directThreadRepository: DirectThreadRepository,
   private val conversationRepository: ConversationRepository
 ) : ReactiveModel() {
 
   override fun onPostStart() {
     super.onPostStart()
-    scope.launch { threadRepository.subscribeOnPeerChanges() }
-    scope.launch { threadRepository.subscribeOnCommitChanges() }
-    scope.launch { branchRepository.subscribeOnBranchChanges() }
-    scope.launch { branchRepository.subscribeOnBranchesUnreadCounts() }
-  }
-
-  fun commits(): Flow<List<Commit>> {
-    return threadRepository.commits()
+    scope.launch { directThreadRepository.subscribeOnPeerChanges() }
+    scope.launch { directThreadRepository.subscribeOnCommitChanges() }
+    scope.launch { directThreadRepository.subscribeOnBranchesChanges() }
+    scope.launch { directThreadRepository.subscribeOnBranchesUnreadCounts() }
   }
 
   fun markReadCommits() {
-    scope.launch { threadRepository.markAsRead() }
+    scope.launch { directThreadRepository.markAsRead() }
   }
 
   fun markReadUpTo(lastReadAt: LocalDateTime) {
-    scope.launch { threadRepository.markReadUpTo(lastReadAt) }
+    scope.launch { directThreadRepository.markReadUpTo(lastReadAt) }
   }
 
   val fetchHistoryCommits = task<Unit>(
     name = "fetchHistoryCommits"
   ) {
-    threadRepository.fetchHistoryCommits(
+    directThreadRepository.fetchHistoryCommits(
       count = DEFAULT_HISTORY_PAGE_SIZE
     )
   }
@@ -52,7 +47,7 @@ class ThreadModel @Inject constructor(
   val sendMessage = task<String, String?, Unit>(
     name = "sendMessage"
   ) { text, colorHex ->
-    threadRepository.sendCommit(
+    directThreadRepository.sendCommit(
       text = text,
       colorHex = colorHex
     )
@@ -61,7 +56,7 @@ class ThreadModel @Inject constructor(
   val createBranch = task<Branch.Id?, Commit.Message, String, Branch>(
     name = "createBranch"
   ) { parentBranchId, branchedFromCommitId, name ->
-    branchRepository.createBranch(
+    directThreadRepository.createBranch(
       parentId = parentBranchId,
       from = branchedFromCommitId.id,
       name = name
@@ -69,13 +64,14 @@ class ThreadModel @Inject constructor(
   }
 
   val user: Flow<User?> = conversationRepository.user
-  val peer: Flow<Peer?> = threadRepository.peer
+  val peer: Flow<Peer?> = directThreadRepository.peer
 
-  val unreadCount: Flow<Long> = threadRepository.unreadCount
+  val commits: Flow<List<Commit>> = directThreadRepository.commits
+  val unreadCount: Flow<Long> = directThreadRepository.unreadCount
 
-  val participants: Flow<List<Participant>> = threadRepository.participants
+  val members: Flow<List<Member>> = directThreadRepository.members
 
-  val branches: Flow<List<Branch>> = branchRepository.branches
+  val branches: Flow<List<Branch>> = directThreadRepository.branches
 }
 
 private const val DEFAULT_HISTORY_PAGE_SIZE: Int = 20

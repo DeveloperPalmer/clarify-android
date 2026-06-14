@@ -7,25 +7,26 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeOneOrNull
-import ru.sla.clarify.feature.chat.direct.thread.domain.di.ThreadScope
-import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 import javax.inject.Inject
 
-@SingleIn(ThreadScope::class)
+@SingleIn(DirectThreadScope::class)
 class ThreadMediator @Inject constructor(
-  private val peerId: Peer.Id,
+  params: TargetParams,
   private val persistedDB: PersistedDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) {
+  private val peerId = params.peerId
 
   suspend fun awaitConversationId(): String {
     conversationId()?.let { return it }
 
     return persistedDB.chatConversationQueries
-      .selectIdByParticipants(
+      .selectIdByMembers(
         type = Type.Direct.value,
-        participantUids = directParticipantIds()
+        memberUids = directMemberIds()
       )
       .observeOneOrNull()
       .filterNotNull()
@@ -33,11 +34,11 @@ class ThreadMediator @Inject constructor(
   }
 
   suspend fun conversationId(): String? {
-    val participants = directParticipantIds()
+    val members = directMemberIds()
     return persistedDB.chatConversationQueries
-      .selectIdByParticipants(
+      .selectIdByMembers(
         type = Type.Direct.value,
-        participantUids = participants
+        memberUids = members
       )
       .executeAsOneOrNull()
   }
@@ -48,7 +49,7 @@ class ThreadMediator @Inject constructor(
     }
   }
 
-  suspend fun directParticipantIds(): List<String> {
+  suspend fun directMemberIds(): List<String> {
     return setOf(requireUserId().value, peerId.value).sorted()
   }
 

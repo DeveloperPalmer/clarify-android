@@ -1,11 +1,10 @@
-package ru.sla.clarify.feature.chat.branch.data.mapper
+package ru.sla.clarify.feature.chat.direct.thread.data.mapper
 
 import com.google.firebase.Timestamp
-import ru.sla.clarify.core.domain.entity.Email
-import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Participant
+import ru.sla.clarify.feature.entity.chat.Member
+import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import java.time.Instant
 import java.time.LocalDateTime
@@ -28,8 +27,8 @@ internal fun mapToCommit(
     .ofEpochSecond(timestamp)
     .atZone(ZoneId.systemDefault())
     .toLocalDateTime()
-  return if (type == CommitNM.Type.InviteParticipant.value) {
-    Commit.InviteParticipant(
+  return if (type == CommitNM.Type.InviteMember.value) {
+    Commit.InviteMember(
       id = Commit.Id(id),
       senderId = UserId(senderId),
       timestamp = localTimestamp,
@@ -50,27 +49,27 @@ internal fun mapToCommit(
   }
 }
 
-internal fun mapToParticipant(
+internal fun mapToMember(
   id: String,
   displayName: String?,
   photoUrl: String?
-): Participant {
-  return Participant(
-    id = Participant.Id(id),
+): Member {
+  return Member(
+    id = Member.Id(id),
     displayName = displayName,
     photoUrl = photoUrl
   )
 }
 
-internal fun mapToUser(
+@Suppress("UnusedParameter") // Unuser only for peer
+internal fun mapToPeer(
   id: String,
   email: String,
   displayName: String,
   photoUrl: String?
-): User {
-  return User(
-    id = UserId(id),
-    email = Email(email),
+): Peer {
+  return Peer(
+    id = Peer.Id(id),
     displayName = displayName,
     photoUrl = photoUrl
   )

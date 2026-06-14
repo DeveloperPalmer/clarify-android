@@ -2,7 +2,7 @@
 tags:
   - method
 ---
-# postInviteParticipant
+# postInviteMember
 
 **Summary**: Приглашает пользователя в группу одной атомарной операцией.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
@@ -13,13 +13,13 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Одним batch'ом выполняет три записи: (1) добавляет UID приглашённого в массив `participantUids` через `arrayUnion`; (2) создаёт документ участника в подколлекции `participants`; (3) записывает системный commit типа `inviteParticipant`. Системный commit НЕ обновляет `lastCommitText/lastCommitAt` и НЕ инкрементит unread — он только фиксирует факт приглашения в истории. |
+| Description      | Одним batch'ом выполняет три записи: (1) добавляет UID приглашённого в массив `memberUids` через `arrayUnion`; (2) создаёт документ участника в подколлекции `members`; (3) записывает системный commit типа `inviteMember`. Системный commit НЕ обновляет `lastCommitText/lastCommitAt` и НЕ инкрементит unread — он только фиксирует факт приглашения в истории. |
 
 
 ### Signature
 
 ```kotlin
-suspend fun postInviteParticipant(
+suspend fun postInviteMember(
   conversationId: String,
   invitedUserId: UserId
 )
@@ -52,11 +52,11 @@ suspend fun postInviteParticipant(
 **1. Обновлённое поле в `conversations/conv-group001`:**
 ```json
 {
-  "participantUids": ["uid-alice", "uid-bob", "uid-carol"]
+  "memberUids": ["uid-alice", "uid-bob", "uid-carol"]
 }
 ```
 
-**2. Новый документ `conversations/conv-group001/participants/uid-carol`:**
+**2. Новый документ `conversations/conv-group001/members/uid-carol`:**
 ```json
 {
   "id": "uid-carol",
@@ -69,7 +69,7 @@ suspend fun postInviteParticipant(
 {
   "clientCommitId": "commit-xxx",
   "senderUid": "uid-alice",
-  "type": "inviteParticipant",
+  "type": "inviteMember",
   "invitedUid": "uid-carol",
   "branchId": "conv-group001",
   "createdAt": "2026-06-13T11:00:00Z"

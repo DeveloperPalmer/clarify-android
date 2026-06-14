@@ -4,7 +4,7 @@ import ru.kode.way.FlowNode
 import ru.kode.way.ScreenNode
 import ru.sla.clarify.core.routing.BasicScreenNode
 import ru.sla.clarify.core.ui.WiredComposableScreen
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
+import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.feature.chat.branch.routing.BranchFlowNode
 import ru.sla.clarify.feature.chat.branch.routing.BranchFlowNodeBuilder
 import javax.inject.Inject
@@ -15,7 +15,7 @@ class BranchFlowNodeFactory @Inject constructor(
   private val branchScreenNode: Provider<WiredComposableScreen>
 ) : BranchFlowNodeBuilder.Factory {
 
-  override fun createRootNode(id: Branch.Id): FlowNode<*> {
+  override fun createRootNode(params: TargetParams): FlowNode<*> {
     return flowNode.get()
   }
 

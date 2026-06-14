@@ -3,7 +3,7 @@ import ru.sla.clarify.database.adapter.StringList;
 CREATE TABLE ChatConversation(
   id TEXT PRIMARY KEY NOT NULL,
   type TEXT NOT NULL,
-  participantUids TEXT AS StringList NOT NULL,
+  memberUids TEXT AS StringList NOT NULL,
   name TEXT,
   ownerUid TEXT,
   lastCommit TEXT,
@@ -14,11 +14,11 @@ CREATE TABLE ChatConversation(
 
 insertOrReplaceMeta:
 INSERT OR REPLACE
-INTO ChatConversation(id, type, participantUids, name, ownerUid, lastCommit, lastCommitSenderUid, lastCommitTimestamp, unreadCount)
+INTO ChatConversation(id, type, memberUids, name, ownerUid, lastCommit, lastCommitSenderUid, lastCommitTimestamp, unreadCount)
 VALUES (
   :id,
   :type,
-  :participantUids,
+  :memberUids,
   :name,
   :ownerUid,
   :lastCommit,
@@ -43,7 +43,7 @@ SELECT
   peerProfile.displayName AS peerDisplayName,
   peerProfile.photoUrl AS peerPhotoUrl
 FROM ChatConversation
-INNER JOIN ChatConversationParticipant AS peerLink
+INNER JOIN ChatConversationMember AS peerLink
   ON peerLink.conversationId = ChatConversation.id AND peerLink.id != :currentUserId
 INNER JOIN User AS peerProfile
   ON peerProfile.id = peerLink.id
@@ -59,7 +59,7 @@ SELECT
   ChatConversation.lastCommitSenderUid,
   ChatConversation.lastCommitTimestamp,
   ChatConversation.unreadCount,
-  (SELECT COUNT(*) FROM ChatConversationParticipant WHERE conversationId = ChatConversation.id) AS memberCount,
+  (SELECT COUNT(*) FROM ChatConversationMember WHERE conversationId = ChatConversation.id) AS memberCount,
   senderProfile.displayName AS lastCommitSenderDisplayName
 FROM ChatConversation
 LEFT JOIN User AS senderProfile
@@ -72,12 +72,12 @@ SELECT
   ChatConversation.id,
   ChatConversation.name,
   ChatConversation.ownerUid,
-  ChatConversation.participantUids,
+  ChatConversation.memberUids,
   ChatConversation.lastCommit,
   ChatConversation.lastCommitSenderUid,
   ChatConversation.lastCommitTimestamp,
   ChatConversation.unreadCount,
-  (SELECT COUNT(*) FROM ChatConversationParticipant WHERE conversationId = ChatConversation.id) AS memberCount
+  (SELECT COUNT(*) FROM ChatConversationMember WHERE conversationId = ChatConversation.id) AS memberCount
 FROM ChatConversation
 WHERE ChatConversation.id = :id AND ChatConversation.type = 'group';
 
@@ -86,9 +86,9 @@ UPDATE ChatConversation
 SET name = :name
 WHERE id = :id;
 
-updateParticipantUids:
+updateMemberUids:
 UPDATE ChatConversation
-SET participantUids = :participantUids
+SET memberUids = :memberUids
 WHERE id = :id;
 
 selectAllIds:
@@ -99,7 +99,7 @@ selectById:
 SELECT
   ChatConversation.id,
   ChatConversation.type,
-  ChatConversation.participantUids,
+  ChatConversation.memberUids,
   ChatConversation.name,
   ChatConversation.ownerUid,
   ChatConversation.lastCommit,
@@ -109,10 +109,10 @@ SELECT
 FROM ChatConversation
 WHERE ChatConversation.id = :id;
 
-selectIdByParticipants:
+selectIdByMembers:
 SELECT id
 FROM ChatConversation
-WHERE type = :type AND participantUids = :participantUids;
+WHERE type = :type AND memberUids = :memberUids;
 
 deleteById:
 DELETE FROM ChatConversation

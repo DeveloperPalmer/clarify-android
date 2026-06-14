@@ -1,22 +1,29 @@
 package ru.sla.clarify.feature.chat.branch.data.mapper
 
+import com.google.firebase.Timestamp
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
+import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.database.adapter.StringList
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.feature.entity.chat.Conversation
+import ru.sla.clarify.feature.entity.chat.Member
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
+import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.resRef
 import ru.sla.resourcerefs.strRef
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlin.random.Random
 
 @Suppress("LongParameterList")
 internal fun mapToBranch(
@@ -75,16 +82,80 @@ internal fun BranchNM.toDomain(conversationId: String): Branch {
     unreadCount = 0L,
     createdAt = createdAt,
     createdById = UserId(createdByUid),
-    mergeRequest = mergeRequest?.let { mr ->
+    mergeRequest = mergeRequest?.let {
       Branch.MergeRequest(
-        status = Branch.MergeRequest.Status.fromValue(mr.status.value),
-        initiatorId = UserId(mr.initiatorUid),
-        requestedAt = mr.requestedAt.toEpochSeconds(),
-        approvedByIds = mr.approvedByUids.map(::UserId).toSet(),
-        mergedAt = mr.mergedAt?.toEpochSeconds(),
-        mergedIntoBranchId = mr.mergedIntoBranchId?.let(Branch::Id)
+        status = Branch.MergeRequest.Status.fromValue(it.status.value),
+        initiatorId = UserId(it.initiatorUid),
+        requestedAt = it.requestedAt.toEpochSeconds(),
+        approvedByIds = it.approvedByUids.map(::UserId).toSet(),
+        mergedAt = it.mergedAt?.toEpochSeconds(),
+        mergedIntoBranchId = it.mergedIntoBranchId?.let(Branch::Id)
       )
     }
+  )
+}
+
+@Suppress("LongParameterList") // сигнатура строки ChatCommit
+internal fun mapToCommit(
+  id: String,
+  senderId: String,
+  type: String,
+  text: String,
+  invitedUid: String?,
+  colorHex: String,
+  timestamp: Long,
+  isSelf: Boolean,
+  status: String
+): Commit {
+  val localTimestamp = Instant
+    .ofEpochSecond(timestamp)
+    .atZone(ZoneId.systemDefault())
+    .toLocalDateTime()
+  return if (type == CommitNM.Type.InviteMember.value) {
+    Commit.InviteMember(
+      id = Commit.Id(id),
+      senderId = UserId(senderId),
+      timestamp = localTimestamp,
+      isSelf = isSelf,
+      status = Commit.Status.fromValue(status),
+      invitedId = UserId(invitedUid.orEmpty())
+    )
+  } else {
+    Commit.Message(
+      id = Commit.Id(id),
+      senderId = UserId(senderId),
+      text = text,
+      colorHex = colorHex,
+      timestamp = localTimestamp,
+      isSelf = isSelf,
+      status = Commit.Status.fromValue(status)
+    )
+  }
+}
+
+internal fun mapToMember(
+  id: String,
+  displayName: String?,
+  photoUrl: String?
+): Member {
+  return Member(
+    id = Member.Id(id),
+    displayName = displayName,
+    photoUrl = photoUrl
+  )
+}
+
+internal fun mapToUser(
+  id: String,
+  email: String,
+  displayName: String,
+  photoUrl: String?
+): User {
+  return User(
+    id = UserId(id),
+    email = Email(email),
+    displayName = displayName,
+    photoUrl = photoUrl
   )
 }
 
@@ -120,3 +191,23 @@ private fun formatLastCommitTimestamp(epochSeconds: Long?): TextRef? {
     else -> strRef(date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()))
   }
 }
+
+internal fun Commit.withReadStatus(peerLastReadAt: LocalDateTime?): Commit {
+  if (this !is Commit.Message || !isSelf) return this
+  if (status != Commit.Status.Sent || peerLastReadAt == null) return this
+  return if (timestamp.isAfter(peerLastReadAt)) this else copy(status = Commit.Status.Read)
+}
+
+internal fun Timestamp.toLocalDateTime(): LocalDateTime {
+  return Instant
+    .ofEpochSecond(seconds)
+    .atZone(ZoneId.systemDefault())
+    .toLocalDateTime()
+}
+
+internal fun generateColorHex(): String {
+  val rgb = Random.nextInt(0x1000000)
+  return "#$OPAQUE_ALPHA_HEX${rgb.toString(radix = 16).padStart(6, '0').uppercase()}"
+}
+
+private const val OPAQUE_ALPHA_HEX = "FF"

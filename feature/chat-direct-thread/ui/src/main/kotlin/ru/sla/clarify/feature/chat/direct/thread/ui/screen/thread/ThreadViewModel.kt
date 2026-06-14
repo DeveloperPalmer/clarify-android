@@ -13,7 +13,7 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
-import ru.sla.clarify.feature.chat.direct.thread.domain.ThreadModel
+import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.feature.chat.direct.thread.ui.entity.Commit
 import ru.sla.clarify.feature.chat.direct.thread.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
@@ -23,13 +23,13 @@ import javax.inject.Inject
 
 class ThreadViewModel @Inject constructor(
   private val eventSink: FlowEventSink,
-  private val threadModel: ThreadModel
+  private val directThreadModel: DirectThreadModel
 ) : ViewModel<ViewState, ViewIntents>() {
 
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState() to {
-      threadModel.markReadCommits()
-      threadModel.fetchHistoryCommits.startOnSubscribe()
+      directThreadModel.markReadCommits()
+      directThreadModel.fetchHistoryCommits.startOnSubscribe()
     }
 
     onEach(intent(ViewIntents::navigateBack)) {
@@ -38,25 +38,23 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(threadModel.peer.filterNotNull()) {
+    onEach(directThreadModel.peer.filterNotNull()) {
       transitionTo { state, peer ->
         state.copy(peer = peer)
       }
     }
 
     onEach(
-      threadModel.fetchHistoryCommits.jobFlow
+      directThreadModel.fetchHistoryCommits.jobFlow
         .asLceState()
         .map { it.toUiLceState() }
     ) {
       transitionTo { state, contentLoadState ->
-        state.copy(
-          contentLoadState = contentLoadState
-        )
+        state.copy(contentLoadState = contentLoadState)
       }
     }
 
-    onEach(threadModel.commits().map { it.toUiCommits() }) {
+    onEach(directThreadModel.commits.map { it.toUiCommits() }) {
       transitionTo { state, commits ->
         state.copy(commits = commits.asReversed())
       }
@@ -64,11 +62,11 @@ class ThreadViewModel @Inject constructor(
 
     onEach(intent(ViewIntents::markReadUpTo)) {
       action { _, _, lastReadAt ->
-        threadModel.markReadUpTo(lastReadAt)
+        directThreadModel.markReadUpTo(lastReadAt)
       }
     }
 
-    onEach(threadModel.unreadCount) {
+    onEach(directThreadModel.unreadCount) {
       transitionTo { state, unreadCount ->
         state.copy(unreadCount = unreadCount.toInt())
       }
@@ -85,7 +83,7 @@ class ThreadViewModel @Inject constructor(
         val parentCommit = state.commits
           .filterIsInstance<Commit.Message>()
           .firstOrNull()
-        threadModel.sendMessage.start(
+        directThreadModel.sendMessage.start(
           argument1 = requireNotNull(text.trim().ifBlank { null }),
           argument2 = parentCommit?.source?.colorHex
         )
@@ -94,7 +92,7 @@ class ThreadViewModel @Inject constructor(
   }
 
   private fun MachineDsl<ViewState>.configureBranchTransitions() {
-    onEach(threadModel.branches) {
+    onEach(directThreadModel.branches) {
       transitionTo { state, branches ->
         state.copy(branches = branches)
       }
@@ -120,7 +118,7 @@ class ThreadViewModel @Inject constructor(
 
     onEach(intent(ViewIntents::confirmCreateBranch)) {
       action { _, _, createBranch ->
-        threadModel.createBranch.start(
+        directThreadModel.createBranch.start(
           argument1 = null,
           argument2 = createBranch.commit.source,
           argument3 = createBranch.name
@@ -140,13 +138,13 @@ class ThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(threadModel.createBranch.jobFlow.successResults()) {
+    onEach(directThreadModel.createBranch.jobFlow.successResults()) {
       action { state, _, branch ->
         eventSink.sendEvent(FlowEvent.BranchRequested(branch.id))
       }
     }
 
-    onEach(threadModel.createBranch.jobFlow.errors()) {
+    onEach(directThreadModel.createBranch.jobFlow.errors()) {
       action { _, _, _ ->
         sendViewEvent(
           Snackbar(

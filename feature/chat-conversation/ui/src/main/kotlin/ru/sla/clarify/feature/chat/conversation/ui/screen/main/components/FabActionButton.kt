@@ -27,7 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.uikit.component.button.ButtonStyle
 import ru.sla.clarify.uikit.component.button.PrimaryButton
 import ru.sla.clarify.uikit.modifier.surface

@@ -59,11 +59,11 @@ interface FirestoreWrapperProvider {
     userId: UserId
   ): DocumentReference
 
-  fun participantsCollectionRef(
+  fun membersCollectionRef(
     conversationId: String
   ): CollectionReference
 
-  fun participantDocumentRef(
+  fun memberDocumentRef(
     conversationId: String,
     userId: UserId
   ): DocumentReference

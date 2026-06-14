@@ -13,7 +13,7 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Открывает snapshot listener на коллекцию `conversations` с фильтром `participantUids array-contains currentUserId`. Возвращает изменения (ADDED / MODIFIED / REMOVED) в виде `FirestoreChange`. Охватывает одновременно direct и group conversations — тип различается полем `type` внутри `ConversationNM`. UID текущего пользователя берётся из `AuthSessionPersistence` внутри Flow. |
+| Description      | Открывает snapshot listener на коллекцию `conversations` с фильтром `memberUids array-contains currentUserId`. Возвращает изменения (ADDED / MODIFIED / REMOVED) в виде `FirestoreChange`. Охватывает одновременно direct и group conversations — тип различается полем `type` внутри `ConversationNM`. UID текущего пользователя берётся из `AuthSessionPersistence` внутри Flow. |
 
 
 ### Signature
@@ -34,7 +34,7 @@ fun observeConversations(): Flow<List<FirestoreChange<ConversationNM>>>
 | [].hasPendingWrites          | N   | Boolean               | Всегда `false` для этого метода (MetadataChanges не включён).      |
 | [].data.id                   | Y   | String                | ID документа conversation.                                         |
 | [].data.type                 | Y   | String                | Тип беседы.<br>\* direct<br>\* group |
-| [].data.participantUids      | Y   | List\<String\>        | Список UID участников.                                             |
+| [].data.memberUids      | Y   | List\<String\>        | Список UID участников.                                             |
 | [].data.name                 | N   | String?               | Название группы (`null` для direct).                               |
 | [].data.ownerUid             | N   | String?               | UID создателя группы (`null` для direct).                          |
 | [].data.lastCommitText       | N   | String?               | Текст последнего сообщения в root-ветке.                           |
@@ -53,7 +53,7 @@ fun observeConversations(): Flow<List<FirestoreChange<ConversationNM>>>
     "data": {
       "id": "conv-xyz789",
       "type": "direct",
-      "participantUids": ["uid-alice", "uid-bob"],
+      "memberUids": ["uid-alice", "uid-bob"],
       "lastCommitText": "Hey there!",
       "lastCommitSenderUid": "uid-alice",
       "lastCommitAt": "2026-06-13T14:30:00Z",
@@ -67,7 +67,7 @@ fun observeConversations(): Flow<List<FirestoreChange<ConversationNM>>>
     "data": {
       "id": "conv-group001",
       "type": "group",
-      "participantUids": ["uid-alice", "uid-bob", "uid-carol"],
+      "memberUids": ["uid-alice", "uid-bob", "uid-carol"],
       "lastCommitText": "Welcome everyone!",
       "lastCommitSenderUid": "uid-alice",
       "lastCommitAt": "2026-06-13T14:35:00Z",

@@ -8,7 +8,7 @@
 
 | Операция | Имя | Пример |
 |---|---|---|
-| GET (one-shot чтение) | `getX` | `getParticipants`, `getCommits` |
+| GET (one-shot чтение) | `getX` | `getMembers`, `getCommits` |
 | POST (создание) | `postX` | `postCommit`, `postBranch`, `postMergeRequest` |
 | PATCH (частичное обновление, `set + merge`, `update`) | `patchX` | `patchUser`, `patchUnreadCount`, `patchMergeApproval` |
 | DELETE | `deleteX` | `deleteConversations`, `deleteMergeRequest` |
@@ -39,14 +39,14 @@ fun conversationsLive(): Flow<List<FirestoreConversation>> = callbackFlow {
 One-shot чтение:
 
 ```kotlin
-suspend fun getParticipants(
+suspend fun getMembers(
   conversationId: FirestoreConversation.Id
-): List<FirestoreParticipant> {
-  return participantsCollectionRef(conversationId)
+): List<FirestoreMember> {
+  return membersCollectionRef(conversationId)
     .get()
     .await()
     .documents
-    .map(::extractParticipantFB)
+    .map(::extractMemberFB)
 }
 ```
 
@@ -93,7 +93,7 @@ suspend fun deleteConversations(ids: List<String>) {
 | `sendCommit` | `postCommit` | `send` — про транспорт, REST это POST |
 | `createBranch` | `postBranch` | CRUD-префиксы не используем — только REST |
 | `observeConversations` / `streamConversations` / `liveConversations` | `conversationsLive` | стримы — суффиксом `Live` |
-| `loadParticipants` / `fetchParticipants` | `getParticipants` | в Firestore-слое чтение — это GET. `fetch*` зарезервирован за Repository |
+| `loadMembers` / `fetchMembers` | `getMembers` | в Firestore-слое чтение — это GET. `fetch*` зарезервирован за Repository |
 | `historyCommits` | `getCommits` | подмножество задаётся параметрами, не именем |
 
 ## Где живёт доменный интент
@@ -111,7 +111,7 @@ override suspend fun approveMerge(branchId: Branch.Id) = withContext(Dispatchers
   firestore.patchMergeApproval(
     conversationId = threadMediator.requireConversationId(),
     branchId = FirestoreBranch.Id(branchId.value),
-    participantUids = threadMediator.directParticipantIds()
+    memberUids = threadMediator.directMemberIds()
   )
 }
 ```

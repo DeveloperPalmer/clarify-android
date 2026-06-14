@@ -30,7 +30,7 @@ sealed interface Commit {
   ) : Commit
 
   @Immutable
-  data class InviteParticipant(
+  data class InviteMember(
     override val id: Id,
     override val timestamp: LocalDateTime,
     override val senderId: UserId,

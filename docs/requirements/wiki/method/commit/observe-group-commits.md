@@ -42,7 +42,7 @@ fun observeGroupCommits(
 | [].data.clientCommitId  | Y   | String                 | Клиентский UUID сообщения.                      |
 | [].data.senderUid       | Y   | String                 | UID отправителя.                                |
 | [].data.text            | Y   | String                 | Текст сообщения.                                |
-| [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteParticipant |        |
+| [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteMember |        |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
 | [].data.colorHex        | Y   | String                 | HEX-цвет сообщения.                             |
 | [].data.branchId        | Y   | String                 | Всегда равен `conversationId` (корневая ветка). |

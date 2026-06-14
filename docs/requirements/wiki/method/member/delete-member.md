@@ -2,7 +2,7 @@
 tags:
   - method
 ---
-# deleteParticipant
+# deleteMember
 
 **Summary**: Удаляет участника из группы одной атомарной операцией.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
@@ -13,13 +13,13 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Одним batch'ом: (1) убирает UID из массива `participantUids` через `arrayRemove`; (2) удаляет документ участника из подколлекции `participants`; (3) удаляет документ `unreadCommits` данного пользователя. Остальные подколлекции (commits, branches) остаются нетронутыми. |
+| Description      | Одним batch'ом: (1) убирает UID из массива `memberUids` через `arrayRemove`; (2) удаляет документ участника из подколлекции `members`; (3) удаляет документ `unreadCommits` данного пользователя. Остальные подколлекции (commits, branches) остаются нетронутыми. |
 
 
 ### Signature
 
 ```kotlin
-suspend fun deleteParticipant(
+suspend fun deleteMember(
   conversationId: String,
   userId: UserId
 )
@@ -52,11 +52,11 @@ suspend fun deleteParticipant(
 **1. Обновлённое поле в `conversations/conv-group001`:**
 ```json
 {
-  "participantUids": ["uid-alice", "uid-bob"]
+  "memberUids": ["uid-alice", "uid-bob"]
 }
 ```
 
-**2. Удалён документ** `conversations/conv-group001/participants/uid-carol`
+**2. Удалён документ** `conversations/conv-group001/members/uid-carol`
 
 **3. Удалён документ** `conversations/conv-group001/unreadCommits/uid-carol`
 

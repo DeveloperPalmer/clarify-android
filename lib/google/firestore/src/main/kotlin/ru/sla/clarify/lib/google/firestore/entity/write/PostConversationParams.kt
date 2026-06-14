@@ -12,7 +12,7 @@ import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 @Serializable
 data class PostConversationParams(
   val type: Type,
-  val participantUids: List<String>,
+  val memberUids: List<String>,
   @EncodeDefault(EncodeDefault.Mode.NEVER)
   val name: String? = null,
   @EncodeDefault(EncodeDefault.Mode.NEVER)

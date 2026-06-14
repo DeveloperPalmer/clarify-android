@@ -27,7 +27,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch.MergeRequest.Status
+import ru.sla.clarify.feature.entity.chat.Branch.MergeRequest.Status
 import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.animation.SharedContainer
 import ru.sla.clarify.uikit.theme.AppTheme

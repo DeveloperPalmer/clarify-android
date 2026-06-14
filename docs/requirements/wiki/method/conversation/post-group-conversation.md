@@ -13,7 +13,7 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Атомарно создаёт документ `conversations/{conversationId}` (тип `group`) и документ участника `conversations/{conversationId}/participants/{ownerId}` в одном batch. `conversationId` генерируется как UUID. В отличие от direct-чата (ленивая инициация при первом сообщении), группа материализуется немедленно. Подколлекции commits/branches/unreadCommits появляются лениво при первом сообщении. |
+| Description      | Атомарно создаёт документ `conversations/{conversationId}` (тип `group`) и документ участника `conversations/{conversationId}/members/{ownerId}` в одном batch. `conversationId` генерируется как UUID. В отличие от direct-чата (ленивая инициация при первом сообщении), группа материализуется немедленно. Подколлекции commits/branches/unreadCommits появляются лениво при первом сообщении. |
 
 
 ### Signature
@@ -56,7 +56,7 @@ suspend fun postGroupConversation(name: String): String
   "type": "group",
   "name": "Project Team",
   "ownerUid": "uid-alice",
-  "participantUids": ["uid-alice"],
+  "memberUids": ["uid-alice"],
   "lastCommitText": null,
   "lastCommitSenderUid": null,
   "lastCommitAt": null,

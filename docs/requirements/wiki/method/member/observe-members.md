@@ -2,7 +2,7 @@
 tags:
   - method
 ---
-# observe-participants
+# observe-members
 
 **Summary**: Живая подписка на список участников групповой беседы.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
@@ -13,13 +13,13 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Открывает snapshot listener на подколлекцию `conversations/{conversationId}/participants`. Возвращает изменения (ADDED / MODIFIED / REMOVED) при каждом вступлении или выходе участника. Открытие трекается через `FirestoreListenerGuard`. |
+| Description      | Открывает snapshot listener на подколлекцию `conversations/{conversationId}/members`. Возвращает изменения (ADDED / MODIFIED / REMOVED) при каждом вступлении или выходе участника. Открытие трекается через `FirestoreListenerGuard`. |
 
 
 ### Signature
 
 ```kotlin
-fun observeParticipants(conversationId: String): Flow<List<FirestoreChange<ParticipantNM>>>
+fun observeMembers(conversationId: String): Flow<List<FirestoreChange<MemberNM>>>
 ```
 
 ### Parameters

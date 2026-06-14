@@ -62,7 +62,7 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
       .whereArrayContains(
-        FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS,
+        FirestoreSchema.CONVERSATION_MEMBER_UIDS,
         whereArrayContains.value
       )
   }
@@ -78,7 +78,7 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
         whereEqualTo.value
       )
       .whereArrayContains(
-        FirestoreSchema.CONVERSATION_PARTICIPANT_UIDS,
+        FirestoreSchema.CONVERSATION_MEMBER_UIDS,
         whereArrayContains.value
       )
   }
@@ -145,23 +145,23 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .document(userId.value)
   }
 
-  override fun participantsCollectionRef(
+  override fun membersCollectionRef(
     conversationId: String
   ): CollectionReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
       .document(conversationId)
-      .collection(FirestoreSchema.PARTICIPANTS_COLLECTION)
+      .collection(FirestoreSchema.MEMBERS_COLLECTION)
   }
 
-  override fun participantDocumentRef(
+  override fun memberDocumentRef(
     conversationId: String,
     userId: UserId
   ): DocumentReference {
     return remoteDB
       .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
       .document(conversationId)
-      .collection(FirestoreSchema.PARTICIPANTS_COLLECTION)
+      .collection(FirestoreSchema.MEMBERS_COLLECTION)
       .document(userId.value)
   }
 }

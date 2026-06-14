@@ -3,8 +3,8 @@ digraph BranchFlow {
 
   branchFlow [
     type = "flow"
-    parameterName = "id"
-    parameterType = "ru.sla.clarify.feature.chat.branch.domain.entity.Branch.Id"
+    parameterName = "params"
+    parameterType = "ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams"
   ]
 
   branchFlow -> branch

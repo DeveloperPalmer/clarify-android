@@ -44,7 +44,7 @@ suspend fun getCommits(
 | [].clientCommitId | Y   | String  | Клиентский UUID сообщения.                      |
 | [].senderUid    | Y   | String    | UID отправителя.                                |
 | [].text         | Y   | String    | Текст сообщения.                                |
-| [].type         | Y   | String    | Тип: `"text"` или `"inviteParticipant"`.        |
+| [].type         | Y   | String    | Тип: `"text"` или `"inviteMember"`.        |
 | [].createdAt    | Y   | Timestamp | Время создания (DESC-порядок в ответе).         |
 | [].colorHex     | Y   | String    | HEX-цвет сообщения.                            |
 | [].branchId     | Y   | String    | ID ветки.                                       |

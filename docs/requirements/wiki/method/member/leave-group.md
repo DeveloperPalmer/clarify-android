@@ -13,7 +13,7 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Делегирует выполнение в `deleteParticipant`, передавая UID текущего пользователя из `AuthSessionPersistence`. Выполняет те же три атомарные операции: убирает из `participantUids`, удаляет документ участника и unreadCommits. |
+| Description      | Делегирует выполнение в `deleteMember`, передавая UID текущего пользователя из `AuthSessionPersistence`. Выполняет те же три атомарные операции: убирает из `memberUids`, удаляет документ участника и unreadCommits. |
 
 
 ### Signature
@@ -42,16 +42,16 @@ suspend fun leaveGroup(conversationId: String)
 
 ### Response:
 
-После выполнения (аналогично `deleteParticipant` для текущего пользователя):
+После выполнения (аналогично `deleteMember` для текущего пользователя):
 
 **1. Обновлённое поле в `conversations/conv-group001`:**
 ```json
 {
-  "participantUids": ["uid-alice", "uid-bob"]
+  "memberUids": ["uid-alice", "uid-bob"]
 }
 ```
 
-**2. Удалён документ** `conversations/conv-group001/participants/uid-carol`
+**2. Удалён документ** `conversations/conv-group001/members/uid-carol`
 
 **3. Удалён документ** `conversations/conv-group001/unreadCommits/uid-carol`
 

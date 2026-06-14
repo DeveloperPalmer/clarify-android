@@ -2,7 +2,7 @@ package ru.sla.clarify.feature.chat.group.thread.domain.entity
 
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Conversation
 
 @Immutable
 data class Group(
@@ -10,5 +10,5 @@ data class Group(
   val name: String,
   val ownerId: UserId,
   val memberCount: Int,
-  val participantIds: List<UserId>
+  val memberIds: List<UserId>
 )

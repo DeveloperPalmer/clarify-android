@@ -11,6 +11,7 @@ android {
 dependencies {
   implementation project(":uikit")
   implementation project(":feature:chat-direct-thread:domain")
+  implementation project(":feature:chat-branch:domain")
 
   implementation libs.arrow.core
   implementation libs.androidx.activity.compose // for BackHandler

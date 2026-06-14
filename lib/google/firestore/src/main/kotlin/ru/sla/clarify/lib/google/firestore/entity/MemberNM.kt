@@ -5,7 +5,7 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ParticipantNM(
+data class MemberNM(
   val id: String,
   @Contextual
   val lastReadAt: Timestamp? = null

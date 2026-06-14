@@ -4,7 +4,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.BindsInstance
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
-import ru.sla.clarify.feature.chat.branch.domain.entity.Branch
+import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams as BranchTargetParams
 
 @SingleIn(BranchScope::class)
 @MergeSubcomponent(BranchScope::class)
@@ -14,7 +14,7 @@ interface BranchFlowComponent {
   @MergeSubcomponent.Builder
   interface Builder {
     @BindsInstance
-    fun id(id: Branch.Id): Builder
+    fun params(params: BranchTargetParams): Builder
     fun build(): BranchFlowComponent
   }
 }

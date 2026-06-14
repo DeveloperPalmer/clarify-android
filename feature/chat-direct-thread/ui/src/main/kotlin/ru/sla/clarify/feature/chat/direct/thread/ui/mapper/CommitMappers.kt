@@ -27,7 +27,7 @@ internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
           )
         )
       }
-      is DomainCommit.InviteParticipant -> null
+      is DomainCommit.InviteMember -> null
     }
   }
 }

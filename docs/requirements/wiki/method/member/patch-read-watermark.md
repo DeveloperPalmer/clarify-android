@@ -13,7 +13,7 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Обновляет поле `lastReadAt` в документе участника `conversations/{conversationId}/participants/{userId}` через `set(merge)`. Отметка используется для определения, какие сообщения пользователь уже видел. `lastReadAt` конвертируется из `LocalDateTime` в Firestore `Timestamp` перед записью. |
+| Description      | Обновляет поле `lastReadAt` в документе участника `conversations/{conversationId}/members/{userId}` через `set(merge)`. Отметка используется для определения, какие сообщения пользователь уже видел. `lastReadAt` конвертируется из `LocalDateTime` в Firestore `Timestamp` перед записью. |
 
 
 ### Signature
@@ -47,7 +47,7 @@ suspend fun patchReadWatermark(
 
 ### Response:
 
-Документ `conversations/conv-xyz789/participants/uid-alice` после обновления:
+Документ `conversations/conv-xyz789/members/uid-alice` после обновления:
 
 ```json
 {

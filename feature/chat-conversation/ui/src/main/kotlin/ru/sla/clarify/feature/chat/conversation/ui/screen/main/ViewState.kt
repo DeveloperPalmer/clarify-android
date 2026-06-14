@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.uikit.component.tabsrow.Tab
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.resRef

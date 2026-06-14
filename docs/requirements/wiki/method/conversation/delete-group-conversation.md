@@ -13,7 +13,7 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Удаляет только корневой документ `conversations/{conversationId}`. Подколлекции commits/branches/participants/unreadCommits остаются сиротами — осознанный технический долг MVP. Полная чистка отложена на server-side trigger / recursive delete в будущем. |
+| Description      | Удаляет только корневой документ `conversations/{conversationId}`. Подколлекции commits/branches/members/unreadCommits остаются сиротами — осознанный технический долг MVP. Полная чистка отложена на server-side trigger / recursive delete в будущем. |
 
 
 ### Signature
@@ -48,7 +48,7 @@ suspend fun deleteGroupConversation(conversationId: String)
 conversations/conv-group001            ← УДАЛЁН
 conversations/conv-group001/commits/   ← остаётся (сирота)
 conversations/conv-group001/branches/  ← остаётся (сирота)
-conversations/conv-group001/participants/ ← остаётся (сирота)
+conversations/conv-group001/members/ ← остаётся (сирота)
 conversations/conv-group001/unreadCommits/ ← остаётся (сирота)
 ```
 

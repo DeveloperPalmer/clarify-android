@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.entity.chat
 import androidx.compose.runtime.Immutable
 
 @Immutable
-data class Participant(
+data class Member(
   val id: Id,
   val displayName: String?,
   val photoUrl: String?

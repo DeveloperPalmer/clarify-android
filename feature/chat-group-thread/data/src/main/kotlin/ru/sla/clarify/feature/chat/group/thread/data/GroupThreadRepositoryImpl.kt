@@ -13,7 +13,6 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.group.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.group.thread.data.mapper.mapToCommit
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadRepository
@@ -21,8 +20,9 @@ import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
-import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupThreadTarget
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams
 import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
@@ -34,7 +34,7 @@ import javax.inject.Inject
 @SingleIn(GroupThreadScope::class)
 @ContributesBinding(GroupThreadScope::class)
 class GroupThreadRepositoryImpl @Inject constructor(
-  target: GroupThreadTarget,
+  target: TargetParams,
   private val firestore: Firestore,
   private val persistedDB: PersistedDB,
   private val authSessionPersistence: AuthSessionPersistence
@@ -77,10 +77,10 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun sendCommit(text: String) {
-    val participantUids = persistedDB.chatConversationQueries
+    val memberUids = persistedDB.chatConversationQueries
       .selectGroupById(
         id = conversationId.value,
-        mapper = { _, _, _, participantUids, _, _, _, _, _ -> participantUids }
+        mapper = { _, _, _, memberUids, _, _, _, _, _ -> memberUids }
       )
       .executeAsOneOrNull()
       .orEmpty()
@@ -88,7 +88,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       conversationId = conversationId.value,
       text = text,
       colorHex = generateColorHex(),
-      participantUids = participantUids
+      memberUids = memberUids
     )
   }
 
@@ -100,8 +100,8 @@ class GroupThreadRepositoryImpl @Inject constructor(
     firestore.patchClearUnreadCount(conversationId.value)
   }
 
-  override suspend fun subscribeOnGroupParticipants() {
-    firestore.observeParticipants(conversationId.value)
+  override suspend fun subscribeOnGroupMembers() {
+    firestore.observeMembers(conversationId.value)
       .flowOn(Dispatchers.IO)
       .collect { changes ->
         persistedDB.transaction {
@@ -109,14 +109,14 @@ class GroupThreadRepositoryImpl @Inject constructor(
             when (change.changeType) {
               FirestoreDocumentResult.Added,
               FirestoreDocumentResult.Modified -> {
-                persistedDB.chatConversationParticipantQueries.insertOrReplace(
+                persistedDB.chatConversationMemberQueries.insertOrReplace(
                   conversationId = conversationId.value,
                   id = change.data.id
                 )
               }
 
               FirestoreDocumentResult.Removed -> {
-                persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
+                persistedDB.chatConversationMemberQueries.deleteByConversationAndId(
                   conversationId = conversationId.value,
                   id = change.data.id
                 )
@@ -139,7 +139,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       firestore.deleteGroupConversation(conversationId.value)
       persistedDB.transaction {
         persistedDB.chatConversationQueries.deleteById(conversationId.value)
-        persistedDB.chatConversationParticipantQueries.deleteByConversation(conversationId.value)
+        persistedDB.chatConversationMemberQueries.deleteByConversation(conversationId.value)
       }
     }
   }
@@ -149,7 +149,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       firestore.leaveGroup(conversationId.value)
       persistedDB.transaction {
         persistedDB.chatConversationQueries.deleteById(conversationId.value)
-        persistedDB.chatConversationParticipantQueries.deleteByConversation(conversationId.value)
+        persistedDB.chatConversationMemberQueries.deleteByConversation(conversationId.value)
       }
     }
   }
@@ -157,25 +157,25 @@ class GroupThreadRepositoryImpl @Inject constructor(
   override suspend fun inviteGroupMembers(userIds: List<UserId>) {
     withContext(Dispatchers.IO) {
       userIds.forEach { userId ->
-        firestore.postInviteParticipant(
+        firestore.postInviteMember(
           conversationId = conversationId.value,
           invitedUserId = userId
         )
       }
-      // Локально добавляем участников и обновляем денормализованный participantUids,
+      // Локально добавляем участников и обновляем денормализованный memberUids,
       // из которого sendCommit берёт получателей unread-инкрементов. Иначе колонка
-      // отстаёт до прихода observeParticipants-синка.
+      // отстаёт до прихода observeMembers-синка.
       persistedDB.transaction {
         userIds.forEach { userId ->
-          persistedDB.chatConversationParticipantQueries.insertOrReplace(
+          persistedDB.chatConversationMemberQueries.insertOrReplace(
             conversationId = conversationId.value,
             id = userId.value
           )
         }
-        val merged = (currentParticipantUids() + userIds.map { it.value }).distinct()
-        persistedDB.chatConversationQueries.updateParticipantUids(
+        val merged = (currentMemberUids() + userIds.map { it.value }).distinct()
+        persistedDB.chatConversationQueries.updateMemberUids(
           id = conversationId.value,
-          participantUids = merged
+          memberUids = merged
         )
       }
     }
@@ -183,16 +183,16 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun removeGroupMember(userId: UserId) {
     withContext(Dispatchers.IO) {
-      firestore.deleteParticipant(conversationId = conversationId.value, userId = userId)
+      firestore.deleteMember(conversationId = conversationId.value, userId = userId)
       persistedDB.transaction {
-        persistedDB.chatConversationParticipantQueries.deleteByConversationAndId(
+        persistedDB.chatConversationMemberQueries.deleteByConversationAndId(
           conversationId = conversationId.value,
           id = userId.value
         )
-        val remaining = currentParticipantUids() - userId.value
-        persistedDB.chatConversationQueries.updateParticipantUids(
+        val remaining = currentMemberUids() - userId.value
+        persistedDB.chatConversationQueries.updateMemberUids(
           id = conversationId.value,
-          participantUids = remaining
+          memberUids = remaining
         )
       }
     }
@@ -216,13 +216,13 @@ class GroupThreadRepositoryImpl @Inject constructor(
     return persistedDB.chatConversationQueries
       .selectGroupById(
         id = conversationId.value,
-        mapper = { rowId, name, ownerUid, participantUids, _, _, _, _, memberCount ->
+        mapper = { rowId, name, ownerUid, memberUids, _, _, _, _, memberCount ->
           Group(
             id = Conversation.Id(rowId),
             name = name.orEmpty(),
             ownerId = UserId(ownerUid.orEmpty()),
             memberCount = memberCount.toInt(),
-            participantIds = participantUids.map(::UserId)
+            memberIds = memberUids.map(::UserId)
           )
         }
       )
@@ -232,7 +232,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   override fun observeGroupMembers(): Flow<List<GroupMember>> = flow {
     val currentUserId = authSessionPersistence.withKey { readUserId(it) }?.value
     val group = observeGroup()
-    val members = persistedDB.chatConversationParticipantQueries
+    val members = persistedDB.chatConversationMemberQueries
       .selectByConversationWithEmail(
         conversationId = conversationId.value,
         mapper = { memberId, displayName, email, photoUrl ->
@@ -255,11 +255,11 @@ class GroupThreadRepositoryImpl @Inject constructor(
     }.collect { emit(it) }
   }
 
-  private fun currentParticipantUids(): List<String> {
+  private fun currentMemberUids(): List<String> {
     return persistedDB.chatConversationQueries
       .selectGroupById(
         id = conversationId.value,
-        mapper = { _, _, _, participantUids, _, _, _, _, _ -> participantUids }
+        mapper = { _, _, _, memberUids, _, _, _, _, _ -> memberUids }
       )
       .executeAsOneOrNull()
       .orEmpty()

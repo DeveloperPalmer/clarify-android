@@ -4,7 +4,7 @@ import ru.kode.way.FlowNode
 import ru.kode.way.ScreenNode
 import ru.sla.clarify.core.routing.BasicScreenNode
 import ru.sla.clarify.core.ui.WiredComposableScreen
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
+import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams
 import ru.sla.clarify.feature.chat.group.thread.routing.GroupThreadFlowNode
 import ru.sla.clarify.feature.chat.group.thread.routing.GroupThreadFlowNodeBuilder
 import ru.sla.clarify.feature.chat.group.thread.ui.di.Screen
@@ -20,7 +20,7 @@ class GroupThreadFlowNodeFactory @Inject constructor(
   private val groupInfoScreenNode: Provider<WiredComposableScreen>
 ) : GroupThreadFlowNodeBuilder.Factory {
 
-  override fun createRootNode(conversationId: Conversation.Id): FlowNode<*> {
+  override fun createRootNode(params: TargetParams): FlowNode<*> {
     return flowNode.get()
   }
 

@@ -16,10 +16,10 @@ internal fun List<DomainCommit>.toUiCommits(
   val names = members.associate { it.id.value to it.displayName }
   return commits.mapIndexed { index, commit ->
     when (commit) {
-      is DomainCommit.InviteParticipant -> {
-        Commit.InviteParticipant(
+      is DomainCommit.InviteMember -> {
+        Commit.InviteMember(
           source = commit,
-          key = "invite-participant:${commit.id.value}",
+          key = "invite-member:${commit.id.value}",
           text = resRef(
             R.string.thread_system_member_invited,
             names.displayName(commit.senderId),

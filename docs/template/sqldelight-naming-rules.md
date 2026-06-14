@@ -36,7 +36,7 @@ INSERT OR REPLACE:
 ```sql
 insertOrReplace:
 INSERT OR REPLACE
-INTO ConversationParticipant(conversationId, id, displayName, photoUrl)
+INTO ConversationMember(conversationId, id, displayName, photoUrl)
 VALUES (?, ?, ?, ?);
 ```
 
@@ -45,11 +45,11 @@ INSERT OR REPLACE с partial (через `COALESCE`):
 ```sql
 insertOrReplaceMeta:
 INSERT OR REPLACE
-INTO ChatConversation(id, type, participantUids, lastCommit, lastCommitTimestamp, unreadCount)
+INTO ChatConversation(id, type, memberUids, lastCommit, lastCommitTimestamp, unreadCount)
 VALUES (
   :id,
   :type,
-  :participantUids,
+  :memberUids,
   :lastCommit,
   :lastCommitTimestamp,
   COALESCE((SELECT unreadCount FROM ChatConversation WHERE id = :id), 0)
@@ -70,7 +70,7 @@ SELECT с WHERE:
 ```sql
 selectByConversationAndId:
 SELECT id, displayName, photoUrl
-FROM ConversationParticipant
+FROM ConversationMember
 WHERE conversationId = :conversationId AND id = :id;
 ```
 
@@ -78,11 +78,11 @@ DELETE:
 
 ```sql
 deleteByConversation:
-DELETE FROM ConversationParticipant
+DELETE FROM ConversationMember
 WHERE conversationId = ?;
 
 deleteAll:
-DELETE FROM ConversationParticipant;
+DELETE FROM ConversationMember;
 ```
 
 ## Антипаттерны

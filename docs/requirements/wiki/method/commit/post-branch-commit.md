@@ -24,7 +24,7 @@ suspend fun postBranchCommit(
   branchId: String,
   text: String,
   colorHex: String,
-  participantUids: List<String>
+  memberUids: List<String>
 )
 ```
 
@@ -36,7 +36,7 @@ suspend fun postBranchCommit(
 | branchId        | Y   | String        | ID ветки, в которую отправляется сообщение.                                                  |
 | text            | Y   | String        | Текст сообщения.                                                                             |
 | colorHex        | Y   | String        | HEX-цвет сообщения в формате `"#RRGGBB"`.                                                    |
-| participantUids | Y   | List\<String\> | Полный список UID участников conversation. Нужен для инкремента branch-unread всем кроме отправителя. |
+| memberUids | Y   | List\<String\> | Полный список UID участников conversation. Нужен для инкремента branch-unread всем кроме отправителя. |
 
 ### Response parameters
 
@@ -50,7 +50,7 @@ suspend fun postBranchCommit(
   "branchId": "branch-ghi012",
   "text": "I think we should refactor this",
   "colorHex": "#3399FF",
-  "participantUids": ["uid-alice", "uid-bob"]
+  "memberUids": ["uid-alice", "uid-bob"]
 }
 ```
 

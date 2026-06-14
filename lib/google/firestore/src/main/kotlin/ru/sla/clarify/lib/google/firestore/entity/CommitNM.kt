@@ -22,7 +22,7 @@ data class CommitNM(
     @SerialName("text")
     Text("text"),
 
-    @SerialName("inviteParticipant")
-    InviteParticipant("inviteParticipant")
+    @SerialName("inviteMember")
+    InviteMember("inviteMember")
   }
 }

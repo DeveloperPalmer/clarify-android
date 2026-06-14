@@ -13,7 +13,7 @@ tags:
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Универсальный метод для direct-чата. Если `conversationId == null` — conversation создаётся с новым UUID, и для обоих участников создаются документы в подколлекции `participants`. Если `branchId == null` — сообщение идёт в корневую ветку (master), чей ID совпадает с `conversationId`. Root-сообщения обновляют `lastCommit*`-поля conversation и инкрементят `unreadCommits` собеседника. Branch-сообщения обновляют `lastCommit*` ветки и инкрементят `branchUnreadCommits`. Всё выполняется в одном batch. |
+| Description      | Универсальный метод для direct-чата. Если `conversationId == null` — conversation создаётся с новым UUID, и для обоих участников создаются документы в подколлекции `members`. Если `branchId == null` — сообщение идёт в корневую ветку (master), чей ID совпадает с `conversationId`. Root-сообщения обновляют `lastCommit*`-поля conversation и инкрементят `unreadCommits` собеседника. Branch-сообщения обновляют `lastCommit*` ветки и инкрементят `branchUnreadCommits`. Всё выполняется в одном batch. |
 
 
 ### Signature

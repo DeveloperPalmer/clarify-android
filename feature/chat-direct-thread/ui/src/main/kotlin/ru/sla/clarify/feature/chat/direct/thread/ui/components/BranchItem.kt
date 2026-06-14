@@ -16,9 +16,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
-import ru.sla.clarify.feature.chat.direct.thread.domain.entity.Branch
+import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.uikit.component.UnreadCountBadge
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.preview.PreviewColumn

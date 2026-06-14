@@ -23,8 +23,8 @@ import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToConversation
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToGroup
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToUser
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
+import ru.sla.clarify.feature.entity.chat.Conversation
 import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
@@ -47,20 +47,18 @@ class ConversationRepositoryImpl @Inject constructor(
       .collect(::applyConversationsChanges)
   }
 
-  override suspend fun subscribeOnParticipantProfiles() {
+  override suspend fun subscribeOnMemberProfiles() {
     val userId = authSessionPersistence.withKey { readUserId(it) } ?: return
-    persistedDB.chatConversationParticipantQueries
-      .selectParticipantsWithoutProfile(userId.value)
+    persistedDB.chatConversationMemberQueries
+      .selectMembersWithoutProfile(userId.value)
       .observeList()
-      .flowOn(Dispatchers.IO)
-      .collect(::applyParticipantProfiles)
+      .collect(::applyMemberProfiles)
   }
 
   override suspend fun subscribeOnConversationsUnreadCounts() {
     persistedDB.chatConversationQueries
       .selectAllIds()
       .observeList()
-      .flowOn(Dispatchers.IO)
       .collectLatest(::subscribeOnConversationsUnreadCounts)
   }
 
@@ -92,14 +90,14 @@ class ConversationRepositoryImpl @Inject constructor(
           persistedDB.chatConversationQueries.insertOrReplaceMeta(
             id = conversationId,
             type = ConversationNM.Type.Group.value,
-            participantUids = listOf(ownerId.value),
+            memberUids = listOf(ownerId.value),
             name = name,
             ownerUid = ownerId.value,
             lastCommit = null,
             lastCommitSenderUid = null,
             lastCommitTimestamp = 0L
           )
-          persistedDB.chatConversationParticipantQueries.insertOrReplace(
+          persistedDB.chatConversationMemberQueries.insertOrReplace(
             conversationId = conversationId,
             id = ownerId.value
           )
@@ -116,7 +114,7 @@ class ConversationRepositoryImpl @Inject constructor(
       persistedDB.transaction {
         deletableIds.forEach {
           persistedDB.chatConversationQueries.deleteById(it)
-          persistedDB.chatConversationParticipantQueries.deleteByConversation(it)
+          persistedDB.chatConversationMemberQueries.deleteByConversation(it)
         }
       }
     }
@@ -152,9 +150,9 @@ class ConversationRepositoryImpl @Inject constructor(
     }.collect { emit(it) }
   }
 
-  private suspend fun applyParticipantProfiles(ids: List<String>) = coroutineScope {
-    ids.forEach { participantId ->
-      launch { applyInsertOrReplaceUsers(participantId) }
+  private suspend fun applyMemberProfiles(ids: List<String>) = coroutineScope {
+    ids.forEach { memberId ->
+      launch { applyInsertOrReplaceUsers(memberId) }
     }
   }
 
@@ -187,7 +185,7 @@ class ConversationRepositoryImpl @Inject constructor(
           }
           FirestoreDocumentResult.Removed -> {
             persistedDB.chatConversationQueries.deleteById(change.data.id)
-            persistedDB.chatConversationParticipantQueries.deleteByConversation(change.data.id)
+            persistedDB.chatConversationMemberQueries.deleteByConversation(change.data.id)
           }
         }
       }
@@ -195,16 +193,16 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   private fun applyConversationChanges(conversation: ConversationNM) {
-    conversation.participantUids.forEach { participantId ->
-      persistedDB.chatConversationParticipantQueries.insertOrReplace(
+    conversation.memberUids.forEach { memberId ->
+      persistedDB.chatConversationMemberQueries.insertOrReplace(
         conversationId = conversation.id,
-        id = participantId
+        id = memberId
       )
     }
     persistedDB.chatConversationQueries.insertOrReplaceMeta(
       id = conversation.id,
       type = conversation.type.value,
-      participantUids = conversation.participantUids,
+      memberUids = conversation.memberUids,
       name = conversation.name,
       ownerUid = conversation.ownerUid,
       lastCommit = conversation.lastCommitText,
@@ -227,7 +225,7 @@ class ConversationRepositoryImpl @Inject constructor(
     persistedDB.chatConversationQueries.insertOrReplaceMeta(
       id = conversationNM.id,
       type = conversationNM.type.value,
-      participantUids = conversationNM.participantUids,
+      memberUids = conversationNM.memberUids,
       name = conversationNM.name,
       ownerUid = conversationNM.ownerUid,
       lastCommit = conversationNM.lastCommitText,

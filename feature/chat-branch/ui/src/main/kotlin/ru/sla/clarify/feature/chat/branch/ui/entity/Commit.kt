@@ -19,8 +19,8 @@ sealed interface Commit {
   ) : Commit
 
   @Immutable
-  data class InviteParticipant(
-    override val source: DomainCommit.InviteParticipant,
+  data class InviteMember(
+    override val source: DomainCommit.InviteMember,
     override val key: String,
     val text: TextRef
   ) : Commit

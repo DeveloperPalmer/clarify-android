@@ -1,9 +1,7 @@
-package ru.sla.clarify.feature.chat.direct.thread.domain.entity
+package ru.sla.clarify.feature.entity.chat
 
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation
-import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.resourcerefs.TextRef
 
 @Immutable
@@ -21,8 +19,8 @@ data class Branch(
   val createdById: UserId,
   val mergeRequest: MergeRequest? = null
 ) {
-  @JvmInline
-  value class Id(val value: String)
+  @Immutable
+  data class Id(val value: String)
 
   @Immutable
   data class MergeRequest(
