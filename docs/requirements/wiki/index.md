@@ -13,10 +13,10 @@ tags:
 ## Features
 
 - [authorization](feature/authorization.md) — Вход через Google, управление сессией
-- [conversation-list](feature/conversation-list.md) — Главный экран: список личных и групповых чатов
-- [direct-chat](feature/direct-chat.md) — Личная переписка 1:1 с поддержкой веток
-- [group-chat](feature/group-chat.md) — Групповой чат с ролями владельца и участника
-- [branches](feature/branches.md) — Ветки внутри личного чата с merge request процессом
+- [chat-conversation](feature/chat-conversation.md) — Главный экран: список личных и групповых чатов
+- [chat-direct-thread](feature/chat-direct-thread.md) — Личная переписка 1:1 с поддержкой веток
+- [chat-group-thread](feature/chat-group-thread.md) — Групповой чат с ролями владельца и участника
+- [chat-branch](feature/chat-branch.md) — Ветки внутри личного чата с merge request процессом
 - [profile](feature/profile.md) — Профиль пользователя и выход из аккаунта
 
 ## Umbrellas

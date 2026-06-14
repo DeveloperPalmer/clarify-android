@@ -34,6 +34,3 @@ tags:
 | **Update tag** | **Analyst**    | **Date** | **Task** | **Description** |
 |----------------|----------------|----------|----------|-----------------|
 
-## Related pages
-
-- [[conversation-list]]
