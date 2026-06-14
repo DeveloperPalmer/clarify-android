@@ -4,8 +4,8 @@ plugins {
 }
 
 dependencies {
+  api project(":entity")
   api project(":core:domain")
-  api project(":feature-entity")
   api project(":feature:chat-conversation:domain")
   implementation libs.compose.runtime
 }

@@ -5,8 +5,8 @@ plugins {
 }
 
 dependencies {
+  api project(":entity")
   api project(":core:domain")
-  api project(":feature-entity")
   implementation project(":auth-session:domain")
   implementation libs.compose.runtime
 }

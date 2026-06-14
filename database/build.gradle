@@ -41,8 +41,8 @@ afterEvaluate {
 }
 
 dependencies {
+  api project(":entity")
   api project(":core:domain")
-  api project(":feature-entity")
   api project(":auth-session:domain")
   api libs.sqldelight.coroutines
 

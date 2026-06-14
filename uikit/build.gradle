@@ -8,6 +8,7 @@ android {
 }
 
 dependencies {
+  api project(":entity")
   api project(":core:ui")
   api project(":core:resources")
   implementation libs.androidx.activity.compose // for BackHandler
