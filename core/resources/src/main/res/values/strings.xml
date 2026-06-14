@@ -36,17 +36,23 @@
     <string name="conversation_empty_subtitle">Create your first one to start chatting with your team or friends.</string>
 
     <!-- Conversation: new chat dialog -->
-    <string name="conversation_new_chat_dialog_title">New chat</string>
-    <string name="conversation_new_chat_dialog_text">Enter the email of the person you want to chat with:</string>
-    <string name="conversation_new_chat_dialog_email_placeholder" translatable="false">name@example.com</string>
-    <string name="conversation_new_chat_dialog_start">Start</string>
-    <string name="conversation_new_chat_error_user_not_found">No user with this email</string>
-    <string name="conversation_new_chat_error_lookup_failed">Could not look up user, try again</string>
-    <string name="conversation_new_tab_direct">Direct</string>
-    <string name="conversation_new_tab_group">Group</string>
-    <string name="conversation_new_group_name_placeholder">Group name</string>
-    <string name="conversation_new_group_create_button">Create</string>
-    <string name="conversation_new_group_create_error">Could not create group, try again</string>
+    <string name="conversation_tab_direct">Direct</string>
+    <string name="conversation_tab_group">Group</string>
+    <string name="direct_conversation_title">New chat</string>
+    <string name="direct_conversation_text">Enter the email of the person you want to chat with:</string>
+    <string name="direct_conversation_email_placeholder" translatable="false">name@example.com</string>
+    <string name="direct_conversation_email_positive_button">Start</string>
+    <string name="direct_conversation_error_user_not_found">No user with this email</string>
+    <string name="direct_conversation_error_lookup_failed">Could not look up user, try again</string>
+    <string name="direct_conversation_error_same_email">Нельзя начать диалог с самим собой.</string>
+    <string name="direct_conversation_error_too_short">Email слишком короткий (минимум 5 символов).</string>
+    <string name="direct_conversation_error_too_long">Email слишком длинный (максимум 100 символов).</string>
+    <string name="direct_conversation_error_invalid_email">Неверный формат email. Пример: name@example.com</string>
+    <string name="group_conversation_name_placeholder">Group name</string>
+    <string name="group_conversation_positive_button">Create</string>
+    <string name="group_conversation_error_create_failed">Could not create group, try again</string>
+    <string name="group_conversation_error_too_long">Название не длиннее 50 символов.</string>
+
     <string name="conversation_group_no_messages">No messages yet</string>
 
     <!-- Conversation: delete dialog -->

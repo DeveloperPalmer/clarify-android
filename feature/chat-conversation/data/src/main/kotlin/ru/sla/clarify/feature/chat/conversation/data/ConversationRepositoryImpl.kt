@@ -14,6 +14,7 @@ import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
@@ -81,7 +82,7 @@ class ConversationRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun createGroup(name: String): Conversation.Id {
+  override suspend fun createGroup(name: GroupName): Conversation.Id {
     return withContext(Dispatchers.IO) {
       val conversationId = firestore.postGroupConversation(name)
       val ownerId = authSessionPersistence.withKey { readUserId(it) }
@@ -91,7 +92,7 @@ class ConversationRepositoryImpl @Inject constructor(
             id = conversationId,
             type = ConversationNM.Type.Group.value,
             memberUids = listOf(ownerId.value),
-            name = name,
+            name = name.value,
             ownerUid = ownerId.value,
             lastCommit = null,
             lastCommitSenderUid = null,

@@ -68,7 +68,12 @@ fun ContentHost(
     }
 
     DisposableEffect(Unit) {
-      onDispose { currentContentData?.dismiss() }
+      onDispose {
+        currentContentData?.let { data ->
+          data.dismiss()
+          data.component.postDestroy()
+        }
+      }
     }
   }
 }

@@ -59,6 +59,7 @@ sealed interface ViewEvent {
   @Immutable
   abstract class Content : ViewEvent {
     open val animation: Animation = Animation.Fade
+    open fun postDestroy() {}
   }
 
   @Immutable

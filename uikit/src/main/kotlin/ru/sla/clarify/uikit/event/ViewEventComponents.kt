@@ -209,7 +209,7 @@ sealed class Dialog : ViewEvent.Content() {
         dismissButton = {
           PrimaryTextButton(
             text = resolveTextRef(secondaryActionTitle),
-            style = if (isDestructive) ButtonStyle.Error else ButtonStyle.Default,
+            style = ButtonStyle.Default,
             onClick = {
               secondaryAction?.invoke()
               dismissEventPresentation()

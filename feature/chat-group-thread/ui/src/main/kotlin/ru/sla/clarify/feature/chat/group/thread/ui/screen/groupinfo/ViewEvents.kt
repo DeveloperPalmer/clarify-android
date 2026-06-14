@@ -50,7 +50,7 @@ internal fun showRenameGroupDialog(currentName: String) = ScreenViewEvent<ViewSt
             modifier = Modifier.fillMaxWidth(),
             value = inputValue,
             onValueChange = { inputValue = it },
-            placeholder = resRef(R.string.conversation_new_group_name_placeholder)
+            placeholder = resRef(R.string.group_conversation_name_placeholder)
           )
         },
         dismissButton = {

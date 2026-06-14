@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
@@ -83,6 +84,69 @@ internal fun TextFieldInternal(
     decorationBox = { innerTextField ->
       TextFieldDecoration(
         value = value,
+        shape = shape,
+        containerColor = containerColor.value,
+        placeholderColor = placeholderColor.value,
+        placeholder = placeholder,
+        innerTextField = innerTextField
+      )
+    }
+  )
+}
+
+@Composable
+internal fun TextFieldInternal(
+  value: TextFieldValue,
+  onValueChange: (TextFieldValue) -> Unit,
+  colors: TextFieldColors,
+  modifier: Modifier = Modifier,
+  shape: Shape = RoundedCornerShape(16.dp),
+  enabled: Boolean = true,
+  isError: Boolean = false,
+  placeholder: TextRef = resRef(R.string.chat_input_placeholder),
+  maxVisibleLines: Int = DEFAULT_MAX_VISIBLE_LINES,
+  keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+  keyboardActions: KeyboardActions = KeyboardActions.Default,
+  interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
+) {
+  val focused = interactionSource.collectIsFocusedAsState().value
+  val textColor = colors.textColor(
+    enabled = enabled,
+    isError = isError,
+    focused = focused
+  )
+  val containerColor = colors.containerColor(
+    enabled = enabled,
+    isError = isError,
+    focused = focused
+  )
+  val placeholderColor = colors.placeholderColor(
+    enabled = enabled,
+    isError = isError,
+    focused = focused
+  )
+  val cursorColor = colors.cursorColor(
+    isError = isError
+  )
+  BasicTextField(
+    modifier = modifier,
+    value = value,
+    onValueChange = onValueChange,
+    enabled = enabled,
+    minLines = 1,
+    maxLines = maxVisibleLines,
+    textStyle = AppTheme.typography.body1.copy(
+      color = textColor.value
+    ),
+    cursorBrush = SolidColor(
+      value = cursorColor.value
+    ),
+    keyboardOptions = keyboardOptions,
+    keyboardActions = keyboardActions,
+    interactionSource = interactionSource,
+    decorationBox = { innerTextField ->
+      TextFieldDecoration(
+        value = value.text,
         shape = shape,
         containerColor = containerColor.value,
         placeholderColor = placeholderColor.value,

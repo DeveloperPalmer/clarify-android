@@ -21,6 +21,7 @@ import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.feature.entity.chat.Peer
@@ -216,7 +217,7 @@ class Firestore @Inject constructor(
       .await()
   }
 
-  suspend fun postGroupConversation(name: String): String {
+  suspend fun postGroupConversation(name: GroupName): String {
     val ownerId = requireUserId()
     val conversationId = randomUuid()
 
@@ -226,7 +227,7 @@ class Firestore @Inject constructor(
     val postConversationParams = PostConversationParams(
       type = ConversationNM.Type.Group,
       memberUids = listOf(ownerId.value),
-      name = name,
+      name = name.value,
       ownerUid = ownerId.value
     )
     val postMemberParams = PostMemberParams(

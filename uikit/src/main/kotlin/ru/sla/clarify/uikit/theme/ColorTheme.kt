@@ -106,7 +106,7 @@ internal val DarkColors = AppColors(
   buttonSecondaryContent = ColorPalette.purple300,
   buttonSecondaryContentDisabled = ColorPalette.gray400,
   buttonTertiaryContent = ColorPalette.purple300,
-  buttonTertiaryContentDisabled = ColorPalette.gray450,
+  buttonTertiaryContentDisabled = ColorPalette.gray250,
   shimmerColor = ColorPalette.gray900,
   shimmerHighlightColor = ColorPalette.gray500
 )

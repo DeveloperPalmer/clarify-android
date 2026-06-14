@@ -1,17 +1,26 @@
 package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 
+import androidx.compose.ui.text.input.TextFieldValue
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.zip
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
+import ru.kode.remo.QueueingStrategy
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
+import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
+import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
+import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationModel
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
+import ru.sla.clarify.feature.chat.conversation.ui.screen.main.ViewState.CreateConversationTab
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
@@ -38,73 +47,197 @@ class ChatListViewModel @Inject constructor(
       }
     }
 
-    onEach(intent(ViewIntents::openDirectConversation)) {
-      action { _, _, peerId ->
-        eventSink.sendEvent(FlowEvent.DirectConversationRequested(peerId))
-      }
-    }
-
-    onEach(intent(ViewIntents::openGroupConversation)) {
-      action { _, _, conversationId ->
-        eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId))
-      }
-    }
-
     onEach(intent(ViewIntents::openProfile)) {
       action { _, _, _ ->
         eventSink.sendEvent(FlowEvent.ProfileRequested)
       }
     }
 
-    configureUserTransitions()
-    configureConversationTransitions()
-    configureNewConversationTransitions()
-    configureDeleteConversationTransitions()
-  }
-
-  private fun MachineDsl<ViewState>.configureUserTransitions() {
-    onEach(conversationModel.user) {
-      transitionTo { state, user ->
-        state.copy(user = user)
-      }
-    }
-  }
-
-  private fun MachineDsl<ViewState>.configureConversationTransitions() {
-    onEach(conversationModel.conversations) {
-      transitionTo { state, conversations ->
-        state.copy(conversations = conversations)
-      }
-    }
-  }
-
-  private fun MachineDsl<ViewState>.configureNewConversationTransitions() {
     onEach(intent(ViewIntents::openCreateConversation)) {
       action { _, _, _ ->
-        sendViewEvent(showNewChatDialog())
+        sendViewEvent(showCreateConversationDialog())
+      }
+    }
+
+    onEach(intent(ViewIntents::hideCreateConversation)) {
+      transitionTo { state, _ ->
+        state.copy(
+          createConversationLoadState = ContentLoadState.NotStarted,
+          groupNameQuery = TextFieldValue(),
+          groupNameError = null,
+          directEmailQuery = TextFieldValue(),
+          directEmailError = null
+        )
       }
     }
 
     onEach(intent(ViewIntents::changeCreateConversationTab)) {
       transitionTo { state, tab ->
-        state.copy(selectedCreateConversationOption = tab)
+        state.copy(
+          selectedCreateConversationTab = tab as CreateConversationTab,
+          directEmailError = null,
+          groupNameError = null
+        )
       }
     }
 
-    onEach(intent(ViewIntents::confirmCreateDirect)) {
-      action { _, _, value ->
-        conversationModel.getPeerByEmail.start(Email(value))
+    onEach(conversationModel.user) {
+      transitionTo { state, user ->
+        state.copy(user = user)
       }
     }
 
-    onEach(intent(ViewIntents::confirmCreateGroup)) {
-      action { _, _, name ->
-        conversationModel.createGroup.start(name)
+    onEach(conversationModel.conversations) {
+      transitionTo { state, conversations ->
+        state.copy(conversations = conversations)
       }
     }
 
-    onEach(conversationModel.createGroup.jobFlow.successResults()) {
+    configureDirectConversationTransitions()
+    configureGroupConversationTransitions()
+    configureDeleteConversationTransitions()
+  }
+
+  private fun MachineDsl<ViewState>.configureDirectConversationTransitions() {
+    onEach(intent(ViewIntents::openDirectConversation)) {
+      action { _, _, peerId ->
+        eventSink.sendEvent(FlowEvent.DirectConversationRequested(peerId))
+      }
+    }
+
+    onEach(intent(ViewIntents::showCreateDirectConversationError)) {
+      transitionTo { state, error ->
+        state.copy(directEmailError = error)
+      }
+    }
+
+    onEach(intent(ViewIntents::hideCreateDirectConversationError)) {
+      transitionTo { state, _ ->
+        state.copy(directEmailError = null)
+      }
+    }
+
+    onEach(intent(ViewIntents::changeEmailQuery)) {
+      transitionTo { state, directEmailQuery ->
+        state.copy(
+          directEmailQuery = directEmailQuery,
+          directEmailError = null
+        )
+      }
+    }
+
+    onEach(intent(ViewIntents::validateDirectEmail)) {
+      transitionTo { state, _ ->
+        val directEmailError = Email.validate(
+          peerEmail = state.directEmailQuery.text,
+          userEmail = state.user?.email
+        ).fold(
+          ifRight = { null },
+          ifLeft = { it.first() }
+        )
+        state.copy(directEmailError = directEmailError)
+      }
+      action { _, newState, _ ->
+        Email.validate(
+          peerEmail = newState.directEmailQuery.text,
+          userEmail = newState.user?.email
+        ).onRight { email ->
+          conversationModel.getPeerByEmail.start(
+            argument = email,
+            queueingStrategy = QueueingStrategy.SkipNew
+          )
+        }
+      }
+    }
+
+    onEach(
+      conversationModel.getPeerByEmail.jobFlow
+        .asLceState()
+        .map { it.toUiLceState() }
+    ) {
+      transitionTo { state, contentLoadState ->
+        state.copy(createConversationLoadState = contentLoadState)
+      }
+    }
+
+    onEach(
+      conversationModel.getPeerByEmail.jobFlow
+        .successResults()
+        .zip(intent(ViewIntents::confirmCreateDirectConversation), ::Pair)
+    ) {
+      action { _, _, (peerId, _) ->
+        eventSink.sendEvent(FlowEvent.DirectConversationRequested(peerId))
+      }
+    }
+
+    onEach(conversationModel.getPeerByEmail.jobFlow.errors()) {
+      action { _, _, error ->
+        val message = when (error) {
+          is PeerNotFoundException -> resRef(R.string.direct_conversation_error_user_not_found)
+          else -> resRef(R.string.direct_conversation_error_lookup_failed)
+        }
+        sendViewEvent(Snackbar(isError = true, message = message))
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureGroupConversationTransitions() {
+    onEach(intent(ViewIntents::openGroupConversation)) {
       action { _, _, conversationId ->
+        eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId))
+      }
+    }
+
+    onEach(intent(ViewIntents::validateGroupName)) {
+      transitionTo { state, _ ->
+        val groupNameError = GroupName.validate(
+          name = state.groupNameQuery.text
+        ).fold(
+          ifRight = { null },
+          ifLeft = { it.first() }
+        )
+        state.copy(groupNameError = groupNameError)
+      }
+      action { _, newState, _ ->
+        GroupName.validate(
+          name = newState.groupNameQuery.text
+        ).onRight { groupName ->
+          conversationModel.createGroup.start(
+            argument = groupName,
+            queueingStrategy = QueueingStrategy.SkipNew
+          )
+        }
+      }
+    }
+
+    onEach(intent(ViewIntents::changeGroupNameQuery)) {
+      transitionTo { state, groupNameQuery ->
+        state.copy(
+          groupNameQuery = groupNameQuery,
+          groupNameError = null
+        )
+      }
+    }
+
+    onEach(
+      conversationModel.createGroup.jobFlow
+        .asLceState()
+        .map { it.toUiLceState() }
+    ) {
+      transitionTo { state, contentLoadState ->
+        state.copy(createConversationLoadState = contentLoadState)
+      }
+    }
+
+    onEach(
+      conversationModel.createGroup.jobFlow
+        .successResults()
+        .zip(intent(ViewIntents::confirmCreateGroup), ::Pair)
+    ) {
+      transitionTo { state, _ ->
+        state.copy(createConversationLoadState = ContentLoadState.NotStarted)
+      }
+      action { _, _, (conversationId, _) ->
         eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId))
       }
     }
@@ -114,28 +247,7 @@ class ChatListViewModel @Inject constructor(
         sendViewEvent(
           Snackbar(
             isError = true,
-            message = resRef(R.string.conversation_new_group_create_error)
-          )
-        )
-      }
-    }
-
-    onEach(conversationModel.getPeerByEmail.jobFlow.successResults()) {
-      action { _, _, peerId ->
-        eventSink.sendEvent(FlowEvent.DirectConversationRequested(peerId))
-      }
-    }
-
-    onEach(conversationModel.getPeerByEmail.jobFlow.errors()) {
-      action { _, _, error ->
-        val messageId = when (error) {
-          is PeerNotFoundException -> R.string.conversation_new_chat_error_user_not_found
-          else -> R.string.conversation_new_chat_error_lookup_failed
-        }
-        sendViewEvent(
-          Snackbar(
-            isError = true,
-            message = resRef(messageId)
+            message = resRef(R.string.group_conversation_error_create_failed)
           )
         )
       }

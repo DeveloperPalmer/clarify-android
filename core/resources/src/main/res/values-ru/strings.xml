@@ -35,16 +35,16 @@
     <string name="conversation_empty_subtitle">Создайте первый, чтобы начать общение с командой или друзьями.</string>
 
     <!-- Conversation: new chat dialog -->
-    <string name="conversation_new_chat_dialog_title">Новый чат</string>
-    <string name="conversation_new_chat_dialog_text">Введите email пользователя, с которым хотите начать чат:</string>
-    <string name="conversation_new_chat_dialog_start">Начать</string>
-    <string name="conversation_new_chat_error_user_not_found">Пользователь с таким email не найден</string>
-    <string name="conversation_new_chat_error_lookup_failed">Не удалось найти пользователя, попробуйте снова</string>
-    <string name="conversation_new_tab_direct">Личный</string>
-    <string name="conversation_new_tab_group">Группа</string>
-    <string name="conversation_new_group_name_placeholder">Название группы</string>
-    <string name="conversation_new_group_create_button">Создать</string>
-    <string name="conversation_new_group_create_error">Не удалось создать группу, попробуйте снова</string>
+    <string name="direct_conversation_title">Новый чат</string>
+    <string name="direct_conversation_text">Введите email пользователя, с которым хотите начать чат:</string>
+    <string name="direct_conversation_email_positive_button">Начать</string>
+    <string name="direct_conversation_error_user_not_found">Пользователь с таким email не найден</string>
+    <string name="direct_conversation_error_lookup_failed">Не удалось найти пользователя, попробуйте снова</string>
+    <string name="conversation_tab_direct">Личный</string>
+    <string name="conversation_tab_group">Группа</string>
+    <string name="group_conversation_name_placeholder">Название группы</string>
+    <string name="group_conversation_positive_button">Создать</string>
+    <string name="group_conversation_error_create_failed">Не удалось создать группу, попробуйте снова</string>
     <string name="conversation_group_no_messages">Пока нет сообщений</string>
 
     <!-- Conversation: delete dialog -->

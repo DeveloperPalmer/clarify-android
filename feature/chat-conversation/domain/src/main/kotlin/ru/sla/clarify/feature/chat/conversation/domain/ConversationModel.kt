@@ -6,6 +6,7 @@ import kotlinx.coroutines.launch
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.entity.chat.Conversation
@@ -37,7 +38,7 @@ class ConversationModel @Inject constructor(
     conversationRepository.deleteConversations(ids)
   }
 
-  val createGroup = task<String, Conversation.Id>(
+  val createGroup = task<GroupName, Conversation.Id>(
     name = "createGroup"
   ) { name ->
     conversationRepository.createGroup(name)

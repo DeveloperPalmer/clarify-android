@@ -1,15 +1,14 @@
 package ru.sla.clarify.uikit.component.button
 
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.snap
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -22,10 +21,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
@@ -273,16 +274,18 @@ private fun Button(
     shadowElevation = elevation,
     interactionSource = interactionSource
   ) {
-    AnimatedContent(
+    val contentAlpha by animateFloatAsState(
+      targetValue = if (showLoading) 0f else 1f,
+      label = "buttonContentAlpha"
+    )
+    Box(
       modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
-      targetState = showLoading,
-      transitionSpec = {
-        fadeIn() togetherWith fadeOut() using SizeTransform(clip = false) { _, _ ->
-          snap()
-        }
-      }
-    ) { loading ->
+      contentAlignment = Alignment.Center
+    ) {
+      // Source content acts as the size anchor: it always occupies the button's
+      // intrinsic width/height, so the button keeps its size while the loader is shown.
       Row(
+        modifier = Modifier.alpha(contentAlpha),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = when (size) {
           ButtonSize.Small -> Arrangement.spacedBy(
@@ -295,30 +298,29 @@ private fun Button(
           )
         }
       ) {
-        if (loading) {
-          CircularProgressIndicator(
-            modifier = Modifier.size(size.iconSize()),
-            color = colors.contentColor(enabled = enabled).value,
-            strokeWidth = 2.dp
-          )
-        } else if (iconRes != null) {
+        if (iconRes != null) {
           Icon(
             modifier = Modifier.size(size.iconSize()),
             painter = painterResource(iconRes),
             contentDescription = null
           )
-          Text(
-            text = text,
-            style = textStyle,
-            color = colors.contentColor(enabled = enabled).value
-          )
-        } else {
-          Text(
-            text = text,
-            style = textStyle,
-            color = colors.contentColor(enabled = enabled).value
-          )
         }
+        Text(
+          text = text,
+          style = textStyle,
+          color = colors.contentColor(enabled = enabled).value
+        )
+      }
+      AnimatedVisibility(
+        visible = showLoading,
+        enter = fadeIn(),
+        exit = fadeOut()
+      ) {
+        CircularProgressIndicator(
+          modifier = Modifier.size(size.iconSize()),
+          color = colors.contentColor(enabled = enabled).value,
+          strokeWidth = 2.dp
+        )
       }
     }
   }
