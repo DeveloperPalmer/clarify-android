@@ -1,0 +1,17 @@
+plugins {
+  id 'android-library-convention'
+  id 'dagger-convention'
+  id 'android-compose-convention'
+  alias(libs.plugins.way)
+}
+
+android {
+  namespace "ru.sla.clarify.feature.chat.group.thread.routing"
+}
+
+dependencies {
+  implementation project(":core:routing")
+  api project(":feature:chat-group-thread:data")
+  api project(":feature:chat-group-thread:domain")
+  api project(":feature:chat-group-thread:ui")
+}

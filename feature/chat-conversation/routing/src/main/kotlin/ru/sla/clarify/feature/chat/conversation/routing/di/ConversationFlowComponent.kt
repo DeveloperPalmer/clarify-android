@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.chat.direct.thread.routing.di.ThreadFlowComponent
+import ru.sla.clarify.feature.chat.group.thread.routing.di.GroupThreadFlowComponent
 import ru.sla.clarify.feature.profile.routing.di.ProfileFlowComponent
 
 @SingleIn(ConversationScope::class)
@@ -11,5 +12,6 @@ import ru.sla.clarify.feature.profile.routing.di.ProfileFlowComponent
 interface ConversationFlowComponent {
   fun nodeFactory(): ConversationFlowNodeFactory
   fun threadFlowComponent(): ThreadFlowComponent.Builder
+  fun groupThreadFlowComponent(): GroupThreadFlowComponent.Builder
   fun profileFlowComponent(): ProfileFlowComponent
 }

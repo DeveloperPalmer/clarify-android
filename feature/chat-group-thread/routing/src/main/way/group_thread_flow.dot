@@ -1,0 +1,12 @@
+digraph GroupThreadFlow {
+  package = "ru.sla.clarify.feature.chat.group.thread.routing"
+
+  groupThreadFlow [
+    type = "flow"
+    parameterName = "conversationId"
+    parameterType = "ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation.Id"
+    resultType = "ru.sla.clarify.feature.chat.group.thread.routing.GroupThreadFlow.Result"
+  ]
+
+  groupThreadFlow -> main -> groupInfo
+}

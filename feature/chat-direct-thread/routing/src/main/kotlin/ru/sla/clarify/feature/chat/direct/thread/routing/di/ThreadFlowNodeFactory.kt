@@ -19,11 +19,7 @@ class ThreadFlowNodeFactory @Inject constructor(
   private val flowNode: Provider<ThreadFlowNode>,
   private val component: ThreadFlowComponent,
   @param:WiredScreen(Screen.Thread)
-  private val threadScreenNode: Provider<WiredComposableScreen>,
-  @param:WiredScreen(Screen.GroupThread)
-  private val groupThreadScreenNode: Provider<WiredComposableScreen>,
-  @param:WiredScreen(Screen.GroupInfo)
-  private val groupInfoScreenNode: Provider<WiredComposableScreen>
+  private val threadScreenNode: Provider<WiredComposableScreen>
 ) : ThreadFlowNodeBuilder.Factory {
 
   override fun createRootNode(target: ThreadTarget): FlowNode<*> {
@@ -32,14 +28,6 @@ class ThreadFlowNodeFactory @Inject constructor(
 
   override fun createThreadNode(): ScreenNode {
     return BasicScreenNode(threadScreenNode.get())
-  }
-
-  override fun createGroupThreadNode(): ScreenNode {
-    return BasicScreenNode(groupThreadScreenNode.get())
-  }
-
-  override fun createGroupInfoNode(): ScreenNode {
-    return BasicScreenNode(groupInfoScreenNode.get())
   }
 
   override fun createBranchFlowNodeBuilder(id: Branch.Id): NodeBuilder {

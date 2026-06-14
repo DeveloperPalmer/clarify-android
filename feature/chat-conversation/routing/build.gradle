@@ -15,5 +15,6 @@ dependencies {
   api project(":feature:chat-conversation:domain")
   api project(":feature:chat-conversation:ui")
   api project(":feature:chat-direct-thread:routing")
+  api project(":feature:chat-group-thread:routing")
   api project(":feature:profile:routing")
 }

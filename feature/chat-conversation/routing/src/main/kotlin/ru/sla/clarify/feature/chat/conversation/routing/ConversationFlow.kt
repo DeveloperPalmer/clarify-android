@@ -2,11 +2,13 @@ package ru.sla.clarify.feature.chat.conversation.routing
 
 import ru.sla.clarify.feature.chat.conversation.routing.di.ConversationFlowComponent
 import ru.sla.clarify.feature.chat.direct.thread.routing.ThreadFlow
+import ru.sla.clarify.feature.chat.group.thread.routing.GroupThreadFlow
 import ru.sla.clarify.feature.profile.routing.ProfileFlow
 
 object ConversationFlow {
   val schema = ConversationFlowSchema(
     threadFlowSchema = ThreadFlow.schema,
+    groupThreadFlowSchema = GroupThreadFlow.schema,
     profileFlowSchema = ProfileFlow.schema
   )
 

@@ -14,5 +14,4 @@ digraph ThreadFlow {
   ]
 
   threadFlow -> thread -> branchFlow
-  threadFlow -> groupThread -> groupInfo
 }

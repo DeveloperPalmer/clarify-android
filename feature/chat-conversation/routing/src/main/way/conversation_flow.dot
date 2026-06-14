@@ -12,6 +12,13 @@ digraph ConversationFlow {
     parameterType = "ru.sla.clarify.feature.chat.direct.thread.domain.entity.ThreadTarget"
   ]
 
+  groupThreadFlow [
+    type = "schema"
+    parameterName = "conversationId"
+    parameterType = "ru.sla.clarify.feature.chat.conversation.domain.entity.Conversation.Id"
+    resultType = "ru.sla.clarify.feature.chat.group.thread.routing.GroupThreadFlow.Result"
+  ]
+
   profileFlow [
     type = "schema",
     resultType = "ru.sla.clarify.feature.profile.routing.ProfileFlow.Result"
@@ -20,5 +27,6 @@ digraph ConversationFlow {
   conversationFlow -> main
 
   main -> threadFlow
+  main -> groupThreadFlow
   main -> profileFlow
 }
