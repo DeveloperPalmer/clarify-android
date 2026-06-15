@@ -217,7 +217,7 @@ class Firestore @Inject constructor(
       .await()
   }
 
-  suspend fun postGroupConversation(name: GroupName): String {
+  suspend fun postCreateGroupConversation(name: GroupName): String {
     val ownerId = requireUserId()
     val conversationId = randomUuid()
 

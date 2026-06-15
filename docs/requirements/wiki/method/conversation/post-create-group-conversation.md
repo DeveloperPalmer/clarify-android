@@ -2,7 +2,7 @@
 tags:
   - method
 ---
-# postGroupConversation
+# postCreateGroupConversation
 
 **Summary**: Создаёт групповую беседу и записывает создателя как первого участника.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
@@ -19,7 +19,7 @@ tags:
 ### Signature
 
 ```kotlin
-suspend fun postGroupConversation(name: String): String
+suspend fun postCreateGroupConversation(name: String): String
 ```
 
 ### Parameters

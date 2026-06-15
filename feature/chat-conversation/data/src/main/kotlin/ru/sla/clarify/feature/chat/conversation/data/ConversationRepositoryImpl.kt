@@ -84,7 +84,7 @@ class ConversationRepositoryImpl @Inject constructor(
 
   override suspend fun createGroup(name: GroupName): Conversation.Id {
     return withContext(Dispatchers.IO) {
-      val conversationId = firestore.postGroupConversation(name)
+      val conversationId = firestore.postCreateGroupConversation(name)
       val ownerId = authSessionPersistence.withKey { readUserId(it) }
       if (ownerId != null) {
         persistedDB.transaction {

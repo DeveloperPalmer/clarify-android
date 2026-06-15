@@ -39,7 +39,7 @@ tags:
 - [delete-group-conversation](method/conversation/delete-group-conversation.md) — Удалить групповую беседу
 - [observe-conversations](method/conversation/observe-conversations.md) — Живая подписка на все conversations текущего пользователя
 - [patch-group-name](method/conversation/patch-group-name.md) — Обновить название группы
-- [post-group-conversation](method/conversation/post-group-conversation.md) — Создать групповую беседу
+- [post-create-group-conversation](method/conversation/post-create-group-conversation.md) — Создать групповую беседу
 
 ### member/
 - [delete-member](method/member/delete-member.md) — Удалить участника из группы
