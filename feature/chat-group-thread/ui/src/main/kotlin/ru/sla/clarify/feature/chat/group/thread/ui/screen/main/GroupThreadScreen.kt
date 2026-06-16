@@ -30,7 +30,7 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.Group
-import ru.sla.clarify.uikit.component.avatar.GroupAvatar
+import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
 import ru.sla.clarify.uikit.component.chat.ChatCommits
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
@@ -156,10 +156,10 @@ private fun GroupHeader(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(10.dp)
   ) {
-    GroupAvatar(
+    Avatar(
       size = 40.dp,
-      name = group.name,
-      colorSeed = group.id
+      photoUrl = null,
+      fallback = group.name
     )
     Column(modifier = Modifier.weight(1f)) {
       Text(
@@ -195,10 +195,10 @@ private fun EmptyState(group: Group) {
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-      GroupAvatar(
+      Avatar(
         size = 88.dp,
-        name = group.name,
-        colorSeed = group.id
+        photoUrl = null,
+        fallback = group.name
       )
       Text(
         text = group.name,

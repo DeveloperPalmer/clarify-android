@@ -3,13 +3,13 @@ package ru.sla.clarify.uikit.component
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.uikit.theme.AppTheme
 
@@ -19,14 +19,16 @@ fun UnreadCountBadge(
   modifier: Modifier = Modifier
 ) {
   AnimatedVisibility(
-    modifier = modifier,
+    modifier = modifier.size(20.dp),
     visible = unreadCount > 0
   ) {
     Box(
       modifier = Modifier
-        .size(20.dp)
-        .clip(CircleShape)
-        .background(AppTheme.colors.contentAccentPrimary),
+        .fillMaxSize()
+        .background(
+          shape = CircleShape,
+          color = AppTheme.colors.contentAccentPrimary
+        ),
       contentAlignment = Alignment.Center
     ) {
       Text(

@@ -159,7 +159,7 @@ private fun TopAppBarCenterContent(
     Avatar(
       size = 40.dp,
       photoUrl = peer.photoUrl,
-      fallbackInitial = peer.displayName
+      fallback = peer.displayName
     )
     Column(modifier = Modifier.weight(1f)) {
       Text(

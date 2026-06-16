@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chat.conversation.ui.screen.main.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -56,7 +57,7 @@ internal fun DirectConversationItem(
         Avatar(
           size = 40.dp,
           photoUrl = direct.peer.photoUrl,
-          fallbackInitial = direct.peer.displayName
+          fallback = direct.peer.displayName
         )
         DoneBadge(
           modifier = Modifier
@@ -125,13 +126,13 @@ internal fun DoneBadge(
 }
 
 @Composable
-private fun TrailingBlock(
+internal fun TrailingBlock(
   date: String?,
   unreadCount: Long,
   modifier: Modifier = Modifier
 ) {
   Column(
-    modifier = modifier,
+    modifier = modifier.animateContentSize(),
     horizontalAlignment = Alignment.End,
     verticalArrangement = Arrangement.spacedBy(4.dp)
   ) {

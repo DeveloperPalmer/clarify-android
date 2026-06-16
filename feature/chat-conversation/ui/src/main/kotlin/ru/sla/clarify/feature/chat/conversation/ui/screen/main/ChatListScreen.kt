@@ -148,7 +148,7 @@ private fun Header(
     Avatar(
       size = 48.dp,
       photoUrl = user.photoUrl,
-      fallbackInitial = user.email.value.takeIf { it.isNotBlank() } ?: "?"
+      fallback = user.email.value.takeIf { it.isNotBlank() } ?: "?"
     )
     Column(
       modifier = Modifier.weight(1f),
@@ -250,7 +250,6 @@ private fun ConversationReadyState(
         is Conversation.Group -> {
           GroupConversationItem(
             selected = selectedConversationsIds.contains(item.id),
-            groupId = item.id.value,
             groupName = item.name,
             lastSenderName = item.lastCommitSenderName,
             lastCommit = item.lastCommit,

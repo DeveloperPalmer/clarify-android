@@ -227,7 +227,7 @@ private fun CandidateRow(
     Avatar(
       size = 40.dp,
       photoUrl = candidate.photoUrl,
-      fallbackInitial = candidate.displayName
+      fallback = candidate.displayName
     )
     Column(modifier = Modifier.weight(1f)) {
       Text(

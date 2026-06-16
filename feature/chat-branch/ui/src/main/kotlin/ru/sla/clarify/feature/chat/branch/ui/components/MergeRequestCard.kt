@@ -213,7 +213,7 @@ private fun Approver(
       Avatar(
         size = 40.dp,
         photoUrl = approver.photoUrl,
-        fallbackInitial = "?"
+        fallback = "?"
       )
       DoneBadge(
         modifier = Modifier.size(18.dp),

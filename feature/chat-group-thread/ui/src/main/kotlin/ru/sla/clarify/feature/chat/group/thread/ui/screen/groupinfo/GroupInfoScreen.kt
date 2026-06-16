@@ -33,7 +33,6 @@ import ru.sla.clarify.feature.chat.group.thread.ui.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.GroupMember
 import ru.sla.clarify.uikit.component.Divider
 import ru.sla.clarify.uikit.component.avatar.Avatar
-import ru.sla.clarify.uikit.component.avatar.GroupAvatar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -170,10 +169,10 @@ private fun GroupHeader(
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
-    GroupAvatar(
+    Avatar(
       size = 96.dp,
-      name = group.name,
-      colorSeed = group.id
+      photoUrl = null,
+      fallback = group.name
     )
     Row(
       verticalAlignment = Alignment.CenterVertically,
@@ -273,7 +272,7 @@ private fun MemberRow(
     Avatar(
       size = 40.dp,
       photoUrl = member.photoUrl,
-      fallbackInitial = member.displayName
+      fallback = member.displayName
     )
     Column(modifier = Modifier.weight(1f)) {
       Row(

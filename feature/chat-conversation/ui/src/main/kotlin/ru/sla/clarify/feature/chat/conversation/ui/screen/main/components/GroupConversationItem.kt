@@ -17,15 +17,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.uikit.component.UnreadCountBadge
-import ru.sla.clarify.uikit.component.avatar.GroupAvatar
+import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 
 @Composable
 internal fun GroupConversationItem(
-  groupId: String,
   groupName: String,
   lastSenderName: String?,
   lastCommit: String?,
@@ -53,10 +51,10 @@ internal fun GroupConversationItem(
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       Box {
-        GroupAvatar(
+        Avatar(
           size = 40.dp,
-          name = groupName,
-          colorSeed = groupId
+          photoUrl = null,
+          fallback = groupName
         )
         DoneBadge(
           modifier = Modifier
@@ -81,7 +79,7 @@ internal fun GroupConversationItem(
           lastCommit = lastCommit
         )
       }
-      GroupTrailingBlock(
+      TrailingBlock(
         date = lastCommitAt,
         unreadCount = unreadCount
       )
@@ -114,30 +112,6 @@ private fun GroupSubtitle(
   )
 }
 
-@Composable
-private fun GroupTrailingBlock(
-  date: String?,
-  unreadCount: Long,
-  modifier: Modifier = Modifier
-) {
-  Column(
-    modifier = modifier,
-    horizontalAlignment = Alignment.End,
-    verticalArrangement = Arrangement.spacedBy(4.dp)
-  ) {
-    if (date != null) {
-      Text(
-        text = date,
-        style = AppTheme.typography.label3,
-        color = AppTheme.colors.contentAccentPrimary
-      )
-    }
-    UnreadCountBadge(
-      unreadCount = unreadCount
-    )
-  }
-}
-
 @Preview
 @Composable
 private fun GroupConversationItemPreviewLight() {
@@ -157,7 +131,6 @@ private fun GroupConversationItemPreviewDark() {
 @Composable
 private fun GroupConversationItemPreviewContent() {
   GroupConversationItem(
-    groupId = "g-1",
     groupName = "Команда дизайна",
     lastSenderName = "Алексей",
     lastCommit = "Закинул новые макеты в Figma",
@@ -169,7 +142,6 @@ private fun GroupConversationItemPreviewContent() {
     onLongClick = {}
   )
   GroupConversationItem(
-    groupId = "g-2",
     groupName = "Книжный клуб",
     lastSenderName = null,
     lastCommit = null,
