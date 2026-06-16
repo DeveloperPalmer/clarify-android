@@ -1,9 +1,6 @@
 package ru.sla.clarify.feature.chat.conversation.data.mapper
 
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
-import ru.sla.clarify.core.domain.entity.Email
-import ru.sla.clarify.core.domain.entity.User
-import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Peer
@@ -73,20 +70,6 @@ internal fun mapToGroup(
     lastCommitAt = formatLastCommitTimestamp(lastCommitTimestamp),
     lastCommitTimestamp = lastCommitTimestamp,
     unreadCount = unreadCount
-  )
-}
-
-internal fun mapToUser(
-  id: String,
-  email: String,
-  displayName: String,
-  photoUrl: String?
-): User {
-  return User(
-    id = UserId(id),
-    email = Email(email),
-    displayName = displayName,
-    photoUrl = photoUrl
   )
 }
 

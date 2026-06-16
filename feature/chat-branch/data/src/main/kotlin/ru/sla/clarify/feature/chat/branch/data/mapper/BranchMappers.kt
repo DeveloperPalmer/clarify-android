@@ -2,8 +2,6 @@ package ru.sla.clarify.feature.chat.branch.data.mapper
 
 import com.google.firebase.Timestamp
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
-import ru.sla.clarify.core.domain.entity.Email
-import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.database.adapter.StringList
@@ -89,20 +87,6 @@ internal fun BranchNM.toDomain(conversationId: String): Branch {
         mergedIntoBranchId = it.mergedIntoBranchId?.let(Branch::Id)
       )
     }
-  )
-}
-
-internal fun mapToUser(
-  id: String,
-  email: String,
-  displayName: String,
-  photoUrl: String?
-): User {
-  return User(
-    id = UserId(id),
-    email = Email(email),
-    displayName = displayName,
-    photoUrl = photoUrl
   )
 }
 

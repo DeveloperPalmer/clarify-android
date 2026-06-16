@@ -24,7 +24,6 @@ import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToConversation
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToGroup
-import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToUser
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
 import ru.sla.clarify.lib.google.firestore.Firestore
@@ -32,6 +31,7 @@ import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
+import ru.sla.clarify.mapper.mapToUser
 import javax.inject.Inject
 
 @SingleIn(AppScope::class)

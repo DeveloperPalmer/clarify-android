@@ -24,7 +24,6 @@ import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.branch.data.mapper.mapToBranch
-import ru.sla.clarify.feature.chat.branch.data.mapper.mapToUser
 import ru.sla.clarify.feature.chat.branch.data.mapper.toDomain
 import ru.sla.clarify.feature.chat.branch.data.mapper.toLocalDateTime
 import ru.sla.clarify.feature.chat.branch.data.mapper.withReadStatus
@@ -39,6 +38,7 @@ import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.clarify.mapper.mapToCommit
 import ru.sla.clarify.mapper.mapToMember
+import ru.sla.clarify.mapper.mapToUser
 import java.time.LocalDateTime
 import javax.inject.Inject
 
