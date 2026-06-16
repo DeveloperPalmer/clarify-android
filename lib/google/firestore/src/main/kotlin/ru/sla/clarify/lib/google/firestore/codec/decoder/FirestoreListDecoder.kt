@@ -1,6 +1,5 @@
 package ru.sla.clarify.lib.google.firestore.codec.decoder
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.AbstractDecoder
@@ -15,7 +14,6 @@ import ru.sla.clarify.lib.google.firestore.codec.FirestoreOpaqueDecoder
  * decodeValue / decodeOpaque / beginStructure берут текущий элемент и инкрементят
  * курсор.
  */
-@OptIn(ExperimentalSerializationApi::class)
 internal class FirestoreListDecoder(
   override val serializersModule: SerializersModule,
   private val source: List<*>

@@ -1,6 +1,5 @@
 package ru.sla.clarify.lib.google.firestore.codec.encoder
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.AbstractEncoder
@@ -19,7 +18,6 @@ import ru.sla.clarify.lib.google.firestore.codec.FirestoreOpaqueEncoder
  * Контракт: top-level value обязан быть структурой (class/object). Примитивы и списки
  * на корне не поддерживаются — это нарушение Firestore-модели, документ всегда map.
  */
-@OptIn(ExperimentalSerializationApi::class)
 internal class FirestoreMapEncoder(
   override val serializersModule: SerializersModule,
   private val target: MutableMap<String, Any?>

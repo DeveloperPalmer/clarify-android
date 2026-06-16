@@ -3,12 +3,10 @@ package ru.sla.clarify.lib.google.firestore.entity.write
 import com.google.firebase.Timestamp
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.EncodeDefault
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import ru.sla.clarify.lib.google.firestore.codec.sentinel.ServerTimestamp
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 
-@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class PostConversationParams(
   val type: Type,

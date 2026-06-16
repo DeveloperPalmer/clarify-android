@@ -1,6 +1,5 @@
 package ru.sla.clarify.lib.google.firestore.codec.encoder
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.AbstractEncoder
@@ -13,7 +12,6 @@ import ru.sla.clarify.lib.google.firestore.codec.FirestoreOpaqueEncoder
  * элементов из SerialDescriptor списка ("0", "1", ...) нам не нужны — порядок и так
  * сохраняется через последовательные вызовы encode*Element.
  */
-@OptIn(ExperimentalSerializationApi::class)
 internal class FirestoreListEncoder(
   override val serializersModule: SerializersModule,
   private val target: MutableList<Any?>

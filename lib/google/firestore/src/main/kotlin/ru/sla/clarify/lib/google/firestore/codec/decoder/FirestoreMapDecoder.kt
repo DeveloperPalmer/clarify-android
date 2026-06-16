@@ -1,6 +1,5 @@
 package ru.sla.clarify.lib.google.firestore.codec.decoder
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.AbstractDecoder
@@ -17,7 +16,6 @@ import ru.sla.clarify.lib.google.firestore.codec.FirestoreOpaqueDecoder
  * пропускаются если ключа нет в source. Required-поля при отсутствии →
  * [ru.sla.clarify.lib.google.firestore.codec.DataMappingException].
  */
-@OptIn(ExperimentalSerializationApi::class)
 internal class FirestoreMapDecoder(
   override val serializersModule: SerializersModule,
   private val source: Map<String, Any?>

@@ -1,6 +1,5 @@
 package ru.sla.clarify.core.data.network.errorconverter
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
@@ -25,7 +24,6 @@ class ErrorResponseBodyConverter(
     }
   }
 
-  @OptIn(ExperimentalSerializationApi::class)
   private fun convertToApiErrorModel(response: Response<*>): ApiErrorBody? {
     return if (response.errorBody()?.hasJsonType == true) {
       try {
