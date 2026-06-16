@@ -22,7 +22,6 @@ tags:
 suspend fun postGroupCommit(
   conversationId: String,
   text: String,
-  colorHex: String,
   memberUids: List<String>
 )
 ```
@@ -33,7 +32,6 @@ suspend fun postGroupCommit(
 |-----------------|-----|---------------|-------------------------------------------------------------------------------------------|
 | conversationId  | Y   | String        | ID групповой беседы.                                                                      |
 | text            | Y   | String        | Текст сообщения.                                                                          |
-| colorHex        | Y   | String        | HEX-цвет сообщения в формате `"#RRGGBB"`.                                                 |
 | memberUids | Y   | List\<String\> | Полный список UID участников группы из локального кэша. Нужен для инкремента unread всем кроме отправителя. |
 
 ### Response parameters
@@ -46,7 +44,6 @@ suspend fun postGroupCommit(
 {
   "conversationId": "conv-group001",
   "text": "Good morning!",
-  "colorHex": "#FF5733",
   "memberUids": ["uid-alice", "uid-bob", "uid-carol"]
 }
 ```
@@ -61,7 +58,6 @@ suspend fun postGroupCommit(
   "text": "Good morning!",
   "type": "text",
   "createdAt": "2026-06-13T09:00:00Z",
-  "colorHex": "#FF5733",
   "branchId": "conv-group001"
 }
 ```

@@ -44,13 +44,10 @@ class DirectThreadModel @Inject constructor(
     )
   }
 
-  val sendMessage = task<String, String?, Unit>(
+  val sendMessage = task<String, Unit>(
     name = "sendMessage"
-  ) { text, colorHex ->
-    directThreadRepository.sendCommit(
-      text = text,
-      colorHex = colorHex
-    )
+  ) { text ->
+    directThreadRepository.sendCommit(text = text)
   }
 
   val createBranch = task<Branch.Id?, Commit.Message, String, Branch>(

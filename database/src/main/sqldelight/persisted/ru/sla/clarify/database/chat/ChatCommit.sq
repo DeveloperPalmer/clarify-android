@@ -7,7 +7,6 @@ CREATE TABLE ChatCommit(
   type TEXT NOT NULL DEFAULT 'text',
   text TEXT NOT NULL,
   invitedUid TEXT,
-  colorHex TEXT NOT NULL,
   timestamp INTEGER NOT NULL,
   isSelf INTEGER AS Boolean NOT NULL,
   status TEXT NOT NULL,
@@ -19,8 +18,8 @@ CREATE INDEX ChatCommit_branchId ON ChatCommit(conversationId, branchId);
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO ChatCommit(id, conversationId, branchId, senderId, type, text, invitedUid, colorHex, timestamp, isSelf, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INTO ChatCommit(id, conversationId, branchId, senderId, type, text, invitedUid, timestamp, isSelf, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectById:
 SELECT
@@ -29,7 +28,6 @@ SELECT
   type,
   text,
   invitedUid,
-  colorHex,
   timestamp,
   isSelf,
   status
@@ -43,7 +41,6 @@ SELECT
   type,
   text,
   invitedUid,
-  colorHex,
   timestamp,
   isSelf,
   status

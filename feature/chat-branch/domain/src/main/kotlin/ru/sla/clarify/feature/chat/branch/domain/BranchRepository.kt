@@ -14,7 +14,7 @@ interface BranchRepository {
   suspend fun subscribeOnBranchUnreadCount()
 
   suspend fun fetchHistoryCommits(count: Int, before: Commit? = null)
-  suspend fun sendCommit(colorHex: String?, text: String)
+  suspend fun sendCommit(text: String)
 
   suspend fun markAsRead()
   suspend fun markReadUpTo(lastReadAt: LocalDateTime)

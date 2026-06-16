@@ -16,13 +16,11 @@ sealed interface Commit {
   val timestamp: LocalDateTime
   val isSelf: Boolean
   val status: Status
-  val colorHex: String?
 
   @Immutable
   data class Message(
     override val id: Id,
     override val timestamp: LocalDateTime,
-    override val colorHex: String,
     override val senderId: UserId,
     override val text: String,
     override val isSelf: Boolean,
@@ -39,7 +37,6 @@ sealed interface Commit {
     val invitedId: UserId
   ) : Commit {
     override val text: String? = null
-    override val colorHex: String? = null
   }
 
   enum class Status(val value: String) {

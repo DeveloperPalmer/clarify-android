@@ -5,7 +5,6 @@ import ru.sla.clarify.feature.entity.chat.Commit
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import java.time.Instant
 import java.time.ZoneId
-import kotlin.random.Random
 
 @Suppress("LongParameterList") // сигнатура строки ChatCommit
 internal fun mapToCommit(
@@ -14,7 +13,6 @@ internal fun mapToCommit(
   type: String,
   text: String,
   invitedUid: String?,
-  colorHex: String,
   timestamp: Long,
   isSelf: Boolean,
   status: String
@@ -37,17 +35,9 @@ internal fun mapToCommit(
       id = Commit.Id(id),
       senderId = UserId(senderId),
       text = text,
-      colorHex = colorHex,
       timestamp = localTimestamp,
       isSelf = isSelf,
       status = Commit.Status.fromValue(status)
     )
   }
 }
-
-internal fun generateColorHex(): String {
-  val rgb = Random.nextInt(0x1000000)
-  return "#$OPAQUE_ALPHA_HEX${rgb.toString(radix = 16).padStart(6, '0').uppercase()}"
-}
-
-private const val OPAQUE_ALPHA_HEX = "FF"

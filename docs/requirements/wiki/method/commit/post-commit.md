@@ -23,8 +23,7 @@ suspend fun postCommit(
   peerId: Peer.Id,
   branchId: String?,
   conversationId: String?,
-  text: String,
-  colorHex: String
+  text: String
 )
 ```
 
@@ -36,7 +35,6 @@ suspend fun postCommit(
 | branchId       | N   | String?  | ID ветки. `null` — сообщение идёт в корень conversation (master).                                             |
 | conversationId | N   | String?  | ID существующей conversation. `null` — conversation будет создана с новым UUID.                               |
 | text           | Y   | String   | Текст сообщения.                                                                                              |
-| colorHex       | Y   | String   | HEX-цвет сообщения в формате `"#RRGGBB"`.                                                                     |
 
 ### Response parameters
 
@@ -49,8 +47,7 @@ suspend fun postCommit(
   "peerId": "uid-bob",
   "branchId": null,
   "conversationId": null,
-  "text": "Hello!",
-  "colorHex": "#FF5733"
+  "text": "Hello!"
 }
 ```
 
@@ -64,7 +61,6 @@ suspend fun postCommit(
   "text": "Hello!",
   "type": "text",
   "createdAt": "2026-06-13T14:30:00Z",
-  "colorHex": "#FF5733",
   "branchId": "conv-xyz789"
 }
 ```

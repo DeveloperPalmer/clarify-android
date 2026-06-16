@@ -16,7 +16,6 @@ import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.feature.chat.direct.thread.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
-import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
@@ -78,14 +77,9 @@ class ThreadViewModel @Inject constructor(
 
   private fun MachineDsl<ViewState>.configureSendMessageTransitions() {
     onEach(intent(ViewIntents::sendMessage)) {
-      action { state, _, text ->
-        // state.commits is built via addFirst — index 0 is the newest commit.
-        val parentCommit = state.commits
-          .filterIsInstance<Commit.Message>()
-          .firstOrNull()
+      action { _, _, text ->
         directThreadModel.sendMessage.start(
-          argument1 = requireNotNull(text.trim().ifBlank { null }),
-          argument2 = parentCommit?.source?.colorHex
+          requireNotNull(text.trim().ifBlank { null })
         )
       }
     }

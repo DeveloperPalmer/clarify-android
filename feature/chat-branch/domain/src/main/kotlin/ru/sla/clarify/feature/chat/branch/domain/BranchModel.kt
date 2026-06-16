@@ -42,13 +42,10 @@ class BranchModel @Inject constructor(
     )
   }
 
-  val sendMessage = task<String, String?, Unit>(
+  val sendMessage = task<String?, Unit>(
     name = "sendMessage"
-  ) { text, colorHex ->
-    branchRepository.sendCommit(
-      text = text,
-      colorHex = colorHex
-    )
+  ) { text ->
+    branchRepository.sendCommit(text = requireNotNull(text))
   }
 
   val openMergeRequest = task<Unit>(

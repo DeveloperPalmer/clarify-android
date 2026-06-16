@@ -46,7 +46,6 @@ fun observeCommits(
 | [].data.text            | Y   | String                 | Текст сообщения.                                |
 | [].data.type            | Y   | String                 | Тип сообщения.<br>\* text |                                  |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
-| [].data.colorHex        | Y   | String                 | HEX-цвет сообщения.                             |
 | [].data.branchId        | Y   | String                 | ID ветки.                                       |
 
 ### Request:
@@ -73,7 +72,6 @@ fun observeCommits(
       "text": "Let's discuss this here",
       "type": "text",
       "createdAt": "2026-06-13T15:00:00Z",
-      "colorHex": "#3399FF",
       "branchId": "branch-ghi012"
     }
   }

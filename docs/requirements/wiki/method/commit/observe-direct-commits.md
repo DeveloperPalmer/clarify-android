@@ -46,7 +46,6 @@ fun observeDirectCommits(
 | [].data.text            | Y   | String                 | Текст сообщения.                                |
 | [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteMember |        |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
-| [].data.colorHex        | Y   | String                 | HEX-цвет сообщения (например `"#FF5733"`).      |
 | [].data.branchId        | Y   | String                 | ID ветки, к которой принадлежит сообщение.      |
 
 ### Request:
@@ -75,7 +74,6 @@ fun observeDirectCommits(
       "text": "Hello!",
       "type": "text",
       "createdAt": "2026-06-13T14:30:00Z",
-      "colorHex": "#FF5733",
       "branchId": "conv-xyz789"
     }
   }

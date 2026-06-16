@@ -46,7 +46,6 @@ suspend fun getCommits(
 | [].text         | Y   | String    | Текст сообщения.                                |
 | [].type         | Y   | String    | Тип: `"text"` или `"inviteMember"`.        |
 | [].createdAt    | Y   | Timestamp | Время создания (DESC-порядок в ответе).         |
-| [].colorHex     | Y   | String    | HEX-цвет сообщения.                            |
 | [].branchId     | Y   | String    | ID ветки.                                       |
 
 ### Request:
@@ -71,7 +70,6 @@ suspend fun getCommits(
     "text": "Sounds great!",
     "type": "text",
     "createdAt": "2026-06-13T14:35:00Z",
-    "colorHex": "#3399FF",
     "branchId": "conv-xyz789"
   },
   {
@@ -81,7 +79,6 @@ suspend fun getCommits(
     "text": "Hello!",
     "type": "text",
     "createdAt": "2026-06-13T14:30:00Z",
-    "colorHex": "#FF5733",
     "branchId": "conv-xyz789"
   }
 ]

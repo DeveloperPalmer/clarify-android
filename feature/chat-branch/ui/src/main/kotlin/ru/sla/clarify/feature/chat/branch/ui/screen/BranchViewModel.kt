@@ -24,7 +24,6 @@ import ru.sla.clarify.feature.chat.branch.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
 import ru.sla.clarify.feature.entity.chat.Branch
 import ru.sla.clarify.feature.entity.chat.Branch.MergeRequest.Status
-import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
@@ -91,18 +90,11 @@ class BranchViewModel @Inject constructor(
   private fun MachineDsl<ViewState>.configureSenderCommitTransitions() {
     onEach(intent(ViewIntents::sendCommit)) {
       action { state, _, text ->
-        // Защита: UI прячет инпут когда у ветки активный MR, но если что-то проскочит
-        // из-за race condition — всё равно не постим commit в замороженную ветку.
-        if (state.mergeRequest != null) return@action
-        // state.commits отсортирован newest-first; индекс 0 — самое свежее сообщение.
-        // Для первого сообщения в новой ветке это null, и ниже сгенерируется свежий цвет —
-        // это намеренно, новая ветка получает свой цвет.
-        val parentCommit = state.commits
-          .filterIsInstance<Commit.Message>()
-          .firstOrNull()
+        if (state.mergeRequest != null) {
+          return@action
+        }
         branchModel.sendMessage.start(
-          argument1 = requireNotNull(text.trim().ifBlank { null }),
-          argument2 = parentCommit?.source?.colorHex
+          argument = text.trim().ifBlank { null }
         )
       }
     }

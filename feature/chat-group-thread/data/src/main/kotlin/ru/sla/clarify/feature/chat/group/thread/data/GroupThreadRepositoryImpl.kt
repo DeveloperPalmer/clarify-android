@@ -13,7 +13,6 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
-import ru.sla.clarify.feature.chat.group.thread.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.group.thread.data.mapper.mapToCommit
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadRepository
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
@@ -87,7 +86,6 @@ class GroupThreadRepositoryImpl @Inject constructor(
     firestore.postGroupCommit(
       conversationId = conversationId.value,
       text = text,
-      colorHex = generateColorHex(),
       memberUids = memberUids
     )
   }
@@ -313,7 +311,6 @@ class GroupThreadRepositoryImpl @Inject constructor(
       type = commit.type.value,
       text = commit.text.orEmpty(),
       invitedUid = commit.invitedUid,
-      colorHex = commit.colorHex.orEmpty(),
       timestamp = commit.createdAt?.toEpochSeconds() ?: 0L,
       isSelf = commit.senderUid == userId.value,
       status = if (hasPendingWrites) {

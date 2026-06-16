@@ -10,7 +10,6 @@ data class CommitNM(
   val id: String,
   val senderUid: String,
   val branchId: String,
-  val colorHex: String? = null,
   val type: Type = Type.Text,
   val text: String? = null,
   val invitedUid: String? = null,

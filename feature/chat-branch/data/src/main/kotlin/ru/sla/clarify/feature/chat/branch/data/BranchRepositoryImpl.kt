@@ -19,7 +19,6 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
-import ru.sla.clarify.feature.chat.branch.data.mapper.generateColorHex
 import ru.sla.clarify.feature.chat.branch.data.mapper.mapToBranch
 import ru.sla.clarify.feature.chat.branch.data.mapper.mapToCommit
 import ru.sla.clarify.feature.chat.branch.data.mapper.mapToMember
@@ -114,14 +113,13 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun sendCommit(colorHex: String?, text: String) {
+  override suspend fun sendCommit(text: String) {
     return withContext(Dispatchers.IO) {
       val conversationId = requireConversationId()
       firestore.postBranchCommit(
         conversationId = conversationId,
         branchId = branchId.value,
         text = text,
-        colorHex = colorHex ?: generateColorHex(),
         memberUids = memberUids(conversationId)
       )
     }
@@ -395,7 +393,6 @@ class BranchRepositoryImpl @Inject constructor(
       type = commit.type.value,
       text = commit.text.orEmpty(),
       invitedUid = commit.invitedUid,
-      colorHex = commit.colorHex.orEmpty(),
       timestamp = commit.createdAt?.toEpochSeconds() ?: 0L,
       isSelf = commit.senderUid == userId.value,
       status = if (hasPendingWrites) {

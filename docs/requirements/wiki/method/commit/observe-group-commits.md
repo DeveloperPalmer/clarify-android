@@ -44,7 +44,6 @@ fun observeGroupCommits(
 | [].data.text            | Y   | String                 | Текст сообщения.                                |
 | [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteMember |        |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
-| [].data.colorHex        | Y   | String                 | HEX-цвет сообщения.                             |
 | [].data.branchId        | Y   | String                 | Всегда равен `conversationId` (корневая ветка). |
 
 ### Request:
@@ -72,7 +71,6 @@ fun observeGroupCommits(
       "text": "Welcome everyone!",
       "type": "text",
       "createdAt": "2026-06-13T14:35:00Z",
-      "colorHex": "#FF5733",
       "branchId": "conv-group001"
     }
   }

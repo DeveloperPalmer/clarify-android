@@ -424,7 +424,6 @@ class Firestore @Inject constructor(
     conversationId: String,
     branchId: String,
     text: String,
-    colorHex: String,
     memberUids: List<String>
   ) {
     val senderId = requireUserId()
@@ -445,7 +444,6 @@ class Firestore @Inject constructor(
           text = text,
           type = CommitNM.Type.Text,
           createdAt = createdAt,
-          colorHex = colorHex,
           branchId = branchId
         )
       )
@@ -477,8 +475,7 @@ class Firestore @Inject constructor(
     peerId: Peer.Id,
     branchId: String?,
     conversationId: String?,
-    text: String,
-    colorHex: String
+    text: String
   ) {
     val senderId = requireUserId()
     val isNewConversation = conversationId == null
@@ -500,7 +497,6 @@ class Firestore @Inject constructor(
         text = text,
         type = CommitNM.Type.Text,
         createdAt = createdAt,
-        colorHex = colorHex,
         branchId = resolvedBranchId
       )
     )
@@ -569,7 +565,6 @@ class Firestore @Inject constructor(
   suspend fun postGroupCommit(
     conversationId: String,
     text: String,
-    colorHex: String,
     memberUids: List<String>
   ) {
     val senderId = requireUserId()
@@ -590,7 +585,6 @@ class Firestore @Inject constructor(
           text = text,
           type = CommitNM.Type.Text,
           createdAt = createdAt,
-          colorHex = colorHex,
           branchId = conversationId
         )
       )
