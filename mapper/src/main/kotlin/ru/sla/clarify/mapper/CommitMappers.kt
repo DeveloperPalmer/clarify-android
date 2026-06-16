@@ -2,8 +2,6 @@ package ru.sla.clarify.mapper
 
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Commit
-import java.time.Instant
-import java.time.ZoneId
 
 @Suppress("LongParameterList") // сигнатура строки ChatCommit
 fun mapToCommit(
@@ -16,10 +14,7 @@ fun mapToCommit(
   isSelf: Boolean,
   status: String
 ): Commit {
-  val localTimestamp = Instant
-    .ofEpochSecond(timestamp)
-    .atZone(ZoneId.systemDefault())
-    .toLocalDateTime()
+  val localTimestamp = timestamp.toLocalDateTime()
   return when (Commit.Type.fromValue(type)) {
     Commit.Type.Text -> {
       Commit.Message(

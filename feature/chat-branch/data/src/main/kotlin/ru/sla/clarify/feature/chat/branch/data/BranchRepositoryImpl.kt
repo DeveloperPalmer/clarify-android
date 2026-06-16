@@ -25,7 +25,6 @@ import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.branch.data.mapper.mapToBranch
 import ru.sla.clarify.feature.chat.branch.data.mapper.toDomain
-import ru.sla.clarify.feature.chat.branch.data.mapper.toLocalDateTime
 import ru.sla.clarify.feature.chat.branch.data.mapper.withReadStatus
 import ru.sla.clarify.feature.chat.branch.domain.BranchRepository
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
@@ -39,6 +38,7 @@ import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.clarify.mapper.mapToCommit
 import ru.sla.clarify.mapper.mapToMember
 import ru.sla.clarify.mapper.mapToUser
+import ru.sla.clarify.mapper.toLocalDateTime
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -276,8 +276,14 @@ class BranchRepositoryImpl @Inject constructor(
     return if (peerUid == null) {
       flowOf(null)
     } else {
-      firestore.observeMember(conversationId, UserId(peerUid))
-        .map { it?.lastReadAt?.toLocalDateTime() }
+      firestore.observeMember(
+        conversationId = conversationId,
+        userId = UserId(peerUid)
+      ).map { member ->
+        member?.lastReadAt
+          ?.seconds
+          ?.toLocalDateTime()
+      }
     }
   }
 

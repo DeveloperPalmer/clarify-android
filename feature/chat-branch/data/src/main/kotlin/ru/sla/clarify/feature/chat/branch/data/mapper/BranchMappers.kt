@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chat.branch.data.mapper
 
-import com.google.firebase.Timestamp
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
@@ -127,11 +126,4 @@ internal fun Commit.withReadStatus(peerLastReadAt: LocalDateTime?): Commit {
   if (this !is Commit.Message || !isSelf) return this
   if (status != Commit.Status.Sent || peerLastReadAt == null) return this
   return if (timestamp.isAfter(peerLastReadAt)) this else copy(status = Commit.Status.Read)
-}
-
-internal fun Timestamp.toLocalDateTime(): LocalDateTime {
-  return Instant
-    .ofEpochSecond(seconds)
-    .atZone(ZoneId.systemDefault())
-    .toLocalDateTime()
 }
