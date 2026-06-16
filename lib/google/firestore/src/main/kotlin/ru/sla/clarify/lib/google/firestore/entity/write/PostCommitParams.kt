@@ -9,7 +9,6 @@ import ru.sla.clarify.lib.google.firestore.entity.CommitNM.Type
 
 @Serializable
 data class PostCommitParams(
-  val id: String,
   @Contextual
   val senderUid: UserId,
   val text: String,

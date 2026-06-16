@@ -9,7 +9,6 @@ import ru.sla.clarify.lib.google.firestore.entity.CommitNM.Type
 
 @Serializable
 data class PostInviteMemberCommitParams(
-  val id: String,
   @Contextual
   val senderUid: UserId,
   val invitedUid: String,
