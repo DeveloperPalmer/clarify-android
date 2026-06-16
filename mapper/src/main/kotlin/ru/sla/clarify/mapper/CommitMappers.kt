@@ -1,7 +1,17 @@
 package ru.sla.clarify.mapper
 
+import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.resourcerefs.TextRef
+import ru.sla.resourcerefs.resRef
+import ru.sla.resourcerefs.strRef
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Suppress("LongParameterList") // сигнатура строки ChatCommit
 fun mapToCommit(
@@ -36,5 +46,18 @@ fun mapToCommit(
         invitedId = UserId(invitedUid.orEmpty())
       )
     }
+  }
+}
+
+fun formatLastCommitTimestamp(epochSeconds: Long?): TextRef? {
+  if (epochSeconds == null || epochSeconds <= 0L) return null
+  val zone = ZoneId.systemDefault()
+  val dateTime = Instant.ofEpochSecond(epochSeconds).atZone(zone).toLocalDateTime()
+  val date = dateTime.toLocalDate()
+  val today = LocalDate.now(zone)
+  return when (date) {
+    today -> strRef(dateTime.format(TIME_FORMATTER_HOUR_MINUTE))
+    today.minusDays(1) -> resRef(R.string.yesterday)
+    else -> strRef(date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()))
   }
 }
