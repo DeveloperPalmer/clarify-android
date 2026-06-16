@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chat.branch.data
 import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filterNotNull
@@ -51,7 +52,7 @@ class BranchRepositoryImpl @Inject constructor(
 ) : BranchRepository {
 
   private val branchId = params.branchId
-  private var lastReadWatermark: LocalDateTime? = null
+  private val lastReadWatermark = MutableStateFlow<LocalDateTime?>(null)
 
   override suspend fun subscribeOnBranchesChanges() {
     val conversationId = awaitConversationId()
@@ -137,13 +138,19 @@ class BranchRepositoryImpl @Inject constructor(
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
     return withContext(Dispatchers.IO) {
       val conversationId = requireConversationId()
-      val current = lastReadWatermark
+      val current = lastReadWatermark.value
       if (current != null && !lastReadAt.isAfter(current)) {
         return@withContext
       }
-      lastReadWatermark = lastReadAt
-      firestore.patchReadWatermark(conversationId, lastReadAt)
-      firestore.patchClearUnreadCount(conversationId)
+      lastReadWatermark.value = lastReadAt
+      firestore.patchReadWatermark(
+        conversationId = conversationId,
+        lastReadAt = lastReadAt
+      )
+      firestore.patchBranchClearUnreadCount(
+        branchId = branchId.value,
+        conversationId = conversationId
+      )
     }
   }
 
@@ -230,8 +237,10 @@ class BranchRepositoryImpl @Inject constructor(
 
   override val unreadCount: Flow<Long> = flow {
     val conversationId = awaitConversationId()
-    firestore.observeUnreadCount(conversationId)
-      .collect { emit(it) }
+    firestore.observeBranchUnreadCount(
+      branchId = branchId.value,
+      conversationId = conversationId
+    ).collect { emit(it) }
   }
 
   override val members: Flow<List<Member>> = flow {

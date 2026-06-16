@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -51,7 +52,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 ) : DirectThreadRepository {
 
   private val peerId = params.peerId
-  private var lastReadWatermark: LocalDateTime? = null
+  private val lastReadWatermark = MutableStateFlow<LocalDateTime?>(null)
 
   override suspend fun subscribeOnPeerChanges() {
     val peerId = UserId(peerId.value)
@@ -146,14 +147,16 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
     val conversationId = threadMediator.conversationId() ?: return
-    val current = lastReadWatermark
-    if (current != null && !lastReadAt.isAfter(current)) return
-    lastReadWatermark = lastReadAt
+    val current = lastReadWatermark.value
+    if (current != null && !lastReadAt.isAfter(current)) {
+      return
+    }
+    lastReadWatermark.value = lastReadAt
     firestore.patchReadWatermark(conversationId, lastReadAt)
     firestore.patchClearUnreadCount(conversationId)
   }
 
-  override suspend fun createBranch(parentId: Branch.Id?, from: Commit.Id, name: String): Branch {
+  override suspend fun createBranch(parentId: Branch.Id?, from: Commit.Id, name: String): Branch.Id {
     return withContext(Dispatchers.IO) {
       val conversationId = threadMediator.requireConversationId()
       val remote = firestore.postBranch(
@@ -164,7 +167,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       )
       val branch = remote.toDomain(conversationId)
       applyInsertOrReplaceBranch(branch)
-      branch
+      branch.id
     }
   }
 

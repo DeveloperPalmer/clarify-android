@@ -20,7 +20,7 @@ interface DirectThreadRepository {
   suspend fun markAsRead()
   suspend fun markReadUpTo(lastReadAt: LocalDateTime)
 
-  suspend fun createBranch(parentId: Branch.Id?, from: Commit.Id, name: String): Branch
+  suspend fun createBranch(parentId: Branch.Id?, from: Commit.Id, name: String): Branch.Id
 
   val peer: Flow<Peer?>
   val commits: Flow<List<Commit>>

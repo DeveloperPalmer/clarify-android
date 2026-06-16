@@ -50,7 +50,7 @@ class DirectThreadModel @Inject constructor(
     directThreadRepository.sendCommit(text = text)
   }
 
-  val createBranch = task<Branch.Id?, Commit.Message, String, Branch>(
+  val createBranch = task<Branch.Id?, Commit.Message, String, Branch.Id>(
     name = "createBranch"
   ) { parentBranchId, branchedFromCommitId, name ->
     directThreadRepository.createBranch(

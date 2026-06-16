@@ -133,8 +133,8 @@ class ThreadViewModel @Inject constructor(
     }
 
     onEach(directThreadModel.createBranch.jobFlow.successResults()) {
-      action { state, _, branch ->
-        eventSink.sendEvent(FlowEvent.BranchRequested(branch.id))
+      action { state, _, branchId ->
+        eventSink.sendEvent(FlowEvent.BranchRequested(branchId))
       }
     }
 

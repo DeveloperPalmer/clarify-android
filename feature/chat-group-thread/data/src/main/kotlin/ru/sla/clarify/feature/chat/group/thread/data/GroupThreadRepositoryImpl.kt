@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chat.group.thread.data
 import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -40,7 +41,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
 ) : GroupThreadRepository {
 
   private val conversationId = target.conversationId
-  private var lastReadWatermark: LocalDateTime? = null
+  private val lastReadWatermark = MutableStateFlow<LocalDateTime?>(null)
 
   override suspend fun subscribeOnCommitChanges() {
     val userId = requireUserId()
@@ -91,11 +92,18 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
-    val current = lastReadWatermark
-    if (current != null && !lastReadAt.isAfter(current)) return
-    lastReadWatermark = lastReadAt
-    firestore.patchReadWatermark(conversationId.value, lastReadAt)
-    firestore.patchClearUnreadCount(conversationId.value)
+    val current = lastReadWatermark.value
+    if (current != null && !lastReadAt.isAfter(current)) {
+      return
+    }
+    lastReadWatermark.value = lastReadAt
+    firestore.patchReadWatermark(
+      conversationId = conversationId.value,
+      lastReadAt = lastReadAt
+    )
+    firestore.patchClearUnreadCount(
+      conversationId = conversationId.value
+    )
   }
 
   override suspend fun subscribeOnGroupMembers() {
