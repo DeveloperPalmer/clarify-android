@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.direct.thread.data.mapper
+package ru.sla.clarify.mapper
 
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.adapter.StringList
@@ -7,11 +7,9 @@ import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
-import ru.sla.clarify.mapper.formatLastCommitTimestamp
-import ru.sla.clarify.mapper.mapToMergeRequest
 
 @Suppress("LongParameterList")
-internal fun mapToBranch(
+fun mapToBranch(
   id: String,
   conversationId: String,
   parentBranchId: String,
@@ -52,7 +50,7 @@ internal fun mapToBranch(
   )
 }
 
-internal fun BranchNM.toDomain(conversationId: String): Branch {
+fun BranchNM.toDomain(conversationId: String): Branch {
   val createdAt = createdAt?.toEpochSeconds() ?: 0L
   val lastCommitAt = lastCommitAt?.toEpochSeconds()
   return Branch(
