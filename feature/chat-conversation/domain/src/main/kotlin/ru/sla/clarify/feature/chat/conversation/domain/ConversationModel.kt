@@ -8,9 +8,9 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
+import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
-import ru.sla.clarify.feature.entity.chat.Conversation
-import ru.sla.clarify.feature.entity.chat.Peer
 import javax.inject.Inject
 
 @SingleIn(ConversationScope::class)

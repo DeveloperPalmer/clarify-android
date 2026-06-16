@@ -6,12 +6,12 @@ import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
-import ru.sla.clarify.feature.entity.chat.Commit
 import java.time.LocalDateTime
 import javax.inject.Inject
 

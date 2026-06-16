@@ -26,8 +26,8 @@ import kotlinx.coroutines.launch
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.ui.components.ChatEmptyState
-import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
 import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall

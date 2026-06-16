@@ -2,8 +2,8 @@ package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 
 import androidx.compose.ui.text.input.TextFieldValue
 import ru.sla.clarify.core.domain.entity.Email
-import ru.sla.clarify.feature.entity.chat.Conversation
-import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.uikit.component.tabsrow.Tab
 import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents
 

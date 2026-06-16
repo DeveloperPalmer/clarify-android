@@ -4,9 +4,9 @@ import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.database.adapter.StringList
-import ru.sla.clarify.feature.entity.chat.Branch
-import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.resourcerefs.TextRef

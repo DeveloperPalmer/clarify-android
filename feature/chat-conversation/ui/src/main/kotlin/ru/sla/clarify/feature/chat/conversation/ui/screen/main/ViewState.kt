@@ -7,7 +7,7 @@ import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.entity.ContentLoadState
-import ru.sla.clarify.feature.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.uikit.component.tabsrow.Tab
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.resRef

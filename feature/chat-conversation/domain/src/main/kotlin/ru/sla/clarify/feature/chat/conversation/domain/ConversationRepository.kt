@@ -4,8 +4,8 @@ import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
-import ru.sla.clarify.feature.entity.chat.Conversation
-import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Peer
 
 interface ConversationRepository {
   suspend fun subscribeOnConversations()

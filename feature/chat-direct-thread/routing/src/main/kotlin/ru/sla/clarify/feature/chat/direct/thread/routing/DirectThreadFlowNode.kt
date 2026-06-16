@@ -9,9 +9,9 @@ import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
+import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
-import ru.sla.clarify.feature.entity.chat.Branch
 import javax.inject.Inject
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams as BranchTargetParams
 

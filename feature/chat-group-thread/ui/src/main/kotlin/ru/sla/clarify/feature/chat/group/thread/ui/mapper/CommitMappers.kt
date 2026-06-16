@@ -7,7 +7,7 @@ import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
 import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.resourcerefs.resRef
-import ru.sla.clarify.feature.entity.chat.Commit as DomainCommit
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 internal fun List<DomainCommit>.toUiCommits(
   members: List<GroupMember> = emptyList()

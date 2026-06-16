@@ -2,10 +2,10 @@ package ru.sla.clarify.feature.chat.group.thread.domain
 
 import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
-import ru.sla.clarify.feature.entity.chat.Commit
 import java.time.LocalDateTime
 
 interface GroupThreadRepository {

@@ -7,10 +7,10 @@ import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.database.adapter.StringList
-import ru.sla.clarify.feature.entity.chat.Branch
-import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Conversation
-import ru.sla.clarify.feature.entity.chat.Member
+import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds

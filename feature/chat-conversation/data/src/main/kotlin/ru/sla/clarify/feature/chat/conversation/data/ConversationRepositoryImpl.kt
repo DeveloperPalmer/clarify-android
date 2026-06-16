@@ -20,13 +20,13 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToConversation
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToGroup
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToUser
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
-import ru.sla.clarify.feature.entity.chat.Conversation
-import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM

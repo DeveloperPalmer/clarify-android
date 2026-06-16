@@ -1,7 +1,7 @@
 package ru.sla.clarify.feature.chat.group.thread.data.mapper
 
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.feature.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import java.time.Instant
 import java.time.ZoneId

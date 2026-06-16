@@ -17,6 +17,10 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Member
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.mapToBranch
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.mapToCommit
@@ -28,10 +32,6 @@ import ru.sla.clarify.feature.chat.direct.thread.data.mapper.withReadStatus
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
-import ru.sla.clarify.feature.entity.chat.Branch
-import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Member
-import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM

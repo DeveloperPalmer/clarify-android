@@ -7,10 +7,10 @@ import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.mapDistinctNotNullChanges
+import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
-import ru.sla.clarify.feature.entity.chat.Branch
-import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Member
 import java.time.LocalDateTime
 import javax.inject.Inject
 

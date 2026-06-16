@@ -28,12 +28,12 @@ import ru.kode.amvi.component.compose.rememberViewIntents
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
+import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.DirectConversationItem
 import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.FabActionButton
 import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.GroupConversationItem
 import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.rememberFabVisibility
-import ru.sla.clarify.feature.entity.chat.Conversation
-import ru.sla.clarify.feature.entity.chat.Peer
 import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme

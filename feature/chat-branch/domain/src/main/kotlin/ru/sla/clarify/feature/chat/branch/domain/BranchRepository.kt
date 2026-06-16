@@ -3,9 +3,9 @@ package ru.sla.clarify.feature.chat.branch.domain
 import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.feature.entity.chat.Branch
-import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Member
+import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Member
 import java.time.LocalDateTime
 
 interface BranchRepository {

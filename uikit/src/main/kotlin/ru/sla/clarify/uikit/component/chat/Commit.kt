@@ -3,7 +3,7 @@ package ru.sla.clarify.uikit.component.chat
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
 import ru.sla.resourcerefs.TextRef
-import ru.sla.clarify.feature.entity.chat.Commit as DomainCommit
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 @Immutable
 sealed interface Commit {

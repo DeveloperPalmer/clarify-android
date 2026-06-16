@@ -5,12 +5,12 @@ import kotlinx.coroutines.launch
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
+import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Member
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
-import ru.sla.clarify.feature.entity.chat.Branch
-import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Member
-import ru.sla.clarify.feature.entity.chat.Peer
 import java.time.LocalDateTime
 import javax.inject.Inject
 

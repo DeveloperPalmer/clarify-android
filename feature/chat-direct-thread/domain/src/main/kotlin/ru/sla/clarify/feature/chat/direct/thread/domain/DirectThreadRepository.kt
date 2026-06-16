@@ -2,10 +2,10 @@ package ru.sla.clarify.feature.chat.direct.thread.domain
 
 import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.feature.entity.chat.Branch
-import ru.sla.clarify.feature.entity.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Member
-import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Member
+import ru.sla.clarify.entity.chat.Peer
 import java.time.LocalDateTime
 
 interface DirectThreadRepository {

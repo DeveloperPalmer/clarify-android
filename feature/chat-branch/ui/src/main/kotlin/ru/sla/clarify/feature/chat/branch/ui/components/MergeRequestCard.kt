@@ -34,9 +34,9 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
-import ru.sla.clarify.feature.entity.chat.Branch
-import ru.sla.clarify.feature.entity.chat.Member
 import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.animation.SharedContainer
 import ru.sla.clarify.uikit.component.RevealSplitRow

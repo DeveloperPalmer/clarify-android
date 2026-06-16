@@ -4,7 +4,7 @@ import arrow.core.EitherNel
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
-import ru.sla.clarify.feature.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Branch
 
 @ConsistentCopyVisibility
 data class CreateBranch private constructor(val name: String) {

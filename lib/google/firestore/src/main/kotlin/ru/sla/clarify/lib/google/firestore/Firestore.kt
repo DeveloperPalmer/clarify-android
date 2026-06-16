@@ -24,7 +24,7 @@ import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
-import ru.sla.clarify.feature.entity.chat.Peer
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.codec.FirestoreFormat
 import ru.sla.clarify.lib.google.firestore.codec.decodeFromSnapshot
 import ru.sla.clarify.lib.google.firestore.codec.encodeToMap

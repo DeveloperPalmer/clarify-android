@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.chat.branch.ui.mapper
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
 import ru.sla.clarify.uikit.component.chat.Commit
-import ru.sla.clarify.feature.entity.chat.Commit as DomainCommit
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
   val commits = this
