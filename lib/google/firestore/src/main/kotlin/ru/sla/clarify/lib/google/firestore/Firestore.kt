@@ -343,7 +343,7 @@ class Firestore @Inject constructor(
         .document(commitId),
       codec.encodeToMap(
         PostInviteMemberCommitParams(
-          clientCommitId = commitId,
+          id = commitId,
           senderUid = senderId,
           invitedUid = invitedUserId.value,
           branchId = conversationId,
@@ -439,7 +439,7 @@ class Firestore @Inject constructor(
         .document(commitId),
       codec.encodeToMap(
         PostCommitParams(
-          clientCommitId = commitId,
+          id = commitId,
           senderUid = senderId,
           text = text,
           type = CommitNM.Type.Text,
@@ -492,7 +492,7 @@ class Firestore @Inject constructor(
 
     val messageData = codec.encodeToMap(
       PostCommitParams(
-        clientCommitId = commitId,
+        id = commitId,
         senderUid = senderId,
         text = text,
         type = CommitNM.Type.Text,
@@ -580,7 +580,7 @@ class Firestore @Inject constructor(
         .document(commitId),
       codec.encodeToMap(
         PostCommitParams(
-          clientCommitId = commitId,
+          id = commitId,
           senderUid = senderId,
           text = text,
           type = CommitNM.Type.Text,
