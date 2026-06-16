@@ -2,23 +2,10 @@ package ru.sla.clarify.feature.chat.direct.thread.data.mapper
 
 import com.google.firebase.Timestamp
 import ru.sla.clarify.entity.chat.Commit
-import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
-
-internal fun mapToMember(
-  id: String,
-  displayName: String?,
-  photoUrl: String?
-): Member {
-  return Member(
-    id = Member.Id(id),
-    displayName = displayName,
-    photoUrl = photoUrl
-  )
-}
 
 @Suppress("UnusedParameter") // Unuser only for peer
 internal fun mapToPeer(

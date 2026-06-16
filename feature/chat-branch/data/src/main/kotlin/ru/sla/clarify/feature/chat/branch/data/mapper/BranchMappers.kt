@@ -10,7 +10,6 @@ import ru.sla.clarify.database.adapter.StringList
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Conversation
-import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.resourcerefs.TextRef
@@ -90,18 +89,6 @@ internal fun BranchNM.toDomain(conversationId: String): Branch {
         mergedIntoBranchId = it.mergedIntoBranchId?.let(Branch::Id)
       )
     }
-  )
-}
-
-internal fun mapToMember(
-  id: String,
-  displayName: String?,
-  photoUrl: String?
-): Member {
-  return Member(
-    id = Member.Id(id),
-    displayName = displayName,
-    photoUrl = photoUrl
   )
 }
 
