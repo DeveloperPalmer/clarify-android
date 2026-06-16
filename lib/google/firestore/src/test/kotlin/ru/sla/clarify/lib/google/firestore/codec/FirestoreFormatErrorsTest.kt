@@ -92,4 +92,27 @@ class FirestoreFormatErrorsTest {
     }
     assertEquals("missing required field 'name'", ex.message)
   }
+
+  @Serializable
+  private data class WithReservedIdParams(
+    val id: String,
+    val name: String
+  )
+
+  @Test
+  fun `encode — reserved document-id field throws DataMappingException`() {
+    val ex = assertThrows(DataMappingException::class.java) {
+      format.encodeToMap(WithReservedIdParams(id = "x", name = "y"))
+    }
+    assertTrue(ex.message!!.contains("'id'"), "сообщение должно ссылаться на поле 'id': ${ex.message}")
+  }
+
+  @Serializable
+  private data class WithoutReservedIdParams(val name: String)
+
+  @Test
+  fun `encode — payload without document-id field is allowed`() {
+    val encoded = format.encodeToMap(WithoutReservedIdParams(name = "y"))
+    assertEquals(mapOf<String, Any?>("name" to "y"), encoded)
+  }
 }

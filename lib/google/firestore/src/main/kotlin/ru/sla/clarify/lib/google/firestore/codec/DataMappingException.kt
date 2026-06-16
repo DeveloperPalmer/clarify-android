@@ -8,6 +8,10 @@ package ru.sla.clarify.lib.google.firestore.codec
  * тип, чтобы такие ошибки можно было отличить от случайного NPE/ClassCastException в
  * логах/крашлитике.
  *
+ * На стороне записи тем же типом сигналим программную ошибку: write-payload не должен
+ * содержать зарезервированное поле document-id ([reservedDocumentIdField]) — путь
+ * документа единственный источник истины, и на чтении это поле всё равно перетирается.
+ *
  * Конструктор приватный — call site передаёт только аргументы через фабричные методы;
  * формирование сообщения живёт здесь, чтобы формат был единым.
  */
@@ -29,6 +33,14 @@ class DataMappingException private constructor(message: String) : RuntimeExcepti
 
     fun rootMustBeStructure(): DataMappingException {
       return DataMappingException("FirestoreFormat: root value must be a structured type")
+    }
+
+    fun reservedDocumentIdField(key: String): DataMappingException {
+      return DataMappingException(
+        "write payload must not contain the reserved document-id field '$key': " +
+          "the document path is the single source of truth, decodeFromSnapshot " +
+          "overwrites it with snapshot.id on read"
+      )
     }
 
     private fun Any?.typeName(): String = this?.let { it::class.simpleName } ?: "null"

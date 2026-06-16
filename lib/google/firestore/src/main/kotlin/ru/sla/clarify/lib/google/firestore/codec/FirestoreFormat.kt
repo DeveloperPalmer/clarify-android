@@ -28,6 +28,9 @@ class FirestoreFormat(override val serializersModule: SerializersModule) : Seria
     val target = mutableMapOf<String, Any?>()
     val encoder = FirestoreMapEncoder(serializersModule, target)
     encoder.encodeSerializableValue(serializer, value)
+    if (DOCUMENT_ID_FIELD in target) {
+      throw DataMappingException.reservedDocumentIdField(DOCUMENT_ID_FIELD)
+    }
     return target
   }
 
