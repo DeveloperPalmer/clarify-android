@@ -8,6 +8,7 @@ import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.clarify.mapper.formatLastCommitTimestamp
+import ru.sla.clarify.mapper.mapToMergeRequest
 
 @Suppress("LongParameterList")
 internal fun mapToBranch(
@@ -40,7 +41,7 @@ internal fun mapToBranch(
     unreadCount = unreadCount,
     createdAt = createdAt,
     createdById = UserId(createdByUid),
-    mergeRequest = buildMergeRequest(
+    mergeRequest = mapToMergeRequest(
       status = mergeRequestStatus,
       initiatorUid = mergeRequestInitiatorUid,
       requestedAt = mergeRequestRequestedAt,
@@ -76,25 +77,5 @@ internal fun BranchNM.toDomain(conversationId: String): Branch {
         mergedIntoBranchId = mr.mergedIntoBranchId?.let(Branch::Id)
       )
     }
-  )
-}
-
-@Suppress("LongParameterList")
-private fun buildMergeRequest(
-  status: String?,
-  initiatorUid: String?,
-  requestedAt: Long?,
-  approvedByUids: StringList?,
-  mergedAt: Long?,
-  mergedIntoBranchId: String?
-): Branch.MergeRequest? {
-  if (status == null || initiatorUid == null || requestedAt == null) return null
-  return Branch.MergeRequest(
-    status = Branch.MergeRequest.Status.fromValue(status),
-    initiatorId = UserId(initiatorUid),
-    requestedAt = requestedAt,
-    approvedByIds = approvedByUids.orEmpty().map(::UserId).toSet(),
-    mergedAt = mergedAt,
-    mergedIntoBranchId = mergedIntoBranchId?.let(Branch::Id)
   )
 }
