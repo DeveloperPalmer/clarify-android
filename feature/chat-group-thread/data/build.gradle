@@ -8,8 +8,9 @@ android {
 }
 
 dependencies {
-  implementation project(":auth-session:data")
-  implementation project(":lib:google:firestore")
+  implementation project(":mapper")
   implementation project(":database")
+  implementation project(":lib:google:firestore")
+  implementation project(":auth-session:data")
   implementation project(":feature:chat-group-thread:domain")
 }

@@ -16,7 +16,6 @@ import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Conversation
-import ru.sla.clarify.feature.chat.group.thread.data.mapper.mapToCommit
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadRepository
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
@@ -28,6 +27,7 @@ import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
+import ru.sla.clarify.mapper.mapToCommit
 import java.time.LocalDateTime
 import javax.inject.Inject
 

@@ -23,7 +23,6 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.mapToBranch
-import ru.sla.clarify.feature.chat.direct.thread.data.mapper.mapToCommit
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.mapToMember
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.mapToPeer
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.toDomain
@@ -39,6 +38,7 @@ import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
+import ru.sla.clarify.mapper.mapToCommit
 import java.time.LocalDateTime
 import javax.inject.Inject
 
