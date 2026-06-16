@@ -9,6 +9,7 @@ import ru.sla.resourcerefs.resRef
 import ru.sla.resourcerefs.strRef
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
@@ -60,4 +61,14 @@ fun formatLastCommitTimestamp(epochSeconds: Long?): TextRef? {
     today.minusDays(1) -> resRef(R.string.yesterday)
     else -> strRef(date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()))
   }
+}
+
+fun Commit.withReadStatus(peerLastReadAt: LocalDateTime?): Commit {
+  if (this !is Commit.Message || !isSelf) {
+    return this
+  }
+  if (status != Commit.Status.Sent || peerLastReadAt == null) {
+    return this
+  }
+  return if (timestamp.isAfter(peerLastReadAt)) this else copy(status = Commit.Status.Read)
 }

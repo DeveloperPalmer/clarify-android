@@ -25,7 +25,6 @@ import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.branch.data.mapper.mapToBranch
 import ru.sla.clarify.feature.chat.branch.data.mapper.toDomain
-import ru.sla.clarify.feature.chat.branch.data.mapper.withReadStatus
 import ru.sla.clarify.feature.chat.branch.domain.BranchRepository
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
@@ -39,6 +38,7 @@ import ru.sla.clarify.mapper.mapToCommit
 import ru.sla.clarify.mapper.mapToMember
 import ru.sla.clarify.mapper.mapToUser
 import ru.sla.clarify.mapper.toLocalDateTime
+import ru.sla.clarify.mapper.withReadStatus
 import java.time.LocalDateTime
 import javax.inject.Inject
 

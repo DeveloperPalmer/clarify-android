@@ -9,7 +9,6 @@ import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.clarify.mapper.formatLastCommitTimestamp
 import ru.sla.clarify.mapper.mapToMergeRequest
-import java.time.LocalDateTime
 
 @Suppress("LongParameterList")
 internal fun mapToBranch(
@@ -79,10 +78,4 @@ internal fun BranchNM.toDomain(conversationId: String): Branch {
       )
     }
   )
-}
-
-internal fun Commit.withReadStatus(peerLastReadAt: LocalDateTime?): Commit {
-  if (this !is Commit.Message || !isSelf) return this
-  if (status != Commit.Status.Sent || peerLastReadAt == null) return this
-  return if (timestamp.isAfter(peerLastReadAt)) this else copy(status = Commit.Status.Read)
 }
