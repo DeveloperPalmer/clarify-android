@@ -46,7 +46,6 @@ import ru.sla.clarify.lib.google.firestore.entity.write.PostBranchParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostConversationParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostInviteMemberCommitParams
-import ru.sla.clarify.lib.google.firestore.entity.write.PostMemberParams
 import ru.sla.clarify.lib.google.firestore.entity.write.PostUserParams
 import ru.sla.clarify.lib.google.firestore.mapper.mapDocumentChanges
 import ru.sla.clarify.lib.google.firestore.mapper.toFirestoreDocumentResult
@@ -230,16 +229,13 @@ class Firestore @Inject constructor(
       name = name.value,
       ownerUid = ownerId.value
     )
-    val postMemberParams = PostMemberParams(
-      id = ownerId.value
-    )
     batch.set(
       conversationRef,
       codec.encodeToMap(postConversationParams)
     )
     batch.set(
       memberDocumentRef(conversationId, ownerId),
-      codec.encodeToMap(postMemberParams)
+      emptyMap<String, Any>()
     )
     batch.commit().await()
     return conversationId
@@ -335,7 +331,7 @@ class Firestore @Inject constructor(
     )
     batch.set(
       memberDocumentRef(conversationId, invitedUserId),
-      codec.encodeToMap(PostMemberParams(id = invitedUserId.value))
+      emptyMap<String, Any>()
     )
     batch.set(
       conversationRef
@@ -522,7 +518,7 @@ class Firestore @Inject constructor(
       memberIds.forEach { uid ->
         batch.set(
           memberDocumentRef(conversationId, UserId(uid)),
-          codec.encodeToMap(PostMemberParams(id = uid))
+          emptyMap<String, Any>()
         )
       }
     }
