@@ -1,15 +1,19 @@
 package ru.sla.clarify.lib.google.firestore
 
 import com.google.android.gms.tasks.Task
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Transaction
 import com.google.firebase.firestore.WriteBatch
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 
 interface FirestoreWrapperProvider {
+
+  val emptyMap: Map<String, Any>
 
   fun writeBatch(): WriteBatch
   fun <T> runTransaction(block: Transaction.Function<T>): Task<T>
@@ -38,6 +42,13 @@ interface FirestoreWrapperProvider {
   fun commitsCollectionRef(
     conversationId: String
   ): CollectionReference
+
+  fun commitQuery(
+    conversationId: String,
+    whereEqualTo: Branch.Id,
+    before: Timestamp?,
+    limit: Long
+  ): Query
 
   fun unreadCommitsDocumentRef(
     conversationId: String,

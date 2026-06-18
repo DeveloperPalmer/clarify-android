@@ -1,8 +1,6 @@
 package ru.sla.clarify.feature.debug.panel.data
 
 import com.squareup.anvil.annotations.ContributesBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.feature.debug.panel.domain.DebugPanelRepository
@@ -18,11 +16,11 @@ class DebugPanelRepositoryImpl @Inject constructor(
   private val firestore: Firestore
 ) : DebugPanelRepository {
 
-  override suspend fun createUser(user: User) = withContext(Dispatchers.IO) {
-    if (firestore.getUserExistsByEmail(user.email)) {
+  override suspend fun createUser(user: User) {
+    if (firestore.readUserExistsByEmail(user.email)) {
       throw DebugUserException(UserJsonError.UserAlreadyExist)
     }
-    firestore.postUser(
+    firestore.createUser(
       id = user.id,
       email = user.email.value,
       displayName = user.displayName,

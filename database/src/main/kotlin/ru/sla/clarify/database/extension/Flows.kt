@@ -9,7 +9,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flowOn
 
 /**
  * Observe a SQLDelight query as a list, ALWAYS deduplicating consecutive identical results.
@@ -35,7 +34,6 @@ fun <T : Any> Query<T>.observeList(
   return asFlow()
     .mapToList(context)
     .distinctUntilChanged()
-    .flowOn(Dispatchers.IO)
 }
 
 /**
@@ -48,7 +46,6 @@ fun <T : Any> Query<T>.observeOneOrNull(
   return asFlow()
     .mapToOneOrNull(context)
     .distinctUntilChanged()
-    .flowOn(Dispatchers.IO)
 }
 
 /**
@@ -61,5 +58,4 @@ fun <T : Any> Query<T>.observeOne(
   return asFlow()
     .mapToOne(context)
     .distinctUntilChanged()
-    .flowOn(Dispatchers.IO)
 }

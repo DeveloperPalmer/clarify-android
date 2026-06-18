@@ -43,15 +43,15 @@ class LoginRepositoryImpl @Inject constructor(
         val displayName = user.displayName
           ?: error("FirebaseAuth returned null displayName after Google sign-in")
 
-        if (firestore.getUserExists(userId)) {
-          firestore.patchUser(
+        if (firestore.readUserExists(userId)) {
+          firestore.updateUser(
             id = userId,
             email = email,
             displayName = displayName,
             photoUrl = user.photoUrl?.toString()
           )
         } else {
-          firestore.postUser(
+          firestore.createUser(
             id = userId,
             email = email,
             displayName = displayName,

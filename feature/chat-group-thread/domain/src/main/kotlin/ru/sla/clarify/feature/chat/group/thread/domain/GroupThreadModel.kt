@@ -52,13 +52,13 @@ class GroupThreadModel @Inject constructor(
   val deleteGroup = task<Unit>(
     name = "deleteGroup"
   ) {
-    groupThreadRepository.deleteGroup()
+    groupThreadRepository.deleteConversation()
   }
 
   val leaveGroup = task<Unit>(
     name = "leaveGroup"
   ) {
-    groupThreadRepository.leaveGroup()
+    groupThreadRepository.leaveConversation()
   }
 
   val inviteMembers = task<List<UserId>, Unit>(
@@ -70,7 +70,7 @@ class GroupThreadModel @Inject constructor(
   val removeMember = task<UserId, Unit>(
     name = "removeMember"
   ) { userId ->
-    groupThreadRepository.removeGroupMember(userId = userId)
+    groupThreadRepository.deleteConversationMember(userId = userId)
   }
 
   val searchUsers = task<String, List<FoundUser>>(

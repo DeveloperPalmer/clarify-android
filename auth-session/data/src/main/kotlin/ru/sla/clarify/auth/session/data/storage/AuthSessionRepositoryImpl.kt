@@ -29,8 +29,8 @@ class AuthSessionRepositoryImpl @Inject constructor(
 
   override suspend fun <T> withKey(
     body: suspend AuthSessionRepository.(key: SessionKey) -> T
-  ): T = withContext(Dispatchers.Default) {
-    body(readKey() ?: error("expected active session key"))
+  ): T {
+    return body(readKey() ?: error("expected active session key"))
   }
 
   override suspend fun readKey(): SessionKey? {

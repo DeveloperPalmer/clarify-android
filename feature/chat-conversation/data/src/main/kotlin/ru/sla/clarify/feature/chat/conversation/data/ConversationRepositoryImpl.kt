@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
@@ -43,8 +42,7 @@ class ConversationRepositoryImpl @Inject constructor(
 ) : ConversationRepository {
 
   override suspend fun subscribeOnConversations() {
-    firestore.observeConversations()
-      .flowOn(Dispatchers.IO)
+    firestore.conversationsLive()
       .collect(::applyConversationsChanges)
   }
 
@@ -65,7 +63,7 @@ class ConversationRepositoryImpl @Inject constructor(
 
   override suspend fun fetchCurrentUser() {
     return withContext(Dispatchers.IO) {
-      val firestoreUser = firestore.getCurrentUser()
+      val firestoreUser = firestore.readCurrentUser()
       persistedDB.userQueries.insertOrReplace(
         id = firestoreUser.id,
         email = firestoreUser.email,
@@ -76,15 +74,13 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   override suspend fun getPeerByEmail(email: Email): Peer.Id {
-    return withContext(Dispatchers.IO) {
-      val userId = firestore.getUserIdByEmail(email) ?: throw PeerNotFoundException(email)
-      Peer.Id(userId.value)
-    }
+    val userId = firestore.readUserIdByEmail(email) ?: throw PeerNotFoundException(email)
+    return Peer.Id(userId.value)
   }
 
-  override suspend fun createGroup(name: GroupName): Conversation.Id {
+  override suspend fun createGroupConversation(name: GroupName): Conversation.Id {
     return withContext(Dispatchers.IO) {
-      val conversationId = firestore.postCreateGroupConversation(name)
+      val conversationId = firestore.createGroupConversation(name)
       val ownerId = authSessionPersistence.withKey { readUserId(it) }
       if (ownerId != null) {
         persistedDB.transaction {
@@ -161,7 +157,7 @@ class ConversationRepositoryImpl @Inject constructor(
     return coroutineScope {
       ids.forEach { conversationId ->
         launch {
-          firestore.observeUnreadCount(
+          firestore.unreadCountLive(
             conversationId = conversationId
           ).collect { unreadCount ->
             applyUpdateUnreadCount(
@@ -174,19 +170,21 @@ class ConversationRepositoryImpl @Inject constructor(
     }
   }
 
-  private fun applyConversationsChanges(changes: List<FirestoreChange<ConversationNM>>) {
-    persistedDB.transaction {
-      changes.forEach { change ->
-        when (change.changeType) {
-          FirestoreDocumentResult.Added -> {
-            applyConversationChanges(change.data)
-          }
-          FirestoreDocumentResult.Modified -> {
-            applyInsertOrReplaceMetaConversation(change.data)
-          }
-          FirestoreDocumentResult.Removed -> {
-            persistedDB.chatConversationQueries.deleteById(change.data.id)
-            persistedDB.chatConversationMemberQueries.deleteByConversation(change.data.id)
+  private suspend fun applyConversationsChanges(changes: List<FirestoreChange<ConversationNM>>) {
+    return withContext(Dispatchers.IO) {
+      persistedDB.transaction {
+        changes.forEach { change ->
+          when (change.changeType) {
+            FirestoreDocumentResult.Added -> {
+              applyConversationChanges(change.data)
+            }
+            FirestoreDocumentResult.Modified -> {
+              applyInsertOrReplaceMetaConversation(change.data)
+            }
+            FirestoreDocumentResult.Removed -> {
+              persistedDB.chatConversationQueries.deleteById(change.data.id)
+              persistedDB.chatConversationMemberQueries.deleteByConversation(change.data.id)
+            }
           }
         }
       }
@@ -213,13 +211,15 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   private suspend fun applyInsertOrReplaceUsers(userId: String) {
-    val profile = firestore.getUser(UserId(userId)) ?: return
-    persistedDB.userQueries.insertOrReplace(
-      id = profile.id,
-      email = profile.email,
-      displayName = profile.displayName,
-      photoUrl = profile.photoUrl
-    )
+    val profile = firestore.readUser(UserId(userId)) ?: return
+    return withContext(Dispatchers.IO) {
+      persistedDB.userQueries.insertOrReplace(
+        id = profile.id,
+        email = profile.email,
+        displayName = profile.displayName,
+        photoUrl = profile.photoUrl
+      )
+    }
   }
 
   private fun applyInsertOrReplaceMetaConversation(conversationNM: ConversationNM) {
@@ -235,10 +235,12 @@ class ConversationRepositoryImpl @Inject constructor(
     )
   }
 
-  private fun applyUpdateUnreadCount(conversationId: String, unreadCount: Long) {
-    persistedDB.chatConversationQueries.updateUnreadCount(
-      id = conversationId,
-      unreadCount = unreadCount
-    )
+  private suspend fun applyUpdateUnreadCount(conversationId: String, unreadCount: Long) {
+    return withContext(Dispatchers.IO) {
+      persistedDB.chatConversationQueries.updateUnreadCount(
+        id = conversationId,
+        unreadCount = unreadCount
+      )
+    }
   }
 }

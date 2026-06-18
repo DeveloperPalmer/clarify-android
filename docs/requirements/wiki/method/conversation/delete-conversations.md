@@ -6,14 +6,14 @@ tags:
 
 **Summary**: Пакетно удаляет несколько корневых документов conversations.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-06-13
+**Last updated**: 2026-06-19
 
 ---
 
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Формирует один Firestore batch и удаляет в нём все перечисленные документы из коллекции `conversations`. Используется для массовой очистки (например, при тестировании или сбросе данных). Как и `deleteGroupConversation`, удаляет только корневые документы — подколлекции остаются. |
+| Description      | Формирует один Firestore batch и удаляет в нём все перечисленные документы из коллекции `conversations`. Используется для массовой очистки (например, при тестировании или сбросе данных). Как и `deleteConversation`, удаляет только корневые документы — подколлекции остаются. |
 
 
 ### Signature

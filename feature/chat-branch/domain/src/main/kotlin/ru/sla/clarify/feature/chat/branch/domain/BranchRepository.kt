@@ -20,7 +20,7 @@ interface BranchRepository {
   suspend fun markReadUpTo(lastReadAt: LocalDateTime)
 
   suspend fun openMergeRequest()
-  suspend fun revokeApprovalMergeRequest()
+  suspend fun revokeMergeRequestApproval()
   suspend fun cancelMergeRequest()
   suspend fun approveMergeRequest()
   suspend fun finalizeMergeRequest()

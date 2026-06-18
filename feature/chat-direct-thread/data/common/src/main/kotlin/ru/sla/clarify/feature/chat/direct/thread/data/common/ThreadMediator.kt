@@ -1,7 +1,9 @@
 package ru.sla.clarify.feature.chat.direct.thread.data.common
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
@@ -35,12 +37,14 @@ class ThreadMediator @Inject constructor(
 
   suspend fun conversationId(): String? {
     val members = directMemberIds()
-    return persistedDB.chatConversationQueries
-      .selectIdByMembers(
-        type = Type.Direct.value,
-        memberUids = members
-      )
-      .executeAsOneOrNull()
+    return withContext(Dispatchers.IO) {
+      persistedDB.chatConversationQueries
+        .selectIdByMembers(
+          type = Type.Direct.value,
+          memberUids = members
+        )
+        .executeAsOneOrNull()
+    }
   }
 
   suspend fun requireConversationId(): String {

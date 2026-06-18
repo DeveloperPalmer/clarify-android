@@ -18,10 +18,10 @@ interface GroupThreadRepository {
   suspend fun markReadUpTo(lastReadAt: LocalDateTime)
 
   suspend fun renameGroup(name: String)
-  suspend fun deleteGroup()
-  suspend fun leaveGroup()
+  suspend fun deleteConversation()
+  suspend fun leaveConversation()
   suspend fun inviteGroupMembers(userIds: List<UserId>)
-  suspend fun removeGroupMember(userId: UserId)
+  suspend fun deleteConversationMember(userId: UserId)
   suspend fun searchMemberByPrefix(prefix: String): List<FoundUser>
 
   val commits: Flow<List<Commit>>

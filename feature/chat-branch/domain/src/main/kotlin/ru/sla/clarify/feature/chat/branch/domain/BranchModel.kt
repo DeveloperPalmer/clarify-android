@@ -63,7 +63,7 @@ class BranchModel @Inject constructor(
   val revokeApprovalMergeRequest = task<Unit>(
     name = "revokeApprovalMergeRequest"
   ) {
-    branchRepository.revokeApprovalMergeRequest()
+    branchRepository.revokeMergeRequestApproval()
   }
 
   val cancelMergeRequest = task<Unit>(

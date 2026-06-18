@@ -40,14 +40,7 @@ object FirestoreSchema {
   const val COMMIT_CREATED_AT = "createdAt"
   const val COMMIT_BRANCH_ID = "branchId"
 
-  // Merge-транзакции: dot-path update'ы вложенных полей `mergeRequest`. Точечные
-  // операции на вложенное поле — NM-payload через codec здесь не годится, нужно
-  // именно "dot-path" обращение, которое Firestore разворачивает по месту.
   const val BRANCH_MERGE_REQUEST = "mergeRequest"
-  const val BRANCH_MERGE_REQUEST_STATUS = "status"
-  const val BRANCH_MERGE_REQUEST_APPROVED_BY_UIDS = "approvedByUids"
-  const val BRANCH_MERGE_REQUEST_MERGED_AT = "mergedAt"
-  const val BRANCH_MERGE_REQUEST_MERGED_INTO_BRANCH_ID = "mergedIntoBranchId"
 }
 
 fun Timestamp.toEpochSeconds(): Long {

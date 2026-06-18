@@ -41,7 +41,7 @@ class ConversationModel @Inject constructor(
   val createGroup = task<GroupName, Conversation.Id>(
     name = "createGroup"
   ) { name ->
-    conversationRepository.createGroup(name)
+    conversationRepository.createGroupConversation(name)
   }
 
   val user: Flow<User?> = conversationRepository.user

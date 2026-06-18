@@ -10,9 +10,13 @@ import kotlinx.serialization.serializer
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.lib.google.firestore.codec.decoder.FirestoreMapDecoder
 import ru.sla.clarify.lib.google.firestore.codec.encoder.FirestoreMapEncoder
+import ru.sla.clarify.lib.google.firestore.codec.sentinel.ArrayRemove
+import ru.sla.clarify.lib.google.firestore.codec.sentinel.ArrayUnion
 import ru.sla.clarify.lib.google.firestore.codec.sentinel.Delete
 import ru.sla.clarify.lib.google.firestore.codec.sentinel.Increment
 import ru.sla.clarify.lib.google.firestore.codec.sentinel.ServerTimestamp
+import ru.sla.clarify.lib.google.firestore.codec.serializer.ArrayRemoveSerializer
+import ru.sla.clarify.lib.google.firestore.codec.serializer.ArrayUnionSerializer
 import ru.sla.clarify.lib.google.firestore.codec.serializer.DeleteSerializer
 import ru.sla.clarify.lib.google.firestore.codec.serializer.IncrementSerializer
 import ru.sla.clarify.lib.google.firestore.codec.serializer.ServerTimestampSerializer
@@ -62,6 +66,8 @@ class FirestoreFormat(override val serializersModule: SerializersModule) : Seria
         contextual(ServerTimestamp::class, ServerTimestampSerializer)
         contextual(Delete::class, DeleteSerializer)
         contextual(Increment::class, IncrementSerializer)
+        contextual(ArrayUnion::class, ArrayUnionSerializer)
+        contextual(ArrayRemove::class, ArrayRemoveSerializer)
       }
     )
   }
@@ -78,3 +84,5 @@ inline fun <reified T> FirestoreFormat.decodeFromMap(map: Map<String, Any?>): T 
 inline fun <reified T> FirestoreFormat.decodeFromSnapshot(snapshot: DocumentSnapshot): T {
   return decodeFromSnapshot(serializersModule.serializer<T>(), snapshot)
 }
+
+internal val codec: FirestoreFormat = FirestoreFormat.Default

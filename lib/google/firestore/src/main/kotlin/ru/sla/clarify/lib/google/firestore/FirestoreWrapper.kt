@@ -1,6 +1,7 @@
 package ru.sla.clarify.lib.google.firestore
 
 import com.google.android.gms.tasks.Task
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -11,6 +12,18 @@ import com.google.firebase.firestore.WriteBatch
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCHES_COLLECTION
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMITS_COLLECTION
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_BRANCH_ID
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_CREATED_AT
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATIONS_COLLECTION
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_MEMBER_UIDS
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_TYPE
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.MEMBERS_COLLECTION
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.UNREAD_COMMITS_COLLECTION
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USERS_COLLECTION
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USER_EMAIL
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 import javax.inject.Inject
 
@@ -22,6 +35,8 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .build()
   }
 
+  override val emptyMap: Map<String, Any> = emptyMap()
+
   override fun writeBatch(): WriteBatch {
     return remoteDB.batch()
   }
@@ -32,39 +47,36 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
 
   override fun userDocumentRef(userId: UserId): DocumentReference {
     return remoteDB
-      .collection(FirestoreSchema.USERS_COLLECTION)
+      .collection(USERS_COLLECTION)
       .document(userId.value)
   }
 
   override fun usersQuery(whereEqualTo: String): Query {
     return remoteDB
-      .collection(FirestoreSchema.USERS_COLLECTION)
-      .whereEqualTo(FirestoreSchema.USER_EMAIL, whereEqualTo)
+      .collection(USERS_COLLECTION)
+      .whereEqualTo(USER_EMAIL, whereEqualTo)
   }
 
   override fun usersQueryByEmailPrefix(prefix: String, limit: Long): Query {
     return remoteDB
-      .collection(FirestoreSchema.USERS_COLLECTION)
-      .orderBy(FirestoreSchema.USER_EMAIL)
+      .collection(USERS_COLLECTION)
+      .orderBy(USER_EMAIL)
       .startAt(prefix)
-      .endAt(prefix + "")
+      .endAt("$prefix\uF8FF")
       .limit(limit)
   }
 
   override fun conversationCollectionRef(): CollectionReference {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .collection(CONVERSATIONS_COLLECTION)
   }
 
   override fun conversationsQuery(
     whereArrayContains: UserId
   ): Query {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .whereArrayContains(
-        FirestoreSchema.CONVERSATION_MEMBER_UIDS,
-        whereArrayContains.value
-      )
+      .collection(CONVERSATIONS_COLLECTION)
+      .whereArrayContains(CONVERSATION_MEMBER_UIDS, whereArrayContains.value)
   }
 
   override fun conversationsQuery(
@@ -72,22 +84,16 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     whereArrayContains: UserId
   ): Query {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
-      .whereEqualTo(
-        FirestoreSchema.CONVERSATION_TYPE,
-        whereEqualTo.value
-      )
-      .whereArrayContains(
-        FirestoreSchema.CONVERSATION_MEMBER_UIDS,
-        whereArrayContains.value
-      )
+      .collection(CONVERSATIONS_COLLECTION)
+      .whereEqualTo(CONVERSATION_TYPE, whereEqualTo.value)
+      .whereArrayContains(CONVERSATION_MEMBER_UIDS, whereArrayContains.value)
   }
 
   override fun conversationDocumentRef(
     conversationId: String
   ): DocumentReference {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
   }
 
@@ -95,9 +101,9 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     conversationId: String
   ): CollectionReference {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
-      .collection(FirestoreSchema.COMMITS_COLLECTION)
+      .collection(COMMITS_COLLECTION)
   }
 
   override fun unreadCommitsDocumentRef(
@@ -105,9 +111,9 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     userId: UserId
   ): DocumentReference {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
-      .collection(FirestoreSchema.UNREAD_COMMITS_COLLECTION)
+      .collection(UNREAD_COMMITS_COLLECTION)
       .document(userId.value)
   }
 
@@ -115,9 +121,9 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     conversationId: String
   ): CollectionReference {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
-      .collection(FirestoreSchema.BRANCHES_COLLECTION)
+      .collection(BRANCHES_COLLECTION)
   }
 
   override fun branchDocumentRef(
@@ -125,9 +131,9 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     branchId: String
   ): DocumentReference {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
-      .collection(FirestoreSchema.BRANCHES_COLLECTION)
+      .collection(BRANCHES_COLLECTION)
       .document(branchId)
   }
 
@@ -137,11 +143,11 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     userId: UserId
   ): DocumentReference {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
-      .collection(FirestoreSchema.BRANCHES_COLLECTION)
+      .collection(BRANCHES_COLLECTION)
       .document(branchId)
-      .collection(FirestoreSchema.UNREAD_COMMITS_COLLECTION)
+      .collection(UNREAD_COMMITS_COLLECTION)
       .document(userId.value)
   }
 
@@ -149,9 +155,9 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     conversationId: String
   ): CollectionReference {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
-      .collection(FirestoreSchema.MEMBERS_COLLECTION)
+      .collection(MEMBERS_COLLECTION)
   }
 
   override fun memberDocumentRef(
@@ -159,9 +165,25 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     userId: UserId
   ): DocumentReference {
     return remoteDB
-      .collection(FirestoreSchema.CONVERSATIONS_COLLECTION)
+      .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
-      .collection(FirestoreSchema.MEMBERS_COLLECTION)
+      .collection(MEMBERS_COLLECTION)
       .document(userId.value)
+  }
+
+  override fun commitQuery(
+    conversationId: String,
+    whereEqualTo: Branch.Id,
+    before: Timestamp?,
+    limit: Long
+  ): Query {
+    return remoteDB
+      .collection(CONVERSATIONS_COLLECTION)
+      .document(conversationId)
+      .collection(COMMITS_COLLECTION)
+      .limit(limit)
+      .whereEqualTo(COMMIT_BRANCH_ID, whereEqualTo.value)
+      .let { if (before != null) it.whereLessThan(COMMIT_CREATED_AT, before) else it }
+      .orderBy(COMMIT_CREATED_AT, Query.Direction.DESCENDING)
   }
 }
