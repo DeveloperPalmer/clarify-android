@@ -1,5 +1,3 @@
-@file:Suppress("IgnoredReturnValue", "RedundantSuspendModifier")
-
 package ru.sla.clarify.lib.google.firestore
 
 import com.google.firebase.Timestamp

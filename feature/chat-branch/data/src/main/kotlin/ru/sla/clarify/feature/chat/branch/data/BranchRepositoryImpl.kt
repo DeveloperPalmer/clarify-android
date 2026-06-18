@@ -420,8 +420,6 @@ class BranchRepositoryImpl @Inject constructor(
     )
   }
 
-  // Flow.first() — suspend; detekt с type resolution ошибочно считает suspend избыточным.
-  @Suppress("RedundantSuspendModifier")
   private suspend fun awaitConversationId(): String {
     return persistedDB.branchQueries
       .selectById(branchId.value, ::mapToBranch)
