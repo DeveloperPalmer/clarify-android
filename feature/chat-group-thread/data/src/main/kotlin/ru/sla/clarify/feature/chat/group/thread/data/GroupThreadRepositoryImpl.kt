@@ -28,6 +28,7 @@ import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.clarify.mapper.mapToCommit
+import ru.sla.log.log
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -94,6 +95,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
     val current = lastReadWatermark.value
     if (current != null && !lastReadAt.isAfter(current)) {
+      log { "Group: lastReadAt ($lastReadAt) is not after current watermark ($current), skipping" }
       return
     }
     lastReadWatermark.value = lastReadAt

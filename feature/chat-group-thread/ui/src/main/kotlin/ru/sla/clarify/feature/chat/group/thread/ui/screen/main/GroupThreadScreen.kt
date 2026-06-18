@@ -113,9 +113,7 @@ private fun GroupThreadContent(
           modifier = Modifier.fillMaxSize(),
           listState = listState,
           commits = state.commits,
-          onCommitsRead = {
-            // TODO: @sla Group logic. Add onCommitsRead logic as ThreadScreen
-          }
+          onCommitsRead = intents.markReadUpTo
         )
       }
     }

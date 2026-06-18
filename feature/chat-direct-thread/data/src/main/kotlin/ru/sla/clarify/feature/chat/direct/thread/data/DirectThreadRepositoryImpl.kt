@@ -39,6 +39,7 @@ import ru.sla.clarify.mapper.mapToMember
 import ru.sla.clarify.mapper.toDomain
 import ru.sla.clarify.mapper.toLocalDateTime
 import ru.sla.clarify.mapper.withReadStatus
+import ru.sla.log.log
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -149,6 +150,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     val conversationId = threadMediator.conversationId() ?: return
     val current = lastReadWatermark.value
     if (current != null && !lastReadAt.isAfter(current)) {
+      log { "Direct: lastReadAt ($lastReadAt) is not after current watermark ($current), skipping" }
       return
     }
     lastReadWatermark.value = lastReadAt

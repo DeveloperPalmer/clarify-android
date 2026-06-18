@@ -22,12 +22,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import ru.sla.clarify.uikit.component.InviteMemberItem
 import ru.sla.clarify.uikit.component.bubble.BubbleMessageItem
 import ru.sla.resourcerefs.compose.resolveTextRef
 import java.time.LocalDateTime
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ChatCommits(
@@ -60,11 +62,13 @@ fun ChatCommits(
   LaunchedEffect(listState, commits) {
     snapshotFlow {
       listState.layoutInfo.visibleItemsInfo
-        .mapNotNull { commits.getOrNull(it.index)?.source?.timestamp }
-        .maxOrNull()
+        .asSequence()
+        .filter { it.index <= commits.lastIndex }
+        .maxOfOrNull { commits[it.index].source.timestamp }
     }
       .filterNotNull()
       .distinctUntilChanged()
+      .debounce(300.milliseconds)
       .collect(onCommitsRead)
   }
 

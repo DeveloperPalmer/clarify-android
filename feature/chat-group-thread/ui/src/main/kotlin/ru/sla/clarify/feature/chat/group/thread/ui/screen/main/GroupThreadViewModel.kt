@@ -83,10 +83,9 @@ class GroupThreadViewModel @Inject constructor(
       }
     }
 
-    onEach(groupThreadModel.commits) {
-      action { _, _, commits ->
-        val newest = commits.maxByOrNull { it.timestamp } ?: return@action
-        groupThreadModel.markReadUpTo(newest.timestamp)
+    onEach(intent(ViewIntents::markReadUpTo)) {
+      action { _, _, lastReadAt ->
+        groupThreadModel.markReadUpTo(lastReadAt)
       }
     }
 
