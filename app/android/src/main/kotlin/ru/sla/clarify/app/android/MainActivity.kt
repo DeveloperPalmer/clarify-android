@@ -68,6 +68,7 @@ import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.event.ViewEventsHost
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
+import ru.sla.clarify.uikit.window.setNavigationBarColorCompat
 import ru.sla.log.asLog
 import ru.sla.log.log
 
@@ -139,11 +140,12 @@ class MainActivity : ComponentActivity() {
     setContent {
       val view = LocalView.current
       val isDarkTheme = isSystemInDarkTheme()
-      AppTheme(currentTheme = if (isDarkTheme) ColorTheme.Dark else ColorTheme.Light) {
+      AppTheme(
+        currentTheme = if (isDarkTheme) ColorTheme.Dark else ColorTheme.Light
+      ) {
         val navigationBarColor = AppTheme.colors.backgroundPrimary
         SideEffect {
-          @Suppress("DEPRECATION")
-          window.navigationBarColor = navigationBarColor.toArgb()
+          window.setNavigationBarColorCompat(navigationBarColor.toArgb())
           WindowCompat.getInsetsController(window, view).run {
             isAppearanceLightStatusBars = !isDarkTheme
             isAppearanceLightNavigationBars = !isDarkTheme

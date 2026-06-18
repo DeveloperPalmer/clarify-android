@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import ru.sla.clarify.uikit.theme.AppTheme
+import ru.sla.clarify.uikit.window.setNavigationBarColorCompat
 
 @Composable
 fun ModalBottomSheet(
@@ -82,10 +83,10 @@ fun ModalBottomSheet(
     ) {
       val sheetView = LocalView.current
       SideEffect {
-        findDialogWindow(sheetView)?.let { window ->
-          window.navigationBarColor = Color.Transparent.toArgb()
-          window.isNavigationBarContrastEnforced = false
-        }
+        findDialogWindow(sheetView)?.setNavigationBarColorCompat(
+          color = Color.Transparent.toArgb(),
+          contrastEnforced = false
+        )
       }
       Column(
         modifier = Modifier
