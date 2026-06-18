@@ -1,15 +1,10 @@
 package ru.sla.clarify.uikit.component.chat
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
@@ -72,10 +67,6 @@ fun ChatCommits(
       .collect(onCommitsRead)
   }
 
-  val shownCommitIds = remember {
-    commits.mapTo(mutableSetOf()) { it.source.id.value }
-  }
-
   LazyColumn(
     modifier = modifier,
     state = listState,
@@ -89,10 +80,10 @@ fun ChatCommits(
     ) { _, commit ->
       when (commit) {
         is Commit.Message -> {
-          AnimatedBubbleMessage(
-            commit = commit,
-            shownCommitIds = shownCommitIds,
-            onLongClick = onCommitLongClick
+          BubbleMessageItem(
+            modifier = Modifier.animateItem(),
+            bubble = commit.bubble,
+            onLongClick = onCommitLongClick?.let { handler -> { handler(commit) } }
           )
         }
 
@@ -106,31 +97,5 @@ fun ChatCommits(
         }
       }
     }
-  }
-}
-
-@Composable
-private fun LazyItemScope.AnimatedBubbleMessage(
-  commit: Commit.Message,
-  shownCommitIds: MutableSet<String>,
-  onLongClick: ((Commit.Message) -> Unit)?
-) {
-  val commitId = commit.source.id.value
-  val animateEntry = commitId !in shownCommitIds
-  LaunchedEffect(commitId) { shownCommitIds += commitId }
-  val viewState = remember {
-    MutableTransitionState(initialState = !animateEntry).apply {
-      targetState = true
-    }
-  }
-  AnimatedVisibility(
-    modifier = Modifier.animateItem(fadeInSpec = null),
-    visibleState = viewState,
-    enter = slideInVertically(initialOffsetY = { it }) + fadeIn()
-  ) {
-    BubbleMessageItem(
-      bubble = commit.bubble,
-      onLongClick = onLongClick?.let { handler -> { handler(commit) } }
-    )
   }
 }
