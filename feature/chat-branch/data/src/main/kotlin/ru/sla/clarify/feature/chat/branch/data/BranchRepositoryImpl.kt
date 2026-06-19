@@ -205,7 +205,7 @@ class BranchRepositoryImpl @Inject constructor(
       .collect { emit(it) }
   }
 
-  override val branch: Flow<Branch?> = persistedDB.branchQueries
+  override val branch: Flow<Branch?> = persistedDB.chatBranchQueries
     .selectById(branchId.value, ::mapToBranch)
     .observeOneOrNull()
 
@@ -298,7 +298,7 @@ class BranchRepositoryImpl @Inject constructor(
         changes.forEach { change ->
           when (change.changeType) {
             FirestoreDocumentResult.Removed -> {
-              persistedDB.branchQueries.deleteById(change.data.id)
+              persistedDB.chatBranchQueries.deleteById(change.data.id)
             }
             FirestoreDocumentResult.Added,
             FirestoreDocumentResult.Modified -> {
@@ -311,7 +311,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   private fun applyInsertOrReplaceBranch(branch: Branch) {
-    persistedDB.branchQueries.insertOrReplace(
+    persistedDB.chatBranchQueries.insertOrReplace(
       id = branch.id.value,
       conversationId = branch.conversationId.value,
       parentBranchId = branch.parentBranchId.value,
@@ -340,7 +340,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   private suspend fun applyUpdateUnreadCount(branchId: String, unreadCount: Long) {
     return withContext(Dispatchers.IO) {
-      persistedDB.branchQueries.updateUnreadCount(
+      persistedDB.chatBranchQueries.updateUnreadCount(
         id = branchId,
         unreadCount = unreadCount
       )
@@ -419,7 +419,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   private suspend fun awaitConversationId(): String {
-    return persistedDB.branchQueries
+    return persistedDB.chatBranchQueries
       .selectById(branchId.value, ::mapToBranch)
       .observeOneOrNull()
       .filterNotNull()
@@ -430,7 +430,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   private fun requireConversationId(): String {
     return requireNotNull(
-      persistedDB.branchQueries
+      persistedDB.chatBranchQueries
         .selectById(branchId.value, ::mapToBranch)
         .executeAsOneOrNull()
         ?.conversationId

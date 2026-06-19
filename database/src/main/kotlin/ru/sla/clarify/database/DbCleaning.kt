@@ -14,8 +14,14 @@ import ru.sla.log.log
 fun PersistedDB.cleanupBySessionKey(key: String) {
   transaction {
     log { "cleaning up data for session key=$key" }
+    // Foreign keys are not enabled on the driver, so ON DELETE CASCADE is a no-op:
+    // every table has to be cleared explicitly. Settings is intentionally left intact —
+    // it stores the session itself (tokens/userId), managed by AuthSessionPersistence.
     userQueries.deleteAll()
-    chatConversationQueries.deleteAll()
+    chatConversationMemberQueries.deleteAll()
     chatCommitQueries.deleteAll()
+    mergeRequestQueries.deleteAll()
+    chatBranchQueries.deleteAll()
+    chatConversationQueries.deleteAll()
   }
 }

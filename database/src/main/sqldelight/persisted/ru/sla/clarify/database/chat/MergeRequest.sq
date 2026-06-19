@@ -8,7 +8,7 @@ CREATE TABLE MergeRequest(
   approvedByUids TEXT AS StringList NOT NULL,
   mergedAt INTEGER,
   mergedIntoBranchId TEXT,
-  FOREIGN KEY(branchId) REFERENCES Branch(id) ON DELETE CASCADE ON UPDATE CASCADE
+  FOREIGN KEY(branchId) REFERENCES ChatBranch(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 insertOrReplace:

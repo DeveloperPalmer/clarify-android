@@ -91,7 +91,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnBranchesUnreadCounts() {
     val conversationId = threadMediator.awaitConversationId()
-    persistedDB.branchQueries
+    persistedDB.chatBranchQueries
       .selectIdsByConversationId(conversationId)
       .observeList()
       .collectLatest(::subscribeOnBranchUnreadCount)
@@ -227,7 +227,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override val branches: Flow<List<Branch>> = flow {
     val conversationId = threadMediator.awaitConversationId()
-    persistedDB.branchQueries
+    persistedDB.chatBranchQueries
       .selectByConversationId(conversationId, ::mapToBranch)
       .observeList()
       .collect { emit(it) }
@@ -316,7 +316,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
         changes.forEach { change ->
           when (change.changeType) {
             FirestoreDocumentResult.Removed -> {
-              persistedDB.branchQueries.deleteById(change.data.id)
+              persistedDB.chatBranchQueries.deleteById(change.data.id)
             }
             FirestoreDocumentResult.Added,
             FirestoreDocumentResult.Modified -> {
@@ -329,7 +329,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   private fun applyInsertOrReplaceBranch(branch: Branch) {
-    persistedDB.branchQueries.insertOrReplace(
+    persistedDB.chatBranchQueries.insertOrReplace(
       id = branch.id.value,
       conversationId = branch.conversationId.value,
       parentBranchId = branch.parentBranchId.value,
@@ -358,7 +358,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   private suspend fun applyUpdateBranchUnreadCount(branchId: String, unreadCount: Long) {
     return withContext(Dispatchers.IO) {
-      persistedDB.branchQueries.updateUnreadCount(
+      persistedDB.chatBranchQueries.updateUnreadCount(
         id = branchId,
         unreadCount = unreadCount
       )

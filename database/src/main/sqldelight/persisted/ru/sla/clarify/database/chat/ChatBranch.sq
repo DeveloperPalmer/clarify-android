@@ -1,4 +1,4 @@
-CREATE TABLE Branch(
+CREATE TABLE ChatBranch(
   id TEXT NOT NULL PRIMARY KEY,
   conversationId TEXT NOT NULL,
   parentBranchId TEXT NOT NULL,
@@ -12,11 +12,11 @@ CREATE TABLE Branch(
   FOREIGN KEY(conversationId) REFERENCES ChatConversation(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX Branch_conversationId ON Branch(conversationId);
+CREATE INDEX ChatBranch_conversationId ON ChatBranch(conversationId);
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO Branch(
+INTO ChatBranch(
   id,
   conversationId,
   parentBranchId,
@@ -36,19 +36,19 @@ VALUES (
   :name,
   :lastCommit,
   :lastCommitTimestamp,
-  COALESCE((SELECT unreadCount FROM Branch WHERE id = :id), 0),
+  COALESCE((SELECT unreadCount FROM ChatBranch WHERE id = :id), 0),
   :createdAt,
   :createdByUid
 );
 
 updateUnreadCount:
-UPDATE Branch
+UPDATE ChatBranch
 SET unreadCount = :unreadCount
 WHERE id = :id;
 
 selectIdsByConversationId:
 SELECT id
-FROM Branch
+FROM ChatBranch
 WHERE conversationId = :conversationId;
 
 selectByConversationId:
@@ -69,7 +69,7 @@ SELECT
   mr.approvedByUids AS mergeRequestApprovedByUids,
   mr.mergedAt AS mergeRequestMergedAt,
   mr.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
-FROM Branch b
+FROM ChatBranch b
 LEFT JOIN MergeRequest mr ON mr.branchId = b.id
 WHERE b.conversationId = :conversationId
 ORDER BY b.createdAt ASC;
@@ -92,13 +92,13 @@ SELECT
   mr.approvedByUids AS mergeRequestApprovedByUids,
   mr.mergedAt AS mergeRequestMergedAt,
   mr.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
-FROM Branch b
+FROM ChatBranch b
 LEFT JOIN MergeRequest mr ON mr.branchId = b.id
 WHERE b.id = :id;
 
 deleteById:
-DELETE FROM Branch
+DELETE FROM ChatBranch
 WHERE id = ?;
 
 deleteAll:
-DELETE FROM Branch;
+DELETE FROM ChatBranch;
