@@ -1,5 +1,7 @@
 package ru.sla.clarify.core.ui.screen
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -7,7 +9,9 @@ import ru.kode.amvi.viewmodel.ViewIntents
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.kode.amvi.viewmodel.ViewModel as BaseViewModel
 
-abstract class ViewModel<VS : Any, VI : ViewIntents> : BaseViewModel<VS, VI>() {
+abstract class ViewModel<VS : Any, VI : ViewIntents>(
+  dispatcher: CoroutineDispatcher = Dispatchers.Default
+) : BaseViewModel<VS, VI>(dispatcher) {
 
   val eventsFlow = MutableSharedFlow<ViewEvent>()
 

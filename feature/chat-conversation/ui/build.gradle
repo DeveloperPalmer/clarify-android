@@ -15,4 +15,8 @@ dependencies {
   implementation libs.arrow.core
 
   ksp libs.arrow.optics.ksp
+
+  testImplementation libs.bundles.unittest
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.platform.launcher
 }

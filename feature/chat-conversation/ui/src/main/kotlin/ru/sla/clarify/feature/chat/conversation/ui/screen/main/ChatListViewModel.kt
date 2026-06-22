@@ -1,6 +1,8 @@
 package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 
 import androidx.compose.ui.text.input.TextFieldValue
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.zip
 import ru.dimsuz.unicorn2.Machine
@@ -25,10 +27,17 @@ import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
 
-class ChatListViewModel @Inject constructor(
+class ChatListViewModel(
   private val eventSink: FlowEventSink,
-  private val conversationModel: ConversationModel
-) : ViewModel<ViewState, ViewIntents>() {
+  private val conversationModel: ConversationModel,
+  dispatcher: CoroutineDispatcher
+) : ViewModel<ViewState, ViewIntents>(dispatcher) {
+
+  @Inject
+  constructor(
+    eventSink: FlowEventSink,
+    conversationModel: ConversationModel
+  ) : this(eventSink, conversationModel, Dispatchers.Default)
 
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState() to null
