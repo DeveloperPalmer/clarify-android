@@ -10,7 +10,7 @@ plugins {
 
 kotlin {
   jvmToolchain {
-    languageVersion = JavaLanguageVersion.of(11)
+    languageVersion = JavaLanguageVersion.of(17)
   }
 }
 
@@ -30,7 +30,7 @@ tasks.register("detektDebug") { task ->
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
   kotlinOptions {
-    jvmTarget = "11"
+    jvmTarget = "17"
     freeCompilerArgs += "-jvm-default=no-compatibility"
     freeCompilerArgs += "-opt-in=kotlin.contracts.ExperimentalContracts"
     freeCompilerArgs += "-opt-in=kotlinx.coroutines.FlowPreview"
@@ -80,7 +80,7 @@ detekt {
 }
 
 tasks.withType(io.gitlab.arturbosch.detekt.Detekt).configureEach {
-  jvmTarget = "11"
+  jvmTarget = "17"
   // "exclude(**/generated/**)" doesn't work for some reason, see
   // https://github.com/detekt/detekt/issues/4127#issuecomment-1260733842
   exclude {
@@ -97,5 +97,5 @@ tasks.withType(io.gitlab.arturbosch.detekt.Detekt).configureEach {
 }
 
 tasks.withType(io.gitlab.arturbosch.detekt.DetektCreateBaselineTask).configureEach {
-  jvmTarget = "11"
+  jvmTarget = "17"
 }
