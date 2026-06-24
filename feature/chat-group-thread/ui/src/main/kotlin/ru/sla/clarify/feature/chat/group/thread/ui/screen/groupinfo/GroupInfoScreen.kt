@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chat.group.thread.ui.screen.groupinfo
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +34,7 @@ import ru.sla.clarify.uikit.component.Divider
 import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
+import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.theme.AppTheme
 
 @Composable
@@ -43,15 +43,16 @@ fun GroupInfoScreen(viewModel: GroupInfoViewModel) {
     viewModel = viewModel,
     intents = rememberViewIntents()
   ) { state, intents ->
-    BackHandler(onBack = intents.navigateBack)
-    val group = state.group
-    if (group != null) {
-      GroupInfoReadyContent(
-        group = group,
-        members = state.members,
-        isOwner = state.isOwner,
-        intents = intents
-      )
+    ScreenScaffold {
+      val group = state.group
+      if (group != null) {
+        GroupInfoReadyContent(
+          group = group,
+          members = state.members,
+          isOwner = state.isOwner,
+          intents = intents
+        )
+      }
     }
   }
 }

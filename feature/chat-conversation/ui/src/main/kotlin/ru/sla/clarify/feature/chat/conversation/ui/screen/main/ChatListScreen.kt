@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,7 +47,10 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
     viewModel = viewModel,
     intents = rememberViewIntents()
   ) { state, intents ->
+    // Перехватываем back только в режиме редактирования (выбора) — там он сбрасывает выделение. Иначе даём жесту
+    // дойти до системы, чтобы она проиграла predictive-анимацию back-to-home (это корневой экран приложения).
     BackHandler(
+      enabled = state.editModeEnabled,
       onBack = intents.navigateBack
     )
     ChatListReadyContent(
@@ -81,6 +85,9 @@ internal fun ChatListReadyContent(
   Box(
     modifier = modifier
       .fillMaxSize()
+      // Непрозрачный backdrop (как ScreenScaffold даёт каждому другому экрану). Без него этот экран прозрачный, и
+      // при hand-off коммита predictive back ещё непрозрачный уходящий экран на кадр просвечивает сквозь его дыры.
+      .background(AppTheme.colors.backgroundPrimary)
       .systemBarsPadding()
   ) {
     val listState = rememberLazyListState()

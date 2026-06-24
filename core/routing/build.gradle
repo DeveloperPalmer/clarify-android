@@ -13,4 +13,6 @@ dependencies {
 
   api libs.way
   api libs.way.compose
+
+  implementation libs.androidx.activity.compose // for PredictiveBackHandler
 }

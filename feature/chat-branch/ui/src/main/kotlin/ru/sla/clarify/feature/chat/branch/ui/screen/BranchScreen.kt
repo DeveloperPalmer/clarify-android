@@ -46,9 +46,6 @@ fun BranchScreen(viewModel: BranchViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
-    BackHandler(
-      onBack = intents.navigateBack
-    )
     ScreenScaffold(scaffoldState) {
       BranchReadyContent(
         modifier = Modifier

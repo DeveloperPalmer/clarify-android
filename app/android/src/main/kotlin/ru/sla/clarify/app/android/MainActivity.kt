@@ -10,7 +10,6 @@ import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -55,6 +54,7 @@ import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.clarify.app.routing.AppFlow
 import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.routing.FlowEventMediator
+import ru.sla.clarify.core.routing.PredictiveNodeHost
 import ru.sla.clarify.core.routing.noTransition
 import ru.sla.clarify.core.routing.popTransition
 import ru.sla.clarify.core.routing.pushTransition
@@ -127,11 +127,8 @@ class MainActivity : ComponentActivity() {
     flowEventMediator.events.onEach(service::sendEvent).launchIn(coroutineScope)
     service.addNodeExtensionPoint(NodeHooksSupportExtensionPoint())
     service.addServiceExtensionPoint(LogTransitionsExtensionPoint(logger = { msg -> log(message = msg) }))
-    onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(enabled = true) {
-      override fun handleOnBackPressed() {
-        flowEventMediator.sendEvent(Event.Back)
-      }
-    })
+    // Back-навигацией управляет PredictiveNodeHost изнутри composition, чтобы он мог отрисовать predictive-жест
+    // shrink-reveal. На корневом экране он отключает себя, давая ОС проиграть back-to-home.
 
     coroutineScope.launch {
       warmUpApp(conversationRepository)
@@ -157,8 +154,9 @@ class MainActivity : ComponentActivity() {
             LocalDropdownMenuAnchor provides remember { DropdownMenuAnchorState() },
             LocalViewEventsHostMediator provides component.viewEventsHostMediator()
           ) {
-            NodeHost(
+            PredictiveNodeHost(
               service = service,
+              onDismissRequest = { flowEventMediator.sendEvent(Event.Back) },
               transitionSpec = rememberTransitionSpec {
                 // TODO @dz @Way this is a rather bad way to go. Should not rely on a hardcoded string which could
                 //  unexpectedly change in the flow, which is in different module.

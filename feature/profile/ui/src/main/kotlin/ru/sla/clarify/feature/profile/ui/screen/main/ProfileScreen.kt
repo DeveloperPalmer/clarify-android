@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.profile.ui.screen.main
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -28,9 +27,6 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
-    BackHandler(
-      onBack = intents.navigateBack
-    )
     ScreenScaffold(state = scaffoldState) {
       Column(
         modifier = Modifier

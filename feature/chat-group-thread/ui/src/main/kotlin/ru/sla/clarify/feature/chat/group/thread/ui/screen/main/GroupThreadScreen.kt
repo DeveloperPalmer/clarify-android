@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chat.group.thread.ui.screen.main
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,7 +51,6 @@ fun GroupThreadScreen(viewModel: GroupThreadViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
-    BackHandler(onBack = intents.navigateBack)
     ScreenScaffold(scaffoldState) {
       GroupThreadContent(
         modifier = Modifier

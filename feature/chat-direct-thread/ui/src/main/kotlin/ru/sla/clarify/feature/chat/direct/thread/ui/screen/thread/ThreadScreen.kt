@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,9 +51,8 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
-    BackHandler(
-      onBack = intents.navigateBack
-    )
+    // Back-навигацию обрабатывает PredictiveNodeHost (predictive-жест shrink-reveal). Кнопка «назад» в топбаре
+    // по-прежнему дёргает intents.navigateBack напрямую.
     ScreenScaffold(scaffoldState) {
       ThreadReadyContent(
         modifier = Modifier
