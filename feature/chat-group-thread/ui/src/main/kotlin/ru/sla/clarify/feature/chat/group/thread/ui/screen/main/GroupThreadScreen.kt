@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -24,19 +23,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.Group
 import ru.sla.clarify.uikit.component.avatar.Avatar
-import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
 import ru.sla.clarify.uikit.component.chat.ChatCommits
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.component.topappbar.rememberTopBarElevation
-import ru.sla.clarify.uikit.keyboard.rememberKeyboardController
 import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
@@ -71,10 +67,8 @@ private fun GroupThreadContent(
   modifier: Modifier = Modifier
 ) {
   Column(modifier = modifier.fillMaxSize()) {
-    val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val topBarElevation = rememberTopBarElevation(listState)
-    val keyboardController = rememberKeyboardController()
     TopAppBar(
       modifier = Modifier.bottomShadow { topBarElevation.value },
       navigationIcon = { TopAppBarDefaults.NavigationIcon(intents.navigateBack) },
@@ -85,20 +79,6 @@ private fun GroupThreadContent(
             onClick = intents.openGroupInfo
           )
         }
-      },
-      actions = {
-        // TODO: @sla Group logic. Add branch logic as ThreadScreen
-        TertiaryIconButtonSmall(
-          modifier = Modifier.padding(end = 4.dp),
-          iconRes = R.drawable.ic_git_branch_24,
-          text = stringResource(R.string.thread_branches_count, 0),
-          onClick = {
-            scope.launch {
-              keyboardController.awaitHide()
-              // TODO: @sla Group logic. Add intents.showBranches() logic as ThreadScreen
-            }
-          }
-        )
       }
     )
     Box(modifier = Modifier.weight(1f)) {
