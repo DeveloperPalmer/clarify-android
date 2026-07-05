@@ -2,7 +2,10 @@ package ru.sla.clarify.feature.chat.direct.thread.ui.mapper
 
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
+import ru.sla.clarify.uikit.component.bubble.selection
 import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.clarify.uikit.component.chat.bubble
+import ru.sla.clarify.uikit.component.chat.message
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
@@ -19,13 +22,40 @@ internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
             side = commit.side(),
             text = commit.text,
             time = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE),
-            sender = null
+            sender = null,
+            selection = BubbleMessage.Selection(
+              inSelectionMode = false,
+              isSelected = false
+            )
           )
         )
       }
       is DomainCommit.InviteMember -> null
     }
   }
+}
+
+internal fun List<Commit>.withSelection(
+  selectionMode: Boolean,
+  selectedCommitIds: List<DomainCommit.Id>
+): List<Commit> {
+  val selectedIds = selectedCommitIds.toSet()
+  return map { commit ->
+    Commit.message.bubble.selection.set(
+      commit,
+      commit.source.toSelection(selectionMode, selectedIds)
+    )
+  }
+}
+
+private fun DomainCommit.toSelection(
+  selectionMode: Boolean,
+  selectedIds: Set<DomainCommit.Id>
+): BubbleMessage.Selection {
+  return BubbleMessage.Selection(
+    isSelected = id in selectedIds,
+    inSelectionMode = selectionMode
+  )
 }
 
 private fun DomainCommit.side(): BubbleMessage.Side {
@@ -48,15 +78,17 @@ private fun bubbleType(
   index: Int,
   commits: List<DomainCommit>
 ): BubbleMessage.Type {
+  // Список отсортирован от новых к старым (репозиторий делает asReversed) и рендерится
+  // reverseLayout-ом снизу вверх, поэтому index-1 — визуально ниже, index+1 — визуально выше.
   val current = commits[index] as? DomainCommit.Message ?: return BubbleMessage.Type.Top
-  val older = (commits.getOrNull(index - 1) as? DomainCommit.Message)
-  val newer = (commits.getOrNull(index + 1) as? DomainCommit.Message)
-  val sameSenderOlder = older?.senderId == current.senderId
-  val sameSenderNewer = newer?.senderId == current.senderId
+  val below = (commits.getOrNull(index - 1) as? DomainCommit.Message)
+  val above = (commits.getOrNull(index + 1) as? DomainCommit.Message)
+  val sameSenderBelow = below?.senderId == current.senderId
+  val sameSenderAbove = above?.senderId == current.senderId
   return when {
-    sameSenderOlder && sameSenderNewer -> BubbleMessage.Type.Middle
-    sameSenderNewer -> BubbleMessage.Type.Top
-    sameSenderOlder -> BubbleMessage.Type.Bottom
+    sameSenderAbove && sameSenderBelow -> BubbleMessage.Type.Middle
+    sameSenderBelow -> BubbleMessage.Type.Top
+    sameSenderAbove -> BubbleMessage.Type.Bottom
     else -> BubbleMessage.Type.Top
   }
 }

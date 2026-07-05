@@ -17,4 +17,8 @@ class ViewIntents : BaseViewIntents() {
   val clearCreateBranchError = intent(name = "clearCreateBranchError")
   val showBranchesList = intent(name = "showBranchesList")
   val openBranch = intent<Branch.Id>(name = "openBranch")
+  val toggleMessageSelection = intent<Commit.Message>(name = "toggleMessageSelection")
+  val clearSelection = intent(name = "clearSelection")
+  val deleteCommit = intent(name = "deleteCommit")
+  val confirmDeleteCommit = intent<Boolean>(name = "confirmDeleteCommit")
 }

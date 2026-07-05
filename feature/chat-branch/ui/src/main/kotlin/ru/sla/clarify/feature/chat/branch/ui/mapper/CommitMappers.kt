@@ -23,7 +23,11 @@ internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
             side = commit.side(),
             text = commit.text,
             time = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE),
-            sender = null
+            sender = null,
+            selection = BubbleMessage.Selection(
+              isSelected = false,
+              inSelectionMode = false
+            )
           )
         )
       }

@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
 import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
 import ru.sla.clarify.uikit.component.chat.ChatCommits
 import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
@@ -51,8 +53,10 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
-    // Back-навигацию обрабатывает PredictiveNodeHost (predictive-жест shrink-reveal). Кнопка «назад» в топбаре
-    // по-прежнему дёргает intents.navigateBack напрямую.
+    BackHandler(
+      enabled = state.selectionMode,
+      onBack = intents.clearSelection
+    )
     ScreenScaffold(scaffoldState) {
       ThreadReadyContent(
         modifier = Modifier
@@ -63,9 +67,13 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
         commits = state.commits,
         branchesCount = state.branches.size,
         unreadCount = state.unreadCount,
+        selectionMode = state.selectionMode,
+        selectedCount = state.selectedCommitIds.size,
         onBack = intents.navigateBack,
         onShowBranches = intents.showBranchesList,
-        onCommitLongClick = intents.createBranch,
+        onToggleSelection = intents.toggleMessageSelection,
+        onClearSelection = intents.clearSelection,
+        onDeleteSelection = intents.deleteCommit,
         onCommitsRead = intents.markReadUpTo,
         onSend = intents.sendMessage
       )
@@ -79,10 +87,14 @@ private fun ThreadReadyContent(
   commits: List<Commit>,
   branchesCount: Int,
   unreadCount: Int,
+  selectionMode: Boolean,
+  selectedCount: Int,
   onBack: () -> Unit,
   onSend: (String) -> Unit,
   onShowBranches: () -> Unit,
-  onCommitLongClick: (Commit.Message) -> Unit,
+  onToggleSelection: (Commit.Message) -> Unit,
+  onClearSelection: () -> Unit,
+  onDeleteSelection: () -> Unit,
   onCommitsRead: (LocalDateTime) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -91,36 +103,41 @@ private fun ThreadReadyContent(
     val listState = rememberLazyListState()
     val topBarElevation = rememberTopBarElevation(listState)
     val keyboardController = rememberKeyboardController()
-    TopAppBar(
-      modifier = Modifier.bottomShadow { topBarElevation.value },
-      navigationIcon = { TopAppBarDefaults.NavigationIcon(onBack) },
-      title = { peer?.let { TopAppBarCenterContent(peer = peer) } },
-      actions = {
-        TertiaryIconButtonSmall(
-          modifier = Modifier.padding(end = 4.dp),
-          iconRes = R.drawable.ic_git_branch_24,
-          text = stringResource(R.string.thread_branches_count, branchesCount),
-          onClick = {
-            scope.launch {
-              keyboardController.awaitHide()
-              onShowBranches()
+    if (selectionMode) {
+      SelectionTopAppBar(
+        modifier = Modifier.bottomShadow { topBarElevation.value },
+        selectedCount = selectedCount,
+        onClose = onClearSelection,
+        onDelete = onDeleteSelection
+      )
+    } else {
+      TopAppBar(
+        modifier = Modifier.bottomShadow { topBarElevation.value },
+        navigationIcon = { TopAppBarDefaults.NavigationIcon(onBack) },
+        title = { peer?.let { TopAppBarCenterContent(peer = peer) } },
+        actions = {
+          TertiaryIconButtonSmall(
+            modifier = Modifier.padding(end = 4.dp),
+            iconRes = R.drawable.ic_git_branch_24,
+            text = stringResource(R.string.thread_branches_count, branchesCount),
+            onClick = {
+              scope.launch {
+                keyboardController.awaitHide()
+                onShowBranches()
+              }
             }
-          }
-        )
-      }
-    )
+          )
+        }
+      )
+    }
     Box(modifier = Modifier.weight(1f)) {
       ChatCommits(
         modifier = Modifier.fillMaxSize(),
         listState = listState,
         commits = commits,
         onCommitsRead = onCommitsRead,
-        onCommitLongClick = { commit ->
-          scope.launch {
-            keyboardController.awaitHide()
-            onCommitLongClick(commit)
-          }
-        }
+        onCommitClick = onToggleSelection,
+        onCommitLongClick = onToggleSelection
       )
       ChatScrollToBottomButton(
         modifier = Modifier
@@ -142,6 +159,39 @@ private fun ThreadReadyContent(
       onSend = onSend
     )
   }
+}
+
+@Composable
+private fun SelectionTopAppBar(
+  selectedCount: Int,
+  onClose: () -> Unit,
+  onDelete: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  TopAppBar(
+    modifier = modifier,
+    navigationIcon = {
+      IconAction(
+        iconResId = R.drawable.ic_close_24,
+        iconTint = AppTheme.colors.contentPrimary,
+        onClick = onClose
+      )
+    },
+    title = {
+      Text(
+        text = stringResource(R.string.thread_selection_count, selectedCount),
+        style = AppTheme.typography.title2Bold,
+        color = AppTheme.colors.contentPrimary
+      )
+    },
+    actions = {
+      IconAction(
+        iconResId = R.drawable.ic_trash_24,
+        iconTint = AppTheme.colors.errorPrimary,
+        onClick = onDelete
+      )
+    }
+  )
 }
 
 @Composable

@@ -6,6 +6,7 @@ import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.ui.entity.CreateBranchError
 import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 @Immutable
 data class ViewState(
@@ -14,7 +15,9 @@ data class ViewState(
   val commits: List<Commit> = emptyList(),
   val branches: List<Branch> = emptyList(),
   val unreadCount: Int = 0,
-  val createBranchError: CreateBranchError? = null
+  val createBranchError: CreateBranchError? = null,
+  val selectionMode: Boolean = false,
+  val selectedCommitIds: List<DomainCommit.Id> = emptyList()
 ) {
   data class CreateBranchPayload(
     val commit: Commit.Message,

@@ -68,9 +68,7 @@ class GroupThreadViewModel @Inject constructor(
       combine(
         groupThreadModel.commits,
         groupThreadModel.members
-      ) { commits, members ->
-        commits.toUiCommits(members).asReversed()
-      }
+      ) { commits, members -> commits.toUiCommits(members) }
     ) {
       transitionTo { state, items ->
         state.copy(commits = items)
