@@ -1,7 +1,6 @@
 package ru.sla.clarify.uikit.component.chat
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,6 +31,7 @@ fun ChatCommits(
   listState: LazyListState,
   onCommitsRead: (LocalDateTime) -> Unit,
   modifier: Modifier = Modifier,
+  onCommitClick: ((Commit.Message) -> Unit)? = null,
   onCommitLongClick: ((Commit.Message) -> Unit)? = null
 ) {
   val newestCommit = commits.firstOrNull()
@@ -71,8 +71,7 @@ fun ChatCommits(
     modifier = modifier,
     state = listState,
     reverseLayout = true,
-    contentPadding = PaddingValues(8.dp),
-    verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.Bottom)
+    verticalArrangement = Arrangement.spacedBy(0.dp, Alignment.Bottom)
   ) {
     itemsIndexed(
       items = commits,
@@ -83,10 +82,10 @@ fun ChatCommits(
           BubbleMessageItem(
             modifier = Modifier.animateItem(),
             bubble = commit.bubble,
+            onClick = onCommitClick?.let { handler -> { handler(commit) } },
             onLongClick = onCommitLongClick?.let { handler -> { handler(commit) } }
           )
         }
-
         is Commit.InviteMember -> {
           InviteMemberItem(
             modifier = Modifier

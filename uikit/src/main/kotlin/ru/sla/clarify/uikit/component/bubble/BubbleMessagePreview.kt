@@ -22,7 +22,7 @@ import ru.sla.clarify.uikit.theme.VSpacer
 @Composable
 private fun BubbleMessagePreviewLight() {
   AppTheme(currentTheme = ColorTheme.Light) {
-    BubbleMessageConversation()
+    BubbleMessage()
   }
 }
 
@@ -30,12 +30,12 @@ private fun BubbleMessagePreviewLight() {
 @Composable
 private fun BubbleMessagePreviewDark() {
   AppTheme(currentTheme = ColorTheme.Dark) {
-    BubbleMessageConversation()
+    BubbleMessage()
   }
 }
 
 @Composable
-private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
+private fun BubbleMessage(modifier: Modifier = Modifier) {
   Column(
     modifier = modifier
       .background(colors.backgroundPrimary)
@@ -48,7 +48,9 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
         type = BubbleMessage.Type.Top,
         side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Read),
         text = "Спасибо! Сейчас покажу",
-        time = "18:05"
+        time = "18:05",
+        sender = null,
+        selection = previewSelection
       )
     )
     ClusterBubblePreview(
@@ -57,7 +59,9 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
         type = BubbleMessage.Type.Middle,
         side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Sending),
         text = "Вот текущий флоу создания ветки — несколько строк, чтобы было видно перенос времени",
-        time = "18:05"
+        time = "18:05",
+        sender = null,
+        selection = previewSelection
       )
     )
     ClusterBubblePreview(
@@ -66,7 +70,9 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
         type = BubbleMessage.Type.Bottom,
         side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Sent),
         text = "Зажимаешь — и готово",
-        time = "18:06"
+        time = "18:06",
+        sender = null,
+        selection = previewSelection
       )
     )
     VSpacer(12.dp)
@@ -76,7 +82,9 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
         type = BubbleMessage.Type.Top,
         side = BubbleMessage.Side.Left,
         text = "Привет! Глянула макет",
-        time = "18:02"
+        time = "18:02",
+        sender = null,
+        selection = previewSelection
       )
     )
     ClusterBubblePreview(
@@ -85,7 +93,9 @@ private fun BubbleMessageConversation(modifier: Modifier = Modifier) {
         type = BubbleMessage.Type.Bottom,
         side = BubbleMessage.Side.Left,
         text = "Особенно как треды выносятся в отдельный экран — это топ",
-        time = "18:03"
+        time = "18:03",
+        sender = null,
+        selection = previewSelection
       )
     )
   }
@@ -98,10 +108,10 @@ private fun ColumnScope.ClusterBubblePreview(bubble: BubbleMessage) {
     is BubbleMessage.Side.Right -> Alignment.End
   }
   BubbleMessageItem(
-    bubble = bubble,
     modifier = Modifier
       .align(alignment)
-      .widthIn(max = 260.dp)
+      .widthIn(max = 260.dp),
+    bubble = bubble
   )
 }
 
@@ -148,7 +158,8 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
         side = BubbleMessage.Side.Left,
         text = "Привет всем! Спасибо что собрали",
         time = "18:02",
-        sender = anna
+        sender = anna,
+        selection = previewSelection
       )
     )
     ClusterBubblePreview(
@@ -158,7 +169,8 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
         side = BubbleMessage.Side.Left,
         text = "Давайте сюда скидывать всё по веткам",
         time = "18:02",
-        sender = anna
+        sender = anna,
+        selection = previewSelection
       )
     )
     VSpacer(12.dp)
@@ -169,7 +181,8 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
         side = BubbleMessage.Side.Left,
         text = "Ок",
         time = "18:14",
-        sender = ilya
+        sender = ilya,
+        selection = previewSelection
       )
     )
     VSpacer(12.dp)
@@ -180,7 +193,8 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
         side = BubbleMessage.Side.Left,
         text = "Включаюсь",
         time = "10:30",
-        sender = maria
+        sender = maria,
+        selection = previewSelection
       )
     )
     VSpacer(12.dp)
@@ -194,8 +208,14 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
         sender = BubbleMessage.Sender(
           id = UserId("me"),
           name = "Сергей Лановой"
-        )
+        ),
+        selection = previewSelection
       )
     )
   }
 }
+
+private val previewSelection = BubbleMessage.Selection(
+  inSelectionMode = false,
+  isSelected = false
+)

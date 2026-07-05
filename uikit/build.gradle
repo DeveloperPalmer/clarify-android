@@ -11,5 +11,9 @@ dependencies {
   api project(":entity")
   api project(":core:ui")
   api project(":core:resources")
+
   implementation libs.androidx.activity.compose // for BackHandler
+
+  api libs.arrow.optics
+  ksp libs.arrow.optics.ksp
 }

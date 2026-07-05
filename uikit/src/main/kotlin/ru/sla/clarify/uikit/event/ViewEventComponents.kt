@@ -141,6 +141,65 @@ data class DropdownMenu(
 }
 
 /**
+ * Two-button dialog frame (title + confirm/dismiss) with a slot for arbitrary central [content], so
+ * callers reuse the standard chrome and dismissal wiring while overriding just the middle (e.g. a
+ * checkbox). Backs [Dialog.Decision] and feature dialogs that need a custom body.
+ */
+@Composable
+fun ViewEventHostScope.DecisionDialog(
+  primaryActionTitle: TextRef,
+  secondaryActionTitle: TextRef,
+  onPrimaryAction: () -> Unit,
+  title: TextRef? = null,
+  isDestructive: Boolean = false,
+  onSecondaryAction: () -> Unit = {},
+  onDismissRequest: () -> Unit = {},
+  content: (@Composable () -> Unit)? = null
+) {
+  BackHandler {
+    onDismissRequest()
+    dismissEventPresentation()
+  }
+  AlertDialog(
+    containerColor = AppTheme.colors.cardSecondary,
+    onDismissRequest = {
+      onDismissRequest()
+      dismissEventPresentation()
+    },
+    title = title?.let { titleRef ->
+      {
+        Text(
+          text = resolveTextRef(titleRef),
+          color = AppTheme.colors.contentPrimary,
+          style = AppTheme.typography.headline3
+        )
+      }
+    },
+    text = content,
+    confirmButton = {
+      PrimaryTextButton(
+        text = resolveTextRef(primaryActionTitle),
+        style = if (isDestructive) ButtonStyle.Error else ButtonStyle.Default,
+        onClick = {
+          onPrimaryAction()
+          dismissEventPresentation()
+        }
+      )
+    },
+    dismissButton = {
+      PrimaryTextButton(
+        text = resolveTextRef(secondaryActionTitle),
+        style = ButtonStyle.Default,
+        onClick = {
+          onSecondaryAction()
+          dismissEventPresentation()
+        }
+      )
+    }
+  )
+}
+
+/**
  * Standard dialog [ViewEvent] presentations.
  *
  * Dismiss happens by calling [ViewEventHostScope.dismissEventPresentation] from inside the dialog actions.
@@ -168,26 +227,15 @@ sealed class Dialog : ViewEvent.Content() {
 
     @Composable
     override fun ViewEventHostScope.Content() {
-      BackHandler {
-        onDismissRequest?.invoke()
-        dismissEventPresentation()
-      }
-      AlertDialog(
-        containerColor = AppTheme.colors.cardSecondary,
-        onDismissRequest = {
-          onDismissRequest?.invoke()
-          dismissEventPresentation()
-        },
-        title = title?.let { titleRef ->
-          {
-            Text(
-              text = resolveTextRef(titleRef),
-              color = AppTheme.colors.contentPrimary,
-              style = AppTheme.typography.headline3
-            )
-          }
-        },
-        text = text?.let { textRef ->
+      DecisionDialog(
+        title = title,
+        primaryActionTitle = primaryActionTitle,
+        secondaryActionTitle = secondaryActionTitle,
+        isDestructive = isDestructive,
+        onPrimaryAction = { primaryAction?.invoke() },
+        onSecondaryAction = { secondaryAction?.invoke() },
+        onDismissRequest = { onDismissRequest?.invoke() },
+        content = text?.let { textRef ->
           {
             Text(
               text = resolveTextRef(textRef),
@@ -195,26 +243,6 @@ sealed class Dialog : ViewEvent.Content() {
               style = AppTheme.typography.body2
             )
           }
-        },
-        confirmButton = {
-          PrimaryTextButton(
-            text = resolveTextRef(primaryActionTitle),
-            style = if (isDestructive) ButtonStyle.Error else ButtonStyle.Default,
-            onClick = {
-              primaryAction?.invoke()
-              dismissEventPresentation()
-            }
-          )
-        },
-        dismissButton = {
-          PrimaryTextButton(
-            text = resolveTextRef(secondaryActionTitle),
-            style = ButtonStyle.Default,
-            onClick = {
-              secondaryAction?.invoke()
-              dismissEventPresentation()
-            }
-          )
         }
       )
     }

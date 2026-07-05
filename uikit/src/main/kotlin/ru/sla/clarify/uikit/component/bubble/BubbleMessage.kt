@@ -1,16 +1,19 @@
 package ru.sla.clarify.uikit.component.bubble
 
 import androidx.compose.runtime.Immutable
+import arrow.optics.optics
 import ru.sla.clarify.core.domain.entity.UserId
 
 @Immutable
+@optics
 data class BubbleMessage(
   val id: Id,
   val type: Type,
   val side: Side,
   val text: String,
   val time: String,
-  val sender: Sender? = null
+  val sender: Sender?,
+  val selection: Selection
 ) {
 
   @JvmInline
@@ -21,6 +24,15 @@ data class BubbleMessage(
     val id: UserId,
     val name: String
   )
+
+  @Immutable
+  @optics
+  data class Selection(
+    val inSelectionMode: Boolean,
+    val isSelected: Boolean
+  ) {
+    companion object
+  }
 
   @Immutable
   sealed interface Side {
@@ -44,4 +56,6 @@ data class BubbleMessage(
     Middle,
     Bottom
   }
+
+  companion object
 }

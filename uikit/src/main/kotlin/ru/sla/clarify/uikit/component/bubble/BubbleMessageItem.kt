@@ -1,5 +1,7 @@
 package ru.sla.clarify.uikit.component.bubble
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -8,13 +10,18 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,15 +31,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.domain.entity.UserId
+import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.component.avatar.stableSeedHash
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage.ReadStatus
 import ru.sla.clarify.uikit.modifier.surface
@@ -85,21 +96,108 @@ fun BubbleMessageItem(
       color = senderNameColor(sender.id)
     )
   }
-
-  BubbleMessageLayout(
-    side = bubble.side,
-    shape = shape,
-    backgroundColor = backgroundColor,
+  SelectableBubbleContainer(
     modifier = modifier,
+    selected = bubble.selection.isSelected,
+    inSelectionMode = bubble.selection.inSelectionMode,
     onClick = onClick,
-    onLongClick = onLongClick,
-    senderLabel = senderLabel,
-    text = bubble.text,
-    textColor = contentColor,
-    time = bubble.time,
-    timeColor = timeColor,
-    statusReadColor = statusReadColor
-  )
+    onLongClick = onLongClick
+  ) {
+    BubbleMessageLayout(
+      modifier = Modifier.padding(
+        vertical = 2.dp,
+        horizontal = 8.dp
+      ),
+      side = bubble.side,
+      shape = shape,
+      backgroundColor = backgroundColor,
+      senderLabel = senderLabel,
+      text = bubble.text,
+      textColor = contentColor,
+      time = bubble.time,
+      timeColor = timeColor,
+      statusReadColor = statusReadColor,
+      onLongClick = onLongClick.takeIf { !bubble.selection.inSelectionMode }
+    )
+  }
+}
+
+@Composable
+private fun SelectableBubbleContainer(
+  inSelectionMode: Boolean,
+  selected: Boolean,
+  onClick: (() -> Unit)?,
+  onLongClick: (() -> Unit)?,
+  modifier: Modifier = Modifier,
+  content: @Composable () -> Unit
+) {
+  Row(
+    modifier = if (inSelectionMode) {
+      modifier.surface(
+        shape = RectangleShape,
+        backgroundColor = if (selected) colors.backgroundAccentPrimary else Color.Transparent,
+        onClick = { onClick?.invoke() },
+        onLongClick = { onLongClick?.invoke() }
+      )
+    } else {
+      modifier
+    },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    AnimatedVisibility(
+      visible = inSelectionMode,
+      enter = AppTheme.motion.slideInFromStart(),
+      exit = AppTheme.motion.slideOutToStart()
+    ) {
+      // Отступ на самом индикаторе (внутри AnimatedVisibility), а не на контейнере: 8.dp едут
+      // вместе с индикатором, поэтому в покое он отстоит на 8.dp от края, но выезд из-за края
+      // сохраняется (в свёрнутом состоянии слот занимает 0 и лишнего отступа в строке нет).
+      SelectionIndicator(
+        modifier = Modifier
+          .padding(start = 8.dp)
+          .size(24.dp),
+        selected = selected
+      )
+    }
+    Box(modifier = Modifier.weight(1f)) {
+      content()
+    }
+  }
+}
+
+@Composable
+private fun SelectionIndicator(
+  selected: Boolean,
+  modifier: Modifier = Modifier
+) {
+  AnimatedContent(
+    modifier = modifier,
+    targetState = selected,
+    transitionSpec = AppTheme.motion.mediumTransitionSpec(),
+    label = "selectionIndicator"
+  ) { isChecked ->
+    if (isChecked) {
+      Image(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(colors.contentAccentPrimary, CircleShape)
+          .padding(selectionCheckPadding),
+        painter = painterResource(R.drawable.ic_check_16),
+        contentDescription = null,
+        colorFilter = ColorFilter.tint(colors.contentAccentSecondary)
+      )
+    } else {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .border(
+            width = selectionRingWidth,
+            shape = CircleShape,
+            color = colors.contentTertiary
+          )
+      )
+    }
+  }
 }
 
 @Composable
@@ -259,12 +357,15 @@ private fun BubbleTimeStatus(
       ReadStatus.Sending -> {
         ClockMark(tint = statusMutedColor)
       }
+
       ReadStatus.Sent -> {
         CheckMark(tint = statusMutedColor)
       }
+
       ReadStatus.Read -> {
         DoubleStatusCheck(tint = statusReadColor)
       }
+
       null -> Unit
     }
   }
@@ -414,6 +515,9 @@ private data class SenderLabel(
 
 private val bubbleHardCorner = 5.dp
 private val bubbleSoftCorner = 20.dp
+
+private val selectionRingWidth = 1.5.dp
+private val selectionCheckPadding = 4.dp
 
 private val timeStatusPadding = 8.dp
 private val timeStatusTopPadding = 2.dp
