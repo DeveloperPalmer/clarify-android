@@ -30,7 +30,7 @@ import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
-import ru.sla.clarify.mapper.mapToUser
+import ru.sla.clarify.mapper.data.mapToUser
 import javax.inject.Inject
 
 @SingleIn(AppScope::class)

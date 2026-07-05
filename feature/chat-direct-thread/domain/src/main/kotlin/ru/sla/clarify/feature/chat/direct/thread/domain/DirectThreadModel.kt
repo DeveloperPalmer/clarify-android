@@ -60,6 +60,12 @@ class DirectThreadModel @Inject constructor(
     )
   }
 
+  val deleteCommits = task<List<Commit.Id>, Boolean, Unit>(
+    name = "deleteCommits"
+  ) { ids, forEveryone ->
+    directThreadRepository.deleteCommits(ids, forEveryone)
+  }
+
   val user: Flow<User?> = conversationRepository.user
   val peer: Flow<Peer?> = directThreadRepository.peer
 

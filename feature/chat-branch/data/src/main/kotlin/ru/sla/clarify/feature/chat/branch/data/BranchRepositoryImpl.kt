@@ -16,6 +16,7 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
+import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
@@ -29,14 +30,14 @@ import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
-import ru.sla.clarify.lib.google.firestore.toEpochSeconds
-import ru.sla.clarify.mapper.mapToBranch
-import ru.sla.clarify.mapper.mapToCommit
-import ru.sla.clarify.mapper.mapToMember
-import ru.sla.clarify.mapper.mapToUser
-import ru.sla.clarify.mapper.toDomain
-import ru.sla.clarify.mapper.toLocalDateTime
-import ru.sla.clarify.mapper.withReadStatus
+import ru.sla.clarify.lib.google.firestore.toEpochMillis
+import ru.sla.clarify.mapper.data.mapToBranch
+import ru.sla.clarify.mapper.data.mapToCommit
+import ru.sla.clarify.mapper.data.mapToMember
+import ru.sla.clarify.mapper.data.mapToUser
+import ru.sla.clarify.mapper.data.toDomain
+import ru.sla.clarify.mapper.data.toLocalDateTime
+import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -272,7 +273,7 @@ class BranchRepositoryImpl @Inject constructor(
         userId = UserId(peerId)
       ).map { member ->
         member?.lastReadAt
-          ?.seconds
+          ?.toEpochMillis()
           ?.toLocalDateTime()
       }.collect {
         emit(it)
@@ -401,20 +402,22 @@ class BranchRepositoryImpl @Inject constructor(
     hasPendingWrites: Boolean
   ) {
     persistedDB.chatCommitQueries.insertOrReplace(
-      id = commit.id,
-      conversationId = conversationId,
-      branchId = commit.branchId,
-      senderId = commit.senderUid,
-      type = commit.type.value,
-      text = commit.text.orEmpty(),
-      invitedUid = commit.invitedUid,
-      timestamp = commit.createdAt?.toEpochSeconds() ?: 0L,
-      isSelf = commit.senderUid == userId.value,
-      status = if (hasPendingWrites) {
-        Commit.Status.Sending.value
-      } else {
-        Commit.Status.Sent.value
-      }
+      ChatCommit(
+        id = commit.id,
+        conversationId = conversationId,
+        branchId = commit.branchId,
+        senderId = commit.senderUid,
+        type = commit.type.value,
+        text = commit.text.orEmpty(),
+        invitedUid = commit.invitedUid,
+        timestamp = commit.createdAt?.toEpochMillis() ?: 0L,
+        isSelf = commit.senderUid == userId.value,
+        status = if (hasPendingWrites) {
+          Commit.Status.Sending.value
+        } else {
+          Commit.Status.Sent.value
+        }
+      )
     )
   }
 

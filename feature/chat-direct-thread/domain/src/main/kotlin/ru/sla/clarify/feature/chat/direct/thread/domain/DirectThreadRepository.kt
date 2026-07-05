@@ -16,6 +16,7 @@ interface DirectThreadRepository {
 
   suspend fun fetchHistoryCommits(count: Int, before: Commit? = null)
   suspend fun sendCommit(text: String)
+  suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean)
 
   suspend fun markAsRead()
   suspend fun markReadUpTo(lastReadAt: LocalDateTime)

@@ -11,6 +11,7 @@ import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
+import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Commit
@@ -26,8 +27,8 @@ import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.MemberNM
-import ru.sla.clarify.lib.google.firestore.toEpochSeconds
-import ru.sla.clarify.mapper.mapToCommit
+import ru.sla.clarify.lib.google.firestore.toEpochMillis
+import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.log.log
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -145,10 +146,14 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun inviteGroupMembers(userIds: List<UserId>) {
     withContext(Dispatchers.IO) {
+      // visibleFor приглашающих системных коммитов — состав группы уже с учётом приглашённых,
+      // чтобы новый участник видел «X пригласил Y» (запросы фильтруются по visibleFor).
+      val visibleFor = (currentMemberUids() + userIds.map { it.value }).distinct()
       userIds.forEach { userId ->
         firestore.createCommitInviteMember(
           conversationId = conversationId.value,
-          invitedUserId = userId
+          invitedUserId = userId,
+          memberUids = visibleFor
         )
       }
       persistedDB.transaction {
@@ -273,7 +278,6 @@ class GroupThreadRepositoryImpl @Inject constructor(
           FirestoreDocumentResult.Removed -> {
             persistedDB.chatCommitQueries.deleteById(change.data.id)
           }
-
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
             applyInsertOrReplaceCommit(
@@ -293,20 +297,22 @@ class GroupThreadRepositoryImpl @Inject constructor(
     hasPendingWrites: Boolean
   ) {
     persistedDB.chatCommitQueries.insertOrReplace(
-      id = commit.id,
-      conversationId = conversationId.value,
-      branchId = commit.branchId,
-      senderId = commit.senderUid,
-      type = commit.type.value,
-      text = commit.text.orEmpty(),
-      invitedUid = commit.invitedUid,
-      timestamp = commit.createdAt?.toEpochSeconds() ?: 0L,
-      isSelf = commit.senderUid == userId.value,
-      status = if (hasPendingWrites) {
-        Commit.Status.Sending.value
-      } else {
-        Commit.Status.Sent.value
-      }
+      ChatCommit(
+        id = commit.id,
+        conversationId = conversationId.value,
+        branchId = commit.branchId,
+        senderId = commit.senderUid,
+        type = commit.type.value,
+        text = commit.text.orEmpty(),
+        invitedUid = commit.invitedUid,
+        timestamp = commit.createdAt?.toEpochMillis() ?: 0L,
+        isSelf = commit.senderUid == userId.value,
+        status = if (hasPendingWrites) {
+          Commit.Status.Sending.value
+        } else {
+          Commit.Status.Sent.value
+        }
+      )
     )
   }
 

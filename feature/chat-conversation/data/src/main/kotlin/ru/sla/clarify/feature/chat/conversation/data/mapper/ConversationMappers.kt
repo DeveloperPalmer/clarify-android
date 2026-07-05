@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.chat.conversation.data.mapper
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
-import ru.sla.clarify.mapper.formatLastCommitTimestamp
+import ru.sla.clarify.mapper.data.formatLastCommitTimestamp
 
 internal fun mapToConversation(
   id: String,
