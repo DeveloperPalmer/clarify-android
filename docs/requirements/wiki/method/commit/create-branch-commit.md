@@ -6,14 +6,14 @@ tags:
 
 **Summary**: Отправляет сообщение в существующую ветку разговора.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-06-19
+**Last updated**: 2026-07-05
 
 ---
 
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Аналог non-root ветки в `createDirectCommit`, но без `peerId` — conversation уже существует. Одним batch'ом: (1) записывает commit с указанным `branchId`; (2) merge-обновляет `lastCommit*`-поля документа ветки; (3) инкрементит `branchUnreadCommits` всем участникам кроме отправителя. Список участников передаёт caller. |
+| Description      | Аналог non-root ветки в `createDirectCommit`, но без `peerId` — conversation уже существует. Одним batch'ом: (1) записывает commit с указанным `branchId` и `visibleFor = memberUids` (кто видит сообщение); (2) merge-обновляет `lastCommit*`-поля документа ветки; (3) инкрементит `branchUnreadCommits` всем участникам кроме отправителя. Список участников передаёт caller. |
 
 
 ### Signature
@@ -61,7 +61,8 @@ suspend fun createBranchCommit(
   "text": "I think we should refactor this",
   "type": "text",
   "createdAt": "2026-06-13T15:10:00Z",
-  "branchId": "branch-ghi012"
+  "branchId": "branch-ghi012",
+  "visibleFor": ["uid-alice", "uid-bob"]
 }
 ```
 

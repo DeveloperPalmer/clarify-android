@@ -6,14 +6,14 @@ tags:
 
 **Summary**: Отправляет сообщение в direct-чат, при необходимости создавая conversation и документы участников.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-06-19
+**Last updated**: 2026-07-05
 
 ---
 
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Универсальный метод для direct-чата. Если `conversationId == null` — conversation создаётся с новым UUID, и для обоих участников создаются документы в подколлекции `members`. Если `branchId == null` — сообщение идёт в корневую ветку (master), чей ID совпадает с `conversationId`. Root-сообщения обновляют `lastCommit*`-поля conversation и инкрементят `unreadCommits` собеседника. Branch-сообщения обновляют `lastCommit*` ветки и инкрементят `branchUnreadCommits`. Всё выполняется в одном batch. |
+| Description      | Универсальный метод для direct-чата. Если `conversationId == null` — conversation создаётся с новым UUID, и для обоих участников создаются документы в подколлекции `members`. Если `branchId == null` — сообщение идёт в корневую ветку (master), чей ID совпадает с `conversationId`. Commit записывается с `visibleFor` — списком UID обоих участников; поле определяет, кто видит сообщение (удаление «только у себя» убирает UID из списка). Root-сообщения обновляют `lastCommit*`-поля conversation и инкрементят `unreadCommits` собеседника. Branch-сообщения обновляют `lastCommit*` ветки и инкрементят `branchUnreadCommits`. Всё выполняется в одном batch. |
 
 
 ### Signature
@@ -61,7 +61,8 @@ suspend fun createDirectCommit(
   "text": "Hello!",
   "type": "text",
   "createdAt": "2026-06-13T14:30:00Z",
-  "branchId": "conv-xyz789"
+  "branchId": "conv-xyz789",
+  "visibleFor": ["uid-alice", "uid-bob"]
 }
 ```
 

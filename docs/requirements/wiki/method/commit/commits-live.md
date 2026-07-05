@@ -6,14 +6,14 @@ tags:
 
 **Summary**: Живая подписка на сообщения конкретной ветки по известному conversationId.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-06-19
+**Last updated**: 2026-07-05
 
 ---
 
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Делегирует выполнение в `conversationMessagesLive`. В отличие от `directCommitsLive`, не требует `peerId` и не резолвит conversationId — conversation уже известна. Используется branch-фичей, которая знает свой `conversationId` и `branchId`, но не работает с peer. |
+| Description      | Живая подписка на сообщения ветки. В отличие от `directCommitsLive`, не требует `peerId` и не резолвит conversationId — conversation уже известна. Используется branch-фичей, которая знает свой `conversationId` и `branchId`, но не работает с peer. Запрос всегда дополняется `whereArrayContains(visibleFor, uid)` текущего пользователя — скрытые им сообщения не приходят и не занимают окно `limit`; скрытие сообщения приходит подписчику как изменение `removed`. |
 
 
 ### Signature
@@ -47,6 +47,7 @@ fun commitsLive(
 | [].data.type            | Y   | String                 | Тип сообщения.<br>\* text |                                  |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
 | [].data.branchId        | Y   | String                 | ID ветки.                                       |
+| [].data.visibleFor      | Y   | List\<String\>         | UID участников, которым видно сообщение.        |
 
 ### Request:
 
@@ -72,7 +73,8 @@ fun commitsLive(
       "text": "Let's discuss this here",
       "type": "text",
       "createdAt": "2026-06-13T15:00:00Z",
-      "branchId": "branch-ghi012"
+      "branchId": "branch-ghi012",
+      "visibleFor": ["uid-alice", "uid-bob"]
     }
   }
 ]

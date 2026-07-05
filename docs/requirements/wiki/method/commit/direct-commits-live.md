@@ -6,14 +6,14 @@ tags:
 
 **Summary**: Живая подписка на сообщения ветки в direct-чате с конкретным собеседником.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-06-19
+**Last updated**: 2026-07-05
 
 ---
 
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Сначала подписывается на ID direct conversation с данным `peerId` (`directConversationIdLive`). При изменении conversationId автоматически переключает внутренний listener через `flatMapLatest`. Если conversation ещё не существует — эмитит пустой список. При появлении conversation — начинает слушать её commits по `branchId` с ограничением `limit`. Используется в экране direct-чата, где conversationId неизвестен заранее. |
+| Description      | Сначала подписывается на ID direct conversation с данным `peerId` (`directConversationIdLive`). При изменении conversationId автоматически переключает внутренний listener через `flatMapLatest`. Если conversation ещё не существует — эмитит пустой список. При появлении conversation — начинает слушать её commits по `branchId` с ограничением `limit`. Подписка всегда отдаёт только сообщения, видимые текущему пользователю (`whereArrayContains(visibleFor, uid)`): скрытые им сообщения не приходят и не занимают окно `limit`, а скрытие сообщения приходит как изменение `removed`. Используется в экране direct-чата, где conversationId неизвестен заранее. |
 
 
 ### Signature
@@ -47,6 +47,7 @@ fun directCommitsLive(
 | [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteMember |        |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
 | [].data.branchId        | Y   | String                 | ID ветки, к которой принадлежит сообщение.      |
+| [].data.visibleFor      | Y   | List\<String\>         | UID участников, которым видно сообщение. Всегда содержит UID текущего пользователя. |
 
 ### Request:
 
@@ -74,7 +75,8 @@ fun directCommitsLive(
       "text": "Hello!",
       "type": "text",
       "createdAt": "2026-06-13T14:30:00Z",
-      "branchId": "conv-xyz789"
+      "branchId": "conv-xyz789",
+      "visibleFor": ["uid-alice", "uid-bob"]
     }
   }
 ]

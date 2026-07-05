@@ -6,14 +6,14 @@ tags:
 
 **Summary**: Живая подписка на сообщения корневой ветки групповой беседы.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-06-19
+**Last updated**: 2026-07-05
 
 ---
 
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Делегирует выполнение в `conversationMessagesLive` с `branchId = conversationId`. Слушает корневую ветку (master) групповой беседы — ту, ID которой совпадает с `conversationId`. Возвращает изменения с флагом `hasPendingWrites` для оптимистичного отображения. |
+| Description      | Слушает корневую ветку (master) групповой беседы — ту, ID которой совпадает с `conversationId`. Возвращает изменения с флагом `hasPendingWrites` для оптимистичного отображения. Как и остальные подписки на сообщения, запрос фильтруется по `whereArrayContains(visibleFor, uid)` текущего пользователя — участник видит сообщения, отправленные с момента его вступления в группу. Действия «скрыть сообщение» в группах пока нет, поэтому `visibleFor` из документов не убирается — фильтр на текущем поведении ничего не отсекает, но готовит почву для будущей доработки. |
 
 
 ### Signature
@@ -45,6 +45,7 @@ fun groupCommitsLive(
 | [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteMember |        |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
 | [].data.branchId        | Y   | String                 | Всегда равен `conversationId` (корневая ветка). |
+| [].data.visibleFor      | Y   | List\<String\>         | UID участников на момент отправки. В группах для фильтрации не используется. |
 
 ### Request:
 
@@ -71,7 +72,8 @@ fun groupCommitsLive(
       "text": "Welcome everyone!",
       "type": "text",
       "createdAt": "2026-06-13T14:35:00Z",
-      "branchId": "conv-group001"
+      "branchId": "conv-group001",
+      "visibleFor": ["uid-alice", "uid-bob", "uid-carol"]
     }
   }
 ]

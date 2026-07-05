@@ -8,6 +8,15 @@ Append-only журнал всех операций над wiki.
 
 ---
 
+## 2026-07-05 — Удаление сообщений в direct-треде
+
+Задокументирована фича удаления сообщений в direct-треде (код — ветка `chat-direct-thread-delete`).
+
+- `feature/chat-direct-thread`: добавлен раздел «Выбор и удаление» (вход в режим по долгому нажатию, переключение выбора, шапка выбора, диалог с переключателем «удалить у собеседника», удаление «у всех» через `delete-direct-commits` и «у себя» через `hide-commits`, ошибка). В «Данные и методы» добавлены пп. 13–14 (`hide-commits`, `delete-direct-commits`). Обновлены Summary/Description и Version agenda.
+- Реконсилирован конфликт в разделе «Ветки»: долгое нажатие раньше запускало создание ветки, теперь оно занято выбором сообщений. П. 3 «Запуск создания» переписан — в direct-UI сейчас нет точки входа для создания ветки; контракт валидации и метод `create-branch` сохранены как применяемые при вызове формы.
+- Создана method-страница `method/commit/delete-direct-commits.md` (транзакция: физическое удаление документов + пересчёт `lastCommit*` беседы по `LastCommitParams` keep/replace/clear + уменьшение счётчика непрочитанных собеседника на `peerUnreadDelta`). Страница `hide-commits` уже существовала — использована как образец.
+- `index.md`: добавлена запись `delete-direct-commits` в раздел Commit.
+
 ## 2026-06-19 — `get*` → `read*` (чистый CRUD)
 
 Все read-методы доступа к данным в Firestore.kt переименованы под CRUD-стиль `read*`:
@@ -48,3 +57,22 @@ Write-слой Firestore.kt переименован (Post*/Patch* → Create*/U
 Вики: `invite-member` → `create-commit-invite-member`. Страница `leave-conversation` стала `delete-conversation-member-self` (заголовок `# deleteConversationMember`, сигнатура с одним аргументом) — две перегрузки оставлены отдельными страницами с одинаковым именем метода. Обновлены `index.md` и ссылки в feature-файлах.
 
 Расхождение: в Firestore.kt метод записан как `gitUserExists` (опечатка, ожидалось `getUserExists`). В wiki сохранено корректное имя `getUserExists`; опечатку нужно исправить в коде, а не в требованиях.
+
+## 2026-07-05 — `deletedFor` → `visibleFor`: серверная фильтрация скрытых сообщений
+
+Поле commit-документа `deletedFor` (кто скрыл) заменено на инвертированное `visibleFor` (кто видит): Firestore не поддерживает «array-not-contains», а `whereArrayContains(visibleFor, uid)` позволяет фильтровать скрытые сообщения на сервере. Скрытые сообщения больше не занимают окно live-подписки и страницы пагинации; когда сообщение скрыли все участники, документ физически удаляется (GC «последним скрывшим»).
+
+- `create-direct-commit`, `create-branch-commit`, `create-group-commit`: commit записывается с `visibleFor` = участники беседы на момент отправки.
+- `read-commits`, `commits-live`: новый параметр `onlyVisible`; в `read-commits` параметр `count: Int` актуализирован до `limit: Long` по коду.
+- `direct-commits-live`: фильтр видимости включён всегда; `group-commits-live`: фильтр не применяется (в группах скрытие не поддерживается), но `visibleFor` в документы пишется.
+- Новая страница `hide-commits`: транзакционное скрытие через `arrayRemove` с физическим удалением опустевших. Добавлена в `index.md`.
+
+Запросы с фильтром требуют композитный индекс `commits`: `visibleFor` (array-contains) + `branchId` (asc) + `createdAt` (desc). Индекс и security rules ведутся вне репозитория.
+
+## 2026-07-05 — Единый composite-индекс: `visibleFor`-фильтр во всех тредах
+
+Запрос сообщений унифицирован — фильтр по видимости (`whereArrayContains(visibleFor, uid)`) теперь применяется всегда, флаг `onlyVisible` из `readCommits`/`commitsLive` убран. Раньше группы ходили без фильтра, из-за чего требовался отдельный composite-индекс `commits: branchId + createdAt`. Теперь все треды (direct, ветки, группы) используют одну форму запроса и один индекс `commits: visibleFor (array-contains) + branchId + createdAt`; старый индекс без `visibleFor` можно удалить.
+
+- `read-commits`, `commits-live`: убран параметр `onlyVisible`, описания — «фильтр применяется всегда».
+- `group-commits-live`: теперь фильтруется по `visibleFor`; участник видит сообщения с момента вступления. Действия «скрыть» в группах пока нет — `visibleFor` не убавляется, фильтр на текущем поведении ничего не отсекает (задел на будущее).
+- `create-commit-invite-member`: добавлен параметр `memberUids` → поле `visibleFor` системного коммита (состав группы с учётом приглашённых), иначе системное сообщение не прошло бы фильтр.

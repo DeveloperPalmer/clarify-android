@@ -6,14 +6,14 @@ tags:
 
 **Summary**: Приглашает пользователя в группу одной атомарной операцией.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-06-19
+**Last updated**: 2026-07-05
 
 ---
 
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Одним batch'ом выполняет три записи: (1) добавляет UID приглашённого в массив `memberUids` через `arrayUnion`; (2) создаёт документ участника в подколлекции `members`; (3) записывает системный commit типа `inviteMember`. Системный commit НЕ обновляет `lastCommitText/lastCommitAt` и НЕ инкрементит unread — он только фиксирует факт приглашения в истории. |
+| Description      | Одним batch'ом выполняет три записи: (1) добавляет UID приглашённого в массив `memberUids` через `arrayUnion`; (2) создаёт документ участника в подколлекции `members`; (3) записывает системный commit типа `inviteMember` с полем `visibleFor` (кто видит сообщение), куда передаётся состав группы уже с учётом приглашённых — иначе системный коммит не прошёл бы фильтр видимости запросов и не показался бы. Системный commit НЕ обновляет `lastCommitText/lastCommitAt` и НЕ инкрементит unread — он только фиксирует факт приглашения в истории. |
 
 
 ### Signature
@@ -21,16 +21,18 @@ tags:
 ```kotlin
 suspend fun createCommitInviteMember(
   conversationId: String,
-  invitedUserId: UserId
+  invitedUserId: UserId,
+  memberUids: List<String>
 )
 ```
 
 ### Parameters
 
-| Parameter      | Req | Type   | Description                                                           |
-|----------------|-----|--------|-----------------------------------------------------------------------|
-| conversationId | Y   | String | ID группового conversation, в который добавляется участник.           |
-| invitedUserId  | Y   | UserId | UID пользователя, которого нужно добавить в группу.                   |
+| Parameter      | Req | Type          | Description                                                           |
+|----------------|-----|---------------|-----------------------------------------------------------------------|
+| conversationId | Y   | String        | ID группового conversation, в который добавляется участник.           |
+| invitedUserId  | Y   | UserId        | UID пользователя, которого нужно добавить в группу.                   |
+| memberUids     | Y   | List\<String\> | Состав группы с учётом приглашённых — попадает в `visibleFor` системного коммита. |
 
 ### Response parameters
 
@@ -41,7 +43,8 @@ suspend fun createCommitInviteMember(
 ```json
 {
   "conversationId": "conv-group001",
-  "invitedUserId": "uid-carol"
+  "invitedUserId": "uid-carol",
+  "memberUids": ["uid-alice", "uid-bob", "uid-carol"]
 }
 ```
 
@@ -72,6 +75,7 @@ suspend fun createCommitInviteMember(
   "type": "inviteMember",
   "invitedUid": "uid-carol",
   "branchId": "conv-group001",
+  "visibleFor": ["uid-alice", "uid-bob", "uid-carol"],
   "createdAt": "2026-06-13T11:00:00Z"
 }
 ```

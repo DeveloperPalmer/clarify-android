@@ -6,14 +6,14 @@ tags:
 
 **Summary**: Отправляет сообщение в корневую ветку групповой беседы.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-06-19
+**Last updated**: 2026-07-05
 
 ---
 
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Отличается от `createDirectCommit` тем, что conversation уже существует — не нужно ни создавать её, ни создавать member-документы. Одним batch'ом: (1) записывает commit; (2) merge-обновляет `lastCommit*`-поля conversation; (3) инкрементит `unreadCommits` всем участникам кроме отправителя. Список участников (`memberUids`) передаёт caller из локального кэша. |
+| Description      | Отличается от `createDirectCommit` тем, что conversation уже существует — не нужно ни создавать её, ни создавать member-документы. Одним batch'ом: (1) записывает commit с `visibleFor = memberUids` (кто видит сообщение; в группах пока не используется для фильтрации); (2) merge-обновляет `lastCommit*`-поля conversation; (3) инкрементит `unreadCommits` всем участникам кроме отправителя. Список участников (`memberUids`) передаёт caller из локального кэша. |
 
 
 ### Signature
@@ -58,7 +58,8 @@ suspend fun createGroupCommit(
   "text": "Good morning!",
   "type": "text",
   "createdAt": "2026-06-13T09:00:00Z",
-  "branchId": "conv-group001"
+  "branchId": "conv-group001",
+  "visibleFor": ["uid-alice", "uid-bob", "uid-carol"]
 }
 ```
 
