@@ -6,4 +6,10 @@
         <item quantity="many">%d участников</item>
         <item quantity="other">%d участника</item>
     </plurals>
+    <plurals name="thread_selection_delete_title">
+        <item quantity="one">Удалить %d сообщение?</item>
+        <item quantity="few">Удалить %d сообщения?</item>
+        <item quantity="many">Удалить %d сообщений?</item>
+        <item quantity="other">Удалить %d сообщения?</item>
+    </plurals>
 </resources>

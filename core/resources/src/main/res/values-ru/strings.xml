@@ -63,6 +63,9 @@
     <string name="thread_commit_status_sending">%1$s • отправляется</string>
     <string name="thread_commit_status_failed">%1$s • ошибка</string>
     <string name="thread_system_member_invited">%1$s пригласил(а) %2$s</string>
+    <string name="thread_selection_count">Выбрано: %1$d</string>
+    <string name="thread_selection_delete_for_peer">Также удалить для %1$s</string>
+    <string name="thread_delete_failed">Не удалось удалить сообщения, попробуйте снова</string>
 
     <!-- Group thread / info / invite -->
     <string name="group_thread_empty">Сообщений пока нет</string>
