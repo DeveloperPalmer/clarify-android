@@ -1,4 +1,4 @@
-package ru.sla.clarify.mapper
+package ru.sla.clarify.mapper.data
 
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.adapter.StringList

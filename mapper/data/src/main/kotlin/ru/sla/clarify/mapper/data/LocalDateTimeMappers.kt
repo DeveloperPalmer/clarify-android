@@ -1,4 +1,4 @@
-package ru.sla.clarify.mapper
+package ru.sla.clarify.mapper.data
 
 import java.time.Instant
 import java.time.LocalDateTime
@@ -6,7 +6,7 @@ import java.time.ZoneId
 
 fun Long.toLocalDateTime(): LocalDateTime {
   return Instant
-    .ofEpochSecond(this)
+    .ofEpochMilli(this)
     .atZone(ZoneId.systemDefault())
     .toLocalDateTime()
 }

@@ -1,0 +1,13 @@
+plugins {
+  id 'android-library-convention'
+}
+
+android {
+  namespace "ru.sla.clarify.mapper"
+}
+
+dependencies {
+  implementation project(":entity")
+  implementation project(":core:domain")
+  implementation project(":core:resources")
+}

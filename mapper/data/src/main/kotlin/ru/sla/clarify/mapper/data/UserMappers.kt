@@ -1,4 +1,4 @@
-package ru.sla.clarify.mapper
+package ru.sla.clarify.mapper.data
 
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.User
