@@ -46,6 +46,7 @@ interface FirestoreWrapperProvider {
   fun commitQuery(
     conversationId: String,
     whereEqualTo: Branch.Id,
+    whereArrayContains: UserId,
     before: Timestamp?,
     limit: Long
   ): Query

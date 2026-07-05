@@ -34,6 +34,7 @@ import ru.sla.clarify.lib.google.firestore.entity.MemberNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM.Status
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
+import ru.sla.clarify.lib.google.firestore.entity.write.ClearLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.CreateBranchParams
 import ru.sla.clarify.lib.google.firestore.entity.write.CreateCommitInviteMemberParams
 import ru.sla.clarify.lib.google.firestore.entity.write.CreateCommitParams
@@ -42,11 +43,13 @@ import ru.sla.clarify.lib.google.firestore.entity.write.CreateMergeParams
 import ru.sla.clarify.lib.google.firestore.entity.write.CreateUserParams
 import ru.sla.clarify.lib.google.firestore.entity.write.DeleteConversationMemberParams
 import ru.sla.clarify.lib.google.firestore.entity.write.DeleteMergeRequestParams
+import ru.sla.clarify.lib.google.firestore.entity.write.HideCommitParams
+import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateBranchLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateConversationMembersParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateConversationNameParams
-import ru.sla.clarify.lib.google.firestore.entity.write.UpdateGroupLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateIncrementParams
+import ru.sla.clarify.lib.google.firestore.entity.write.UpdateLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateMergeApprovalParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateMergeFinalizeParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateReadWatermarkParams
@@ -175,6 +178,7 @@ class Firestore @Inject constructor(
   }
 
   suspend fun deleteConversations(ids: List<String>) {
+    require(ids.isNotEmpty()) { "deleteConversations called with empty ids" }
     val conversationCollections = conversationCollectionRef()
 
     val batch = writeBatch()
@@ -187,6 +191,112 @@ class Firestore @Inject constructor(
     conversationDocumentRef(conversationId)
       .delete()
       .await()
+  }
+
+  suspend fun deleteDirectCommits(
+    conversationId: String,
+    peerId: UserId,
+    commitIds: List<String>,
+    lastCommit: LastCommitParams,
+    peerUnreadDelta: Int
+  ) {
+    require(commitIds.isNotEmpty()) { "deleteDirectCommits called with empty commitIds" }
+    val conversationDocument = conversationDocumentRef(conversationId)
+    val commitsCollection = commitsCollectionRef(conversationId)
+    val unreadCommitsDocument = unreadCommitsDocumentRef(conversationId, peerId)
+    val commitDocuments = commitIds.map { commitsCollection.document(it) }
+
+    val transaction = runTransaction { transaction ->
+      val peerUnread = if (peerUnreadDelta > 0) {
+        transaction[unreadCommitsDocument]
+          .getLong(FirestoreSchema.UNREAD_COMMITS_COUNT)
+          ?: 0L
+      } else {
+        0L
+      }
+
+      commitDocuments.forEach { transaction.delete(it) }
+
+      when (lastCommit) {
+        is LastCommitParams.Keep -> Unit
+        is LastCommitParams.Replace -> {
+          val updateLastCommitParams = UpdateLastCommitParams(
+            lastCommitText = lastCommit.text,
+            lastCommitSenderUid = lastCommit.senderUid,
+            lastCommitAt = lastCommit.at
+          )
+          transaction.set(
+            conversationDocument,
+            codec.encodeToMap(updateLastCommitParams),
+            SetOptions.merge()
+          )
+        }
+        is LastCommitParams.Clear -> {
+          val clearLastCommitParams = ClearLastCommitParams(
+            lastCommitText = Delete,
+            lastCommitSenderUid = Delete,
+            lastCommitAt = Delete
+          )
+          transaction.set(
+            conversationDocument,
+            codec.encodeToMap(clearLastCommitParams),
+            SetOptions.merge()
+          )
+        }
+      }
+      if (peerUnreadDelta > 0) {
+        val newCount = (peerUnread - peerUnreadDelta).coerceAtLeast(0L)
+        val updateUnreadCountParams = UpdateUnreadCountParams(
+          count = newCount
+        )
+        transaction.set(
+          unreadCommitsDocument,
+          codec.encodeToMap(updateUnreadCountParams),
+          SetOptions.merge()
+        )
+      }
+    }
+    transaction.await()
+  }
+
+  suspend fun readMember(conversationId: String, userId: UserId): MemberNM? {
+    val document = memberDocumentRef(conversationId, userId)
+      .get()
+      .await()
+    return if (document.exists()) {
+      codec.decodeFromSnapshot<MemberNM>(document)
+    } else {
+      null
+    }
+  }
+
+  suspend fun hideCommits(conversationId: String, commitIds: List<String>) {
+    require(commitIds.isNotEmpty()) { "hideCommits called with empty commitIds" }
+    val currentUserId = requireUserId()
+    val commitsCollection = commitsCollectionRef(conversationId)
+    val commitDocuments = commitIds.map { commitsCollection.document(it) }
+
+    val hideCommitParams = HideCommitParams(
+      visibleFor = ArrayRemove(listOf(currentUserId.value))
+    )
+
+    runTransaction { transaction ->
+      // Transaction requires all reads before any write.
+      val snapshots = commitDocuments.map { transaction[it] }
+      snapshots.forEach { snapshot ->
+        // Missing document — commit already deleted for everyone concurrently.
+        if (!snapshot.exists()) return@forEach
+        val commit = codec.decodeFromSnapshot<CommitNM>(snapshot)
+        if ((commit.visibleFor - currentUserId.value).isEmpty()) {
+          transaction.delete(snapshot.reference)
+        } else {
+          transaction.update(
+            snapshot.reference,
+            codec.encodeToMap(hideCommitParams)
+          )
+        }
+      }
+    }.await()
   }
 
   fun conversationsLive(): Flow<List<FirestoreChange<ConversationNM>>> = callbackFlow {
@@ -340,7 +450,11 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  suspend fun createCommitInviteMember(conversationId: String, invitedUserId: UserId) {
+  suspend fun createCommitInviteMember(
+    conversationId: String,
+    invitedUserId: UserId,
+    memberUids: List<String>
+  ) {
     val commitId = randomUuid()
     val createdAt = Timestamp.now()
     val currentUserId = requireUserId()
@@ -354,6 +468,7 @@ class Firestore @Inject constructor(
       senderUid = currentUserId,
       invitedUid = invitedUserId.value,
       branchId = conversationId,
+      visibleFor = memberUids,
       createdAt = createdAt
     )
     val updateConversationMembersParams = UpdateConversationMembersParams(
@@ -387,6 +502,7 @@ class Firestore @Inject constructor(
     val listener = commitQuery(
       conversationId = conversationId,
       whereEqualTo = Branch.Id(branchId),
+      whereArrayContains = requireUserId(),
       before = null,
       limit = limit
     ).addSnapshotListener(MetadataChanges.INCLUDE) { snapshot, error ->
@@ -412,6 +528,7 @@ class Firestore @Inject constructor(
     val query = commitQuery(
       conversationId = conversationId,
       whereEqualTo = Branch.Id(branchId),
+      whereArrayContains = requireUserId(),
       before = before?.toTimestamp(),
       limit = limit
     )
@@ -473,7 +590,8 @@ class Firestore @Inject constructor(
       text = text,
       type = CommitNM.Type.Text,
       createdAt = createdAt,
-      branchId = branchId
+      branchId = branchId,
+      visibleFor = memberUids
     )
     val updateBranchLastCommitParams = UpdateBranchLastCommitParams(
       lastCommitText = text,
@@ -531,7 +649,8 @@ class Firestore @Inject constructor(
       text = text,
       type = CommitNM.Type.Text,
       createdAt = createdAt,
-      branchId = resolvedBranchId
+      branchId = resolvedBranchId,
+      visibleFor = directMemberIds
     )
     val createConversationParams = CreateConversationParams(
       type = ConversationNM.Type.Direct,
@@ -619,9 +738,10 @@ class Firestore @Inject constructor(
       senderUid = currentUserId,
       text = text,
       type = CommitNM.Type.Text,
-      createdAt = createdAt
+      createdAt = createdAt,
+      visibleFor = memberUids
     )
-    val updateGroupLastCommitParams = UpdateGroupLastCommitParams(
+    val updateGroupLastCommitParams = UpdateLastCommitParams(
       lastCommitText = text,
       lastCommitSenderUid = currentUserId.value,
       lastCommitAt = createdAt

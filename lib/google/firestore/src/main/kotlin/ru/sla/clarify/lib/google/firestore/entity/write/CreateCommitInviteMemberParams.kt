@@ -14,6 +14,7 @@ data class CreateCommitInviteMemberParams(
   val invitedUid: String,
   val type: Type = Type.InviteMember,
   val branchId: String,
+  val visibleFor: List<String>,
   @Contextual
   val createdAt: Timestamp,
   @Contextual

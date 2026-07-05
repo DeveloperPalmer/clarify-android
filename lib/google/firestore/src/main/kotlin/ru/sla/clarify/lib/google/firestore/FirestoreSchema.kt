@@ -36,15 +36,21 @@ object FirestoreSchema {
   const val CONVERSATION_TYPE = "type"
   const val CONVERSATION_MEMBER_UIDS = "memberUids"
 
-  // commitsCollectionRef-query: orderBy + whereLessThan + whereEqualTo по branchId.
+  // commitsCollectionRef-query: orderBy + whereLessThan + whereEqualTo по branchId,
+  // whereArrayContains по visibleFor.
   const val COMMIT_CREATED_AT = "createdAt"
   const val COMMIT_BRANCH_ID = "branchId"
+  const val COMMIT_VISIBLE_FOR = "visibleFor"
 
   const val BRANCH_MERGE_REQUEST = "mergeRequest"
 }
 
 fun Timestamp.toEpochSeconds(): Long {
   return seconds
+}
+
+fun Timestamp.toEpochMillis(): Long {
+  return toDate().time
 }
 
 fun LocalDateTime.toTimestamp(): Timestamp {

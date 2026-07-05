@@ -16,6 +16,7 @@ data class CreateCommitParams(
   @Contextual
   val createdAt: Timestamp,
   val branchId: String,
+  val visibleFor: List<String>,
   @Contextual
   val serverCreatedAt: ServerTimestamp = ServerTimestamp
 )

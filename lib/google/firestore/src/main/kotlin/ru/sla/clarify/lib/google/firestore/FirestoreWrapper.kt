@@ -17,6 +17,7 @@ import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCHES_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMITS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_BRANCH_ID
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_CREATED_AT
+import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_VISIBLE_FOR
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATIONS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_MEMBER_UIDS
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.CONVERSATION_TYPE
@@ -174,6 +175,7 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
   override fun commitQuery(
     conversationId: String,
     whereEqualTo: Branch.Id,
+    whereArrayContains: UserId,
     before: Timestamp?,
     limit: Long
   ): Query {
@@ -183,7 +185,14 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .collection(COMMITS_COLLECTION)
       .limit(limit)
       .whereEqualTo(COMMIT_BRANCH_ID, whereEqualTo.value)
-      .let { if (before != null) it.whereLessThan(COMMIT_CREATED_AT, before) else it }
+      .whereArrayContains(COMMIT_VISIBLE_FOR, whereArrayContains.value)
+      .let {
+        if (before != null) {
+          it.whereLessThan(COMMIT_CREATED_AT, before)
+        } else {
+          it
+        }
+      }
       .orderBy(COMMIT_CREATED_AT, Query.Direction.DESCENDING)
   }
 }

@@ -13,6 +13,7 @@ data class CommitNM(
   val type: Type = Type.Text,
   val text: String? = null,
   val invitedUid: String? = null,
+  val visibleFor: List<String> = emptyList(),
   @Contextual
   val createdAt: Timestamp? = null
 ) {
