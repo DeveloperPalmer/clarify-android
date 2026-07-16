@@ -1,5 +1,7 @@
 package ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import ru.dimsuz.unicorn2.Machine
@@ -23,10 +25,17 @@ import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
-class ThreadViewModel @Inject constructor(
+class ThreadViewModel(
   private val eventSink: FlowEventSink,
-  private val directThreadModel: DirectThreadModel
-) : ViewModel<ViewState, ViewIntents>() {
+  private val directThreadModel: DirectThreadModel,
+  dispatcher: CoroutineDispatcher
+) : ViewModel<ViewState, ViewIntents>(dispatcher) {
+
+  @Inject
+  constructor(
+    eventSink: FlowEventSink,
+    directThreadModel: DirectThreadModel
+  ) : this(eventSink, directThreadModel, Dispatchers.Default)
 
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState() to {
@@ -60,10 +69,11 @@ class ThreadViewModel @Inject constructor(
       transitionTo { state, uiCommits ->
         val presentIds = uiCommits.mapTo(mutableSetOf()) { it.source.id }
         val selectedCommitIds = state.selectedCommitIds.filter { it in presentIds }
+        val menuCommit = state.menuCommit?.takeIf { it.source.id in presentIds }
         state.applySelection(
           commits = uiCommits,
           selectedCommitIds = selectedCommitIds
-        )
+        ).copy(menuCommit = menuCommit)
       }
     }
 
@@ -82,7 +92,22 @@ class ThreadViewModel @Inject constructor(
     configureSendMessageTransitions()
     configureBranchTransitions()
     configureSelectionTransitions()
+    configureCommitMenuTransitions()
     configureCommitDeletionTransitions()
+  }
+
+  private fun MachineDsl<ViewState>.configureCommitMenuTransitions() {
+    onEach(intent(ViewIntents::showCommitMenu)) {
+      transitionTo { state, commit ->
+        state.copy(menuCommit = commit)
+      }
+    }
+
+    onEach(intent(ViewIntents::dismissCommitMenu)) {
+      transitionTo { state, _ ->
+        state.copy(menuCommit = null)
+      }
+    }
   }
 
   private fun MachineDsl<ViewState>.configureSendMessageTransitions() {

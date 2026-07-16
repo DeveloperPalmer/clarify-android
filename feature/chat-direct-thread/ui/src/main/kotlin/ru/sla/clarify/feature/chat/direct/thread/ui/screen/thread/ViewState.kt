@@ -17,7 +17,8 @@ data class ViewState(
   val unreadCount: Int = 0,
   val createBranchError: CreateBranchError? = null,
   val selectionMode: Boolean = false,
-  val selectedCommitIds: List<DomainCommit.Id> = emptyList()
+  val selectedCommitIds: List<DomainCommit.Id> = emptyList(),
+  val commitMenu: Commit.Message? = null
 ) {
   data class CreateBranchPayload(
     val commit: Commit.Message,
