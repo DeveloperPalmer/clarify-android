@@ -2,10 +2,7 @@ package ru.sla.clarify.feature.chat.direct.thread.ui.mapper
 
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
-import ru.sla.clarify.uikit.component.bubble.selection
 import ru.sla.clarify.uikit.component.chat.Commit
-import ru.sla.clarify.uikit.component.chat.bubble
-import ru.sla.clarify.uikit.component.chat.message
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
@@ -35,26 +32,13 @@ internal fun List<DomainCommit>.toUiCommits(): List<Commit> {
   }
 }
 
-internal fun List<Commit>.withSelection(
-  selectionMode: Boolean,
-  selectedCommitIds: List<DomainCommit.Id>
-): List<Commit> {
-  val selectedIds = selectedCommitIds.toSet()
-  return map { commit ->
-    Commit.message.bubble.selection.set(
-      commit,
-      commit.source.toSelection(selectionMode, selectedIds)
-    )
-  }
-}
-
-private fun DomainCommit.toSelection(
-  selectionMode: Boolean,
+internal fun DomainCommit.updateSelection(
+  inSelectionMode: Boolean,
   selectedIds: Set<DomainCommit.Id>
 ): BubbleMessage.Selection {
   return BubbleMessage.Selection(
     isSelected = id in selectedIds,
-    inSelectionMode = selectionMode
+    inSelectionMode = inSelectionMode
   )
 }
 

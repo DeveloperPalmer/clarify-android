@@ -17,9 +17,12 @@ import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.feature.chat.direct.thread.ui.mapper.toUiCommits
-import ru.sla.clarify.feature.chat.direct.thread.ui.mapper.withSelection
+import ru.sla.clarify.feature.chat.direct.thread.ui.mapper.updateSelection
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
+import ru.sla.clarify.uikit.component.bubble.selection
 import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.clarify.uikit.component.chat.bubble
+import ru.sla.clarify.uikit.component.chat.message
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
@@ -66,14 +69,16 @@ class ThreadViewModel(
     }
 
     onEach(directThreadModel.commits.map { it.toUiCommits() }) {
-      transitionTo { state, uiCommits ->
-        val presentIds = uiCommits.mapTo(mutableSetOf()) { it.source.id }
-        val selectedCommitIds = state.selectedCommitIds.filter { it in presentIds }
-        val menuCommit = state.menuCommit?.takeIf { it.source.id in presentIds }
-        state.applySelection(
-          commits = uiCommits,
+      transitionTo { state, commits ->
+        val commitsIds = commits.mapTo(mutableSetOf()) { it.source.id }
+        val selectedCommitIds = state.selectedCommitIds.filter { it in commitsIds }
+        val menuCommit = state.focusedMessage?.takeIf { it.source.id in commitsIds }
+        state.copy(
+          focusedMessage = menuCommit
+        ).updateSelection(
+          commits = commits,
           selectedCommitIds = selectedCommitIds
-        ).copy(menuCommit = menuCommit)
+        )
       }
     }
 
@@ -97,15 +102,23 @@ class ThreadViewModel(
   }
 
   private fun MachineDsl<ViewState>.configureCommitMenuTransitions() {
-    onEach(intent(ViewIntents::showCommitMenu)) {
+    onEach(intent(ViewIntents::showMessageMenu)) {
       transitionTo { state, commit ->
-        state.copy(menuCommit = commit)
+        state.copy(focusedMessage = commit)
       }
     }
 
-    onEach(intent(ViewIntents::dismissCommitMenu)) {
+    onEach(intent(ViewIntents::hideMessageMenu)) {
       transitionTo { state, _ ->
-        state.copy(menuCommit = null)
+        state.copy(focusedMessage = null)
+      }
+    }
+
+    onEach(intent(ViewIntents::copyMessage)) {
+      action { _, _, _ ->
+        sendViewEvent(
+          Snackbar(message = resRef(R.string.thread_message_copied))
+        )
       }
     }
   }
@@ -133,7 +146,7 @@ class ThreadViewModel(
       }
     }
 
-    onEach(intent(ViewIntents::showBranchesList)) {
+    onEach(intent(ViewIntents::showBranches)) {
       action { _, _, _ ->
         sendViewEvent(showBranchesModalSheet())
       }
@@ -145,7 +158,7 @@ class ThreadViewModel(
       }
     }
 
-    onEach(intent(ViewIntents::confirmCreateBranch)) {
+    onEach(intent(ViewIntents::confirmCreateBranchParams)) {
       action { _, _, createBranch ->
         directThreadModel.createBranch.start(
           argument1 = null,
@@ -168,87 +181,102 @@ class ThreadViewModel(
     }
 
     onEach(directThreadModel.createBranch.jobFlow.successResults()) {
-      action { state, _, branchId ->
+      action { _, _, branchId ->
         eventSink.sendEvent(FlowEvent.BranchRequested(branchId))
       }
     }
 
     onEach(directThreadModel.createBranch.jobFlow.errors()) {
       action { _, _, _ ->
-        sendViewEvent(
-          Snackbar(
-            isError = true,
-            message = resRef(R.string.thread_create_branch_creation_failed)
-          )
+        val viewEvent = Snackbar(
+          isError = true,
+          message = resRef(R.string.thread_create_branch_creation_failed)
         )
+        sendViewEvent(viewEvent)
       }
     }
   }
 
   private fun MachineDsl<ViewState>.configureSelectionTransitions() {
-    onEach(intent(ViewIntents::toggleMessageSelection)) {
-      transitionTo { state, commit ->
-        val commitId = commit.source.id
-        val selectedCommitIds = if (commitId in state.selectedCommitIds) {
-          state.selectedCommitIds - commitId
-        } else {
-          state.selectedCommitIds + commitId
-        }
-        state.applySelection(selectedCommitIds)
+    onEach(intent(ViewIntents::disableEditMode)) {
+      transitionTo { state, _ ->
+        state.updateSelection(
+          selectedCommitIds = emptyList()
+        )
       }
     }
 
-    onEach(intent(ViewIntents::clearSelection)) {
-      transitionTo { state, _ ->
-        state.applySelection(emptyList())
+    onEach(intent(ViewIntents::toggleMessageSelection)) {
+      transitionTo { state, commit ->
+        val targetCommitId = commit.source.id
+        val updatedCommitIds = if (targetCommitId in state.selectedCommitIds) {
+          state.selectedCommitIds - targetCommitId
+        } else {
+          state.selectedCommitIds + targetCommitId
+        }
+        state.updateSelection(
+          selectedCommitIds = updatedCommitIds
+        )
       }
     }
   }
 
   private fun MachineDsl<ViewState>.configureCommitDeletionTransitions() {
     onEach(intent(ViewIntents::deleteCommit)) {
-      action { state, _, _ ->
-        val viewEvent = showDeleteMessagesDialog(
-          count = state.selectedCommitIds.size,
-          peerName = state.peer?.displayName.orEmpty()
-        )
-        sendViewEvent(viewEvent)
+      action { _, _, commit ->
+        sendViewEvent(showDeleteMessagesDialog(commit.source.id))
+      }
+    }
+
+    onEach(intent(ViewIntents::deleteCommits)) {
+      action { _, _, _ ->
+        sendViewEvent(showDeleteMessagesDialog(null))
       }
     }
 
     onEach(intent(ViewIntents::confirmDeleteCommit)) {
-      action { state, _, forEveryone ->
-        directThreadModel.deleteCommits.start(state.selectedCommitIds, forEveryone)
+      action { _, _, deleteCommits ->
+        directThreadModel.deleteCommits.start(
+          deleteCommits.ids,
+          deleteCommits.forEveryone
+        )
       }
     }
 
     onEach(directThreadModel.deleteCommits.jobFlow.successResults()) {
       transitionTo { state, _ ->
-        state.applySelection(emptyList())
+        state.updateSelection(
+          selectedCommitIds = emptyList()
+        )
       }
     }
 
     onEach(directThreadModel.deleteCommits.jobFlow.errors()) {
       action { _, _, _ ->
-        sendViewEvent(
-          Snackbar(
-            isError = true,
-            message = resRef(R.string.thread_delete_failed)
-          )
+        val viewEvent = Snackbar(
+          isError = true,
+          message = resRef(R.string.thread_delete_failed)
         )
+        sendViewEvent(viewEvent)
       }
     }
   }
 }
 
-private fun ViewState.applySelection(
-  selectedCommitIds: List<DomainCommit.Id>,
-  commits: List<Commit> = this.commits
+private fun ViewState.updateSelection(
+  commits: List<Commit> = this.commits,
+  selectedCommitIds: List<DomainCommit.Id>
 ): ViewState {
-  val selectionMode = selectedCommitIds.isNotEmpty()
+  val selectedIds = selectedCommitIds.toSet()
+  val editModeEnabled = selectedIds.isNotEmpty()
   return copy(
-    selectionMode = selectionMode,
+    editModeEnabled = editModeEnabled,
     selectedCommitIds = selectedCommitIds,
-    commits = commits.withSelection(selectionMode, selectedCommitIds)
+    commits = commits.map { commit ->
+      Commit.message.bubble.selection.set(
+        commit,
+        commit.source.updateSelection(editModeEnabled, selectedIds)
+      )
+    }
   )
 }

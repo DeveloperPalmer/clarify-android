@@ -28,12 +28,14 @@ import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
 import ru.sla.clarify.feature.chat.direct.thread.ui.components.BranchCreateContent
 import ru.sla.clarify.feature.chat.direct.thread.ui.components.BranchesContent
+import ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread.ViewState.DeleteCommitsParams
 import ru.sla.clarify.uikit.component.bottomsheet.ModalBottomSheet
 import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.event.DecisionDialog
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.resQtyRef
 import ru.sla.resourcerefs.resRef
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 internal fun showBranchCreationModalSheet(
   commit: Commit.Message
@@ -71,7 +73,7 @@ internal fun showBranchCreationModalSheet(
           onFailure = intents.showCreateBranchError,
           onSuccess = { createBranchPayload ->
             sheetState.value?.hide()
-            intents.confirmCreateBranch(createBranchPayload)
+            intents.confirmCreateBranchParams(createBranchPayload)
             dismissEventPresentation()
           }
         )
@@ -108,42 +110,53 @@ internal fun showBranchesModalSheet(): ScreenViewEvent<ViewState, ViewIntents> {
   }
 }
 
-internal fun showDeleteMessagesDialog(
-  count: Int,
-  peerName: String
-): ScreenViewEvent<ViewState, ViewIntents> = ScreenViewEvent { _, intents ->
-  object : ViewEvent.Content() {
-    @Composable
-    override fun ViewEventHostScope.Content() {
-      var deleteForEveryone by remember { mutableStateOf(true) }
-      DecisionDialog(
-        title = resQtyRef(R.plurals.thread_selection_delete_title, count, count),
-        primaryActionTitle = resRef(R.string.conversation_delete_dialog_primary),
-        secondaryActionTitle = resRef(R.string.action_cancel),
-        isDestructive = true,
-        onPrimaryAction = { intents.confirmDeleteCommit(deleteForEveryone) }
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable { deleteForEveryone = !deleteForEveryone },
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          Checkbox(
-            checked = deleteForEveryone,
-            onCheckedChange = { deleteForEveryone = it },
-            colors = CheckboxDefaults.colors(
-              checkedColor = AppTheme.colors.contentAccentPrimary,
-              uncheckedColor = AppTheme.colors.contentTertiary,
-              checkmarkColor = AppTheme.colors.contentAccentSecondary
+internal fun showDeleteMessagesDialog(commit: DomainCommit.Id?): ScreenViewEvent<ViewState, ViewIntents> {
+  return ScreenViewEvent { stateFlow, intents ->
+    object : ViewEvent.Content() {
+      @Composable
+      override fun ViewEventHostScope.Content() {
+        val state by stateFlow.collectAsState()
+        val peerName = state.peer?.displayName.orEmpty()
+        var deleteForEveryone by remember { mutableStateOf(true) }
+        DecisionDialog(
+          title = resQtyRef(
+            R.plurals.thread_selection_delete_title,
+            state.selectedCommitIds.size,
+            state.selectedCommitIds.size
+          ),
+          primaryActionTitle = resRef(R.string.conversation_delete_dialog_primary),
+          secondaryActionTitle = resRef(R.string.action_cancel),
+          isDestructive = true,
+          onPrimaryAction = {
+            val deleteCommitsParams = DeleteCommitsParams(
+              forEveryone = deleteForEveryone,
+              ids = if (commit != null) listOf(commit) else state.selectedCommitIds
             )
-          )
-          Text(
-            text = stringResource(R.string.thread_selection_delete_for_peer, peerName),
-            color = AppTheme.colors.contentSecondary,
-            style = AppTheme.typography.body2
-          )
+            intents.confirmDeleteCommit(deleteCommitsParams)
+          }
+        ) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable { deleteForEveryone = !deleteForEveryone },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Checkbox(
+              checked = deleteForEveryone,
+              onCheckedChange = { deleteForEveryone = it },
+              colors = CheckboxDefaults.colors(
+                checkedColor = AppTheme.colors.contentAccentPrimary,
+                uncheckedColor = AppTheme.colors.contentTertiary,
+                checkmarkColor = AppTheme.colors.contentAccentSecondary
+              )
+            )
+            Text(
+              text = stringResource(R.string.thread_selection_delete_for_peer, peerName),
+              color = AppTheme.colors.contentSecondary,
+              style = AppTheme.typography.body2
+            )
+          }
         }
       }
     }

@@ -16,12 +16,20 @@ data class ViewState(
   val branches: List<Branch> = emptyList(),
   val unreadCount: Int = 0,
   val createBranchError: CreateBranchError? = null,
-  val selectionMode: Boolean = false,
+  val editModeEnabled: Boolean = false,
   val selectedCommitIds: List<DomainCommit.Id> = emptyList(),
-  val commitMenu: Commit.Message? = null
+  val focusedMessage: Commit.Message? = null
 ) {
-  data class CreateBranchPayload(
-    val commit: Commit.Message,
-    val name: String
+
+  @Immutable
+  data class CreateBranchParams(
+    val name: String,
+    val commit: Commit.Message
+  )
+
+  @Immutable
+  data class DeleteCommitsParams(
+    val ids: List<DomainCommit.Id>,
+    val forEveryone: Boolean
   )
 }

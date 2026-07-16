@@ -17,7 +17,7 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.feature.chat.direct.thread.ui.entity.CreateBranch
 import ru.sla.clarify.feature.chat.direct.thread.ui.entity.CreateBranchError
-import ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread.ViewState.CreateBranchPayload
+import ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread.ViewState.CreateBranchParams
 import ru.sla.clarify.uikit.component.button.PrimaryButton
 import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.component.textfield.PrimaryTextField
@@ -33,7 +33,7 @@ internal fun BranchCreateContent(
   branches: List<Branch>,
   createBranchError: CreateBranchError?,
   onClearCreateBranchError: () -> Unit,
-  onSuccess: suspend (CreateBranchPayload) -> Unit,
+  onSuccess: suspend (CreateBranchParams) -> Unit,
   onFailure: suspend (CreateBranchError) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -77,7 +77,7 @@ internal fun BranchCreateContent(
             onFailure(errors.first())
           }.onRight { validated ->
             keyboardController.awaitHide()
-            onSuccess(CreateBranchPayload(commit, validated.name))
+            onSuccess(CreateBranchParams(validated.name, commit))
           }
         }
       }

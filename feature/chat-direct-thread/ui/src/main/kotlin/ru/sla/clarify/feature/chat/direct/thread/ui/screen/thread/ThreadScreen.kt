@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread
 
+import android.content.ClipData
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -34,6 +37,7 @@ import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
 import ru.sla.clarify.uikit.component.chat.ChatCommits
 import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.component.icon.IconAction
+import ru.sla.clarify.uikit.component.popup.PopupScrim
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
@@ -53,29 +57,49 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
+    val scope = rememberCoroutineScope()
+    val keyboardController = rememberKeyboardController()
+    val clipboard = LocalClipboard.current
     BackHandler(
-      enabled = state.selectionMode,
-      onBack = intents.clearSelection
+      enabled = state.editModeEnabled,
+      onBack = intents.disableEditMode
+    )
+    BackHandler(
+      enabled = state.focusedMessage != null,
+      onBack = intents.hideMessageMenu
     )
     ScreenScaffold(scaffoldState) {
       ThreadReadyContent(
-        modifier = Modifier
-          .fillMaxSize()
-          .systemBarsPadding()
-          .imePadding(),
-        peer = state.peer,
-        commits = state.commits,
-        branchesCount = state.branches.size,
-        unreadCount = state.unreadCount,
-        selectionMode = state.selectionMode,
-        selectedCount = state.selectedCommitIds.size,
+        modifier = Modifier.fillMaxSize(),
+        state = state,
         onBack = intents.navigateBack,
-        onShowBranches = intents.showBranchesList,
-        onToggleSelection = intents.toggleMessageSelection,
-        onClearSelection = intents.clearSelection,
-        onDeleteSelection = intents.deleteCommit,
+        onClose = intents.disableEditMode,
+        onShowBranches = intents.showBranches,
+        onDeleteCommit = intents.deleteCommit,
+        onDeleteCommits = intents.deleteCommits,
+        onCloseMessageMenu = intents.hideMessageMenu,
+        onCreateBranch = intents.createBranch,
+        onSelectMessage = intents.toggleMessageSelection,
+        onCopyMessage = { commit ->
+          scope.launch {
+            val clipData = ClipData.newPlainText(null, commit.bubble.text)
+            clipboard.setClipEntry(clipData.toClipEntry())
+            intents.copyMessage()
+          }
+        },
         onCommitsRead = intents.markReadUpTo,
-        onSend = intents.sendMessage
+        onSend = intents.sendMessage,
+        onCommitLongClick = intents.toggleMessageSelection,
+        onCommitClick = { commit ->
+          if (state.editModeEnabled) {
+            intents.toggleMessageSelection(commit)
+          } else {
+            scope.launch {
+              keyboardController.awaitHide()
+              intents.showMessageMenu(commit)
+            }
+          }
+        }
       )
     }
   }
@@ -83,80 +107,98 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
 
 @Composable
 private fun ThreadReadyContent(
-  peer: Peer?,
-  commits: List<Commit>,
-  branchesCount: Int,
-  unreadCount: Int,
-  selectionMode: Boolean,
-  selectedCount: Int,
+  state: ViewState,
   onBack: () -> Unit,
+  onClose: () -> Unit,
   onSend: (String) -> Unit,
   onShowBranches: () -> Unit,
-  onToggleSelection: (Commit.Message) -> Unit,
-  onClearSelection: () -> Unit,
-  onDeleteSelection: () -> Unit,
+  onCommitClick: (Commit.Message) -> Unit,
+  onCommitLongClick: (Commit) -> Unit,
   onCommitsRead: (LocalDateTime) -> Unit,
+  onCloseMessageMenu: () -> Unit,
+  onDeleteCommits: () -> Unit,
+  onDeleteCommit: (Commit) -> Unit,
+  onCreateBranch: (Commit.Message) -> Unit,
+  onCopyMessage: (Commit.Message) -> Unit,
+  onSelectMessage: (Commit) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  Column(modifier) {
-    val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
-    val topBarElevation = rememberTopBarElevation(listState)
-    val keyboardController = rememberKeyboardController()
-    if (selectionMode) {
-      SelectionTopAppBar(
-        modifier = Modifier.bottomShadow { topBarElevation.value },
-        selectedCount = selectedCount,
-        onClose = onClearSelection,
-        onDelete = onDeleteSelection
-      )
-    } else {
-      TopAppBar(
-        modifier = Modifier.bottomShadow { topBarElevation.value },
-        navigationIcon = { TopAppBarDefaults.NavigationIcon(onBack) },
-        title = { peer?.let { TopAppBarCenterContent(peer = peer) } },
-        actions = {
-          TertiaryIconButtonSmall(
-            modifier = Modifier.padding(end = 4.dp),
-            iconRes = R.drawable.ic_git_branch_24,
-            text = stringResource(R.string.thread_branches_count, branchesCount),
-            onClick = {
-              scope.launch {
-                keyboardController.awaitHide()
-                onShowBranches()
-              }
-            }
-          )
-        }
-      )
-    }
-    Box(modifier = Modifier.weight(1f)) {
-      ChatCommits(
-        modifier = Modifier.fillMaxSize(),
-        listState = listState,
-        commits = commits,
-        onCommitsRead = onCommitsRead,
-        onCommitClick = onToggleSelection,
-        onCommitLongClick = onToggleSelection
-      )
-      ChatScrollToBottomButton(
-        modifier = Modifier
-          .align(Alignment.BottomEnd)
-          .padding(end = 16.dp, bottom = 16.dp),
-        listState = listState,
-        unreadCount = unreadCount
-      )
-      ChatEmptyState(
-        modifier = Modifier.fillMaxSize(),
-        visible = commits.isEmpty(),
-        text = stringResource(R.string.thread_empty_state)
-      )
-    }
-    BottomArea(
+  Box(modifier) {
+    Column(
       modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 8.dp, vertical = 8.dp),
-      onSend = onSend
+        .fillMaxSize()
+        .systemBarsPadding()
+        .imePadding()
+    ) {
+      val scope = rememberCoroutineScope()
+      val listState = rememberLazyListState()
+      val topBarElevation = rememberTopBarElevation(listState)
+      val keyboardController = rememberKeyboardController()
+      if (state.editModeEnabled) {
+        SelectionTopAppBar(
+          modifier = Modifier.bottomShadow { topBarElevation.value },
+          selectedCount = state.selectedCommitIds.size,
+          onClose = onClose,
+          onDelete = onDeleteCommits
+        )
+      } else {
+        TopAppBar(
+          modifier = Modifier.bottomShadow { topBarElevation.value },
+          navigationIcon = { TopAppBarDefaults.NavigationIcon(onBack) },
+          title = { state.peer?.let { TopAppBarCenterContent(it) } },
+          actions = {
+            TertiaryIconButtonSmall(
+              modifier = Modifier.padding(end = 4.dp),
+              iconRes = R.drawable.ic_git_branch_24,
+              text = stringResource(R.string.thread_branches_count, state.branches.size),
+              onClick = {
+                scope.launch {
+                  keyboardController.awaitHide()
+                  onShowBranches()
+                }
+              }
+            )
+          }
+        )
+      }
+      Box(modifier = Modifier.weight(1f)) {
+        ChatCommits(
+          modifier = Modifier.fillMaxSize(),
+          listState = listState,
+          commits = state.commits,
+          focusedMessage = state.focusedMessage,
+          onCommitsRead = onCommitsRead,
+          onMessageClick = onCommitClick,
+          onMessageLongClick = onCommitLongClick,
+          onCloseMessagePopup = onCloseMessageMenu,
+          onCreateBranch = onCreateBranch,
+          onCopyMessage = onCopyMessage,
+          onSelectMessage = onSelectMessage,
+          onDeleteCommit = onDeleteCommit
+        )
+        ChatScrollToBottomButton(
+          modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 16.dp, bottom = 16.dp),
+          listState = listState,
+          unreadCount = state.unreadCount
+        )
+        ChatEmptyState(
+          modifier = Modifier.fillMaxSize(),
+          visible = state.commits.isEmpty(),
+          text = stringResource(R.string.thread_empty_state)
+        )
+      }
+      BottomArea(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 8.dp, vertical = 8.dp),
+        onSend = onSend
+      )
+    }
+    PopupScrim(
+      visible = state.focusedMessage != null,
+      onDismiss = onCloseMessageMenu
     )
   }
 }

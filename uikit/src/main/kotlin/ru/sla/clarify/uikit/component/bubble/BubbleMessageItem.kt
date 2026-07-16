@@ -39,6 +39,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,12 +57,17 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+/**
+ * [popup] is composed inside the bubble container, so an anchored popup in it (context menu)
+ * uses the bubble bounds as its anchor.
+ */
 @Composable
 fun BubbleMessageItem(
   bubble: BubbleMessage,
   modifier: Modifier = Modifier,
   onClick: (() -> Unit)? = null,
-  onLongClick: (() -> Unit)? = null
+  onLongClick: (() -> Unit)? = null,
+  popup: (@Composable () -> Unit)? = null
 ) {
   val isRight = bubble.side is BubbleMessage.Side.Right
 
@@ -117,6 +124,8 @@ fun BubbleMessageItem(
       time = bubble.time,
       timeColor = timeColor,
       statusReadColor = statusReadColor,
+      popup = popup,
+      onClick = onClick.takeIf { !bubble.selection.inSelectionMode },
       onLongClick = onLongClick.takeIf { !bubble.selection.inSelectionMode }
     )
   }
@@ -223,6 +232,7 @@ private fun BubbleMessageLayout(
   timeColor: Color,
   statusReadColor: Color,
   modifier: Modifier = Modifier,
+  popup: (@Composable () -> Unit)? = null,
   onClick: (() -> Unit)? = null,
   onLongClick: (() -> Unit)? = null
 ) {
@@ -236,100 +246,138 @@ private fun BubbleMessageLayout(
       Alignment.CenterStart
     }
   ) {
-    SubcomposeLayout(
-      modifier = Modifier
-        .widthIn(max = 280.dp)
-        .surface(
-          shape = shape,
-          backgroundColor = backgroundColor,
-          onClick = onClick,
-          onLongClick = onLongClick
-        )
-        .padding(
-          vertical = 8.dp,
-          horizontal = 12.dp
-        )
-    ) { constraints ->
-      val looseConstraints = constraints.copy(
-        minWidth = 0,
-        minHeight = 0
+    // Extra Box so that [menu] gets the bubble itself as the popup anchor,
+    // not the full-width row.
+    Box {
+      BubbleSurface(
+        shape = shape,
+        backgroundColor = backgroundColor,
+        senderLabel = senderLabel,
+        text = text,
+        textColor = textColor,
+        textStyle = textStyle,
+        textMeasurer = textMeasurer,
+        side = side,
+        time = time,
+        timeColor = timeColor,
+        statusReadColor = statusReadColor,
+        onClick = onClick,
+        onLongClick = onLongClick
       )
+      popup?.invoke()
+    }
+  }
+}
 
-      val timeStatusPlaceable = subcompose(BubbleSlot.TimeStatus) {
-        BubbleTimeStatus(
-          time = time,
-          timeColor = timeColor,
-          status = (side as? BubbleMessage.Side.Right)?.status,
-          statusMutedColor = timeColor,
-          statusReadColor = statusReadColor
-        )
-      }.first().measure(looseConstraints)
+@Composable
+private fun BubbleSurface(
+  shape: Shape,
+  backgroundColor: Color,
+  senderLabel: SenderLabel?,
+  text: String,
+  textColor: Color,
+  textStyle: TextStyle,
+  textMeasurer: TextMeasurer,
+  side: BubbleMessage.Side,
+  time: String,
+  timeColor: Color,
+  statusReadColor: Color,
+  onClick: (() -> Unit)?,
+  onLongClick: (() -> Unit)?
+) {
+  SubcomposeLayout(
+    modifier = Modifier
+      .widthIn(max = 280.dp)
+      .surface(
+        shape = shape,
+        backgroundColor = backgroundColor,
+        onClick = onClick,
+        onLongClick = onLongClick
+      )
+      .padding(
+        vertical = 8.dp,
+        horizontal = 12.dp
+      )
+  ) { constraints ->
+    val looseConstraints = constraints.copy(
+      minWidth = 0,
+      minHeight = 0
+    )
 
-      val senderPlaceable = senderLabel?.let { label ->
-        subcompose(BubbleSlot.Sender) {
-          Text(
-            text = label.name,
-            style = AppTheme.typography.label3Bold,
-            color = label.color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-          )
-        }.first().measure(looseConstraints)
-      }
-      val senderHeight = if (senderPlaceable != null) {
-        senderPlaceable.height + senderNameSpacing.roundToPx()
-      } else {
-        0
-      }
+    val timeStatusPlaceable = subcompose(BubbleSlot.TimeStatus) {
+      BubbleTimeStatus(
+        time = time,
+        timeColor = timeColor,
+        status = (side as? BubbleMessage.Side.Right)?.status,
+        statusMutedColor = timeColor,
+        statusReadColor = statusReadColor
+      )
+    }.first().measure(looseConstraints)
 
-      val textPlaceable = subcompose(BubbleSlot.Text) {
+    val senderPlaceable = senderLabel?.let { label ->
+      subcompose(BubbleSlot.Sender) {
         Text(
-          text = text,
-          style = textStyle,
-          color = textColor
+          text = label.name,
+          style = AppTheme.typography.label3Bold,
+          color = label.color,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
         )
       }.first().measure(looseConstraints)
+    }
+    val senderHeight = if (senderPlaceable != null) {
+      senderPlaceable.height + senderNameSpacing.roundToPx()
+    } else {
+      0
+    }
 
-      val textLayoutResult = textMeasurer.measure(
+    val textPlaceable = subcompose(BubbleSlot.Text) {
+      Text(
         text = text,
         style = textStyle,
-        constraints = looseConstraints
+        color = textColor
       )
-      val lastLineRight = textLayoutResult.getLineRight(textLayoutResult.lineCount - 1)
-      val sameLineWidth = lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
+    }.first().measure(looseConstraints)
 
-      if (sameLineWidth <= constraints.maxWidth.toFloat()) {
-        val height = senderHeight + textPlaceable.height
-        val width = max(textPlaceable.width.toFloat(), sameLineWidth)
-          .roundToInt()
-          .coerceAtLeast(senderPlaceable?.width ?: 0)
-          .coerceIn(constraints.minWidth, constraints.maxWidth)
+    val textLayoutResult = textMeasurer.measure(
+      text = text,
+      style = textStyle,
+      constraints = looseConstraints
+    )
+    val lastLineRight = textLayoutResult.getLineRight(textLayoutResult.lineCount - 1)
+    val sameLineWidth = lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
 
-        layout(width, height) {
-          senderPlaceable?.place(0, 0)
-          textPlaceable.place(0, senderHeight)
-          timeStatusPlaceable.place(
-            x = width - timeStatusPlaceable.width,
-            y = height - timeStatusPlaceable.height
-          )
-        }
-      } else {
-        val height = senderHeight + textPlaceable.height + timeStatusPlaceable.height
-        val width = max(textPlaceable.width, timeStatusPlaceable.width)
-          .coerceAtLeast(senderPlaceable?.width ?: 0)
-          .coerceIn(
-            minimumValue = constraints.minWidth,
-            maximumValue = constraints.maxWidth
-          )
+    if (sameLineWidth <= constraints.maxWidth.toFloat()) {
+      val height = senderHeight + textPlaceable.height
+      val width = max(textPlaceable.width.toFloat(), sameLineWidth)
+        .roundToInt()
+        .coerceAtLeast(senderPlaceable?.width ?: 0)
+        .coerceIn(constraints.minWidth, constraints.maxWidth)
 
-        layout(width, height) {
-          senderPlaceable?.place(0, 0)
-          textPlaceable.place(0, senderHeight)
-          timeStatusPlaceable.place(
-            x = width - timeStatusPlaceable.width,
-            y = senderHeight + textPlaceable.height
-          )
-        }
+      layout(width, height) {
+        senderPlaceable?.place(0, 0)
+        textPlaceable.place(0, senderHeight)
+        timeStatusPlaceable.place(
+          x = width - timeStatusPlaceable.width,
+          y = height - timeStatusPlaceable.height
+        )
+      }
+    } else {
+      val height = senderHeight + textPlaceable.height + timeStatusPlaceable.height
+      val width = max(textPlaceable.width, timeStatusPlaceable.width)
+        .coerceAtLeast(senderPlaceable?.width ?: 0)
+        .coerceIn(
+          minimumValue = constraints.minWidth,
+          maximumValue = constraints.maxWidth
+        )
+
+      layout(width, height) {
+        senderPlaceable?.place(0, 0)
+        textPlaceable.place(0, senderHeight)
+        timeStatusPlaceable.place(
+          x = width - timeStatusPlaceable.width,
+          y = senderHeight + textPlaceable.height
+        )
       }
     }
   }
