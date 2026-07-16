@@ -23,6 +23,8 @@ import androidx.compose.ui.Alignment
 
 @Immutable
 class AppMotion {
+  val smallestMillis = 100
+  val smallMillis = 150
   val mediumMillis = 250
 
   @Composable
@@ -41,6 +43,20 @@ class AppMotion {
         durationMillis = durationMillis
       )
     }
+  }
+
+  @Composable
+  fun <T> smallestTween(): TweenSpec<T> {
+    return tween(
+      durationMillis = AppTheme.motion.smallMillis
+    )
+  }
+
+  @Composable
+  fun <T> smallTween(): TweenSpec<T> {
+    return tween(
+      durationMillis = AppTheme.motion.smallMillis
+    )
   }
 
   @Composable
