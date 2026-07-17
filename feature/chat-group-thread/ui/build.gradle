@@ -10,6 +10,7 @@ android {
 
 dependencies {
   implementation project(":uikit")
+  implementation project(":mapper:ui")
   implementation project(":feature:chat-group-thread:domain")
 
   implementation libs.androidx.activity.compose // for BackHandler

@@ -1,24 +1,22 @@
-package ru.sla.clarify.feature.chat.group.thread.ui.mapper
+package ru.sla.clarify.mapper.ui
 
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
 import ru.sla.clarify.uikit.component.bubble.BubbleMessage
 import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.resourcerefs.resRef
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
-internal fun List<DomainCommit>.toUiCommits(
-  members: List<GroupMember> = emptyList()
+fun List<DomainCommit>.toUiCommits(
+  memberNames: Map<UserId, String?> = emptyMap()
 ): List<Commit> {
   val commits = this
-  val names = members.associate { it.id.value to it.displayName }
   return commits.mapIndexedNotNull { index, commit ->
     when (commit) {
       is DomainCommit.InviteMember -> {
-        val senderName = names.displayName(commit.senderId)
-        val invitedName = names.displayName(commit.invitedId)
+        val senderName = memberNames[commit.senderId]
+        val invitedName = memberNames[commit.invitedId]
         if (!senderName.isNullOrBlank() && !invitedName.isNullOrBlank()) {
           Commit.InviteMember(
             source = commit,
@@ -43,7 +41,7 @@ internal fun List<DomainCommit>.toUiCommits(
             side = commit.side(),
             text = commit.text,
             time = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE),
-            sender = commit.sender(bubbleType, names),
+            sender = commit.sender(bubbleType, memberNames),
             selection = BubbleMessage.Selection(
               inSelectionMode = false,
               isSelected = false
@@ -57,9 +55,9 @@ internal fun List<DomainCommit>.toUiCommits(
 
 private fun DomainCommit.sender(
   type: BubbleMessage.Type,
-  names: Map<String, String?>
+  memberNames: Map<UserId, String?>
 ): BubbleMessage.Sender? {
-  val senderName = names.displayName(senderId)
+  val senderName = memberNames[senderId]
   val conditions = listOf(
     !isSelf,
     !senderName.isNullOrBlank(),
@@ -83,10 +81,6 @@ private fun DomainCommit.side(): BubbleMessage.Side {
   }
 }
 
-private fun Map<String, String?>.displayName(id: UserId): String? {
-  return this[id.value]
-}
-
 private fun DomainCommit.Status.toReadStatus(): BubbleMessage.ReadStatus {
   return when (this) {
     DomainCommit.Status.Sending -> BubbleMessage.ReadStatus.Sending
@@ -99,15 +93,17 @@ private fun bubbleType(
   index: Int,
   commits: List<DomainCommit>
 ): BubbleMessage.Type {
+  // The list is sorted newest-first (selectByBranchId orders by timestamp DESC) and rendered
+  // bottom-up with reverseLayout, so index-1 is visually below and index+1 is visually above.
   val current = commits[index] as? DomainCommit.Message ?: return BubbleMessage.Type.Top
-  val older = (commits.getOrNull(index - 1) as? DomainCommit.Message)
-  val newer = (commits.getOrNull(index + 1) as? DomainCommit.Message)
-  val sameSenderOlder = older?.senderId == current.senderId
-  val sameSenderNewer = newer?.senderId == current.senderId
+  val below = (commits.getOrNull(index - 1) as? DomainCommit.Message)
+  val above = (commits.getOrNull(index + 1) as? DomainCommit.Message)
+  val sameSenderBelow = below?.senderId == current.senderId
+  val sameSenderAbove = above?.senderId == current.senderId
   return when {
-    sameSenderOlder && sameSenderNewer -> BubbleMessage.Type.Middle
-    sameSenderNewer -> BubbleMessage.Type.Top
-    sameSenderOlder -> BubbleMessage.Type.Bottom
+    sameSenderAbove && sameSenderBelow -> BubbleMessage.Type.Middle
+    sameSenderBelow -> BubbleMessage.Type.Top
+    sameSenderAbove -> BubbleMessage.Type.Bottom
     else -> BubbleMessage.Type.Top
   }
 }

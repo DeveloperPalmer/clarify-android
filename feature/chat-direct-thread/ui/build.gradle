@@ -10,6 +10,7 @@ android {
 
 dependencies {
   implementation project(":uikit")
+  implementation project(":mapper:ui")
   implementation project(":feature:chat-direct-thread:domain")
   implementation project(":feature:chat-branch:domain")
 

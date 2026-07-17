@@ -22,8 +22,8 @@ import ru.sla.clarify.entity.chat.Branch.MergeRequest.Status
 import ru.sla.clarify.feature.chat.branch.domain.BranchModel
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
-import ru.sla.clarify.feature.chat.branch.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
+import ru.sla.clarify.mapper.ui.toUiCommits
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject

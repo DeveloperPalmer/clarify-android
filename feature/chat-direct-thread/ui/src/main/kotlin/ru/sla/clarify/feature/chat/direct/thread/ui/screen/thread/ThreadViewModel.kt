@@ -16,9 +16,9 @@ import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
-import ru.sla.clarify.feature.chat.direct.thread.ui.mapper.toUiCommits
-import ru.sla.clarify.feature.chat.direct.thread.ui.mapper.updateSelection
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
+import ru.sla.clarify.mapper.ui.toUiCommits
+import ru.sla.clarify.uikit.component.bubble.BubbleMessage
 import ru.sla.clarify.uikit.component.bubble.selection
 import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.component.chat.bubble
@@ -275,7 +275,10 @@ private fun ViewState.updateSelection(
     commits = commits.map { commit ->
       Commit.message.bubble.selection.set(
         commit,
-        commit.source.updateSelection(editModeEnabled, selectedIds)
+        BubbleMessage.Selection(
+          inSelectionMode = editModeEnabled,
+          isSelected = commit.source.id in selectedIds
+        )
       )
     }
   )

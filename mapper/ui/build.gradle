@@ -3,11 +3,12 @@ plugins {
 }
 
 android {
-  namespace "ru.sla.clarify.mapper"
+  namespace "ru.sla.clarify.mapper.ui"
 }
 
 dependencies {
   implementation project(":entity")
   implementation project(":core:domain")
   implementation project(":core:resources")
+  implementation project(":uikit")
 }

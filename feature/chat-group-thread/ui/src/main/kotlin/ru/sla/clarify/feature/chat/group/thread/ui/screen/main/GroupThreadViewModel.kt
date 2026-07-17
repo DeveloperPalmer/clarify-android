@@ -14,8 +14,8 @@ import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadModel
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.Group
-import ru.sla.clarify.feature.chat.group.thread.ui.mapper.toUiCommits
 import ru.sla.clarify.feature.chat.group.thread.ui.routing.FlowEvent
+import ru.sla.clarify.mapper.ui.toUiCommits
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import javax.inject.Inject
@@ -68,7 +68,9 @@ class GroupThreadViewModel @Inject constructor(
       combine(
         groupThreadModel.commits,
         groupThreadModel.members
-      ) { commits, members -> commits.toUiCommits(members) }
+      ) { commits, members ->
+        commits.toUiCommits(memberNames = members.associate { it.id to it.displayName })
+      }
     ) {
       transitionTo { state, items ->
         state.copy(commits = items)

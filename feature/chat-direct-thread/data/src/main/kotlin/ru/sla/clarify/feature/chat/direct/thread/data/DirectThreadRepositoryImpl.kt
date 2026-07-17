@@ -245,9 +245,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       flow = commitsFlow,
       flow2 = peerReadAtFlow
     ) { commits, peerReadAt ->
-      commits
-        .map { it.withReadStatus(peerReadAt) }
-        .asReversed()
+      commits.map { it.withReadStatus(peerReadAt) }
     }.collect { emit(it) }
   }
 
