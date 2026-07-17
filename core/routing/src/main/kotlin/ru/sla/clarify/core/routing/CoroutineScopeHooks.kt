@@ -8,23 +8,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import ru.kode.way.Event
 import ru.kode.way.FlowTransition
-import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.kode.way.extension.node.hook.BaseScreenNode
 import ru.kode.way.extension.node.hook.FlowNodeHook
 import ru.kode.way.extension.node.hook.ScreenNodeHook
 import kotlin.reflect.KProperty
 
-class FlowNodeCoroutineScopeHook<R : Any>(dispatcher: CoroutineDispatcher = Dispatchers.Default) : FlowNodeHook<R> {
-  private val errorHandler = CoroutineExceptionHandler { _, e ->
-    e.printStackTrace()
-  }
-  private val scope = CoroutineScope(SupervisorJob() + dispatcher + errorHandler)
-
-  operator fun getValue(thisRef: BaseFlowNode<R>, property: KProperty<*>): CoroutineScope {
-    thisRef.addHook(this)
-    return scope
-  }
-
+class FlowNodeScopeDisposalHook<R : Any>(private val scope: CoroutineScope) : FlowNodeHook<R> {
   override fun onPreEntry() = Unit
   override fun onPostEntry() = Unit
   override fun onPreExit() = Unit
@@ -33,6 +22,9 @@ class FlowNodeCoroutineScopeHook<R : Any>(dispatcher: CoroutineDispatcher = Disp
   }
   override fun onPreTransition(event: Event) = Unit
   override fun onPostTransition(event: Event, transition: FlowTransition<R>) = Unit
+  override fun onPostDispose() {
+    scope.cancel()
+  }
 }
 
 class ScreenNodeCoroutineScopeHook(dispatcher: CoroutineDispatcher = Dispatchers.Default) : ScreenNodeHook {

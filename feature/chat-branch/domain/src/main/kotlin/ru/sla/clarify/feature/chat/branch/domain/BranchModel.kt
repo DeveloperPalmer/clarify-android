@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.branch.domain
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
@@ -11,16 +12,17 @@ import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
 
 @SingleIn(BranchScope::class)
 class BranchModel @Inject constructor(
-  private val branchRepository: BranchRepository
-) : ReactiveModel() {
+  private val branchRepository: BranchRepository,
+  @ForScope(BranchScope::class) parentScope: CoroutineScope
+) : ReactiveModel(parentScope) {
 
-  override fun onPostStart() {
-    super.onPostStart()
+  init {
     scope.launch { branchRepository.subscribeOnBranchesChanges() }
     scope.launch { branchRepository.subscribeOnBranchCommitsChanges() }
     scope.launch { branchRepository.subscribeOnBranchUnreadCount() }

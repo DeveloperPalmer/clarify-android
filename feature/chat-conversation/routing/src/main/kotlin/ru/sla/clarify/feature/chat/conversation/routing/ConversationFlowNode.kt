@@ -9,28 +9,27 @@ import ru.kode.way.Ignore
 import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
-import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
+import ru.sla.clarify.core.routing.FlowNodeScopeDisposalHook
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Peer
-import ru.sla.clarify.feature.chat.conversation.domain.ConversationModel
+import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
 import ru.sla.clarify.feature.profile.routing.ProfileFlow
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams as DirectTargetParams
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams as GroupTargetParams
 
 class ConversationFlowNode @Inject constructor(
-  private val conversationModel: ConversationModel
+  @ForScope(ConversationScope::class)
+  coroutineScope: CoroutineScope
 ) : BaseFlowNode<ConversationFlow.Result>() {
 
-  private val scope: CoroutineScope by FlowNodeCoroutineScopeHook()
+  init {
+    addHook(FlowNodeScopeDisposalHook(coroutineScope))
+  }
 
   override val dismissResult = ConversationFlow.Result.Dismissed
   override val initial = Target.conversationFlow.main
-
-  override fun onEntry(event: Event) {
-    super.onEntry(event)
-    conversationModel.start(scope)
-  }
 
   override fun transition(event: Event): FlowTransition<ConversationFlow.Result> {
     return when (event) {

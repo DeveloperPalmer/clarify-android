@@ -9,23 +9,22 @@ import ru.kode.way.Ignore
 import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
-import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
-import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadModel
+import ru.sla.clarify.core.routing.FlowNodeScopeDisposalHook
+import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.ui.routing.FlowEvent
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 
 class GroupThreadFlowNode @Inject constructor(
-  private val groupThreadModel: GroupThreadModel
+  @ForScope(GroupThreadScope::class)
+  coroutineScope: CoroutineScope
 ) : BaseFlowNode<GroupThreadFlow.Result>() {
 
-  private val scope: CoroutineScope by FlowNodeCoroutineScopeHook()
+  init {
+    addHook(FlowNodeScopeDisposalHook(coroutineScope))
+  }
 
   override val dismissResult = GroupThreadFlow.Result.Dismissed
   override val initial = Target.groupThreadFlow.main
-
-  override fun onEntry(event: Event) {
-    super.onEntry(event)
-    groupThreadModel.start(scope)
-  }
 
   override fun transition(event: Event): FlowTransition<GroupThreadFlow.Result> {
     return when (event) {

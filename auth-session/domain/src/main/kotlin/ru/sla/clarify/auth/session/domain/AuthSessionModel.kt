@@ -1,5 +1,6 @@
 package ru.sla.clarify.auth.session.domain
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -12,12 +13,14 @@ import ru.sla.clarify.core.domain.entity.ApiError
 import ru.sla.clarify.core.domain.entity.ConnectivityError
 import ru.sla.clarify.core.domain.logError
 import ru.sla.log.asLog
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(AppScope::class)
 class AuthSessionModel @Inject constructor(
-  private val sessionRepository: AuthSessionRepository
-) : ReactiveModel() {
+  private val sessionRepository: AuthSessionRepository,
+  @ForScope(AppScope::class) parentScope: CoroutineScope
+) : ReactiveModel(parentScope) {
 
   val reset = task<Unit> {
     try {

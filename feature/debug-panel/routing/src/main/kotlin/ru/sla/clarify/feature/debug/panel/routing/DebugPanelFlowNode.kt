@@ -8,23 +8,22 @@ import ru.kode.way.FlowTransition
 import ru.kode.way.Ignore
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
-import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
-import ru.sla.clarify.feature.debug.panel.domain.DebugPanelModel
+import ru.sla.clarify.core.routing.FlowNodeScopeDisposalHook
+import ru.sla.clarify.feature.debug.panel.domain.di.DebugPanelScope
 import ru.sla.clarify.feature.debug.panel.ui.routing.FlowEvent
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 
 class DebugPanelFlowNode @Inject constructor(
-  private val debugPanelModel: DebugPanelModel
+  @ForScope(DebugPanelScope::class)
+  coroutineScope: CoroutineScope
 ) : BaseFlowNode<DebugPanelFlow.Result>() {
 
-  private val scope: CoroutineScope by FlowNodeCoroutineScopeHook()
+  init {
+    addHook(FlowNodeScopeDisposalHook(coroutineScope))
+  }
 
   override val dismissResult = DebugPanelFlow.Result.Dismissed
   override val initial = Target.debugPanelFlow.main
-
-  override fun onEntry(event: Event) {
-    super.onEntry(event)
-    debugPanelModel.start(scope)
-  }
 
   override fun transition(event: Event): FlowTransition<DebugPanelFlow.Result> {
     return when (event) {

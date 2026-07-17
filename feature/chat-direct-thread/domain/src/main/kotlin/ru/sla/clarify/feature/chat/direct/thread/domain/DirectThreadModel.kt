@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.direct.thread.domain
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import me.tatarka.inject.annotations.Inject
@@ -11,17 +12,18 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
 
 @SingleIn(DirectThreadScope::class)
 class DirectThreadModel @Inject constructor(
   private val directThreadRepository: DirectThreadRepository,
-  private val conversationRepository: ConversationRepository
-) : ReactiveModel() {
+  private val conversationRepository: ConversationRepository,
+  @ForScope(DirectThreadScope::class) parentScope: CoroutineScope
+) : ReactiveModel(parentScope) {
 
-  override fun onPostStart() {
-    super.onPostStart()
+  init {
     scope.launch { directThreadRepository.subscribeOnPeerChanges() }
     scope.launch { directThreadRepository.subscribeOnCommitChanges() }
     scope.launch { directThreadRepository.subscribeOnBranchesChanges() }

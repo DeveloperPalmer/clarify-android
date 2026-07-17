@@ -9,25 +9,24 @@ import ru.kode.way.Ignore
 import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
-import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
+import ru.sla.clarify.core.routing.FlowNodeScopeDisposalHook
 import ru.sla.clarify.entity.chat.Branch
-import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
+import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams as BranchTargetParams
 
 class DirectThreadFlowNode @Inject constructor(
-  private val directThreadModel: DirectThreadModel
+  @ForScope(DirectThreadScope::class)
+  coroutineScope: CoroutineScope
 ) : BaseFlowNode<Unit>() {
 
-  private val scope: CoroutineScope by FlowNodeCoroutineScopeHook()
+  init {
+    addHook(FlowNodeScopeDisposalHook(coroutineScope))
+  }
 
   override val dismissResult = Unit
   override val initial = Target.directThreadFlow.main
-
-  override fun onEntry(event: Event) {
-    super.onEntry(event)
-    directThreadModel.start(scope)
-  }
 
   override fun transition(event: Event): FlowTransition<Unit> {
     return when (event) {

@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.group.thread.domain
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import me.tatarka.inject.annotations.Inject
@@ -12,17 +13,18 @@ import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
 
 @SingleIn(GroupThreadScope::class)
 class GroupThreadModel @Inject constructor(
   private val groupThreadRepository: GroupThreadRepository,
-  private val conversationRepository: ConversationRepository
-) : ReactiveModel() {
+  private val conversationRepository: ConversationRepository,
+  @ForScope(GroupThreadScope::class) parentScope: CoroutineScope
+) : ReactiveModel(parentScope) {
 
-  override fun onPostStart() {
-    super.onPostStart()
+  init {
     scope.launch { groupThreadRepository.subscribeOnCommitChanges() }
     scope.launch { groupThreadRepository.subscribeOnGroupMembers() }
   }

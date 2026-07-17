@@ -11,25 +11,32 @@ import ru.kode.way.Ignore
 import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
+import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.auth.session.domain.AuthSessionModel
 import ru.sla.clarify.auth.session.domain.entity.AuthSessionState
-import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
+import ru.sla.clarify.core.routing.FlowNodeScopeDisposalHook
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow
 import ru.sla.clarify.feature.login.routing.LoginFlow
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 
 class AppFlowNode @Inject constructor(
+  @param:ForScope(AppFlowScope::class)
+  private val coroutineScope: CoroutineScope,
   private val eventSink: FlowEventSink,
   private val authSessionModel: AuthSessionModel
 ) : BaseFlowNode<Unit>() {
 
+  init {
+    addHook(FlowNodeScopeDisposalHook(coroutineScope))
+  }
+
   override val dismissResult = Unit
   override val initial: Target = Target.appFlow.initialFlowResolve
-  private val scope: CoroutineScope by FlowNodeCoroutineScopeHook<Unit>()
 
   override fun onEntry(event: Event) {
     super.onEntry(event)
-    scope.launch {
+    coroutineScope.launch {
       val state = authSessionModel.sessionState.first()
       eventSink.sendEvent(AppFlow.Event.InitialSessionStateReceived(state))
     }

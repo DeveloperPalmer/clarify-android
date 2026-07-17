@@ -8,23 +8,22 @@ import ru.kode.way.FlowTransition
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.kode.way.whenFlowEvent
-import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
-import ru.sla.clarify.feature.chat.branch.domain.BranchModel
+import ru.sla.clarify.core.routing.FlowNodeScopeDisposalHook
+import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
 import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
+import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 
 class BranchFlowNode @Inject constructor(
-  private val branchModel: Lazy<BranchModel>
+  @ForScope(BranchScope::class)
+  coroutineScope: CoroutineScope
 ) : BaseFlowNode<Unit>() {
 
-  private val scope: CoroutineScope by FlowNodeCoroutineScopeHook()
+  init {
+    addHook(FlowNodeScopeDisposalHook(coroutineScope))
+  }
 
   override val dismissResult = Unit
   override val initial = Target.branchFlow.branch
-
-  override fun onEntry(event: Event) {
-    super.onEntry(event)
-    branchModel.value.start(scope)
-  }
 
   override fun transition(event: Event): FlowTransition<Unit> {
     return event.whenFlowEvent { e: FlowEvent ->
