@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.login.ui.screen.credentials
 
+import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.machine
 import ru.kode.remo.JobState
@@ -16,7 +17,6 @@ import ru.sla.clarify.feature.login.ui.routing.FlowEvent
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import ru.sla.resourcerefs.strRef
-import javax.inject.Inject
 
 class CredentialsViewModel @Inject constructor(
   private val eventSink: FlowEventSink,

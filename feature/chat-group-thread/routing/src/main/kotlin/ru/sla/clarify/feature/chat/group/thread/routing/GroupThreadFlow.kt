@@ -7,7 +7,7 @@ object GroupThreadFlow {
 
   fun nodeBuilder(component: GroupThreadFlowComponent): GroupThreadFlowNodeBuilder {
     return GroupThreadFlowNodeBuilder(
-      nodeFactory = component.nodeFactory(),
+      nodeFactory = component.nodeFactory,
       schema = schema
     )
   }

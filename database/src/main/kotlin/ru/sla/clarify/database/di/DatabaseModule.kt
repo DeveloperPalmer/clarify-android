@@ -2,20 +2,18 @@ package ru.sla.clarify.database.di
 
 import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import com.squareup.anvil.annotations.ContributesTo
-import dagger.Module
-import dagger.Provides
+import me.tatarka.inject.annotations.Provides
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.adapter.StringListAdapter
 import ru.sla.clarify.database.chat.ChatConversation
 import ru.sla.clarify.database.chat.MergeRequest
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @ContributesTo(AppScope::class)
-@Module
-object DatabaseModule {
+interface DatabaseModule {
   @SingleIn(AppScope::class)
   @Provides
   fun providePersistedDatabase(@ApplicationContext context: Context): PersistedDB {

@@ -54,9 +54,9 @@ import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.clarify.app.routing.AppFlow
 import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.routing.FlowEventMediator
-import ru.sla.clarify.core.routing.predictive.PredictiveNodeHost
 import ru.sla.clarify.core.routing.noTransition
 import ru.sla.clarify.core.routing.popTransition
+import ru.sla.clarify.core.routing.predictive.PredictiveNodeHost
 import ru.sla.clarify.core.routing.pushTransition
 import ru.sla.clarify.core.routing.rememberTransitionSpec
 import ru.sla.clarify.core.ui.event.DropdownMenuAnchorState
@@ -64,6 +64,7 @@ import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.LocalViewEventsHostMediator
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.debug.panel.routing.DebugPanelFlow
+import ru.sla.clarify.feature.debug.panel.routing.di.DebugPanelFlowComponent
 import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.event.ViewEventsHost
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -81,6 +82,7 @@ class MainActivity : ComponentActivity() {
     when ((application!! as BuildConfigProvider).buildType) {
       BuildType.Dev,
       BuildType.Internal -> true
+
       BuildType.Release -> false
     }
   }
@@ -111,19 +113,22 @@ class MainActivity : ComponentActivity() {
     installSplashScreen().setKeepOnScreenCondition { splashScreenLoading.value }
 
     val appComponent = (applicationContext!! as Application).appComponent
-    val conversationRepository = appComponent.conversationRepository()
+    val conversationRepository = appComponent.conversationRepository
 
     val flowEventMediator = FlowEventMediator(coroutineScope)
-    val component: AppFlowComponent = appComponent.appFlowComponentBuilder()
-      .eventSink(flowEventMediator)
-      .activity(this)
-      .build()
+    val appFlowComponent = (appComponent as AppFlowComponent.Factory).createAppFlowComponent(
+      activity = this,
+      eventSink = flowEventMediator
+    )
 
-    val service = NavigationService<Unit>(AppFlow.nodeBuilder(component), onFinishRequest = {
-      log { "appFlow has finished -> calling activity finish" }
-      finish()
-      Ignore
-    })
+    val service = NavigationService<Unit>(
+      nodeBuilder = AppFlow.nodeBuilder(appFlowComponent),
+      onFinishRequest = {
+        log { "appFlow has finished -> calling activity finish" }
+        finish()
+        Ignore
+      }
+    )
     flowEventMediator.events.onEach(service::sendEvent).launchIn(coroutineScope)
     service.addNodeExtensionPoint(NodeHooksSupportExtensionPoint())
     service.addServiceExtensionPoint(LogTransitionsExtensionPoint(logger = { msg -> log(message = msg) }))
@@ -152,7 +157,7 @@ class MainActivity : ComponentActivity() {
           CompositionLocalProvider(
             LocalSharedTransitionScope provides this,
             LocalDropdownMenuAnchor provides remember { DropdownMenuAnchorState() },
-            LocalViewEventsHostMediator provides component.viewEventsHostMediator()
+            LocalViewEventsHostMediator provides appFlowComponent.viewEventsHostMediator
           ) {
             PredictiveNodeHost(
               service = service,
@@ -229,12 +234,12 @@ class MainActivity : ComponentActivity() {
   private fun openDebugPanel() {
     if (showDebugPanel.value) return
     val mediator = FlowEventMediator(coroutineScope)
-    val component = (applicationContext!! as Application).appComponent
-      .debugPanelFlowComponentBuilder()
-      .eventSink(mediator)
-      .build()
+    val appComponent = (applicationContext!! as Application).appComponent
+    val component = (appComponent as DebugPanelFlowComponent.Factory).createDebugPanelFlowComponent(
+      eventSink = mediator
+    )
     val service = NavigationService<DebugPanelFlow.Result>(
-      DebugPanelFlow.nodeBuilder(component),
+      nodeBuilder = DebugPanelFlow.nodeBuilder(component),
       onFinishRequest = {
         closeDebugPanel()
         Ignore

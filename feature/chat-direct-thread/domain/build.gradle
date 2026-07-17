@@ -1,6 +1,6 @@
 plugins {
   id 'kotlin-convention'
-  id 'dagger-convention'
+  id "kotlin-inject-convention"
 }
 
 dependencies {

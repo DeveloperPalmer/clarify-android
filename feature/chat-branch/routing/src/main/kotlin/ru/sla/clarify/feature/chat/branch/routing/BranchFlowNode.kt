@@ -1,7 +1,7 @@
 package ru.sla.clarify.feature.chat.branch.routing
 
-import dagger.Lazy
 import kotlinx.coroutines.CoroutineScope
+import me.tatarka.inject.annotations.Inject
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
@@ -11,7 +11,6 @@ import ru.kode.way.whenFlowEvent
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
 import ru.sla.clarify.feature.chat.branch.domain.BranchModel
 import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
-import javax.inject.Inject
 
 class BranchFlowNode @Inject constructor(
   private val branchModel: Lazy<BranchModel>
@@ -24,7 +23,7 @@ class BranchFlowNode @Inject constructor(
 
   override fun onEntry(event: Event) {
     super.onEntry(event)
-    branchModel.get().start(scope)
+    branchModel.value.start(scope)
   }
 
   override fun transition(event: Event): FlowTransition<Unit> {

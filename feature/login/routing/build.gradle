@@ -1,6 +1,6 @@
 plugins {
   id 'android-library-convention'
-  id 'dagger-convention'
+  id "kotlin-inject-convention"
   id 'android-compose-convention'
   alias(libs.plugins.way)
 }
@@ -10,6 +10,7 @@ android {
 }
 
 dependencies {
+  implementation project(":app:domain")
   implementation project(":core:routing")
   api project(":feature:login:domain")
   api project(":feature:login:data")

@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
@@ -22,7 +23,6 @@ import ru.sla.clarify.feature.chat.group.thread.ui.entity.InviteCandidate
 import ru.sla.clarify.feature.chat.group.thread.ui.routing.FlowEvent
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
-import javax.inject.Inject
 
 class GroupInfoViewModel @Inject constructor(
   private val eventSink: FlowEventSink,

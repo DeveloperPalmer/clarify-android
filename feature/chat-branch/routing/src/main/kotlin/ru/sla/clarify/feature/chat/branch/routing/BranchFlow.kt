@@ -7,7 +7,7 @@ object BranchFlow {
 
   fun nodeBuilder(component: BranchFlowComponent): BranchFlowNodeBuilder {
     return BranchFlowNodeBuilder(
-      nodeFactory = component.nodeFactory(),
+      nodeFactory = component.nodeFactory,
       schema = schema
     )
   }

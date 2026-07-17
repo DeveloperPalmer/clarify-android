@@ -2,8 +2,8 @@ package ru.sla.clarify.feature.chat.direct.thread.domain
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.ReactiveModel
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
@@ -11,8 +11,8 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
-import javax.inject.Inject
 
 @SingleIn(DirectThreadScope::class)
 class DirectThreadModel @Inject constructor(

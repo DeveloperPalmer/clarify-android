@@ -4,15 +4,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
-import javax.inject.Inject
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(DirectThreadScope::class)
 class ThreadMediator @Inject constructor(

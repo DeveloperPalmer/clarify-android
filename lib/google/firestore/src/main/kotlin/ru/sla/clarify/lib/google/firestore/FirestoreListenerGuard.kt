@@ -2,13 +2,13 @@ package ru.sla.clarify.lib.google.firestore
 
 import android.os.Handler
 import android.os.Looper
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.di.scope.AppScope
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.logError
 import ru.sla.clarify.lib.google.firestore.FirestoreListenerGuard.Companion.crashOnViolation
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreListenerRunawayException
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
 
 /**
  * Runtime-детектор «runaway» подписок на Firestore snapshot listener.

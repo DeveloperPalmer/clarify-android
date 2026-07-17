@@ -1,7 +1,7 @@
 plugins {
   id 'android-library-convention'
   id 'android-compose-convention'
-  id 'dagger-convention'
+  id "kotlin-inject-convention"
 }
 
 android {

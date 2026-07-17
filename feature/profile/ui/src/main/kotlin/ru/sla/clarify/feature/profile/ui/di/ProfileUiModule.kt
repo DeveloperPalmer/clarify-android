@@ -1,17 +1,15 @@
 package ru.sla.clarify.feature.profile.ui.di
 
-import com.squareup.anvil.annotations.ContributesTo
-import dagger.Module
-import dagger.Provides
+import me.tatarka.inject.annotations.Provides
+import me.tatarka.inject.annotations.Qualifier
 import ru.sla.clarify.core.ui.WiredComposableScreen
 import ru.sla.clarify.feature.profile.domain.di.ProfileScope
 import ru.sla.clarify.feature.profile.ui.screen.main.ProfileScreen
 import ru.sla.clarify.feature.profile.ui.screen.main.ProfileViewModel
-import javax.inject.Qualifier
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
 
-@Module
 @ContributesTo(ProfileScope::class)
-object ProfileUiModule {
+interface ProfileUiModule {
   @Provides
   @WiredScreen(Screen.Main)
   fun provideMainScreen(model: ProfileViewModel): WiredComposableScreen {

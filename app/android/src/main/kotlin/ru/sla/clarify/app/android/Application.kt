@@ -1,8 +1,9 @@
 package ru.sla.clarify.app.android
 
+import android.app.Application
 import ru.sla.clarify.app.android.di.AppComponent
 import ru.sla.clarify.app.android.di.AppComponentHolder
-import ru.sla.clarify.app.android.di.DaggerAppComponent
+import ru.sla.clarify.app.android.di.create
 import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
 import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.log.LogPriority
@@ -10,8 +11,9 @@ import ru.sla.log.Logger
 import ru.sla.log.PriorityLogging
 import ru.sla.log.android.AndroidLogDriver
 
-class Application : android.app.Application(), AppComponentHolder, BuildConfigProvider {
-  private lateinit var _appComponent: AppComponent
+class Application : Application(), AppComponentHolder, BuildConfigProvider {
+
+  override val appComponent: AppComponent = AppComponent::class.create(this)
 
   override val buildType: BuildType = when (val type = BuildConfig.BUILD_TYPE) {
     "debug" -> BuildType.Dev
@@ -23,17 +25,7 @@ class Application : android.app.Application(), AppComponentHolder, BuildConfigPr
   override fun onCreate() {
     super.onCreate()
     configureLogging()
-
-    _appComponent = buildAppComponent()
   }
-
-  private fun buildAppComponent(): AppComponent {
-    return DaggerAppComponent.builder()
-      .applicationContext(this)
-      .build()
-  }
-
-  override val appComponent: AppComponent get() = _appComponent
 
   private fun configureLogging() {
     val driver = AndroidLogDriver(

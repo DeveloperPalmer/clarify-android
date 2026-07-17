@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.profile.ui.screen.main
 
 import kotlinx.coroutines.flow.map
+import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
@@ -11,7 +12,6 @@ import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.profile.domain.ProfileModel
 import ru.sla.clarify.feature.profile.ui.routing.FlowEvent
-import javax.inject.Inject
 
 class ProfileViewModel @Inject constructor(
   private val eventSink: FlowEventSink,

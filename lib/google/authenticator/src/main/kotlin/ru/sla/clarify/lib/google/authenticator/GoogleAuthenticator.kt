@@ -19,13 +19,13 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
 import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.core.domain.di.scope.ActivityContext
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.log.log
-import javax.inject.Inject
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(AppFlowScope::class)
 class GoogleAuthenticator @Inject constructor(

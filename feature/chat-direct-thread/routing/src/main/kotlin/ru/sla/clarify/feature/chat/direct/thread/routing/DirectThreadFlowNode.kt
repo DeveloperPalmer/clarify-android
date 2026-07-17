@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chat.direct.thread.routing
 
 import kotlinx.coroutines.CoroutineScope
+import me.tatarka.inject.annotations.Inject
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
@@ -12,7 +13,6 @@ import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
-import javax.inject.Inject
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams as BranchTargetParams
 
 class DirectThreadFlowNode @Inject constructor(

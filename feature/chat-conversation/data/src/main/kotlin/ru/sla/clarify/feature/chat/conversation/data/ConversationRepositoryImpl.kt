@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chat.conversation.data
 
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -9,9 +8,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.AppScope
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
@@ -31,7 +30,8 @@ import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.clarify.mapper.data.mapToUser
-import javax.inject.Inject
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)

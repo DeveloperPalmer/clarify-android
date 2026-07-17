@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chat.conversation.routing
 
 import kotlinx.coroutines.CoroutineScope
+import me.tatarka.inject.annotations.Inject
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
@@ -14,7 +15,6 @@ import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationModel
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
 import ru.sla.clarify.feature.profile.routing.ProfileFlow
-import javax.inject.Inject
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams as DirectTargetParams
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams as GroupTargetParams
 

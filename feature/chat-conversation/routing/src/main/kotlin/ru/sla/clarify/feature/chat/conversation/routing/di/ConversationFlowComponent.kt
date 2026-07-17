@@ -1,17 +1,21 @@
 package ru.sla.clarify.feature.chat.conversation.routing.di
 
-import com.squareup.anvil.annotations.MergeSubcomponent
-import ru.sla.clarify.core.domain.di.scope.SingleIn
+import me.tatarka.inject.annotations.Provides
+import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
-import ru.sla.clarify.feature.chat.direct.thread.routing.di.DirectThreadFlowComponent
-import ru.sla.clarify.feature.chat.group.thread.routing.di.GroupThreadFlowComponent
-import ru.sla.clarify.feature.profile.routing.di.ProfileFlowComponent
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesSubcomponent
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(ConversationScope::class)
-@MergeSubcomponent(ConversationScope::class)
+@ContributesSubcomponent(ConversationScope::class)
 interface ConversationFlowComponent {
-  fun nodeFactory(): ConversationFlowNodeFactory
-  fun profileFlowComponent(): ProfileFlowComponent
-  fun directThreadFlowComponent(): DirectThreadFlowComponent.Builder
-  fun groupThreadFlowComponent(): GroupThreadFlowComponent.Builder
+  val nodeFactory: ConversationFlowNodeFactory
+
+  @Provides
+  fun provideConversationFlowComponent(): ConversationFlowComponent = this
+
+  @ContributesSubcomponent.Factory(AppFlowScope::class)
+  interface Factory {
+    fun createConversationFlowComponent(): ConversationFlowComponent
+  }
 }

@@ -1,19 +1,17 @@
 package ru.sla.clarify.feature.chat.group.thread.ui.di
 
-import com.squareup.anvil.annotations.ContributesTo
-import dagger.Module
-import dagger.Provides
+import me.tatarka.inject.annotations.Provides
+import me.tatarka.inject.annotations.Qualifier
 import ru.sla.clarify.core.ui.WiredComposableScreen
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.ui.screen.groupinfo.GroupInfoScreen
 import ru.sla.clarify.feature.chat.group.thread.ui.screen.groupinfo.GroupInfoViewModel
 import ru.sla.clarify.feature.chat.group.thread.ui.screen.main.GroupThreadScreen
 import ru.sla.clarify.feature.chat.group.thread.ui.screen.main.GroupThreadViewModel
-import javax.inject.Qualifier
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
 
-@Module
 @ContributesTo(GroupThreadScope::class)
-object GroupThreadUiModule {
+interface GroupThreadUiModule {
   @Provides
   @WiredScreen(Screen.Main)
   fun provideMainScreen(model: GroupThreadViewModel): WiredComposableScreen {

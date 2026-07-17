@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.debug.panel.ui.screen.main
 
 import kotlinx.coroutines.flow.map
+import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.machine
 import ru.kode.remo.errors
@@ -16,7 +17,6 @@ import ru.sla.clarify.feature.debug.panel.domain.entity.DebugUserException
 import ru.sla.clarify.feature.debug.panel.ui.routing.FlowEvent
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
-import javax.inject.Inject
 
 class DebugPanelViewModel @Inject constructor(
   private val eventSink: FlowEventSink,

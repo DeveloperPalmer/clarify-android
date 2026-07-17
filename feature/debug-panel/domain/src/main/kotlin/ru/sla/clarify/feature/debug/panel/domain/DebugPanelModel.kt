@@ -1,12 +1,12 @@
 package ru.sla.clarify.feature.debug.panel.domain
 
 import arrow.core.getOrElse
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.ReactiveModel
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.debug.panel.domain.di.DebugPanelScope
 import ru.sla.clarify.feature.debug.panel.domain.entity.DebugUserException
 import ru.sla.clarify.feature.debug.panel.domain.entity.TestUser
-import javax.inject.Inject
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(DebugPanelScope::class)
 class DebugPanelModel @Inject constructor(

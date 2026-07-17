@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chat.group.thread.ui.screen.main
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.machine
 import ru.kode.remo.errors
@@ -18,7 +19,6 @@ import ru.sla.clarify.feature.chat.group.thread.ui.routing.FlowEvent
 import ru.sla.clarify.mapper.ui.toUiCommits
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
-import javax.inject.Inject
 
 class GroupThreadViewModel @Inject constructor(
   private val eventSink: FlowEventSink,

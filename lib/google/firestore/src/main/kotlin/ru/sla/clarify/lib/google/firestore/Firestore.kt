@@ -11,9 +11,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.di.scope.AppScope
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.UserId
@@ -56,8 +56,8 @@ import ru.sla.clarify.lib.google.firestore.entity.write.UpdateReadWatermarkParam
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateUnreadCountParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateUserParams
 import ru.sla.clarify.lib.google.firestore.mapper.mapDocumentChanges
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
-import javax.inject.Inject
 
 @Suppress("TooManyFunctions", "LargeClass")
 @SingleIn(AppScope::class)

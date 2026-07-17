@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.zip
+import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
@@ -25,7 +26,6 @@ import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
 import ru.sla.clarify.feature.chat.conversation.ui.screen.main.ViewState.CreateConversationTab
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
-import javax.inject.Inject
 
 class ChatListViewModel(
   private val eventSink: FlowEventSink,

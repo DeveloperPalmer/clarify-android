@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chat.direct.thread.data
 
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -12,7 +11,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import ru.sla.clarify.core.domain.di.scope.SingleIn
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.chat.ChatCommit
@@ -43,8 +42,9 @@ import ru.sla.clarify.mapper.data.toDomain
 import ru.sla.clarify.mapper.data.toLocalDateTime
 import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
-import javax.inject.Inject
 
 @SingleIn(DirectThreadScope::class)
 @ContributesBinding(DirectThreadScope::class)

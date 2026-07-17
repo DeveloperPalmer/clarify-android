@@ -1,11 +1,21 @@
 package ru.sla.clarify.feature.login.routing.di
 
-import com.squareup.anvil.annotations.MergeSubcomponent
-import ru.sla.clarify.core.domain.di.scope.SingleIn
+import me.tatarka.inject.annotations.Provides
+import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.feature.login.domain.LoginScope
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesSubcomponent
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(LoginScope::class)
-@MergeSubcomponent(LoginScope::class)
+@ContributesSubcomponent(LoginScope::class)
 interface LoginFlowComponent {
-  fun nodeFactory(): LoginFlowNodeFactory
+  val nodeFactory: LoginFlowNodeFactory
+
+  @Provides
+  fun provideLoginFlowComponent(): LoginFlowComponent = this
+
+  @ContributesSubcomponent.Factory(AppFlowScope::class)
+  interface Factory {
+    fun createLoginFlowComponent(): LoginFlowComponent
+  }
 }

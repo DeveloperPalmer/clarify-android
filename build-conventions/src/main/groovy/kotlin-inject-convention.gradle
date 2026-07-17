@@ -2,15 +2,13 @@
 // see https://github.com/gradle/gradle/issues/15383#issuecomment-1396061277
 // but outside of plugins block everything works ok
 plugins {
-  id "dev.zacsweers.anvil"
   id "com.google.devtools.ksp"
 }
 
-anvil {
-  useKsp(true, true)
-}
-
 dependencies {
-  implementation libs.dagger
-  ksp libs.dagger.compiler
+  implementation libs.kotlin.inject.runtime
+  implementation libs.kotlin.inject.anvil.runtime
+  implementation libs.kotlin.inject.anvil.runtime.optional
+  ksp libs.kotlin.inject.compiler
+  ksp libs.kotlin.inject.anvil.compiler
 }

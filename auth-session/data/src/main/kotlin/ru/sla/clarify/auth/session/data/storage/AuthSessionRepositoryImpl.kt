@@ -1,9 +1,9 @@
 package ru.sla.clarify.auth.session.data.storage
 
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
@@ -12,7 +12,7 @@ import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.cleanupBySessionKey
-import javax.inject.Inject
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 
 @ContributesBinding(AppScope::class)
 class AuthSessionRepositoryImpl @Inject constructor(

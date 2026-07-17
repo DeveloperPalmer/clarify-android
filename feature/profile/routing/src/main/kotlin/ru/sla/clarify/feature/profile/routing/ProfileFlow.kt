@@ -7,7 +7,7 @@ object ProfileFlow {
 
   fun nodeBuilder(component: ProfileFlowComponent): ProfileFlowNodeBuilder {
     return ProfileFlowNodeBuilder(
-      nodeFactory = component.nodeFactory(),
+      nodeFactory = component.nodeFactory,
       schema = schema
     )
   }

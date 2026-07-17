@@ -1,21 +1,22 @@
 package ru.sla.clarify.feature.debug.panel.routing.di
 
-import com.squareup.anvil.annotations.MergeSubcomponent
-import dagger.BindsInstance
-import ru.sla.clarify.core.domain.di.scope.SingleIn
+import me.tatarka.inject.annotations.Provides
+import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.feature.debug.panel.domain.di.DebugPanelScope
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesSubcomponent
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
-@MergeSubcomponent(DebugPanelScope::class)
 @SingleIn(DebugPanelScope::class)
+@ContributesSubcomponent(DebugPanelScope::class)
 interface DebugPanelFlowComponent {
-  fun nodeFactory(): DebugPanelFlowNodeFactory
+  val nodeFactory: DebugPanelFlowNodeFactory
 
-  @MergeSubcomponent.Builder
-  interface Builder {
-    @BindsInstance
-    fun eventSink(sink: FlowEventSink): Builder
+  @Provides
+  fun provideDebugPanelFlowComponent(): DebugPanelFlowComponent = this
 
-    fun build(): DebugPanelFlowComponent
+  @ContributesSubcomponent.Factory(AppScope::class)
+  interface Factory {
+    fun createDebugPanelFlowComponent(eventSink: FlowEventSink): DebugPanelFlowComponent
   }
 }

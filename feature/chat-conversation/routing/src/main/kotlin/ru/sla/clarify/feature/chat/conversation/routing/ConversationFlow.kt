@@ -14,7 +14,7 @@ object ConversationFlow {
 
   fun nodeBuilder(component: ConversationFlowComponent): ConversationFlowNodeBuilder {
     return ConversationFlowNodeBuilder(
-      nodeFactory = component.nodeFactory(),
+      nodeFactory = component.nodeFactory,
       schema = schema
     )
   }

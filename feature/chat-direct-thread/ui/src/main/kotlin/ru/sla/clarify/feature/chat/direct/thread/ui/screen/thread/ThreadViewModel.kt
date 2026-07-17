@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
@@ -24,7 +25,6 @@ import ru.sla.clarify.uikit.component.chat.bubble
 import ru.sla.clarify.uikit.component.chat.message
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
-import javax.inject.Inject
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 class ThreadViewModel(

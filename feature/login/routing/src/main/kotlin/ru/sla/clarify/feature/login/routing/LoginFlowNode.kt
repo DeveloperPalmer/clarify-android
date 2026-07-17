@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.login.routing
 
+import me.tatarka.inject.annotations.Inject
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
@@ -9,7 +10,6 @@ import ru.kode.way.whenFlowEvent
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
 import ru.sla.clarify.feature.login.domain.LoginModel
 import ru.sla.clarify.feature.login.ui.routing.FlowEvent
-import javax.inject.Inject
 
 class LoginFlowNode @Inject constructor(
   private val loginModel: LoginModel

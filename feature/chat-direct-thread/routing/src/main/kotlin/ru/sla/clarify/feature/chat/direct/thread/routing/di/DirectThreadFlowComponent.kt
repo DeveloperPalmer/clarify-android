@@ -1,22 +1,22 @@
 package ru.sla.clarify.feature.chat.direct.thread.routing.di
 
-import com.squareup.anvil.annotations.MergeSubcomponent
-import dagger.BindsInstance
-import ru.sla.clarify.core.domain.di.scope.SingleIn
-import ru.sla.clarify.feature.chat.branch.routing.di.BranchFlowComponent
+import me.tatarka.inject.annotations.Provides
+import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesSubcomponent
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(DirectThreadScope::class)
-@MergeSubcomponent(DirectThreadScope::class)
+@ContributesSubcomponent(DirectThreadScope::class)
 interface DirectThreadFlowComponent {
-  fun nodeFactory(): DirectThreadFlowNodeFactory
-  fun branchFlowComponent(): BranchFlowComponent.Builder
+  val nodeFactory: DirectThreadFlowNodeFactory
 
-  @MergeSubcomponent.Builder
-  interface Builder {
-    @BindsInstance
-    fun params(target: TargetParams): Builder
-    fun build(): DirectThreadFlowComponent
+  @Provides
+  fun provideDirectThreadFlowComponent(): DirectThreadFlowComponent = this
+
+  @ContributesSubcomponent.Factory(ConversationScope::class)
+  interface Factory {
+    fun createDirectThreadFlowComponent(params: TargetParams): DirectThreadFlowComponent
   }
 }

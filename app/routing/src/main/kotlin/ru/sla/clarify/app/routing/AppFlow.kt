@@ -13,7 +13,7 @@ object AppFlow {
 
   fun nodeBuilder(component: AppFlowComponent): AppFlowNodeBuilder {
     return AppFlowNodeBuilder(
-      nodeFactory = component.nodeFactory(),
+      nodeFactory = component.nodeFactory,
       schema = schema
     )
   }

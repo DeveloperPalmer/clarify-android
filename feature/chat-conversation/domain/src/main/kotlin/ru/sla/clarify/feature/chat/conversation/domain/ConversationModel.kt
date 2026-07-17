@@ -3,15 +3,15 @@ package ru.sla.clarify.feature.chat.conversation.domain
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.ReactiveModel
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
-import javax.inject.Inject
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(ConversationScope::class)
 class ConversationModel @Inject constructor(

@@ -1,17 +1,15 @@
 package ru.sla.clarify.feature.chat.direct.thread.ui.di
 
-import com.squareup.anvil.annotations.ContributesTo
-import dagger.Module
-import dagger.Provides
+import me.tatarka.inject.annotations.Provides
+import me.tatarka.inject.annotations.Qualifier
 import ru.sla.clarify.core.ui.WiredComposableScreen
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread.ThreadScreen
 import ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread.ThreadViewModel
-import javax.inject.Qualifier
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
 
-@Module
 @ContributesTo(DirectThreadScope::class)
-object ThreadUiModule {
+interface ThreadUiModule {
   @Provides
   @WiredScreen(Screen.Thread)
   fun provideThreadScreen(model: ThreadViewModel): WiredComposableScreen {

@@ -1,11 +1,21 @@
 package ru.sla.clarify.feature.profile.routing.di
 
-import com.squareup.anvil.annotations.MergeSubcomponent
-import ru.sla.clarify.core.domain.di.scope.SingleIn
+import me.tatarka.inject.annotations.Provides
+import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.profile.domain.di.ProfileScope
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesSubcomponent
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
-@MergeSubcomponent(ProfileScope::class)
 @SingleIn(ProfileScope::class)
+@ContributesSubcomponent(ProfileScope::class)
 interface ProfileFlowComponent {
-  fun nodeFactory(): ProfileFlowNodeFactory
+  val nodeFactory: ProfileFlowNodeFactory
+
+  @Provides
+  fun provideProfileFlowComponent(): ProfileFlowComponent = this
+
+  @ContributesSubcomponent.Factory(ConversationScope::class)
+  interface Factory {
+    fun createProfileFlowComponent(): ProfileFlowComponent
+  }
 }

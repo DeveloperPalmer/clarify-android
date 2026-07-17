@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chat.group.thread.routing
 
 import kotlinx.coroutines.CoroutineScope
+import me.tatarka.inject.annotations.Inject
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
@@ -11,7 +12,6 @@ import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadModel
 import ru.sla.clarify.feature.chat.group.thread.ui.routing.FlowEvent
-import javax.inject.Inject
 
 class GroupThreadFlowNode @Inject constructor(
   private val groupThreadModel: GroupThreadModel

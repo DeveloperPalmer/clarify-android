@@ -1,6 +1,6 @@
 plugins {
   id 'android-library-convention'
-  id 'dagger-convention'
+  id "kotlin-inject-convention"
   id 'android-compose-convention'
   alias(libs.plugins.way)
 }
@@ -14,4 +14,5 @@ dependencies {
   api project(":feature:chat-group-thread:data")
   api project(":feature:chat-group-thread:domain")
   api project(":feature:chat-group-thread:ui")
+  implementation project(":feature:chat-conversation:domain")
 }

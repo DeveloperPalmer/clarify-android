@@ -2,8 +2,8 @@ package ru.sla.clarify.feature.chat.group.thread.domain
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.ReactiveModel
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Commit
@@ -12,8 +12,8 @@ import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
-import javax.inject.Inject
 
 @SingleIn(GroupThreadScope::class)
 class GroupThreadModel @Inject constructor(

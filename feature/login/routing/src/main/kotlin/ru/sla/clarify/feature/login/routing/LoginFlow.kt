@@ -7,7 +7,7 @@ object LoginFlow {
 
   fun nodeBuilder(component: LoginFlowComponent): LoginFlowNodeBuilder {
     return LoginFlowNodeBuilder(
-      nodeFactory = component.nodeFactory(),
+      nodeFactory = component.nodeFactory,
       schema = schema
     )
   }

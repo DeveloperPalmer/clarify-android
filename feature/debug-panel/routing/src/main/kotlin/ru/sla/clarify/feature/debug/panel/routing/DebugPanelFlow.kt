@@ -7,7 +7,7 @@ object DebugPanelFlow {
 
   fun nodeBuilder(component: DebugPanelFlowComponent): DebugPanelFlowNodeBuilder {
     return DebugPanelFlowNodeBuilder(
-      nodeFactory = component.nodeFactory(),
+      nodeFactory = component.nodeFactory,
       schema = schema
     )
   }

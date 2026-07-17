@@ -9,8 +9,8 @@ import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Transaction
 import com.google.firebase.firestore.WriteBatch
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.di.scope.AppScope
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCHES_COLLECTION
@@ -26,7 +26,7 @@ import ru.sla.clarify.lib.google.firestore.FirestoreSchema.UNREAD_COMMITS_COLLEC
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USERS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USER_EMAIL
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
-import javax.inject.Inject
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(AppScope::class)
 class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {

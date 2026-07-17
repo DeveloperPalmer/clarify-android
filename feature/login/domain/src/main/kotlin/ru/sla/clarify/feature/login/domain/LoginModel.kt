@@ -1,9 +1,9 @@
 package ru.sla.clarify.feature.login.domain
 
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.core.domain.ReactiveModel
-import ru.sla.clarify.core.domain.di.scope.SingleIn
-import javax.inject.Inject
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(LoginScope::class)
 class LoginModel @Inject constructor(

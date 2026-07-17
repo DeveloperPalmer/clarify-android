@@ -1,20 +1,22 @@
 package ru.sla.clarify.feature.chat.group.thread.routing.di
 
-import com.squareup.anvil.annotations.MergeSubcomponent
-import dagger.BindsInstance
-import ru.sla.clarify.core.domain.di.scope.SingleIn
+import me.tatarka.inject.annotations.Provides
+import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesSubcomponent
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
-@MergeSubcomponent(GroupThreadScope::class)
 @SingleIn(GroupThreadScope::class)
+@ContributesSubcomponent(GroupThreadScope::class)
 interface GroupThreadFlowComponent {
-  fun nodeFactory(): GroupThreadFlowNodeFactory
+  val nodeFactory: GroupThreadFlowNodeFactory
 
-  @MergeSubcomponent.Builder
-  interface Builder {
-    @BindsInstance
-    fun params(target: TargetParams): Builder
-    fun build(): GroupThreadFlowComponent
+  @Provides
+  fun provideGroupThreadFlowComponent(): GroupThreadFlowComponent = this
+
+  @ContributesSubcomponent.Factory(ConversationScope::class)
+  interface Factory {
+    fun createGroupThreadFlowComponent(params: TargetParams): GroupThreadFlowComponent
   }
 }

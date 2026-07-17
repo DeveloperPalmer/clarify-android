@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chat.branch.data
 
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,8 +10,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
@@ -39,8 +38,9 @@ import ru.sla.clarify.mapper.data.toDomain
 import ru.sla.clarify.mapper.data.toLocalDateTime
 import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
-import javax.inject.Inject
 
 @SingleIn(BranchScope::class)
 @ContributesBinding(BranchScope::class)

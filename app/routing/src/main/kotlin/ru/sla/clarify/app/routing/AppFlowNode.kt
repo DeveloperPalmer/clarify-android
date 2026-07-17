@@ -3,6 +3,7 @@ package ru.sla.clarify.app.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import me.tatarka.inject.annotations.Inject
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
@@ -16,7 +17,6 @@ import ru.sla.clarify.core.routing.FlowNodeCoroutineScopeHook
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow
 import ru.sla.clarify.feature.login.routing.LoginFlow
-import javax.inject.Inject
 
 class AppFlowNode @Inject constructor(
   private val eventSink: FlowEventSink,

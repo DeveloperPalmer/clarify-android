@@ -3,9 +3,9 @@
 // but outside of plugins block everything works ok
 plugins {
   id "org.jetbrains.kotlin.jvm"
-  id "com.diffplug.spotless"
   id "com.google.devtools.ksp"
   id "io.gitlab.arturbosch.detekt"
+  id "spotless-convention"
 }
 
 kotlin {
@@ -47,30 +47,6 @@ test {
     showStackTraces true
     showCauses true
     exceptionFormat "full"
-  }
-}
-
-spotless {
-  kotlin {
-    target("**/*.kt")
-    targetExclude("**/build/**/*.*")
-    ktlint(libs.versions.ktlint.get()).editorConfigOverride(
-        [
-            "indent_size"                                       : "2",
-            "max_line_length"                                   : "120",
-            "ktlint_standard_filename"                          : "disabled",
-            "ktlint_standard_function-expression-body"          : "disabled",
-            "ktlint_standard_function-signature"                : "disabled",
-            "ktlint_standard_class-signature"                   : "disabled",
-            "ktlint_standard_blank-line-between-when-conditions": "disabled",
-            "ktlint_standard_comment-wrapping"                  : "disabled",
-            "ij_kotlin_allow_trailing_comma"                    : "false",
-            "ij_kotlin_allow_trailing_comma_on_call_site"       : "false",
-            "ktlint_function_naming_ignore_when_annotated_with" : "Composable",
-        ]
-    )
-    trimTrailingWhitespace()
-    endWithNewline()
   }
 }
 

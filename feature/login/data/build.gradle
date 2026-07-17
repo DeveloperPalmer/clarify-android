@@ -1,6 +1,6 @@
 plugins {
   id 'android-library-convention'
-  id 'dagger-convention'
+  id "kotlin-inject-convention"
 }
 
 android {
@@ -10,8 +10,8 @@ android {
 dependencies {
   implementation project(":lib:google:authenticator")
   implementation project(":lib:google:firestore")
-  implementation project(":core:domain")
   implementation project(":app:domain")
+  implementation project(":core:domain")
   implementation project(":auth-session:data")
   implementation project(":auth-session:domain")
   implementation project(":feature:login:domain")

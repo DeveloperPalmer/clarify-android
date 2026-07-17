@@ -10,7 +10,7 @@ object DirectThreadFlow {
 
   fun nodeBuilder(component: DirectThreadFlowComponent): DirectThreadFlowNodeBuilder {
     return DirectThreadFlowNodeBuilder(
-      nodeFactory = component.nodeFactory(),
+      nodeFactory = component.nodeFactory,
       schema = schema
     )
   }

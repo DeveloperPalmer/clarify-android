@@ -2,24 +2,24 @@ package ru.sla.clarify.auth.session.data.storage
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToOneOrNull
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
 import ru.sla.clarify.core.domain.di.scope.AppScope
-import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.mapDistinctNotNullChanges
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.database.PersistedDB
-import javax.inject.Inject
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
+import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)

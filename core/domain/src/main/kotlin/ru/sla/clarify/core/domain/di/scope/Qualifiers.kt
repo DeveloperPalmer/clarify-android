@@ -1,6 +1,6 @@
 package ru.sla.clarify.core.domain.di.scope
 
-import javax.inject.Qualifier
+import me.tatarka.inject.annotations.Qualifier
 
 @Qualifier
 @Retention(AnnotationRetention.RUNTIME)
