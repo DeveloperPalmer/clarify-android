@@ -54,7 +54,7 @@ import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.clarify.app.routing.AppFlow
 import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.routing.FlowEventMediator
-import ru.sla.clarify.core.routing.PredictiveNodeHost
+import ru.sla.clarify.core.routing.predictive.PredictiveNodeHost
 import ru.sla.clarify.core.routing.noTransition
 import ru.sla.clarify.core.routing.popTransition
 import ru.sla.clarify.core.routing.pushTransition
