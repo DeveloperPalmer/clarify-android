@@ -1,8 +1,9 @@
 [versions]
 # Core versions
 agp = "9.2.1"
-ksp = "2.3.7"
-kotlin = "2.4.0"
+desugar_jdk_libs = "2.1.5"
+ksp = "2.3.9"
+kotlin = "2.4.10"
 kotlin-result = "1.1.17"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization-json = "1.11.0"
@@ -11,21 +12,21 @@ androidx-activity = "1.13.0"
 androidx-annotation = "1.10.0"
 androidx-fragment = "1.8.9"
 androidx-splashscreen = "1.2.0"
-compose = "1.11.3"
-composeRuntime = "1.11.3"
+compose = "1.11.4"
+composeRuntime = "1.11.4"
 okhttp = "5.4.0"
 retrofit = "3.0.0"
 sqldelight = "2.3.2"
 # Project versions
 remo = "1.2.0"
 amvi = "0.9.1"
-way = "0.9.7"
-dagger = "2.59.2"
+way = "0.9.8"
+dagger = "2.60.1"
 anvil = "0.5.4"
 material3 = "1.4.0"
 # Additional versions
 ktlint = "1.8.0"
-spotless = "8.6.0"
+spotless = "8.8.0"
 detekt = "1.23.8"
 detekt-rules-compose = "1.4.0"
 coil = "2.7.0"
@@ -33,11 +34,11 @@ cachefix = "3.0.3"
 # Firebase
 googleid = "1.2.0"
 google-services = "4.5.0"
-fairebase-auth = "24.1.0"
-fairebase-firestore = "26.4.0"
-androidBuiltInKotlin = "9.2.1"
-junit-jupiter = "6.1.0"
-mockk = "1.14.9"
+fairebase-auth = "24.2.0"
+fairebase-firestore = "26.4.1"
+androidBuiltInKotlin = "9.3.0"
+junit-jupiter = "6.1.2"
+mockk = "1.14.11"
 turbine = "1.2.1"
 arrow = "2.2.3"
 junit = "4.13.2"
@@ -47,6 +48,7 @@ appcompat = "1.7.1"
 material = "1.14.0"
 
 [libraries]
+desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 kotlin-result = { module = "com.michael-bull.kotlin-result:kotlin-result", version.ref = "kotlin-result" }
 kotlin-result-coroutines = { module = "com.michael-bull.kotlin-result:kotlin-result-coroutines", version.ref = "kotlin-result" }
 kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }

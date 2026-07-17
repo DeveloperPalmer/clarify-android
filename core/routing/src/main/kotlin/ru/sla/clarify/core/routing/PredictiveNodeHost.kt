@@ -15,16 +15,22 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.SaveableStateHolder
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +49,8 @@ import ru.kode.way.Node
 import ru.kode.way.Path
 import ru.kode.way.Region
 import ru.kode.way.compose.ComposableNode
+import ru.kode.way.compose.LocalNavigationService
+import ru.kode.way.compose.LocalNodePath
 import ru.kode.way.compose.NodeWithPath
 import ru.kode.way.compose.defaultTransitionSpec
 import ru.kode.way.toStepsReversed
@@ -71,6 +79,11 @@ import ru.kode.way.toStepsReversed
  * Predictive-прогресс отдаётся платформой только на Android 14+ (API 34); на более старых версиях жест
  * деградирует до мгновенного back без анимации.
  *
+ * Активный узел рендерится через [AnimatedContent] с ключом по [Path] (см. [ActiveNode] — почему это важно
+ * для памяти), состояние экранов живёт в [SaveableStateHolder], экранам предоставляются
+ * [LocalNavigationService] и [LocalNodePath]. Не поддерживается только parallel-flow корень
+ * (в приложении корень — обычный flow, рендерится активный узел единственного региона).
+ *
  * @param service навигационный сервис Way, чьё активное состояние отображается и анимируется.
  * @param onDismissRequest вызывается, как только жест подтверждён (доведён до конца).
  * @param transitionSpec обычный (не жестовый) переход между экранами; при выполнении «назад» подавляется
@@ -81,7 +94,7 @@ fun PredictiveNodeHost(
   service: NavigationService<*>,
   onDismissRequest: () -> Unit,
   modifier: Modifier = Modifier,
-  transitionSpec: AnimatedContentTransitionScope<NodeWithPath?>.() -> ContentTransform = defaultTransitionSpec
+  transitionSpec: AnimatedContentTransitionScope<Path?>.() -> ContentTransform = defaultTransitionSpec
 ) {
   LaunchedEffect(service) {
     if (!service.isStarted()) {
@@ -129,39 +142,48 @@ fun PredictiveNodeHost(
     }
   }
 
-  Box(modifier = modifier.fillMaxSize()) {
-    if (isRevealing && belowNode != null) {
-      RevealedNode(
-        node = belowNode.node,
+  val saveableStateHolder = rememberSaveableStateHolder()
+  CompositionLocalProvider(LocalNavigationService provides service) {
+    Box(modifier = modifier.fillMaxSize()) {
+      if (isRevealing && belowNode != null) {
+        RevealedNode(
+          below = belowNode,
+          controller = controller,
+          deviceCornerPx = deviceCornerPx
+        )
+        Scrim(
+          controller = controller
+        )
+      }
+      ActiveNode(
+        active = activeNode,
         controller = controller,
-        deviceCornerPx = deviceCornerPx
-      )
-      Scrim(
-        controller = controller
+        isRevealing = isRevealing,
+        deviceCornerPx = deviceCornerPx,
+        saveableStateHolder = saveableStateHolder,
+        transitionSpec = transitionSpec
       )
     }
-    ActiveNode(
-      active = activeNode,
-      controller = controller,
-      isRevealing = isRevealing,
-      deviceCornerPx = deviceCornerPx,
-      transitionSpec = transitionSpec
-    )
   }
 }
 
 /**
- * Раскрытая снизу нода — тот, на который вернёмся. Во время протяжки ужимается синхронно с верхним и стоит
- * смещённым за левый край; при выполнении «назад» выезжает к центру и восстанавливает полный размер
+ * Раскрытая снизу нода — та, на которую вернёмся. Во время протяжки ужимается синхронно с верхним и стоит
+ * смещённой за левый край; при выполнении «назад» выезжает к центру и восстанавливает полный размер
  * (см. [applyRevealedTransform]).
  *
- * graphicsLayer вешается на обёртку-[Box], а НЕ передаётся в [RenderNode]: [ComposableNode.Content] в этом
+ * graphicsLayer вешается на обёртку-[Box], а НЕ передаётся в `Content`: [ComposableNode.Content] в этом
  * проекте игнорирует переданный модификатор (экран сам задаёт свой размер), поэтому трансформация должна жить
  * на реальной обёртке, иначе не применится.
+ *
+ * Превью намеренно рендерится БЕЗ [SaveableStateHolder]: оно живёт одновременно с контентом [ActiveNode],
+ * а [SaveableStateHolder] запрещает одновременную регистрацию одного ключа — на кадре подмены активного узла
+ * общий ключ пути мог бы схлестнуться с записью холдера. Состояние превью и не нужно: когда экран станет
+ * активным, [AnimatedContent] скомпонует его заново уже под холдером.
  */
 @Composable
 private fun RevealedNode(
-  node: Node,
+  below: NodeWithPath,
   controller: PredictiveBackController,
   deviceCornerPx: Float,
   modifier: Modifier = Modifier
@@ -171,10 +193,12 @@ private fun RevealedNode(
       .fillMaxSize()
       .graphicsLayer { applyRevealedTransform(controller, deviceCornerPx) }
   ) {
-    RenderNode(
-      modifier = Modifier.fillMaxSize(),
-      node = node
-    )
+    val node = below.node
+    if (node is ComposableNode) {
+      CompositionLocalProvider(LocalNodePath provides below.path) {
+        node.Content(Modifier.fillMaxSize())
+      }
+    }
   }
 }
 
@@ -204,6 +228,13 @@ private fun Scrim(
  * сохраняется собственная composition/state экрана.
  * При выполнении «назад» обычный переход подавляется ([noTransition]) — cross-fade уже рисуют слои выше,
  * а активный узел подменяется мгновенно под ним.
+ *
+ * [AnimatedContent] ключуется по [Path] — лёгкому значению, — а НЕ по [NodeWithPath].
+ * Compose `Transition` удерживает предыдущее состояние в `segment.initialState`
+ * до следующего перехода, поэтому ключ-[NodeWithPath] оставлял бы весь граф уже ушедшей ноды (DI-scope,
+ * вьюмодели, дочерние ноды) в SlotTable композиции на всё время жизни хоста. Ноды для отрисовки разрешаются
+ * через [nodeCache]; когда контент ключа окончательно покинул [AnimatedContent] (exit-анимация доиграла)
+ * и ключ не активен, его кэш и запись [SaveableStateHolder] вычищаются — ушедшая нода становится доступной GC.
  */
 @Composable
 private fun ActiveNode(
@@ -211,43 +242,101 @@ private fun ActiveNode(
   controller: PredictiveBackController,
   isRevealing: Boolean,
   deviceCornerPx: Float,
-  transitionSpec: AnimatedContentTransitionScope<NodeWithPath?>.() -> ContentTransform,
+  saveableStateHolder: SaveableStateHolder,
+  transitionSpec: AnimatedContentTransitionScope<Path?>.() -> ContentTransform,
   modifier: Modifier = Modifier
 ) {
+  // key → Node для состояний, которые AnimatedContent ещё может отрисовать (активная нода плюс уходящие).
+  // Snapshot-backed, чтобы запись была видна чтению в content-лямбде.
+  val nodeCache = remember { mutableStateMapOf<String, Node>() }
+  // Ключи, смонтированные AnimatedContent прямо сейчас: добавляются на входе, убираются когда контент
+  // (включая exit-анимацию) ушёл. Snapshot-backed, чтобы эффект очистки перезапускался при изменении.
+  val mountedKeys = remember { mutableStateListOf<String>() }
+  // Ключи, отданные SaveableStateHolder, — чтобы эффект очистки знал, что вычищать. Обычный (не snapshot)
+  // set: читается только императивно внутри эффекта, не в композиции.
+  val trackedKeys = remember { mutableSetOf<String>() }
+
+  val activePath = active?.path
+  val activeKey = activePath?.toSaveableKey()
+  if (active != null && activeKey != null && nodeCache[activeKey] !== active.node) {
+    // Guard, чтобы неизменившаяся нода не записывала лишнюю snapshot-мутацию на каждой рекомпозиции.
+    nodeCache[activeKey] = active.node
+  }
+
   AnimatedContent(
     modifier = modifier
       .fillMaxSize()
       .graphicsLayer { if (isRevealing) applyActiveTransform(controller, deviceCornerPx) },
-    targetState = active,
+    targetState = activePath,
+    contentKey = { it?.toSaveableKey() },
     transitionSpec = { if (controller.isNavigatingBack) noTransition() else transitionSpec() },
     label = "PredictiveNodeHost"
-  ) { state ->
-    RenderNode(
-      modifier = Modifier.fillMaxSize(),
-      node = state?.node
-    )
+  ) { path ->
+    val key = path?.toSaveableKey()
+    val node = key?.let { nodeCache[it] }
+    if (path != null && key != null && node is ComposableNode) {
+      DisposableEffect(key) {
+        trackedKeys.add(key)
+        mountedKeys.add(key)
+        onDispose {
+          mountedKeys.remove(key)
+          nodeCache.remove(key)
+        }
+      }
+      ComposableNodeContent(
+        node = node,
+        path = path,
+        saveableStateHolder = saveableStateHolder
+      )
+    } else {
+      // Flow-узел без собственного содержимого (или уже вычищенная нода) — пустой placeholder.
+      Box(Modifier.fillMaxSize())
+    }
+  }
+
+  // Чистим SaveableStateHolder для ключей, чей контент полностью покинул AnimatedContent и которые больше
+  // не активны (сам Node из кэша уже сброшен в onDispose выше; здесь — ещё и подстраховка для него).
+  // Именно СНАРУЖИ SaveableStateProvider: removeState изнутри content был бы отменён — sibling-эффекты
+  // диспозятся child-before-parent, и dispose-time saveState() провайдера тут же вернул бы запись.
+  LaunchedEffect(mountedKeys.toList(), activeKey) {
+    trackedKeys.toList()
+      .filter { it != activeKey && it !in mountedKeys }
+      .forEach { key ->
+        saveableStateHolder.removeState(key)
+        nodeCache.remove(key)
+        trackedKeys.remove(key)
+      }
   }
 }
 
 /**
- * Рисует узел навигации, если это экран ([ComposableNode]); иначе занимает место пустым [Box] (для flow-узлов
- * без собственного содержимого).
+ * Рендерит [ComposableNode.Content] под записью [SaveableStateHolder] с ключом пути, отдавая путь
+ * через [LocalNodePath].
  *
- * Внимание: для [ComposableNode] [modifier] фактически игнорируется (экран сам задаёт свой размер, см.
- * `BasicWiredComposableScreen.Content`) — он влияет только на пустой placeholder. Любые трансформации экрана
- * вешайте на внешнюю обёртку, а не сюда.
+ * Внимание: переданный в `Content` модификатор экраны этого проекта фактически игнорируют (экран сам задаёт
+ * свой размер, см. `BasicWiredComposableScreen.Content`). Любые трансформации экрана вешайте на внешнюю
+ * обёртку, а не сюда.
  */
 @Composable
-private fun RenderNode(
-  node: Node?,
+private fun ComposableNodeContent(
+  node: ComposableNode,
+  path: Path,
+  saveableStateHolder: SaveableStateHolder,
   modifier: Modifier = Modifier
 ) {
-  if (node is ComposableNode) {
-    node.Content(modifier)
-  } else {
-    Box(modifier)
+  saveableStateHolder.SaveableStateProvider(path.toSaveableKey()) {
+    CompositionLocalProvider(LocalNodePath provides path) {
+      node.Content(modifier.fillMaxSize())
+    }
   }
 }
+
+/**
+ * Инъективный ключ [SaveableStateHolder] для пути узла: полный [ru.kode.way.Segment.id] каждого сегмента,
+ * а НЕ [Path.toString] — тот склеивает `Segment.name` и отбрасывает дизамбигуатор `@graphId:file`, из-за чего
+ * два разных кросс-модульных пути схлопнулись бы в один ключ.
+ */
+private fun Path.toSaveableKey(): String = segments.joinToString(".") { it.id }
 
 /**
  * Держит всё анимируемое состояние жеста predictive back и инкапсулирует его жизненный цикл — протяжку,

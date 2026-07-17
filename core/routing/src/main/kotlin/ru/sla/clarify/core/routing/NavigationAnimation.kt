@@ -8,60 +8,22 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import ru.kode.way.compose.NodeWithPath
+import ru.kode.way.Path
 import ru.kode.way.startsWith
 
-/**
- * Creates a TransitionSpec which detects basic push/pop transitions based on source and target paths.
- * For example a transition
- *
- * appFlow.loginFlow.passwordInput → appFlow.loginFlow.passwordInput.otpInput
- *
- * will be recognized as a "push"-transition, because source path is contained within the target path.
- *
- * Similar logic, but in reverse is applied to detect "pop"-transitions.
- *
- * If neither source path contained in target path nor target path is contained in source path, this is treated as
- * an ambiguous situation and then [ambiguousTransitionResolver] will be called to build a transition.
- *
- * This resolver can be used to inspect source/target paths and produce the desired transition based on them,
- * for example:
- *
- * ```
- * rememberTransitionSpec(
- *   ambiguousTransitionResolver = {
- *     val fromNode = initialState; val target = targetState
- *     when {
- *       // (or use PermissionFlowSchema/LoginFlowSchema to find paths)
- *       fromNode.path == Path("appFlow", "permissionsFlow") && toNode.path == Path("appFlow", "loginFlow") -> {
- *         pushTransition()
- *       }
- *       else -> fadeTransition()
- *   }
- * )
- * ```
- *
- * **NOTE**: If automatic push/pop transition is derived incorrectly for your case, you should write your own transition
- * spec lambda and not use [rememberTransitionSpec] at all
- *
- * @param ambiguousTransitionResolver will be called to build a transition from/to nodes are such that
- * transition kind can not be determined automatically. See function description for an example implementation
- */
 @Composable
 fun rememberTransitionSpec(
-  ambiguousTransitionResolver: AnimatedContentTransitionScope<NodeWithPath?>.() -> ContentTransform = {
-    pushTransition()
-  }
-): AnimatedContentTransitionScope<NodeWithPath?>.() -> ContentTransform {
+  ambiguousTransitionResolver: AnimatedContentTransitionScope<Path?>.() -> ContentTransform
+): AnimatedContentTransitionScope<Path?>.() -> ContentTransform {
   return remember {
     {
-      val fromNode = initialState
-      val toNode = targetState
+      val fromPath = initialState
+      val toPath = targetState
       when {
-        fromNode != null && toNode != null -> {
-          if (toNode.path.length > fromNode.path.length && toNode.path.startsWith(fromNode.path)) {
+        fromPath != null && toPath != null -> {
+          if (toPath.length > fromPath.length && toPath.startsWith(fromPath)) {
             pushTransition()
-          } else if (toNode.path.length < fromNode.path.length && fromNode.path.startsWith(toNode.path)) {
+          } else if (toPath.length < fromPath.length && fromPath.startsWith(toPath)) {
             popTransition()
           } else {
             ambiguousTransitionResolver()

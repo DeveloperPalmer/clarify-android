@@ -171,10 +171,10 @@ class MainActivity : ComponentActivity() {
                 //    initialState.node.findParentFlowNode().customTransition(from, to) != null) {
                 //    initialState.node.findParentFlowNode().customTransition(from, to)
                 //  } else { pushTransition() }
-                val fromInitialResolve = initialState?.path?.segments
+                val fromInitialResolve = initialState?.segments
                   ?.lastOrNull()
                   ?.name == "initialFlowResolve"
-                val toLogin = targetState?.path?.segments
+                val toLogin = targetState?.segments
                   ?.any { it.name == "loginFlow" } == true
                 when {
                   fromInitialResolve -> noTransition()
