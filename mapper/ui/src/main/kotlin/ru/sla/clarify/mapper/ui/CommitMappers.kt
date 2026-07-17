@@ -42,10 +42,7 @@ fun List<DomainCommit>.toUiCommits(
             text = commit.text,
             time = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE),
             sender = commit.sender(bubbleType, memberNames),
-            selection = BubbleMessage.Selection(
-              inSelectionMode = false,
-              isSelected = false
-            )
+            isSelected = false
           )
         )
       }

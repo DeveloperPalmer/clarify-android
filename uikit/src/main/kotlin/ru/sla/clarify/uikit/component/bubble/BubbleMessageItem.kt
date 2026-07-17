@@ -65,6 +65,7 @@ import kotlin.math.sin
 fun BubbleMessageItem(
   bubble: BubbleMessage,
   modifier: Modifier = Modifier,
+  selectionEnabled: Boolean = false,
   onClick: (() -> Unit)? = null,
   onLongClick: (() -> Unit)? = null,
   popup: (@Composable () -> Unit)? = null
@@ -105,8 +106,8 @@ fun BubbleMessageItem(
   }
   SelectableBubbleContainer(
     modifier = modifier,
-    selected = bubble.selection.isSelected,
-    inSelectionMode = bubble.selection.inSelectionMode,
+    selected = bubble.isSelected,
+    selectionEnabled = selectionEnabled,
     onClick = onClick,
     onLongClick = onLongClick
   ) {
@@ -125,15 +126,15 @@ fun BubbleMessageItem(
       timeColor = timeColor,
       statusReadColor = statusReadColor,
       popup = popup,
-      onClick = onClick.takeIf { !bubble.selection.inSelectionMode },
-      onLongClick = onLongClick.takeIf { !bubble.selection.inSelectionMode }
+      onClick = onClick.takeIf { !selectionEnabled },
+      onLongClick = onLongClick.takeIf { !selectionEnabled }
     )
   }
 }
 
 @Composable
 private fun SelectableBubbleContainer(
-  inSelectionMode: Boolean,
+  selectionEnabled: Boolean,
   selected: Boolean,
   onClick: (() -> Unit)?,
   onLongClick: (() -> Unit)?,
@@ -141,7 +142,7 @@ private fun SelectableBubbleContainer(
   content: @Composable () -> Unit
 ) {
   Row(
-    modifier = if (inSelectionMode) {
+    modifier = if (selectionEnabled) {
       modifier.surface(
         shape = RectangleShape,
         backgroundColor = if (selected) colors.backgroundAccentPrimary else Color.Transparent,
@@ -154,7 +155,7 @@ private fun SelectableBubbleContainer(
     verticalAlignment = Alignment.CenterVertically
   ) {
     AnimatedVisibility(
-      visible = inSelectionMode,
+      visible = selectionEnabled,
       enter = AppTheme.motion.slideInFromStart(),
       exit = AppTheme.motion.slideOutToStart()
     ) {

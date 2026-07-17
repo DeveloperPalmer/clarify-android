@@ -50,7 +50,7 @@ private fun BubbleMessage(modifier: Modifier = Modifier) {
         text = "Спасибо! Сейчас покажу",
         time = "18:05",
         sender = null,
-        selection = previewSelection
+        isSelected = false
       )
     )
     ClusterBubblePreview(
@@ -61,7 +61,7 @@ private fun BubbleMessage(modifier: Modifier = Modifier) {
         text = "Вот текущий флоу создания ветки — несколько строк, чтобы было видно перенос времени",
         time = "18:05",
         sender = null,
-        selection = previewSelection
+        isSelected = false
       )
     )
     ClusterBubblePreview(
@@ -72,7 +72,7 @@ private fun BubbleMessage(modifier: Modifier = Modifier) {
         text = "Зажимаешь — и готово",
         time = "18:06",
         sender = null,
-        selection = previewSelection
+        isSelected = false
       )
     )
     VSpacer(12.dp)
@@ -84,7 +84,7 @@ private fun BubbleMessage(modifier: Modifier = Modifier) {
         text = "Привет! Глянула макет",
         time = "18:02",
         sender = null,
-        selection = previewSelection
+        isSelected = false
       )
     )
     ClusterBubblePreview(
@@ -95,7 +95,7 @@ private fun BubbleMessage(modifier: Modifier = Modifier) {
         text = "Особенно как треды выносятся в отдельный экран — это топ",
         time = "18:03",
         sender = null,
-        selection = previewSelection
+        isSelected = false
       )
     )
   }
@@ -159,7 +159,7 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
         text = "Привет всем! Спасибо что собрали",
         time = "18:02",
         sender = anna,
-        selection = previewSelection
+        isSelected = false
       )
     )
     ClusterBubblePreview(
@@ -170,7 +170,7 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
         text = "Давайте сюда скидывать всё по веткам",
         time = "18:02",
         sender = anna,
-        selection = previewSelection
+        isSelected = false
       )
     )
     VSpacer(12.dp)
@@ -182,7 +182,7 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
         text = "Ок",
         time = "18:14",
         sender = ilya,
-        selection = previewSelection
+        isSelected = false
       )
     )
     VSpacer(12.dp)
@@ -194,7 +194,7 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
         text = "Включаюсь",
         time = "10:30",
         sender = maria,
-        selection = previewSelection
+        isSelected = false
       )
     )
     VSpacer(12.dp)
@@ -209,13 +209,8 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
           id = UserId("me"),
           name = "Сергей Лановой"
         ),
-        selection = previewSelection
+        isSelected = false
       )
     )
   }
 }
-
-private val previewSelection = BubbleMessage.Selection(
-  inSelectionMode = false,
-  isSelected = false
-)

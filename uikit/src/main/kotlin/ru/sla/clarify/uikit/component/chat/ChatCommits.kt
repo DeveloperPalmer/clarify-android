@@ -35,6 +35,7 @@ fun ChatCommits(
   listState: LazyListState,
   onCommitsRead: (LocalDateTime) -> Unit,
   modifier: Modifier = Modifier,
+  selectionEnabled: Boolean = false,
   focusedMessage: Commit.Message? = null,
   onMessageClick: ((Commit.Message) -> Unit)? = null,
   onMessageLongClick: ((Commit.Message) -> Unit)? = null,
@@ -98,6 +99,7 @@ fun ChatCommits(
           BubbleMessageItem(
             modifier = Modifier.animateItem(),
             bubble = commit.bubble,
+            selectionEnabled = selectionEnabled,
             onClick = onMessageClick?.let { handler ->
               { handler(commit) }
             },

@@ -18,8 +18,7 @@ import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
 import ru.sla.clarify.mapper.ui.toUiCommits
-import ru.sla.clarify.uikit.component.bubble.BubbleMessage
-import ru.sla.clarify.uikit.component.bubble.selection
+import ru.sla.clarify.uikit.component.bubble.isSelected
 import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.component.chat.bubble
 import ru.sla.clarify.uikit.component.chat.message
@@ -268,18 +267,11 @@ private fun ViewState.updateSelection(
   selectedCommitIds: List<DomainCommit.Id>
 ): ViewState {
   val selectedIds = selectedCommitIds.toSet()
-  val editModeEnabled = selectedIds.isNotEmpty()
   return copy(
-    editModeEnabled = editModeEnabled,
+    editModeEnabled = selectedIds.isNotEmpty(),
     selectedCommitIds = selectedCommitIds,
     commits = commits.map { commit ->
-      Commit.message.bubble.selection.set(
-        commit,
-        BubbleMessage.Selection(
-          inSelectionMode = editModeEnabled,
-          isSelected = commit.source.id in selectedIds
-        )
-      )
+      Commit.message.bubble.isSelected.set(commit, commit.source.id in selectedIds)
     }
   )
 }

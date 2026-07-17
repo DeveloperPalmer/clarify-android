@@ -13,7 +13,7 @@ data class BubbleMessage(
   val text: String,
   val time: String,
   val sender: Sender?,
-  val selection: Selection
+  val isSelected: Boolean
 ) {
 
   @JvmInline
@@ -24,15 +24,6 @@ data class BubbleMessage(
     val id: UserId,
     val name: String
   )
-
-  @Immutable
-  @optics
-  data class Selection(
-    val inSelectionMode: Boolean,
-    val isSelected: Boolean
-  ) {
-    companion object
-  }
 
   @Immutable
   sealed interface Side {

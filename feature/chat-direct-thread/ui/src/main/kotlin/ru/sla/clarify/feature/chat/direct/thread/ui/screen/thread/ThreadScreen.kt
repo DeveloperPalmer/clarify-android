@@ -166,6 +166,7 @@ private fun ThreadReadyContent(
           modifier = Modifier.fillMaxSize(),
           listState = listState,
           commits = state.commits,
+          selectionEnabled = state.editModeEnabled,
           focusedMessage = state.focusedMessage,
           onCommitsRead = onCommitsRead,
           onMessageClick = onCommitClick,
