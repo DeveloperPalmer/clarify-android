@@ -29,6 +29,7 @@ import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
+import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
@@ -128,7 +129,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       conversationId = conversationId,
       branchId = conversationId,
       limit = count.toLong(),
-      before = before?.timestamp
+      before = null
     )
     applyInsertOrReplaceCommits(
       commits = historyCommits

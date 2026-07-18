@@ -1,9 +1,9 @@
 package ru.sla.clarify.lib.google.firestore
 
 import com.google.android.gms.tasks.Task
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.Query
@@ -25,6 +25,7 @@ import ru.sla.clarify.lib.google.firestore.FirestoreSchema.MEMBERS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.UNREAD_COMMITS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USERS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USER_EMAIL
+import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
@@ -176,23 +177,27 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
     conversationId: String,
     whereEqualTo: Branch.Id,
     whereArrayContains: UserId,
-    before: Timestamp?,
+    before: CommitCursor?,
     limit: Long
   ): Query {
     return remoteDB
       .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
       .collection(COMMITS_COLLECTION)
-      .limit(limit)
       .whereEqualTo(COMMIT_BRANCH_ID, whereEqualTo.value)
       .whereArrayContains(COMMIT_VISIBLE_FOR, whereArrayContains.value)
+      // documentId() is the ordering tie-break: it makes the (createdAt, id) cursor exact so
+      // pagination never skips/duplicates commits sharing the same createdAt. Same direction as
+      // createdAt, so Firestore serves it from the existing composite index (implicit __name__).
+      .orderBy(COMMIT_CREATED_AT, Query.Direction.DESCENDING)
+      .orderBy(FieldPath.documentId(), Query.Direction.DESCENDING)
       .let {
         if (before != null) {
-          it.whereLessThan(COMMIT_CREATED_AT, before)
+          it.startAfter(before.createdAt, before.id)
         } else {
           it
         }
       }
-      .orderBy(COMMIT_CREATED_AT, Query.Direction.DESCENDING)
+      .limit(limit)
   }
 }

@@ -103,7 +103,7 @@ class BranchRepositoryImpl @Inject constructor(
       conversationId = conversationId,
       branchId = branchId.value,
       limit = count.toLong(),
-      before = before?.timestamp
+      before = null
     )
     applyInsertOrReplaceCommits(
       conversationId = conversationId,

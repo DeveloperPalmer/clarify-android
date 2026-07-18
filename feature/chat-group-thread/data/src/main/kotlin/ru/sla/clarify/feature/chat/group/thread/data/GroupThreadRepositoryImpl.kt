@@ -64,7 +64,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       conversationId = conversationId.value,
       branchId = conversationId.value,
       limit = count.toLong(),
-      before = before?.timestamp
+      before = null
     )
     val userId = requireUserId()
     withContext(Dispatchers.IO) {

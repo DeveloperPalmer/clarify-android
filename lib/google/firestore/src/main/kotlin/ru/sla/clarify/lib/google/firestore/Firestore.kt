@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -27,6 +28,7 @@ import ru.sla.clarify.lib.google.firestore.codec.sentinel.ArrayUnion
 import ru.sla.clarify.lib.google.firestore.codec.sentinel.Delete
 import ru.sla.clarify.lib.google.firestore.codec.sentinel.Increment
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
+import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.MemberNM
@@ -592,17 +594,18 @@ class Firestore @Inject constructor(
     conversationId: String,
     branchId: String,
     limit: Long,
-    before: LocalDateTime?
+    before: CommitCursor?,
+    source: Source = Source.DEFAULT
   ): List<CommitNM> {
     val query = commitQuery(
       conversationId = conversationId,
       whereEqualTo = Branch.Id(branchId),
       whereArrayContains = requireUserId(),
-      before = before?.toTimestamp(),
+      before = before,
       limit = limit
     )
     return query
-      .get()
+      .get(source)
       .await()
       .documents
       .map { codec.decodeFromSnapshot<CommitNM>(it) }
