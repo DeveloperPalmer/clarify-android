@@ -31,6 +31,12 @@ class DebugPanelViewModel @Inject constructor(
       }
     }
 
+    onEach(intent(ViewIntents::openFeatureToggles)) {
+      action { _, _, _ ->
+        eventSink.sendEvent(FlowEvent.FeatureTogglesRequested)
+      }
+    }
+
     onEach(intent(ViewIntents::changeUserField)) {
       transitionTo { state, json ->
         state.copy(userField = json, userJsonError = null)

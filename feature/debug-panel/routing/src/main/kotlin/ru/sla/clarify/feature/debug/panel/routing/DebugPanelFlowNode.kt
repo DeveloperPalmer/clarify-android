@@ -6,6 +6,7 @@ import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
 import ru.kode.way.Ignore
+import ru.kode.way.NavigateTo
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.sla.clarify.core.routing.FlowNodeScopeDisposalHook
@@ -27,7 +28,15 @@ class DebugPanelFlowNode @Inject constructor(
 
   override fun transition(event: Event): FlowTransition<DebugPanelFlow.Result> {
     return when (event) {
-      is FlowEvent.DebugPanelDismissed -> Finish(DebugPanelFlow.Result.Dismissed)
+      is FlowEvent.DebugPanelDismissed -> {
+        Finish(DebugPanelFlow.Result.Dismissed)
+      }
+      is FlowEvent.FeatureTogglesRequested -> {
+        NavigateTo(Target.debugPanelFlow.featureToggles)
+      }
+      is FlowEvent.FeatureTogglesDismissed -> {
+        NavigateTo(Target.debugPanelFlow.main)
+      }
       else -> Ignore
     }
   }

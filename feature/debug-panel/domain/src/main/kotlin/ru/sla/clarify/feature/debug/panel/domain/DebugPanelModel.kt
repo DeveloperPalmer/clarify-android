@@ -4,6 +4,7 @@ import arrow.core.getOrElse
 import kotlinx.coroutines.CoroutineScope
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.ReactiveModel
+import ru.sla.clarify.core.domain.toggle.AppFeature
 import ru.sla.clarify.feature.debug.panel.domain.di.DebugPanelScope
 import ru.sla.clarify.feature.debug.panel.domain.entity.DebugUserException
 import ru.sla.clarify.feature.debug.panel.domain.entity.TestUser
@@ -19,5 +20,9 @@ class DebugPanelModel @Inject constructor(
   val createUser = task<String, Unit>(name = "createUser") { raw ->
     val user = TestUser(raw).getOrElse { throw DebugUserException(it.first()) }
     repository.createUser(user)
+  }
+
+  val setFeatureToggle = task<Pair<AppFeature, Boolean>, Unit>(name = "setFeatureToggle") { (feature, isEnabled) ->
+    repository.setFeatureToggle(feature, isEnabled)
   }
 }

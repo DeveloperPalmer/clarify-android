@@ -17,6 +17,7 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.feature.debug.panel.domain.entity.UserJsonError
 import ru.sla.clarify.uikit.component.button.PrimaryButton
+import ru.sla.clarify.uikit.component.button.SecondaryButton
 import ru.sla.clarify.uikit.component.textfield.PrimaryTextField
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
@@ -57,6 +58,11 @@ fun DebugPanelScreen(viewModel: DebugPanelViewModel) {
           text = stringResource(R.string.debug_panel_send),
           showLoading = state.userSending,
           enabled = state.userField.isNotBlank()
+        )
+        SecondaryButton(
+          modifier = Modifier.fillMaxWidth(),
+          onClick = intents.openFeatureToggles,
+          text = stringResource(R.string.debug_panel_feature_toggles)
         )
       }
     }

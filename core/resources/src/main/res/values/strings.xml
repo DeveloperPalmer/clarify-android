@@ -167,6 +167,7 @@
     <string name="debug_panel_notification_channel_name">Debug tools</string>
     <string name="debug_panel_json_hint">Paste user JSON here</string>
     <string name="debug_panel_send">Create user</string>
+    <string name="debug_panel_feature_toggles">Feature toggles</string>
     <string name="debug_panel_user_created">User created</string>
     <string name="debug_panel_user_create_failed">Failed to create user</string>
     <string name="debug_panel_error_malformed_json">Malformed JSON</string>

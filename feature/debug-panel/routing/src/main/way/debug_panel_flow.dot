@@ -6,5 +6,5 @@ digraph DebugPanelFlow {
     resultType = "ru.sla.clarify.feature.debug.panel.routing.DebugPanelFlow.Result"
   ]
 
-  debugPanelFlow -> main
+  debugPanelFlow -> main -> featureToggles
 }

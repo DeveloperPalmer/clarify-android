@@ -6,11 +6,13 @@ import me.tatarka.inject.annotations.Provides
 import ru.kode.plexus.core.FeatureConfigsBuilder
 import ru.kode.plexus.core.FeatureConfigsManager
 import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
+import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.clarify.core.domain.createCoroutineScope
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.core.domain.toggle.DefaultConfig
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
+import ru.sla.clarify.feature.debug.panel.data.config.DebugConfig
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
 import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 import software.amazon.lastmile.kotlin.inject.anvil.MergeComponent
@@ -43,8 +45,16 @@ interface AppModule {
 
   @Provides
   @SingleIn(AppScope::class)
-  fun provideFeatureConfigsManager(): FeatureConfigsManager {
+  fun provideFeatureConfigsManager(
+    debugConfig: () -> DebugConfig,
+    buildConfigProvider: BuildConfigProvider
+  ): FeatureConfigsManager {
     return FeatureConfigsBuilder()
+      .apply {
+        if (buildConfigProvider.buildType != BuildType.Release) {
+          addConfig(debugConfig())
+        }
+      }
       .addConfig(DefaultConfig())
       .build()
   }

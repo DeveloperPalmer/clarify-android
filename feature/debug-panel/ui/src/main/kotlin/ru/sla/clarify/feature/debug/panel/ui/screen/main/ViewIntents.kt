@@ -6,4 +6,5 @@ class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
   val createUser = intent(name = "createUser")
   val changeUserField = intent<String>(name = "jsonChanged")
+  val openFeatureToggles = intent(name = "openFeatureToggles")
 }

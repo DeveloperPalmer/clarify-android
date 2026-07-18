@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chat.conversation.ui.screen.main
 import androidx.compose.ui.text.input.TextFieldValue
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.zip
 import me.tatarka.inject.annotations.Inject
@@ -17,7 +18,7 @@ import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.toggle.AppFeature
-import ru.sla.clarify.core.domain.toggle.isFeatureEnabled
+import ru.sla.clarify.core.domain.toggle.isFeatureEnabledLive
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.entity.ContentLoadState
@@ -33,9 +34,9 @@ import ru.sla.resourcerefs.resRef
 
 class ChatListViewModel(
   dispatcher: CoroutineDispatcher,
-  featureConfigsManager: FeatureConfigsManager,
   private val eventSink: FlowEventSink,
-  private val conversationModel: ConversationModel
+  private val conversationModel: ConversationModel,
+  private val featureConfigsManager: FeatureConfigsManager
 ) : ViewModel<ViewState, ViewIntents>(dispatcher) {
 
   @Inject
@@ -43,12 +44,10 @@ class ChatListViewModel(
     eventSink: FlowEventSink,
     conversationModel: ConversationModel,
     featureConfigsManager: FeatureConfigsManager
-  ) : this(Dispatchers.Default, featureConfigsManager, eventSink, conversationModel)
-
-  private val groupsAvailable = featureConfigsManager.isFeatureEnabled(AppFeature.GroupsAvailable)
+  ) : this(Dispatchers.Default, eventSink, conversationModel, featureConfigsManager)
 
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState(groupsAvailable = groupsAvailable) to null
+    initial = ViewState() to null
 
     onEach(intent(ViewIntents::navigateBack)) {
       transitionTo { state, _ ->
@@ -104,8 +103,17 @@ class ChatListViewModel(
       }
     }
 
+    onEach(featureConfigsManager.isFeatureEnabledLive(AppFeature.GroupsAvailable)) {
+      transitionTo { state, groupsAvailable ->
+        state.copy(groupsAvailable = groupsAvailable)
+      }
+    }
+
     onEach(
-      conversationModel.conversations.map { conversations ->
+      combine(
+        conversationModel.conversations,
+        featureConfigsManager.isFeatureEnabledLive(AppFeature.GroupsAvailable)
+      ) { conversations, groupsAvailable ->
         if (groupsAvailable) {
           conversations
         } else {
@@ -118,10 +126,8 @@ class ChatListViewModel(
       }
     }
 
-    if (groupsAvailable) {
-      configureGroupConversationTransitions()
-    }
     configureDirectConversationTransitions()
+    configureGroupConversationTransitions()
     configureDeleteConversationTransitions()
   }
 
@@ -210,8 +216,10 @@ class ChatListViewModel(
 
   private fun MachineDsl<ViewState>.configureGroupConversationTransitions() {
     onEach(intent(ViewIntents::openGroupConversation)) {
-      action { _, _, conversationId ->
-        eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId))
+      action { state, _, conversationId ->
+        if (state.groupsAvailable) {
+          eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId))
+        }
       }
     }
 
