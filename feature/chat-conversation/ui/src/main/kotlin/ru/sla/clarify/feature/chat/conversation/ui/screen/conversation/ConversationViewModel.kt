@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.conversation.ui.screen.main
+package ru.sla.clarify.feature.chat.conversation.ui.screen.conversation
 
 import androidx.compose.ui.text.input.TextFieldValue
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,11 +28,11 @@ import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationModel
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
-import ru.sla.clarify.feature.chat.conversation.ui.screen.main.ViewState.CreateConversationTab
+import ru.sla.clarify.feature.chat.conversation.ui.screen.conversation.ViewState.CreateConversationTab
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 
-class ChatListViewModel(
+class ConversationViewModel(
   dispatcher: CoroutineDispatcher,
   private val eventSink: FlowEventSink,
   private val conversationModel: ConversationModel,
@@ -58,7 +58,7 @@ class ChatListViewModel(
       }
       action { state, _, _ ->
         if (!state.editModeEnabled) {
-          eventSink.sendEvent(FlowEvent.ChatListDismissed)
+          eventSink.sendEvent(FlowEvent.ConversationDismissed)
         }
       }
     }

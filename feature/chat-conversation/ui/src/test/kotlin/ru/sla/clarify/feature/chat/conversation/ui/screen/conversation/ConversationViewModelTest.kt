@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.conversation.ui.screen.main
+package ru.sla.clarify.feature.chat.conversation.ui.screen.conversation
 
 import androidx.compose.ui.text.input.TextFieldValue
 import app.cash.turbine.test
@@ -31,7 +31,7 @@ import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationModel
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
 
-internal class ChatListViewModelTest {
+internal class ConversationViewModelTest {
 
   private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -44,7 +44,7 @@ internal class ChatListViewModelTest {
   // replay = 1, чтобы результат можно было «выложить» в поток до того, как машина на него подпишется.
   private val getPeerByEmailResults = MutableSharedFlow<Result<Peer.Id, Throwable>>(replay = 1)
 
-  private lateinit var viewModel: ChatListViewModel
+  private lateinit var viewModel: ConversationViewModel
   private lateinit var intents: ViewIntents
 
   @BeforeEach
@@ -57,7 +57,7 @@ internal class ChatListViewModelTest {
   }
 
   private fun createViewModel(groupsAvailable: Boolean) {
-    viewModel = ChatListViewModel(
+    viewModel = ConversationViewModel(
       dispatcher = testDispatcher,
       eventSink = eventSink,
       conversationModel = conversationModel,
@@ -93,7 +93,7 @@ internal class ChatListViewModelTest {
       intents.navigateBack()
       advanceUntilIdle()
 
-      verify { eventSink.sendEvent(FlowEvent.ChatListDismissed) }
+      verify { eventSink.sendEvent(FlowEvent.ConversationDismissed) }
     }
 
   @Test
@@ -199,7 +199,7 @@ internal class ChatListViewModelTest {
         assertEquals(emptyList<Conversation.Id>(), state.selectedConversationsIds)
       }
 
-      verify(exactly = 0) { eventSink.sendEvent(FlowEvent.ChatListDismissed) }
+      verify(exactly = 0) { eventSink.sendEvent(FlowEvent.ConversationDismissed) }
     }
 
   @Test

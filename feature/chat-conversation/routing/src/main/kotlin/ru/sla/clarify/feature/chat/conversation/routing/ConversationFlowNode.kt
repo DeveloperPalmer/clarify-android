@@ -29,11 +29,11 @@ class ConversationFlowNode @Inject constructor(
   }
 
   override val dismissResult = ConversationFlow.Result.Dismissed
-  override val initial = Target.conversationFlow.main
+  override val initial = Target.conversationFlow.conversation
 
   override fun transition(event: Event): FlowTransition<ConversationFlow.Result> {
     return when (event) {
-      is FlowEvent.ChatListDismissed -> {
+      is FlowEvent.ConversationDismissed -> {
         Finish(ConversationFlow.Result.Dismissed)
       }
       is FlowEvent.ProfileRequested -> {
@@ -47,17 +47,17 @@ class ConversationFlowNode @Inject constructor(
       }
       is ConversationFlowChildFinishRequest.ProfileFlow -> when (event.result) {
         ProfileFlow.Result.Dismissed -> {
-          NavigateTo(Target.conversationFlow.main)
+          NavigateTo(Target.conversationFlow.conversation)
         }
         ProfileFlow.Result.LogoutSuccessfully -> {
           Finish(ConversationFlow.Result.LogoutSuccessfully)
         }
       }
       is ConversationFlowChildFinishRequest.DirectThreadFlow -> {
-        NavigateTo(Target.conversationFlow.main)
+        NavigateTo(Target.conversationFlow.conversation)
       }
       is ConversationFlowChildFinishRequest.GroupThreadFlow -> {
-        NavigateTo(Target.conversationFlow.main)
+        NavigateTo(Target.conversationFlow.conversation)
       }
       else -> Ignore
     }

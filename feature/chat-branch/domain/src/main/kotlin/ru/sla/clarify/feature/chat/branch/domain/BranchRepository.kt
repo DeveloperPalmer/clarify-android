@@ -9,12 +9,13 @@ import ru.sla.clarify.entity.chat.Member
 import java.time.LocalDateTime
 
 interface BranchRepository {
-  suspend fun subscribeOnBranchesChanges()
+  suspend fun subscribeOnBranchChanges()
   suspend fun subscribeOnBranchCommitsChanges()
-  suspend fun subscribeOnBranchUnreadCount()
+  suspend fun subscribeOnBranchUnreadCountChanges()
 
   suspend fun fetchHistoryCommits(count: Int, before: Commit? = null)
   suspend fun sendCommit(text: String)
+  suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean)
 
   suspend fun markAsRead()
   suspend fun markReadUpTo(lastReadAt: LocalDateTime)

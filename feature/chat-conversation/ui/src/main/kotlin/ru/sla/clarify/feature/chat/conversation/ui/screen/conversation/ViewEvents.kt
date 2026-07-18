@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.conversation.ui.screen.main
+package ru.sla.clarify.feature.chat.conversation.ui.screen.conversation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +27,7 @@ import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.event.ScreenViewEvent
 import ru.sla.clarify.core.ui.event.ViewEvent
 import ru.sla.clarify.core.ui.event.ViewEventHostScope
-import ru.sla.clarify.feature.chat.conversation.ui.screen.main.ViewState.CreateConversationTab
+import ru.sla.clarify.feature.chat.conversation.ui.screen.conversation.ViewState.CreateConversationTab
 import ru.sla.clarify.uikit.component.button.PrimaryButtonSmall
 import ru.sla.clarify.uikit.component.button.PrimaryTextButtonSmall
 import ru.sla.clarify.uikit.component.tabsrow.PrimaryTabsRow

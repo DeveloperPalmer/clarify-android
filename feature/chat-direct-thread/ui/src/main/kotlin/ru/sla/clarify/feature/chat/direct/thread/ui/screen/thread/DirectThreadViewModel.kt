@@ -27,7 +27,7 @@ import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
-class ThreadViewModel(
+class DirectThreadViewModel(
   private val eventSink: FlowEventSink,
   private val directThreadModel: DirectThreadModel,
   dispatcher: CoroutineDispatcher
@@ -47,7 +47,7 @@ class ThreadViewModel(
 
     onEach(intent(ViewIntents::navigateBack)) {
       action { _, _, _ ->
-        eventSink.sendEvent(FlowEvent.ThreadDismissed)
+        eventSink.sendEvent(FlowEvent.DirectThreadDismissed)
       }
     }
 

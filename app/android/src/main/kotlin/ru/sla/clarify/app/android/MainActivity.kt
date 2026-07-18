@@ -147,7 +147,9 @@ class MainActivity : ComponentActivity() {
       ) {
         val navigationBarColor = AppTheme.colors.backgroundPrimary
         SideEffect {
-          window.setNavigationBarColorCompat(navigationBarColor.toArgb())
+          // contrastEnforced = false: on API 35+ the system otherwise draws a scrim behind
+          // 3-button navigation; below 35 the bar is painted opaque anyway
+          window.setNavigationBarColorCompat(navigationBarColor.toArgb(), contrastEnforced = false)
           WindowCompat.getInsetsController(window, view).run {
             isAppearanceLightStatusBars = !isDarkTheme
             isAppearanceLightNavigationBars = !isDarkTheme

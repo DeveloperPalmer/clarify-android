@@ -5,8 +5,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -21,6 +19,7 @@ import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.branch.domain.BranchRepository
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
@@ -30,12 +29,14 @@ import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
+import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.clarify.mapper.data.mapToMember
 import ru.sla.clarify.mapper.data.mapToUser
 import ru.sla.clarify.mapper.data.toDomain
 import ru.sla.clarify.mapper.data.toLocalDateTime
+import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
@@ -54,21 +55,22 @@ class BranchRepositoryImpl @Inject constructor(
   private val branchId = params.branchId
   private val lastReadWatermark = MutableStateFlow<LocalDateTime?>(null)
 
-  override suspend fun subscribeOnBranchesChanges() {
-    val conversationId = awaitConversationId()
-    firestore.branchesLive(
-      conversationId = conversationId
-    ).collect { changes ->
-      applyBranchesChanges(
+  override suspend fun subscribeOnBranchChanges() {
+    val conversationId = requireConversationId()
+    firestore.branchLive(
+      conversationId = conversationId,
+      branchId = branchId.value
+    ).collect { branch ->
+      applyBranchChanges(
         conversationId = conversationId,
-        changes = changes
+        branch = branch
       )
     }
   }
 
   override suspend fun subscribeOnBranchCommitsChanges() {
     val userId = requireUserId()
-    val conversationId = awaitConversationId()
+    val conversationId = requireConversationId()
     firestore.commitsLive(
       conversationId = conversationId,
       branchId = branchId.value,
@@ -82,8 +84,8 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun subscribeOnBranchUnreadCount() {
-    val conversationId = awaitConversationId()
+  override suspend fun subscribeOnBranchUnreadCountChanges() {
+    val conversationId = requireConversationId()
     firestore.branchUnreadCountLive(
       conversationId = conversationId,
       branchId = branchId.value
@@ -96,7 +98,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   override suspend fun fetchHistoryCommits(count: Int, before: Commit?) {
-    val conversationId = awaitConversationId()
+    val conversationId = requireConversationId()
     val historyCommits = firestore.readCommits(
       conversationId = conversationId,
       branchId = branchId.value,
@@ -119,6 +121,67 @@ class BranchRepositoryImpl @Inject constructor(
         memberUids = memberUids(conversationId)
       )
     }
+  }
+
+  override suspend fun deleteCommits(
+    ids: List<Commit.Id>,
+    forEveryone: Boolean
+  ) {
+    val conversationId = requireConversationId()
+    if (forEveryone) {
+      deleteCommitsForEveryone(ids)
+    } else {
+      firestore.hideCommits(
+        conversationId = conversationId,
+        commitIds = ids.map { it.value }
+      )
+    }
+  }
+
+  private suspend fun deleteCommitsForEveryone(ids: List<Commit.Id>) {
+    return withContext(Dispatchers.IO) {
+      val peerId = branchPeerId()
+      val deletedIds = ids.toSet()
+      val conversationId = requireConversationId()
+
+      val branchCommits = persistedDB.chatCommitQueries
+        .selectByBranchId(conversationId, branchId.value, ::mapToCommit)
+        .executeAsList()
+
+      val peerLastReadAt = firestore.readMember(
+        conversationId = conversationId,
+        memberId = peerId.value
+      )
+        ?.lastReadAt
+        ?.toEpochMillis()
+        ?.toLocalDateTime()
+
+      firestore.deleteBranchCommits(
+        conversationId = conversationId,
+        branchId = branchId.value,
+        peerId = peerId.value,
+        commitIds = ids.map { it.value },
+        lastCommit = branchCommits.lastCommitWriteAfterDeleting(deletedIds),
+        peerUnreadDelta = branchCommits.unreadDelta(deletedIds, peerLastReadAt)
+      )
+    }
+  }
+
+  private suspend fun branchPeerId(): Peer.Id {
+    val userId = requireUserId()
+    val conversationId = requireConversationId()
+
+    val memberId = persistedDB.chatConversationMemberQueries
+      .selectByConversation(conversationId, ::mapToMember)
+      .executeAsList()
+      .firstOrNull { it.id.value != userId.value }
+      ?.id
+
+    if (memberId == null) {
+      error("memberId is required for branch")
+    }
+
+    return Peer.Id(memberId.value)
   }
 
   override suspend fun markAsRead() {
@@ -211,7 +274,7 @@ class BranchRepositoryImpl @Inject constructor(
     .observeOneOrNull()
 
   override val commits: Flow<List<Commit>> = flow {
-    val conversationId = awaitConversationId()
+    val conversationId = requireConversationId()
     val selfId = requireUserId()
 
     val commitsFlow = persistedDB.chatCommitQueries
@@ -231,7 +294,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   override val unreadCount: Flow<Long> = flow {
-    val conversationId = awaitConversationId()
+    val conversationId = requireConversationId()
     firestore.branchUnreadCountLive(
       branchId = branchId.value,
       conversationId = conversationId
@@ -239,7 +302,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   override val members: Flow<List<Member>> = flow {
-    val conversationId = awaitConversationId()
+    val conversationId = requireConversationId()
     persistedDB.chatConversationMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .observeList()
@@ -247,7 +310,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   override fun member(id: UserId): Flow<Member?> = flow {
-    val conversationId = awaitConversationId()
+    val conversationId = requireConversationId()
     persistedDB.chatConversationMemberQueries
       .selectByConversationAndId(conversationId, id.value, ::mapToMember)
       .observeOneOrNull()
@@ -270,7 +333,7 @@ class BranchRepositoryImpl @Inject constructor(
     if (peerId != null) {
       firestore.memberLive(
         conversationId = conversationId,
-        userId = UserId(peerId)
+        memberId = peerId
       ).map { member ->
         member?.lastReadAt
           ?.toEpochMillis()
@@ -290,22 +353,13 @@ class BranchRepositoryImpl @Inject constructor(
       .map { it.id.value }
   }
 
-  private suspend fun applyBranchesChanges(
-    conversationId: String,
-    changes: List<FirestoreChange<BranchNM>>
-  ) {
+  private suspend fun applyBranchChanges(conversationId: String, branch: BranchNM?) {
     return withContext(Dispatchers.IO) {
       persistedDB.transaction {
-        changes.forEach { change ->
-          when (change.changeType) {
-            FirestoreDocumentResult.Removed -> {
-              persistedDB.chatBranchQueries.deleteById(change.data.id)
-            }
-            FirestoreDocumentResult.Added,
-            FirestoreDocumentResult.Modified -> {
-              applyInsertOrReplaceBranch(change.data.toDomain(conversationId))
-            }
-          }
+        if (branch == null) {
+          persistedDB.chatBranchQueries.deleteById(branchId.value)
+        } else {
+          applyInsertOrReplaceBranch(branch.toDomain(conversationId))
         }
       }
     }
@@ -348,10 +402,7 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun applyInsertOrReplaceCommits(
-    conversationId: String,
-    commits: List<CommitNM>
-  ) {
+  private suspend fun applyInsertOrReplaceCommits(conversationId: String, commits: List<CommitNM>) {
     return withContext(Dispatchers.IO) {
       val userId = requireUserId()
       persistedDB.transaction {
@@ -419,16 +470,6 @@ class BranchRepositoryImpl @Inject constructor(
         }
       )
     )
-  }
-
-  private suspend fun awaitConversationId(): String {
-    return persistedDB.chatBranchQueries
-      .selectById(branchId.value, ::mapToBranch)
-      .observeOneOrNull()
-      .filterNotNull()
-      .first()
-      .conversationId
-      .value
   }
 
   private fun requireConversationId(): String {

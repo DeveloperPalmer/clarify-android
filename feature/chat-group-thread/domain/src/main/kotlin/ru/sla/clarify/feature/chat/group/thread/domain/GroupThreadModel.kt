@@ -6,8 +6,8 @@ import kotlinx.coroutines.launch
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.entity.User
-import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
@@ -63,16 +63,16 @@ class GroupThreadModel @Inject constructor(
     groupThreadRepository.leaveConversation()
   }
 
-  val inviteMembers = task<List<UserId>, Unit>(
+  val inviteMembers = task<List<Member.Id>, Unit>(
     name = "inviteMembers"
-  ) { userIds ->
-    groupThreadRepository.inviteGroupMembers(userIds = userIds)
+  ) { memberIds ->
+    groupThreadRepository.inviteGroupMembers(ids = memberIds)
   }
 
-  val removeMember = task<UserId, Unit>(
+  val removeMember = task<Member.Id, Unit>(
     name = "removeMember"
-  ) { userId ->
-    groupThreadRepository.deleteConversationMember(userId = userId)
+  ) { memberId ->
+    groupThreadRepository.deleteConversationMember(id = memberId)
   }
 
   val searchUsers = task<String, List<FoundUser>>(

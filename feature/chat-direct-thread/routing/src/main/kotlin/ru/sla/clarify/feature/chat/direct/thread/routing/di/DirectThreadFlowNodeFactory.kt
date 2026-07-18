@@ -18,16 +18,16 @@ import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams as D
 class DirectThreadFlowNodeFactory @Inject constructor(
   private val flowNode: () -> DirectThreadFlowNode,
   private val component: DirectThreadFlowComponent,
-  @param:WiredScreen(Screen.Thread)
-  private val threadScreenNode: () -> WiredComposableScreen
+  @param:WiredScreen(Screen.DirectThread)
+  private val directThreadScreenNode: () -> WiredComposableScreen
 ) : DirectThreadFlowNodeBuilder.Factory {
 
   override fun createRootNode(params: DirectTargetParams): FlowNode<*> {
     return flowNode()
   }
 
-  override fun createMainNode(): ScreenNode {
-    return BasicScreenNode(threadScreenNode())
+  override fun createDirectThreadNode(): ScreenNode {
+    return BasicScreenNode(directThreadScreenNode())
   }
 
   override fun createBranchFlowNodeBuilder(params: BranchTargetParams): NodeBuilder {

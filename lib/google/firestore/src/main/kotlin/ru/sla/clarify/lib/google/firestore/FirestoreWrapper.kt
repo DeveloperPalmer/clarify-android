@@ -109,13 +109,13 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
 
   override fun unreadCommitsDocumentRef(
     conversationId: String,
-    userId: UserId
+    memberId: String
   ): DocumentReference {
     return remoteDB
       .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
       .collection(UNREAD_COMMITS_COLLECTION)
-      .document(userId.value)
+      .document(memberId)
   }
 
   override fun branchesCollectionRef(
@@ -141,7 +141,7 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
   override fun branchUnreadCommitsDocumentRef(
     conversationId: String,
     branchId: String,
-    userId: UserId
+    memberId: String
   ): DocumentReference {
     return remoteDB
       .collection(CONVERSATIONS_COLLECTION)
@@ -149,7 +149,7 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .collection(BRANCHES_COLLECTION)
       .document(branchId)
       .collection(UNREAD_COMMITS_COLLECTION)
-      .document(userId.value)
+      .document(memberId)
   }
 
   override fun membersCollectionRef(
@@ -163,13 +163,13 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
 
   override fun memberDocumentRef(
     conversationId: String,
-    userId: UserId
+    memberId: String
   ): DocumentReference {
     return remoteDB
       .collection(CONVERSATIONS_COLLECTION)
       .document(conversationId)
       .collection(MEMBERS_COLLECTION)
-      .document(userId.value)
+      .document(memberId)
   }
 
   override fun commitQuery(

@@ -32,14 +32,14 @@ import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
-import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
-import ru.sla.clarify.lib.google.firestore.toTimestamp
+import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.clarify.mapper.data.mapToMember
 import ru.sla.clarify.mapper.data.toDomain
 import ru.sla.clarify.mapper.data.toLocalDateTime
+import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
@@ -59,8 +59,8 @@ class DirectThreadRepositoryImpl @Inject constructor(
   private val lastReadWatermark = MutableStateFlow<LocalDateTime?>(null)
 
   override suspend fun subscribeOnPeerChanges() {
-    val peerId = UserId(peerId.value)
-    firestore.userLive(peerId)
+    val peerUserId = UserId(peerId.value)
+    firestore.userLive(peerUserId)
       .filterNotNull()
       .collect(::applyPeerChanges)
   }
@@ -69,7 +69,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     val userId = threadMediator.requireUserId()
     val conversationId = threadMediator.awaitConversationId()
     firestore.directCommitsLive(
-      peerId = peerId,
+      peerId = peerId.value,
       branchId = conversationId,
       limit = LIVE_COMMIT_LIMIT
     ).collect { changes ->
@@ -139,7 +139,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     firestore.createDirectCommit(
       conversationId = threadMediator.conversationId(),
       text = text,
-      peerId = peerId,
+      peerId = peerId.value,
       branchId = null
     )
   }
@@ -182,18 +182,17 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean) {
     val conversationId = threadMediator.requireConversationId()
-    val commitIds = ids.map { it.value }
     if (forEveryone) {
-      deleteCommitsForEveryone(ids, commitIds)
+      deleteCommitsForEveryone(ids)
     } else {
       firestore.hideCommits(
         conversationId = conversationId,
-        commitIds = commitIds
+        commitIds = ids.map { it.value }
       )
     }
   }
 
-  private suspend fun deleteCommitsForEveryone(ids: List<Commit.Id>, commitIds: List<String>) {
+  private suspend fun deleteCommitsForEveryone(ids: List<Commit.Id>) {
     return withContext(Dispatchers.IO) {
       val conversationId = threadMediator.awaitConversationId()
       val rootCommits = persistedDB.chatCommitQueries
@@ -201,7 +200,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
         .executeAsList()
       val peerMember = firestore.readMember(
         conversationId = conversationId,
-        userId = UserId(peerId.value)
+        memberId = peerId.value
       )
       val peerLastReadAt = peerMember?.lastReadAt
         ?.toEpochMillis()
@@ -211,10 +210,10 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
       firestore.deleteDirectCommits(
         conversationId = conversationId,
-        peerId = UserId(peerId.value),
-        commitIds = commitIds,
+        peerId = peerId.value,
+        commitIds = ids.map { it.value },
         lastCommit = rootCommits.lastCommitWriteAfterDeleting(deletedIds),
-        peerUnreadDelta = rootCommits.peerUnreadDelta(deletedIds, peerLastReadAt)
+        peerUnreadDelta = rootCommits.unreadDelta(deletedIds, peerLastReadAt)
       )
     }
   }
@@ -224,7 +223,6 @@ class DirectThreadRepositoryImpl @Inject constructor(
     .observeOneOrNull()
 
   override val commits: Flow<List<Commit>> = flow {
-    val peerId = UserId(peerId.value)
     val conversationId = threadMediator.awaitConversationId()
 
     val commitsFlow = persistedDB.chatCommitQueries
@@ -233,7 +231,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
     val peerReadAtFlow = firestore.memberLive(
       conversationId = conversationId,
-      userId = peerId
+      memberId = peerId.value
     ).map { member ->
       member
         ?.lastReadAt
@@ -254,14 +252,6 @@ class DirectThreadRepositoryImpl @Inject constructor(
     persistedDB.chatConversationMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .observeList()
-      .collect { emit(it) }
-  }
-
-  override fun member(initiator: UserId): Flow<Member?> = flow {
-    val conversationId = threadMediator.awaitConversationId()
-    persistedDB.chatConversationMemberQueries
-      .selectByConversationAndId(conversationId, initiator.value, ::mapToMember)
-      .observeOneOrNull()
       .collect { emit(it) }
   }
 
@@ -419,54 +409,5 @@ class DirectThreadRepositoryImpl @Inject constructor(
     return branchId?.value ?: threadMediator.conversationId() ?: error("conversationId not found")
   }
 }
-
-/**
- * Что сделать с `lastCommit*` беседы после удаления [deletedIds]:
- * если удалили текущее последнее сообщение — переставить на новое последнее оставшееся ([LastCommitParams.Replace]);
- * очистить, если корень опустел ([LastCommitParams.Clear]);
- * иначе не трогать ([LastCommitParams.Keep]).
- */
-private fun List<Commit>.lastCommitWriteAfterDeleting(deletedIds: Set<Commit.Id>): LastCommitParams {
-  val messages = filterIsInstance<Commit.Message>()
-  val currentNewest = messages
-    .maxWithOrNull(newestCommitOrderComparator)
-  val remainingNewest = messages
-    .filterNot { it.id in deletedIds }
-    .maxWithOrNull(newestCommitOrderComparator)
-  return when {
-    currentNewest == null || currentNewest.id !in deletedIds -> {
-      LastCommitParams.Keep
-    }
-    remainingNewest == null -> {
-      LastCommitParams.Clear
-    }
-    else -> LastCommitParams.Replace(
-      text = remainingNewest.text,
-      senderUid = remainingNewest.senderId.value,
-      at = remainingNewest.timestamp.toTimestamp()
-    )
-  }
-}
-
-/**
- * Сколько из удалённых сообщений всё ещё «висит» в счётчике непрочитанного собеседника — это
- * наши сообщения ([Commit.Message.isSelf]), отправленные позже отметки прочтения собеседника
- * [peerLastReadAt] (`null` — собеседник ещё ничего не читал, значит все наши непрочитаны).
- */
-private fun List<Commit>.peerUnreadDelta(
-  deletedIds: Set<Commit.Id>,
-  peerLastReadAt: LocalDateTime?
-): Int {
-  return count { commit ->
-    commit.id in deletedIds &&
-      commit is Commit.Message && commit.isSelf &&
-      (peerLastReadAt == null || commit.timestamp.isAfter(peerLastReadAt))
-  }
-}
-
-private val newestCommitOrderComparator = compareBy<Commit.Message>(
-  { it.timestamp },
-  { it.id.value }
-)
 
 private const val LIVE_COMMIT_LIMIT = 50L

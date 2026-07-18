@@ -11,10 +11,10 @@ import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
-import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
+import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadModel
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.group.thread.ui.entity.Group
@@ -148,11 +148,11 @@ class GroupInfoViewModel @Inject constructor(
       }
     }
 
-    onEach(intent(ViewIntents::confirmInvite)) {
+    onEach(intent(ViewIntents::confirmInviteMember)) {
       action { state, _, _ ->
-        val userIds = state.selectedCandidates.map { UserId(it.id) }
-        if (userIds.isNotEmpty()) {
-          groupThreadModel.inviteMembers.start(userIds)
+        val memberIds = state.selectedCandidates.map { Member.Id(it.id) }
+        if (memberIds.isNotEmpty()) {
+          groupThreadModel.inviteMembers.start(memberIds)
         }
       }
     }
@@ -180,8 +180,8 @@ class GroupInfoViewModel @Inject constructor(
     }
 
     onEach(intent(ViewIntents::confirmRemoveMember)) {
-      action { _, _, memberId ->
-        groupThreadModel.removeMember.start(UserId(memberId))
+      action { _, _, id ->
+        groupThreadModel.removeMember.start(Member.Id(id))
       }
     }
 

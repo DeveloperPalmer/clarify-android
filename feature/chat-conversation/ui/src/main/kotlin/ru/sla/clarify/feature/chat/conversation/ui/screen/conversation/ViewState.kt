@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.conversation.ui.screen.main
+package ru.sla.clarify.feature.chat.conversation.ui.screen.conversation
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.input.TextFieldValue

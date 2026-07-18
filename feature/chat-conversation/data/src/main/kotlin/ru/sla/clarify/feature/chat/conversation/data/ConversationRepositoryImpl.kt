@@ -210,8 +210,8 @@ class ConversationRepositoryImpl @Inject constructor(
     )
   }
 
-  private suspend fun applyInsertOrReplaceUsers(userId: String) {
-    val profile = firestore.readUser(UserId(userId)) ?: return
+  private suspend fun applyInsertOrReplaceUsers(memberId: String) {
+    val profile = firestore.readUser(UserId(memberId)) ?: return
     return withContext(Dispatchers.IO) {
       persistedDB.userQueries.insertOrReplace(
         id = profile.id,

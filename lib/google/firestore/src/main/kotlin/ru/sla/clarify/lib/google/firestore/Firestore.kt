@@ -19,7 +19,6 @@ import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.entity.chat.Branch
-import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.codec.codec
 import ru.sla.clarify.lib.google.firestore.codec.decodeFromSnapshot
 import ru.sla.clarify.lib.google.firestore.codec.encodeToMap
@@ -34,6 +33,7 @@ import ru.sla.clarify.lib.google.firestore.entity.MemberNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM.Status
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
+import ru.sla.clarify.lib.google.firestore.entity.write.ClearBranchLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.ClearLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.CreateBranchParams
 import ru.sla.clarify.lib.google.firestore.entity.write.CreateCommitInviteMemberParams
@@ -195,7 +195,7 @@ class Firestore @Inject constructor(
 
   suspend fun deleteDirectCommits(
     conversationId: String,
-    peerId: UserId,
+    peerId: String,
     commitIds: List<String>,
     lastCommit: LastCommitParams,
     peerUnreadDelta: Int
@@ -259,8 +259,74 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  suspend fun readMember(conversationId: String, userId: UserId): MemberNM? {
-    val document = memberDocumentRef(conversationId, userId)
+  suspend fun deleteBranchCommits(
+    conversationId: String,
+    branchId: String,
+    peerId: String,
+    commitIds: List<String>,
+    lastCommit: LastCommitParams,
+    peerUnreadDelta: Int
+  ) {
+    require(commitIds.isNotEmpty()) { "deleteBranchCommits called with empty commitIds" }
+    val branchDocument = branchDocumentRef(conversationId, branchId)
+    val commitsCollection = commitsCollectionRef(conversationId)
+    val unreadCommitsDocument = branchUnreadCommitsDocumentRef(conversationId, branchId, peerId)
+    val commitDocuments = commitIds.map { commitsCollection.document(it) }
+
+    val transaction = runTransaction { transaction ->
+      val peerUnread = if (peerUnreadDelta > 0) {
+        transaction[unreadCommitsDocument]
+          .getLong(FirestoreSchema.UNREAD_COMMITS_COUNT)
+          ?: 0L
+      } else {
+        0L
+      }
+
+      commitDocuments.forEach { transaction.delete(it) }
+
+      when (lastCommit) {
+        is LastCommitParams.Keep -> Unit
+        is LastCommitParams.Replace -> {
+          // ветка не хранит lastCommitSenderUid — берём только text/at
+          val updateBranchLastCommitParams = UpdateBranchLastCommitParams(
+            lastCommitText = lastCommit.text,
+            lastCommitAt = lastCommit.at
+          )
+          transaction.set(
+            branchDocument,
+            codec.encodeToMap(updateBranchLastCommitParams),
+            SetOptions.merge()
+          )
+        }
+        is LastCommitParams.Clear -> {
+          val clearBranchLastCommitParams = ClearBranchLastCommitParams(
+            lastCommitText = Delete,
+            lastCommitAt = Delete
+          )
+          transaction.set(
+            branchDocument,
+            codec.encodeToMap(clearBranchLastCommitParams),
+            SetOptions.merge()
+          )
+        }
+      }
+      if (peerUnreadDelta > 0) {
+        val newCount = (peerUnread - peerUnreadDelta).coerceAtLeast(0L)
+        val updateUnreadCountParams = UpdateUnreadCountParams(
+          count = newCount
+        )
+        transaction.set(
+          unreadCommitsDocument,
+          codec.encodeToMap(updateUnreadCountParams),
+          SetOptions.merge()
+        )
+      }
+    }
+    transaction.await()
+  }
+
+  suspend fun readMember(conversationId: String, memberId: String): MemberNM? {
+    val document = memberDocumentRef(conversationId, memberId)
       .get()
       .await()
     return if (document.exists()) {
@@ -334,7 +400,7 @@ class Firestore @Inject constructor(
       codec.encodeToMap(createConversationParams)
     )
     batch.set(
-      memberDocumentRef(conversationId, ownerId),
+      memberDocumentRef(conversationId, ownerId.value),
       emptyMap
     )
     batch.commit().await()
@@ -362,19 +428,22 @@ class Firestore @Inject constructor(
   suspend fun deleteConversationMember(conversationId: String) {
     deleteConversationMember(
       conversationId = conversationId,
-      userId = requireUserId()
+      memberId = requireUserId().value
     )
   }
 
-  suspend fun deleteConversationMember(conversationId: String, userId: UserId) {
+  suspend fun deleteConversationMember(
+    conversationId: String,
+    memberId: String
+  ) {
     val conversationDocument = conversationDocumentRef(conversationId)
-    val memberDocument = memberDocumentRef(conversationId, userId)
-    val unreadCommitsDocument = unreadCommitsDocumentRef(conversationId, userId)
+    val memberDocument = memberDocumentRef(conversationId, memberId)
+    val unreadCommitsDocument = unreadCommitsDocumentRef(conversationId, memberId)
 
     val batch = writeBatch()
 
     val deleteConversationMemberParams = DeleteConversationMemberParams(
-      memberUids = ArrayRemove(listOf(userId.value))
+      memberUids = ArrayRemove(listOf(memberId))
     )
 
     batch.update(
@@ -405,13 +474,13 @@ class Firestore @Inject constructor(
 
   fun memberLive(
     conversationId: String,
-    userId: UserId
+    memberId: String
   ): Flow<MemberNM?> = callbackFlow {
-    listenerGuard.trackOpen("memberLive:$conversationId:${userId.value}")
+    listenerGuard.trackOpen("memberLive:$conversationId:$memberId")
 
     val listener = memberDocumentRef(
       conversationId = conversationId,
-      userId = userId
+      memberId = memberId
     ).addSnapshotListener { snapshot, error ->
       if (error != null) {
         close(error)
@@ -433,7 +502,7 @@ class Firestore @Inject constructor(
 
     val memberDocument = memberDocumentRef(
       conversationId = conversationId,
-      userId = currentUserId
+      memberId = currentUserId.value
     )
 
     val updateReadWatermarkParams = UpdateReadWatermarkParams(
@@ -452,7 +521,7 @@ class Firestore @Inject constructor(
 
   suspend fun createCommitInviteMember(
     conversationId: String,
-    invitedUserId: UserId,
+    memberId: String,
     memberUids: List<String>
   ) {
     val commitId = randomUuid()
@@ -466,13 +535,13 @@ class Firestore @Inject constructor(
 
     val createCommitInviteMemberParams = CreateCommitInviteMemberParams(
       senderUid = currentUserId,
-      invitedUid = invitedUserId.value,
+      invitedUid = memberId,
       branchId = conversationId,
       visibleFor = memberUids,
       createdAt = createdAt
     )
     val updateConversationMembersParams = UpdateConversationMembersParams(
-      memberUids = ArrayUnion(listOf(invitedUserId.value))
+      memberUids = ArrayUnion(listOf(memberId))
     )
 
     val batch = writeBatch()
@@ -482,7 +551,7 @@ class Firestore @Inject constructor(
       codec.encodeToMap(updateConversationMembersParams)
     )
     batch.set(
-      memberDocumentRef(conversationId, invitedUserId),
+      memberDocumentRef(conversationId, memberId),
       emptyMap
     )
     batch.set(
@@ -541,7 +610,7 @@ class Firestore @Inject constructor(
 
   fun directCommitsLive(
     branchId: String,
-    peerId: Peer.Id,
+    peerId: String,
     limit: Long
   ): Flow<List<FirestoreChange<CommitNM>>> {
     return directConversationIdLive(peerId)
@@ -614,9 +683,9 @@ class Firestore @Inject constructor(
     )
     memberUids
       .filter { it != currentUserId.value }
-      .forEach { uid ->
+      .forEach { memberUid ->
         batch.set(
-          branchUnreadCommitsDocumentRef(conversationId, branchId, UserId(uid)),
+          branchUnreadCommitsDocumentRef(conversationId, branchId, memberUid),
           codec.encodeToMap(updateIncrementParams),
           SetOptions.merge()
         )
@@ -625,7 +694,7 @@ class Firestore @Inject constructor(
   }
 
   suspend fun createDirectCommit(
-    peerId: Peer.Id,
+    peerId: String,
     branchId: String?,
     conversationId: String?,
     text: String
@@ -679,9 +748,9 @@ class Firestore @Inject constructor(
       codec.encodeToMap(createCommitParams)
     )
     if (conversationId == null) {
-      directMemberIds.forEach { uid ->
+      directMemberIds.forEach { memberId ->
         batch.set(
-          memberDocumentRef(resolvedConversationId, UserId(uid)),
+          memberDocumentRef(resolvedConversationId, memberId),
           emptyMap
         )
       }
@@ -689,9 +758,9 @@ class Firestore @Inject constructor(
     if (isRoot) {
       directMemberIds
         .filter { it != currentUserId.value }
-        .forEach { peerId ->
+        .forEach { otherMemberUid ->
           batch.set(
-            unreadCommitsDocumentRef(resolvedConversationId, UserId(peerId)),
+            unreadCommitsDocumentRef(resolvedConversationId, otherMemberUid),
             codec.encodeToMap(updateIncrementParams),
             SetOptions.merge()
           )
@@ -704,13 +773,9 @@ class Firestore @Inject constructor(
       )
       directMemberIds
         .filter { it != currentUserId.value }
-        .forEach { peerId ->
+        .forEach { otherMemberUid ->
           batch.set(
-            branchUnreadCommitsDocumentRef(
-              resolvedConversationId,
-              resolvedBranchId,
-              UserId(peerId)
-            ),
+            branchUnreadCommitsDocumentRef(resolvedConversationId, resolvedBranchId, otherMemberUid),
             codec.encodeToMap(updateIncrementParams),
             SetOptions.merge()
           )
@@ -763,9 +828,9 @@ class Firestore @Inject constructor(
     )
     memberUids
       .filter { it != currentUserId.value }
-      .forEach { uid ->
+      .forEach { memberId ->
         batch.set(
-          unreadCommitsDocumentRef(conversationId, UserId(uid)),
+          unreadCommitsDocumentRef(conversationId, memberId),
           codec.encodeToMap(updateIncrementParams),
           SetOptions.merge()
         )
@@ -783,7 +848,7 @@ class Firestore @Inject constructor(
     val listener = branchUnreadCommitsDocumentRef(
       conversationId = conversationId,
       branchId = branchId,
-      userId = userId
+      memberId = userId.value
     ).addSnapshotListener { snapshot, error ->
       if (error != null) {
         close(error)
@@ -799,7 +864,7 @@ class Firestore @Inject constructor(
 
     val listener = unreadCommitsDocumentRef(
       conversationId = conversationId,
-      userId = userId
+      memberId = userId.value
     ).addSnapshotListener { snapshot, error ->
       if (error != null) {
         close(error)
@@ -816,7 +881,7 @@ class Firestore @Inject constructor(
     val branchUnreadCommitsDocument = branchUnreadCommitsDocumentRef(
       conversationId = conversationId,
       branchId = branchId,
-      userId = userId
+      memberId = userId.value
     )
 
     val updateUnreadCountParams = UpdateUnreadCountParams(
@@ -832,7 +897,7 @@ class Firestore @Inject constructor(
 
     val unreadCommitsDocument = unreadCommitsDocumentRef(
       conversationId = conversationId,
-      userId = userId
+      memberId = userId.value
     )
 
     val updateUnreadCountParams = UpdateUnreadCountParams(
@@ -856,6 +921,33 @@ class Firestore @Inject constructor(
         return@addSnapshotListener
       }
       trySend(snapshot.mapDocumentChanges<BranchNM>())
+    }
+    awaitClose { listener.remove() }
+  }
+
+  /**
+   * Live-подписка на один документ ветки (name/mergeRequest/lastCommit). `null` —
+   * документ удалён или ещё не создан. Для экрана ветки достаточно её самой, поэтому
+   * слушаем один документ, а не всю коллекцию [branchesLive].
+   */
+  fun branchLive(
+    conversationId: String,
+    branchId: String
+  ): Flow<BranchNM?> = callbackFlow {
+    listenerGuard.trackOpen("branchLive:$branchId")
+
+    val listener = branchDocumentRef(
+      conversationId = conversationId,
+      branchId = branchId
+    ).addSnapshotListener { snapshot, error ->
+      if (error != null) {
+        close(error)
+        return@addSnapshotListener
+      }
+      val branch = snapshot
+        ?.takeIf { it.exists() }
+        ?.let { codec.decodeFromSnapshot<BranchNM>(it) }
+      trySend(branch)
     }
     awaitClose { listener.remove() }
   }
@@ -1064,9 +1156,9 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  private fun directConversationIdLive(peerId: Peer.Id): Flow<String?> = callbackFlow {
+  private fun directConversationIdLive(peerId: String): Flow<String?> = callbackFlow {
     val currentUserId = requireUserId()
-    listenerGuard.trackOpen("directConversationIdLive:${currentUserId.value}:${peerId.value}")
+    listenerGuard.trackOpen("directConversationIdLive:${currentUserId.value}:$peerId")
 
     val directMemberIds = directMemberIds(currentUserId, peerId)
 
@@ -1083,8 +1175,8 @@ class Firestore @Inject constructor(
     awaitClose { listener.remove() }
   }
 
-  private fun directMemberIds(currentId: UserId, peerId: Peer.Id): List<String> {
-    return setOf(currentId.value, peerId.value).sorted()
+  private fun directMemberIds(currentId: UserId, peerId: String): List<String> {
+    return setOf(currentId.value, peerId).sorted()
   }
 
   private fun QuerySnapshot?.findDirectConversationId(memberIds: List<String>): String? {

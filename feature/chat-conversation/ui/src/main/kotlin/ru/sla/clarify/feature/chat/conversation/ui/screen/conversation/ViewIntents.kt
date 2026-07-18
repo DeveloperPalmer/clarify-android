@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.conversation.ui.screen.main
+package ru.sla.clarify.feature.chat.conversation.ui.screen.conversation
 
 import androidx.compose.ui.text.input.TextFieldValue
 import ru.sla.clarify.core.domain.entity.Email

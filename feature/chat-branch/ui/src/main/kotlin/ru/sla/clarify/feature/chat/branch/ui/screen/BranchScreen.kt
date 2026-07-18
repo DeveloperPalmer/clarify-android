@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.branch.ui.screen
 
+import android.content.ClipData
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,12 +14,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
@@ -28,11 +33,15 @@ import ru.sla.clarify.feature.chat.branch.ui.components.MergeRequestButton
 import ru.sla.clarify.feature.chat.branch.ui.components.MergeRequestCard
 import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
 import ru.sla.clarify.uikit.component.chat.ChatCommits
+import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.clarify.uikit.component.icon.IconAction
+import ru.sla.clarify.uikit.component.popup.PopupScrim
 import ru.sla.clarify.uikit.component.scrim.ScrimEffect
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.component.topappbar.rememberTopBarElevation
+import ru.sla.clarify.uikit.keyboard.rememberKeyboardController
 import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
@@ -46,14 +55,43 @@ fun BranchScreen(viewModel: BranchViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
+    val scope = rememberCoroutineScope()
+    val keyboardController = rememberKeyboardController()
+    val clipboard = LocalClipboard.current
+    BackHandler(
+      enabled = state.editModeEnabled,
+      onBack = intents.disableEditMode
+    )
+    BackHandler(
+      enabled = state.focusedMessage != null,
+      onBack = intents.hideMessageMenu
+    )
     ScreenScaffold(scaffoldState) {
       BranchReadyContent(
-        modifier = Modifier
-          .fillMaxSize()
-          .systemBarsPadding()
-          .imePadding(),
+        modifier = Modifier.fillMaxSize(),
         state = state,
-        intents = intents
+        intents = intents,
+        onSelectMessage = intents.toggleMessageSelection,
+        onDeleteCommit = intents.deleteCommit,
+        onCloseMessageMenu = intents.hideMessageMenu,
+        onCopyMessage = { commit ->
+          scope.launch {
+            val clipData = ClipData.newPlainText(null, commit.bubble.text)
+            clipboard.setClipEntry(clipData.toClipEntry())
+            intents.copyMessage()
+          }
+        },
+        onCommitLongClick = intents.toggleMessageSelection,
+        onCommitClick = { commit ->
+          if (state.editModeEnabled) {
+            intents.toggleMessageSelection(commit)
+          } else {
+            scope.launch {
+              keyboardController.awaitHide()
+              intents.showMessageMenu(commit)
+            }
+          }
+        }
       )
       ScrimEffect(
         visible = state.cardShown,
@@ -82,52 +120,119 @@ fun BranchScreen(viewModel: BranchViewModel) {
 internal fun BranchReadyContent(
   state: ViewState,
   intents: ViewIntents,
+  onCommitClick: (Commit.Message) -> Unit,
+  onCommitLongClick: (Commit) -> Unit,
+  onCloseMessageMenu: () -> Unit,
+  onCopyMessage: (Commit.Message) -> Unit,
+  onSelectMessage: (Commit) -> Unit,
+  onDeleteCommit: (Commit) -> Unit,
   modifier: Modifier = Modifier
 ) {
   BackHandler(enabled = state.cardShown) {
     intents.hideMergeRequest()
   }
-  Column(modifier = modifier) {
-    val listState = rememberLazyListState()
-    val topBarElevation = rememberTopBarElevation(listState)
-    TopAppBar(
-      modifier = Modifier.bottomShadow { topBarElevation.value },
-      navigationIcon = { TopAppBarDefaults.NavigationIcon(intents.navigateBack) },
-      title = { state.branchName?.let { TopAppBarCenterContent(branchName = it) } },
-      actions = {
-        MergeRequestButton(
-          visible = !state.cardShown,
-          inProgress = state.mergeRequestInProgress,
-          status = state.mergeRequest?.status,
-          onOpenMergeRequest = intents.openMergeRequest
+  Box(modifier) {
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .systemBarsPadding()
+        .imePadding()
+    ) {
+      val listState = rememberLazyListState()
+      val topBarElevation = rememberTopBarElevation(listState)
+      if (state.editModeEnabled) {
+        SelectionTopAppBar(
+          modifier = Modifier.bottomShadow { topBarElevation.value },
+          selectedCount = state.selectedCommitIds.size,
+          onClose = intents.disableEditMode,
+          onDelete = intents.deleteCommits
+        )
+      } else {
+        TopAppBar(
+          modifier = Modifier.bottomShadow { topBarElevation.value },
+          navigationIcon = { TopAppBarDefaults.NavigationIcon(intents.navigateBack) },
+          title = { state.branchName?.let { TopAppBarCenterContent(branchName = it) } },
+          actions = {
+            MergeRequestButton(
+              visible = !state.cardShown,
+              inProgress = state.mergeRequestInProgress,
+              status = state.mergeRequest?.status,
+              onOpenMergeRequest = intents.openMergeRequest
+            )
+          }
         )
       }
-    )
-    Box(modifier = Modifier.weight(1f)) {
-      ChatCommits(
-        modifier = Modifier.fillMaxSize(),
-        listState = listState,
-        commits = state.commits,
-        onCommitsRead = intents.markReadUpTo
-      )
-      ChatScrollToBottomButton(
-        modifier = Modifier
-          .align(Alignment.BottomEnd)
-          .padding(end = 16.dp, bottom = 16.dp),
-        listState = listState,
-        unreadCount = state.unreadCount
-      )
-      ChatEmptyState(
-        modifier = Modifier.fillMaxSize(),
-        visible = state.commits.isEmpty(),
-        text = stringResource(R.string.branch_empty_state)
+      Box(modifier = Modifier.weight(1f)) {
+        ChatCommits(
+          modifier = Modifier.fillMaxSize(),
+          listState = listState,
+          commits = state.commits,
+          selectionEnabled = state.editModeEnabled,
+          focusedMessage = state.focusedMessage,
+          onCommitsRead = intents.markReadUpTo,
+          onMessageClick = onCommitClick,
+          onMessageLongClick = onCommitLongClick,
+          onCloseMessagePopup = onCloseMessageMenu,
+          onCopyMessage = onCopyMessage,
+          onSelectMessage = onSelectMessage,
+          onDeleteCommit = onDeleteCommit
+        )
+        ChatScrollToBottomButton(
+          modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 16.dp, bottom = 16.dp),
+          listState = listState,
+          unreadCount = state.unreadCount
+        )
+        ChatEmptyState(
+          modifier = Modifier.fillMaxSize(),
+          visible = state.commits.isEmpty(),
+          text = stringResource(R.string.branch_empty_state)
+        )
+      }
+      BottomArea(
+        mergeRequestStatus = state.mergeRequest?.status,
+        onSend = intents.sendCommit
       )
     }
-    BottomArea(
-      mergeRequestStatus = state.mergeRequest?.status,
-      onSend = intents.sendCommit
+    PopupScrim(
+      visible = state.focusedMessage != null,
+      onDismiss = onCloseMessageMenu
     )
   }
+}
+
+@Composable
+private fun SelectionTopAppBar(
+  selectedCount: Int,
+  onClose: () -> Unit,
+  onDelete: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  TopAppBar(
+    modifier = modifier,
+    navigationIcon = {
+      IconAction(
+        iconResId = R.drawable.ic_close_24,
+        iconTint = AppTheme.colors.contentPrimary,
+        onClick = onClose
+      )
+    },
+    title = {
+      Text(
+        text = stringResource(R.string.thread_selection_count, selectedCount),
+        style = AppTheme.typography.title2Bold,
+        color = AppTheme.colors.contentPrimary
+      )
+    },
+    actions = {
+      IconAction(
+        iconResId = R.drawable.ic_trash_24,
+        iconTint = AppTheme.colors.errorPrimary,
+        onClick = onDelete
+      )
+    }
+  )
 }
 
 @Composable

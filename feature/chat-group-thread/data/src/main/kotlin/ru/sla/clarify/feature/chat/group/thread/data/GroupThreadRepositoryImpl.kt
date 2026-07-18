@@ -15,6 +15,7 @@ import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadRepository
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
@@ -144,26 +145,26 @@ class GroupThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun inviteGroupMembers(userIds: List<UserId>) {
+  override suspend fun inviteGroupMembers(ids: List<Member.Id>) {
     withContext(Dispatchers.IO) {
       // visibleFor приглашающих системных коммитов — состав группы уже с учётом приглашённых,
       // чтобы новый участник видел «X пригласил Y» (запросы фильтруются по visibleFor).
-      val visibleFor = (currentMemberUids() + userIds.map { it.value }).distinct()
-      userIds.forEach { userId ->
+      val visibleFor = (currentMemberUids() + ids.map { it.value }).distinct()
+      ids.forEach { member ->
         firestore.createCommitInviteMember(
           conversationId = conversationId.value,
-          invitedUserId = userId,
+          memberId = member.value,
           memberUids = visibleFor
         )
       }
       persistedDB.transaction {
-        userIds.forEach { userId ->
+        ids.forEach { member ->
           persistedDB.chatConversationMemberQueries.insertOrReplace(
             conversationId = conversationId.value,
-            id = userId.value
+            id = member.value
           )
         }
-        val merged = (currentMemberUids() + userIds.map { it.value }).distinct()
+        val merged = (currentMemberUids() + ids.map { it.value }).distinct()
         persistedDB.chatConversationQueries.updateMemberUids(
           id = conversationId.value,
           memberUids = merged
@@ -172,15 +173,18 @@ class GroupThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun deleteConversationMember(userId: UserId) {
+  override suspend fun deleteConversationMember(id: Member.Id) {
     withContext(Dispatchers.IO) {
-      firestore.deleteConversationMember(conversationId = conversationId.value, userId = userId)
+      firestore.deleteConversationMember(
+        conversationId = conversationId.value,
+        memberId = id.value
+      )
       persistedDB.transaction {
         persistedDB.chatConversationMemberQueries.deleteByConversationAndId(
           conversationId = conversationId.value,
-          id = userId.value
+          id = id.value
         )
-        val remaining = currentMemberUids() - userId.value
+        val remaining = currentMemberUids() - id.value
         persistedDB.chatConversationQueries.updateMemberUids(
           id = conversationId.value,
           memberUids = remaining

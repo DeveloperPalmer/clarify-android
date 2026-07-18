@@ -13,5 +13,5 @@ digraph DirectThreadFlow {
     parameterType = "ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams"
   ]
 
-  directThreadFlow -> main -> branchFlow
+  directThreadFlow -> directThread -> branchFlow
 }

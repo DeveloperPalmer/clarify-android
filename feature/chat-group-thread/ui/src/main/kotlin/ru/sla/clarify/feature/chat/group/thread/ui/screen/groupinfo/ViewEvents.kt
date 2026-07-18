@@ -100,7 +100,7 @@ internal fun showInviteMembersSheet(): ScreenViewEvent<ViewState, ViewIntents> {
             onClose = { dismissEventPresentation() },
             onToggleCandidate = intents.toggleCandidate,
             onConfirm = {
-              intents.confirmInvite()
+              intents.confirmInviteMember()
               dismissEventPresentation()
             }
           )

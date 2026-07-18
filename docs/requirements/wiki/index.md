@@ -6,7 +6,7 @@ tags:
 
 **Summary**: Оглавление всей wiki проекта Clarify.
 
-**Last updated**: 2026-07-05
+**Last updated**: 2026-07-18
 
 ---
 
@@ -37,6 +37,7 @@ tags:
 - [create-branch-commit](method/commit/create-branch-commit.md) — отправляет сообщение в существующую ветку.
 - [hide-commits](method/commit/hide-commits.md) — скрывает сообщения «только у себя», физически удаляя документ, когда его не видит больше никто.
 - [delete-direct-commits](method/commit/delete-direct-commits.md) — удаляет сообщения direct-чата «у всех», пересчитывая `lastCommit*` беседы и счётчик непрочитанных собеседника.
+- [delete-branch-commits](method/commit/delete-branch-commits.md) — удаляет сообщения ветки «у всех», пересчитывая `lastCommit*` ветки и счётчик непрочитанных ветки у собеседника.
 
 ### Conversation
 

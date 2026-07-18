@@ -4,6 +4,6 @@ import ru.kode.way.Event
 import ru.sla.clarify.entity.chat.Branch
 
 sealed interface FlowEvent : Event {
-  data object ThreadDismissed : FlowEvent
+  data object DirectThreadDismissed : FlowEvent
   data class BranchRequested(val branchId: Branch.Id) : FlowEvent
 }

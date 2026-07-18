@@ -4,6 +4,8 @@ import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
+import ru.sla.clarify.lib.google.firestore.toTimestamp
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.resRef
 import ru.sla.resourcerefs.strRef
@@ -72,3 +74,54 @@ fun Commit.withReadStatus(peerLastReadAt: LocalDateTime?): Commit {
   }
   return if (timestamp.isAfter(peerLastReadAt)) this else copy(status = Commit.Status.Read)
 }
+
+/**
+ * Что сделать с денормализованным `lastCommit*` после удаления [deletedIds]: если удалили текущее последнее сообщение
+ * — Переставить на новое последнее оставшееся ([LastCommitParams.Replace]);
+ * — Очистить, если сообщений не осталось ([LastCommitParams.Clear]);
+ * — Не трогать ([LastCommitParams.Keep]).
+ */
+fun List<Commit>.lastCommitWriteAfterDeleting(deletedIds: Set<Commit.Id>): LastCommitParams {
+  val messages = filterIsInstance<Commit.Message>()
+  val currentNewest = messages
+    .maxWithOrNull(newestCommitOrderComparator)
+  val remainingNewest = messages
+    .filterNot { it.id in deletedIds }
+    .maxWithOrNull(newestCommitOrderComparator)
+  return when {
+    currentNewest == null || currentNewest.id !in deletedIds -> {
+      LastCommitParams.Keep
+    }
+    remainingNewest == null -> {
+      LastCommitParams.Clear
+    }
+    else -> {
+      LastCommitParams.Replace(
+        text = remainingNewest.text,
+        senderUid = remainingNewest.senderId.value,
+        at = remainingNewest.timestamp.toTimestamp()
+      )
+    }
+  }
+}
+
+/**
+ * Сколько из удалённых сообщений всё ещё «висит» в счётчике непрочитанного собеседника — это
+ * наши сообщения ([Commit.Message.isSelf]), отправленные позже отметки прочтения собеседника
+ * [peerLastReadAt] (`null` — собеседник ещё ничего не читал, значит все наши непрочитаны).
+ */
+fun List<Commit>.unreadDelta(
+  deletedIds: Set<Commit.Id>,
+  peerLastReadAt: LocalDateTime?
+): Int = count { commit ->
+  listOf(
+    commit.id in deletedIds,
+    commit is Commit.Message && commit.isSelf,
+    (peerLastReadAt == null || commit.timestamp.isAfter(peerLastReadAt))
+  ).all { it }
+}
+
+private val newestCommitOrderComparator = compareBy<Commit.Message>(
+  { it.timestamp },
+  { it.id.value }
+)

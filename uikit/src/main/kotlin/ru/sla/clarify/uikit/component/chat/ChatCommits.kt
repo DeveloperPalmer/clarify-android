@@ -112,10 +112,10 @@ fun ChatCommits(
                   visible = focusedMessage != null,
                   onHidden = { displayedMessage = null },
                   onDismissRequest = { onCloseMessagePopup?.invoke() },
-                  onCreateBranch = { onCreateBranch?.invoke(commit) },
-                  onCopyMessage = { onCopyMessage?.invoke(commit) },
-                  onSelectMessage = { onSelectMessage?.invoke(commit) },
-                  onDeleteMessage = { onDeleteCommit?.invoke(commit) }
+                  onCreateBranch = onCreateBranch?.let { handler -> { handler(commit) } },
+                  onCopyMessage = onCopyMessage?.let { handler -> { handler(commit) } },
+                  onSelectMessage = onSelectMessage?.let { handler -> { handler(commit) } },
+                  onDeleteMessage = onDeleteCommit?.let { handler -> { handler(commit) } }
                 )
               }
             } else {
@@ -146,8 +146,8 @@ private fun BubbleMessagePopup(
   onSelectMessage: (() -> Unit)?,
   onDeleteMessage: (() -> Unit)?
 ) {
-  fun action(action: (() -> Unit)?): () -> Unit = {
-    action?.invoke()
+  fun action(action: () -> Unit): () -> Unit = {
+    action.invoke()
     onDismissRequest.invoke()
   }
   Popup(
@@ -155,27 +155,35 @@ private fun BubbleMessagePopup(
     onHidden = onHidden,
     bottomSafePadding = PopupBottomSafePadding,
     onDismissRequest = onDismissRequest,
-    actions = listOf(
-      Action(
-        iconRes = R.drawable.ic_git_fork_24,
-        text = resRef(R.string.thread_menu_create_branch),
-        onClick = action(onCreateBranch)
-      ),
-      Action(
-        iconRes = R.drawable.ic_copy_24,
-        text = resRef(R.string.thread_menu_copy),
-        onClick = action(onCopyMessage)
-      ),
-      Action(
-        iconRes = R.drawable.ic_select_24,
-        text = resRef(R.string.thread_menu_select),
-        onClick = action(onSelectMessage)
-      ),
-      Action(
-        iconRes = R.drawable.ic_trash_24,
-        text = resRef(R.string.thread_menu_delete),
-        onClick = action(onDeleteMessage)
-      )
+    actions = listOfNotNull(
+      onCreateBranch?.let {
+        Action(
+          iconRes = R.drawable.ic_git_fork_24,
+          text = resRef(R.string.thread_menu_create_branch),
+          onClick = action(it)
+        )
+      },
+      onCopyMessage?.let {
+        Action(
+          iconRes = R.drawable.ic_copy_24,
+          text = resRef(R.string.thread_menu_copy),
+          onClick = action(it)
+        )
+      },
+      onSelectMessage?.let {
+        Action(
+          iconRes = R.drawable.ic_select_24,
+          text = resRef(R.string.thread_menu_select),
+          onClick = action(it)
+        )
+      },
+      onDeleteMessage?.let {
+        Action(
+          iconRes = R.drawable.ic_trash_24,
+          text = resRef(R.string.thread_menu_delete),
+          onClick = action(it)
+        )
+      }
     )
   )
 }

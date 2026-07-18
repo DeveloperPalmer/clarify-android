@@ -50,7 +50,7 @@ import ru.sla.clarify.uikit.theme.AppTheme
 import java.time.LocalDateTime
 
 @Composable
-fun ThreadScreen(viewModel: ThreadViewModel) {
+fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
   MviComponent(
     viewModel = viewModel,
     intents = rememberViewIntents()
@@ -69,7 +69,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
       onBack = intents.hideMessageMenu
     )
     ScreenScaffold(scaffoldState) {
-      ThreadReadyContent(
+      DirectThreadReadyContent(
         modifier = Modifier.fillMaxSize(),
         state = state,
         onBack = intents.navigateBack,
@@ -106,7 +106,7 @@ fun ThreadScreen(viewModel: ThreadViewModel) {
 }
 
 @Composable
-private fun ThreadReadyContent(
+private fun DirectThreadReadyContent(
   state: ViewState,
   onBack: () -> Unit,
   onClose: () -> Unit,

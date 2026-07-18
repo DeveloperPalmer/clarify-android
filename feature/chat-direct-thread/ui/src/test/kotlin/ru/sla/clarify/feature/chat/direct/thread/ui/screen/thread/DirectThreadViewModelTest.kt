@@ -15,19 +15,19 @@ import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
-internal class ThreadViewModelTest {
+internal class DirectThreadViewModelTest {
 
   private val testDispatcher = UnconfinedTestDispatcher()
 
   private val eventSink = mockk<FlowEventSink>(relaxed = true)
   private val directThreadModel = mockk<DirectThreadModel>(relaxed = true)
 
-  private lateinit var viewModel: ThreadViewModel
+  private lateinit var viewModel: DirectThreadViewModel
   private lateinit var intents: ViewIntents
 
   @BeforeEach
   fun setup() {
-    viewModel = ThreadViewModel(
+    viewModel = DirectThreadViewModel(
       eventSink = eventSink,
       directThreadModel = directThreadModel,
       dispatcher = testDispatcher

@@ -11,7 +11,7 @@ class ViewIntents : BaseViewIntents() {
   val showInviteSheet = intent(name = "showInviteSheet")
   val changeSearchQuery = intent<String>(name = "changeSearchQuery")
   val toggleCandidate = intent<InviteCandidate>(name = "toggleCandidate")
-  val confirmInvite = intent(name = "confirmInvite")
+  val confirmInviteMember = intent(name = "confirmInviteMember")
   val requestRemoveMember = intent<GroupMember>(name = "requestRemoveMember")
   val confirmRemoveMember = intent<String>(name = "confirmRemoveMember")
   val requestLeaveGroup = intent(name = "requestLeaveGroup")

@@ -14,4 +14,8 @@ dependencies {
   implementation project(":feature:chat-branch:domain")
 
   implementation libs.androidx.activity.compose // for BackHandler
+
+  testImplementation libs.bundles.unittest
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.platform.launcher
 }

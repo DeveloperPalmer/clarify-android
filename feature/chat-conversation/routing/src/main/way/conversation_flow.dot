@@ -24,9 +24,9 @@ digraph ConversationFlow {
     resultType = "ru.sla.clarify.feature.profile.routing.ProfileFlow.Result"
   ]
 
-  conversationFlow -> main
+  conversationFlow -> conversation
 
-  main -> directThreadFlow
-  main -> groupThreadFlow
-  main -> profileFlow
+  conversation -> directThreadFlow
+  conversation -> groupThreadFlow
+  conversation -> profileFlow
 }

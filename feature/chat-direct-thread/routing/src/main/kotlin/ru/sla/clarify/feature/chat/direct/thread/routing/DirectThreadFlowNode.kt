@@ -26,18 +26,18 @@ class DirectThreadFlowNode @Inject constructor(
   }
 
   override val dismissResult = Unit
-  override val initial = Target.directThreadFlow.main
+  override val initial = Target.directThreadFlow.directThread
 
   override fun transition(event: Event): FlowTransition<Unit> {
     return when (event) {
-      is FlowEvent.ThreadDismissed -> {
+      is FlowEvent.DirectThreadDismissed -> {
         Finish(Unit)
       }
       is FlowEvent.BranchRequested -> {
         NavigateTo(buildBranchFlow(event.branchId))
       }
       is DirectThreadFlowChildFinishRequest.BranchFlow -> {
-        NavigateTo(Target.directThreadFlow.main)
+        NavigateTo(Target.directThreadFlow.directThread)
       }
       else -> Ignore
     }

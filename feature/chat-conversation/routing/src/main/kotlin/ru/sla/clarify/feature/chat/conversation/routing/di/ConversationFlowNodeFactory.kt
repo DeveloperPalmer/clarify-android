@@ -20,32 +20,32 @@ import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams as D
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams as GroupTargetParams
 
 class ConversationFlowNodeFactory @Inject constructor(
-  private val flowNode: () -> ConversationFlowNode,
-  private val component: ConversationFlowComponent,
-  @param:WiredScreen(Screen.Main)
-  private val mainScreen: () -> WiredComposableScreen
+  private val conversationFlowNode: () -> ConversationFlowNode,
+  private val conversationFlowComponent: ConversationFlowComponent,
+  @param:WiredScreen(Screen.Conversation)
+  private val conversationScreen: () -> WiredComposableScreen
 ) : ConversationFlowNodeBuilder.Factory {
 
   override fun createRootNode(): FlowNode<*> {
-    return flowNode()
+    return conversationFlowNode()
   }
 
-  override fun createMainNode(): ScreenNode {
-    return BasicScreenNode(mainScreen())
+  override fun createConversationNode(): ScreenNode {
+    return BasicScreenNode(conversationScreen())
   }
 
   override fun createProfileFlowNodeBuilder(): NodeBuilder {
-    val factory = component as ProfileFlowComponent.Factory
+    val factory = conversationFlowComponent as ProfileFlowComponent.Factory
     return ProfileFlow.nodeBuilder(factory.createProfileFlowComponent())
   }
 
   override fun createDirectThreadFlowNodeBuilder(params: DirectTargetParams): NodeBuilder {
-    val factory = component as DirectThreadFlowComponent.Factory
+    val factory = conversationFlowComponent as DirectThreadFlowComponent.Factory
     return DirectThreadFlow.nodeBuilder(factory.createDirectThreadFlowComponent(params))
   }
 
   override fun createGroupThreadFlowNodeBuilder(params: GroupTargetParams): NodeBuilder {
-    val factory = component as GroupThreadFlowComponent.Factory
+    val factory = conversationFlowComponent as GroupThreadFlowComponent.Factory
     return GroupThreadFlow.nodeBuilder(factory.createGroupThreadFlowComponent(params))
   }
 }

@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chat.conversation.ui.screen.main
+package ru.sla.clarify.feature.chat.conversation.ui.screen.conversation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -31,10 +31,10 @@ import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Peer
-import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.DirectConversationItem
-import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.FabActionButton
-import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.GroupConversationItem
-import ru.sla.clarify.feature.chat.conversation.ui.screen.main.components.rememberFabVisibility
+import ru.sla.clarify.feature.chat.conversation.ui.components.DirectConversationItem
+import ru.sla.clarify.feature.chat.conversation.ui.components.FabActionButton
+import ru.sla.clarify.feature.chat.conversation.ui.components.GroupConversationItem
+import ru.sla.clarify.feature.chat.conversation.ui.components.rememberFabVisibility
 import ru.sla.clarify.uikit.component.avatar.Avatar
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -42,7 +42,7 @@ import ru.sla.clarify.uikit.theme.VSpacer
 import ru.sla.resourcerefs.compose.resolveTextRef
 
 @Composable
-fun ChatListScreen(viewModel: ChatListViewModel) {
+fun ConversationScreen(viewModel: ConversationViewModel) {
   MviComponent(
     viewModel = viewModel,
     intents = rememberViewIntents()
@@ -53,7 +53,7 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
       enabled = state.editModeEnabled,
       onBack = intents.navigateBack
     )
-    ChatListReadyContent(
+    ConversationReadyContent(
       user = state.user,
       editModeEnabled = state.editModeEnabled,
       conversations = state.conversations,
@@ -69,7 +69,7 @@ fun ChatListScreen(viewModel: ChatListViewModel) {
 }
 
 @Composable
-internal fun ChatListReadyContent(
+internal fun ConversationReadyContent(
   user: User?,
   conversations: List<Conversation>,
   selectedConversationsIds: List<Conversation.Id>,

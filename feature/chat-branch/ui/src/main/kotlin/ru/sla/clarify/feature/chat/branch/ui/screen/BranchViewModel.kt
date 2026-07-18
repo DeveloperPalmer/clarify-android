@@ -1,5 +1,7 @@
 package ru.sla.clarify.feature.chat.branch.ui.screen
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
@@ -25,14 +27,27 @@ import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
 import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
 import ru.sla.clarify.mapper.ui.toUiCommits
+import ru.sla.clarify.uikit.component.bubble.isSelected
+import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.clarify.uikit.component.chat.bubble
+import ru.sla.clarify.uikit.component.chat.message
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
-class BranchViewModel @Inject constructor(
+class BranchViewModel(
   private val params: TargetParams,
   private val eventSink: FlowEventSink,
-  private val branchModel: BranchModel
-) : ViewModel<ViewState, ViewIntents>() {
+  private val branchModel: BranchModel,
+  dispatcher: CoroutineDispatcher
+) : ViewModel<ViewState, ViewIntents>(dispatcher) {
+
+  @Inject
+  constructor(
+    params: TargetParams,
+    eventSink: FlowEventSink,
+    branchModel: BranchModel
+  ) : this(params, eventSink, branchModel, Dispatchers.Default)
 
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState(branchId = params.branchId) to {
@@ -85,6 +100,9 @@ class BranchViewModel @Inject constructor(
     configureSenderCommitTransitions()
     configurePeerCommitTransitions()
     configureMergeRequestTransitions()
+    configureCommitMenuTransitions()
+    configureSelectionTransitions()
+    configureCommitDeletionTransitions()
   }
 
   private fun MachineDsl<ViewState>.configureSenderCommitTransitions() {
@@ -103,7 +121,15 @@ class BranchViewModel @Inject constructor(
   private fun MachineDsl<ViewState>.configurePeerCommitTransitions() {
     onEach(branchModel.commits.map { it.toUiCommits() }) {
       transitionTo { state, commits ->
-        state.copy(commits = commits)
+        val commitsIds = commits.mapTo(mutableSetOf()) { it.source.id }
+        val selectedCommitIds = state.selectedCommitIds.filter { it in commitsIds }
+        val menuCommit = state.focusedMessage?.takeIf { it.source.id in commitsIds }
+        state.copy(
+          focusedMessage = menuCommit
+        ).updateSelection(
+          commits = commits,
+          selectedCommitIds = selectedCommitIds
+        )
       }
     }
 
@@ -261,6 +287,93 @@ class BranchViewModel @Inject constructor(
     }
   }
 
+  private fun MachineDsl<ViewState>.configureCommitMenuTransitions() {
+    onEach(intent(ViewIntents::showMessageMenu)) {
+      transitionTo { state, commit ->
+        state.copy(focusedMessage = commit)
+      }
+    }
+
+    onEach(intent(ViewIntents::hideMessageMenu)) {
+      transitionTo { state, _ ->
+        state.copy(focusedMessage = null)
+      }
+    }
+
+    onEach(intent(ViewIntents::copyMessage)) {
+      action { _, _, _ ->
+        sendViewEvent(
+          Snackbar(message = resRef(R.string.thread_message_copied))
+        )
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureSelectionTransitions() {
+    onEach(intent(ViewIntents::disableEditMode)) {
+      transitionTo { state, _ ->
+        state.updateSelection(
+          selectedCommitIds = emptyList()
+        )
+      }
+    }
+
+    onEach(intent(ViewIntents::toggleMessageSelection)) {
+      transitionTo { state, commit ->
+        val targetCommitId = commit.source.id
+        val updatedCommitIds = if (targetCommitId in state.selectedCommitIds) {
+          state.selectedCommitIds - targetCommitId
+        } else {
+          state.selectedCommitIds + targetCommitId
+        }
+        state.updateSelection(
+          selectedCommitIds = updatedCommitIds
+        )
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureCommitDeletionTransitions() {
+    onEach(intent(ViewIntents::deleteCommit)) {
+      action { _, _, commit ->
+        sendViewEvent(showDeleteMessagesDialog(commit.source.id))
+      }
+    }
+
+    onEach(intent(ViewIntents::deleteCommits)) {
+      action { _, _, _ ->
+        sendViewEvent(showDeleteMessagesDialog(null))
+      }
+    }
+
+    onEach(intent(ViewIntents::confirmDeleteCommit)) {
+      action { _, _, deleteCommits ->
+        branchModel.deleteCommits.start(
+          deleteCommits.ids,
+          deleteCommits.forEveryone
+        )
+      }
+    }
+
+    onEach(branchModel.deleteCommits.jobFlow.successResults()) {
+      transitionTo { state, _ ->
+        state.updateSelection(
+          selectedCommitIds = emptyList()
+        )
+      }
+    }
+
+    onEach(branchModel.deleteCommits.jobFlow.errors()) {
+      action { _, _, _ ->
+        val viewEvent = Snackbar(
+          isError = true,
+          message = resRef(R.string.thread_delete_failed)
+        )
+        sendViewEvent(viewEvent)
+      }
+    }
+  }
+
   /** Pending = MR открыт и ещё не зафинализирован (можно approve/revoke/cancel). */
   private fun Branch.MergeRequest?.isPending(): Boolean {
     return this?.status == Status.Open ||
@@ -275,4 +388,18 @@ class BranchViewModel @Inject constructor(
       )
     )
   }
+}
+
+private fun ViewState.updateSelection(
+  commits: List<Commit> = this.commits,
+  selectedCommitIds: List<DomainCommit.Id>
+): ViewState {
+  val selectedIds = selectedCommitIds.toSet()
+  return copy(
+    editModeEnabled = selectedIds.isNotEmpty(),
+    selectedCommitIds = selectedCommitIds,
+    commits = commits.map { commit ->
+      Commit.message.bubble.isSelected.set(commit, commit.source.id in selectedIds)
+    }
+  )
 }

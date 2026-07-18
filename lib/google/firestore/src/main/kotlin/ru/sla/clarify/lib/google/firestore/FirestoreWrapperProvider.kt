@@ -53,7 +53,7 @@ interface FirestoreWrapperProvider {
 
   fun unreadCommitsDocumentRef(
     conversationId: String,
-    userId: UserId
+    memberId: String
   ): DocumentReference
 
   fun branchesCollectionRef(
@@ -68,7 +68,7 @@ interface FirestoreWrapperProvider {
   fun branchUnreadCommitsDocumentRef(
     conversationId: String,
     branchId: String,
-    userId: UserId
+    memberId: String
   ): DocumentReference
 
   fun membersCollectionRef(
@@ -77,6 +77,6 @@ interface FirestoreWrapperProvider {
 
   fun memberDocumentRef(
     conversationId: String,
-    userId: UserId
+    memberId: String
   ): DocumentReference
 }

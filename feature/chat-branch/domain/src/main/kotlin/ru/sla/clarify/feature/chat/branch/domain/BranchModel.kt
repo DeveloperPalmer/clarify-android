@@ -23,9 +23,9 @@ class BranchModel @Inject constructor(
 ) : ReactiveModel(parentScope) {
 
   init {
-    scope.launch { branchRepository.subscribeOnBranchesChanges() }
+    scope.launch { branchRepository.subscribeOnBranchChanges() }
     scope.launch { branchRepository.subscribeOnBranchCommitsChanges() }
-    scope.launch { branchRepository.subscribeOnBranchUnreadCount() }
+    scope.launch { branchRepository.subscribeOnBranchUnreadCountChanges() }
   }
 
   fun markReadCommits() {
@@ -48,6 +48,12 @@ class BranchModel @Inject constructor(
     name = "sendMessage"
   ) { text ->
     branchRepository.sendCommit(text = requireNotNull(text))
+  }
+
+  val deleteCommits = task<List<Commit.Id>, Boolean, Unit>(
+    name = "deleteCommits"
+  ) { ids, forEveryone ->
+    branchRepository.deleteCommits(ids, forEveryone)
   }
 
   val openMergeRequest = task<Unit>(
