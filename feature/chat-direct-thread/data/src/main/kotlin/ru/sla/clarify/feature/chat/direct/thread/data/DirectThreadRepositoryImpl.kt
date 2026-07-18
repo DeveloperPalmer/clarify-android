@@ -1,5 +1,7 @@
 package ru.sla.clarify.feature.chat.direct.thread.data
 
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -10,6 +12,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.entity.UserId
@@ -29,9 +33,11 @@ import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
+import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
+import ru.sla.clarify.lib.google.firestore.epochNanosToTimestamp
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
 import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
@@ -57,7 +63,10 @@ class DirectThreadRepositoryImpl @Inject constructor(
 ) : DirectThreadRepository {
 
   private val peerId = params.peerId
-  private val lastReadWatermark = MutableStateFlow<LocalDateTime?>(null)
+  private val lastReadWatermarkCache = MutableStateFlow<LocalDateTime?>(null)
+
+  private val fetchCommitsHistoryMutex = Mutex()
+  private val hasCommitsHistoryCache = MutableStateFlow(true)
 
   override suspend fun subscribeOnPeerChanges() {
     val peerUserId = UserId(peerId.value)
@@ -136,6 +145,47 @@ class DirectThreadRepositoryImpl @Inject constructor(
     )
   }
 
+  override suspend fun fetchHistoryCommits() = fetchCommitsHistoryMutex.withLock {
+    if (!hasCommitsHistoryCache.value) {
+      return@withLock
+    }
+    val conversationId = threadMediator.awaitConversationId()
+
+    // Whole cache is already on screen, so "reached top" means the local cache is exhausted:
+    // page from Firestore starting after the oldest cached commit (exact createdAtNanos + id).
+    val cursor = withContext(Dispatchers.IO) {
+      persistedDB.chatCommitQueries
+        .selectOldestCursor(conversationId, conversationId)
+        .executeAsOneOrNull()
+    }?.let { oldest ->
+      CommitCursor(
+        id = oldest.id,
+        createdAt = oldest.createdAtNanos.epochNanosToTimestamp()
+      )
+    }
+
+    val commits = try {
+      firestore.readCommits(
+        conversationId = conversationId,
+        branchId = conversationId,
+        limit = HISTORY_PAGE_SIZE.toLong(),
+        before = cursor,
+        // SERVER (not the default): offline must throw rather than return a truncated cached
+        // page that would be mistaken for "end of history" and latch hasMoreRemote to false.
+        source = Source.SERVER
+      )
+    } catch (e: FirebaseFirestoreException) {
+      log { "Direct: loadMoreHistory failed, will retry on next scroll: $e" }
+      return@withLock
+    }
+
+    applyInsertOrReplaceCommits(commits = commits)
+
+    if (commits.size < HISTORY_PAGE_SIZE) {
+      hasCommitsHistoryCache.value = false
+    }
+  }
+
   override suspend fun sendCommit(text: String) {
     firestore.createDirectCommit(
       conversationId = threadMediator.conversationId(),
@@ -152,12 +202,12 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
     val conversationId = threadMediator.conversationId() ?: return
-    val current = lastReadWatermark.value
+    val current = lastReadWatermarkCache.value
     if (current != null && !lastReadAt.isAfter(current)) {
       log { "Direct: lastReadAt ($lastReadAt) is not after current watermark ($current), skipping" }
       return
     }
-    lastReadWatermark.value = lastReadAt
+    lastReadWatermarkCache.value = lastReadAt
     firestore.updateReadWatermark(conversationId, lastReadAt)
     firestore.updateUnreadCount(conversationId)
   }
@@ -222,6 +272,8 @@ class DirectThreadRepositoryImpl @Inject constructor(
   override val peer: Flow<Peer?> = persistedDB.userQueries
     .selectById(peerId.value, ::mapToPeer)
     .observeOneOrNull()
+
+  override val hasMoreCommitsHistory: Flow<Boolean> = hasCommitsHistoryCache
 
   override val commits: Flow<List<Commit>> = flow {
     val conversationId = threadMediator.awaitConversationId()
@@ -412,3 +464,4 @@ class DirectThreadRepositoryImpl @Inject constructor(
 }
 
 private const val LIVE_COMMIT_LIMIT = 50L
+private const val HISTORY_PAGE_SIZE = 30
