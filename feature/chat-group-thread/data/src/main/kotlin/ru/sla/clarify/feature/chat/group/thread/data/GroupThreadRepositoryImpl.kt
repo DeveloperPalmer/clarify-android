@@ -10,7 +10,6 @@ import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
-import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Commit
@@ -27,8 +26,8 @@ import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.MemberNM
-import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.mapToCommit
+import ru.sla.clarify.mapper.data.toDomainModel
 import ru.sla.log.log
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
@@ -59,7 +58,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun fetchHistoryCommits(count: Int, before: Commit?) {
+  override suspend fun fetchHistoryCommits(count: Int) {
     val historyCommits = firestore.readCommits(
       conversationId = conversationId.value,
       branchId = conversationId.value,
@@ -301,21 +300,10 @@ class GroupThreadRepositoryImpl @Inject constructor(
     hasPendingWrites: Boolean
   ) {
     persistedDB.chatCommitQueries.insertOrReplace(
-      ChatCommit(
-        id = commit.id,
+      commit.toDomainModel(
         conversationId = conversationId.value,
-        branchId = commit.branchId,
-        senderId = commit.senderUid,
-        type = commit.type.value,
-        text = commit.text.orEmpty(),
-        invitedUid = commit.invitedUid,
-        createdAtNanos = commit.createdAt?.toEpochNanos() ?: 0L,
-        isSelf = commit.senderUid == userId.value,
-        status = if (hasPendingWrites) {
-          Commit.Status.Sending.value
-        } else {
-          Commit.Status.Sent.value
-        }
+        selfUserId = userId,
+        hasPendingWrites = hasPendingWrites
       )
     )
   }

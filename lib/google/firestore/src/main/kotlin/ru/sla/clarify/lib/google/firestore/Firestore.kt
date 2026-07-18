@@ -614,7 +614,7 @@ class Firestore @Inject constructor(
   fun directCommitsLive(
     branchId: String,
     peerId: String,
-    limit: Long
+    from: CommitCursor?
   ): Flow<List<FirestoreChange<CommitNM>>> {
     return directConversationIdLive(peerId)
       .distinctUntilChanged()
@@ -625,7 +625,7 @@ class Firestore @Inject constructor(
           commitsLive(
             conversationId = conversationId,
             branchId = branchId,
-            limit = limit
+            from = from
           )
         }
       }
@@ -1157,6 +1157,35 @@ class Firestore @Inject constructor(
       )
     }
     transaction.await()
+  }
+
+  // Forward "tail" listener: emits commits from [from] (the newest cached commit at subscription
+  // time) onward, unbounded above. Unlike the limit-windowed commitsLive, it never produces
+  // phantom REMOVED changes from window eviction, so a REMOVED here is always a real deletion.
+  private fun commitsLive(
+    conversationId: String,
+    branchId: String,
+    from: CommitCursor?
+  ): Flow<List<FirestoreChange<CommitNM>>> = callbackFlow {
+    listenerGuard.trackOpen("commitsTailLive:$conversationId:$branchId")
+
+    val listener = commitTailQuery(
+      conversationId = conversationId,
+      whereEqualTo = Branch.Id(branchId),
+      whereArrayContains = requireUserId(),
+      from = from
+    ).addSnapshotListener(MetadataChanges.INCLUDE) { snapshot, error ->
+      if (error != null) {
+        close(error)
+        return@addSnapshotListener
+      }
+      val result = snapshot.mapDocumentChanges<CommitNM>(
+        metadataChanges = MetadataChanges.INCLUDE,
+        trackPendingWrites = true
+      )
+      trySend(result)
+    }
+    awaitClose { listener.remove() }
   }
 
   private fun directConversationIdLive(peerId: String): Flow<String?> = callbackFlow {

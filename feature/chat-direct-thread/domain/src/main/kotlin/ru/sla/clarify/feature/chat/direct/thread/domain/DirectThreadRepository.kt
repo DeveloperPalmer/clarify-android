@@ -13,8 +13,8 @@ interface DirectThreadRepository {
   suspend fun subscribeOnBranchesChanges()
   suspend fun subscribeOnBranchesUnreadCounts()
 
-  suspend fun fetchCommitsHistory(count: Int, before: Commit? = null)
-  suspend fun fetchCommitsHistory()
+  suspend fun fetchLatestCommits()
+  suspend fun fetchCommitHistory()
 
   suspend fun sendCommit(text: String)
   suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean)

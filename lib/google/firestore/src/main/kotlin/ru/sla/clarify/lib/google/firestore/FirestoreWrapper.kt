@@ -200,4 +200,35 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       }
       .limit(limit)
   }
+
+  override fun commitTailQuery(
+    conversationId: String,
+    whereEqualTo: Branch.Id,
+    whereArrayContains: UserId,
+    from: CommitCursor?
+  ): Query {
+    return remoteDB
+      .collection(CONVERSATIONS_COLLECTION)
+      .document(conversationId)
+      .collection(COMMITS_COLLECTION)
+      .whereEqualTo(COMMIT_BRANCH_ID, whereEqualTo.value)
+      .whereArrayContains(COMMIT_VISIBLE_FOR, whereArrayContains.value)
+      // ASCENDING mirror of commitQuery: a forward "tail" from the newest cached commit. Needs its
+      // own composite index (visibleFor array-contains, branchId, createdAt ASC, __name__ ASC) —
+      // arrayContains + multiple orderBy is NOT served by reversing the DESC pagination index.
+      // No limit: an upper bound would evict older rows out of the window and surface phantom
+      // REMOVED changes; the lower-bound cursor alone keeps the listener to newer commits.
+      .orderBy(COMMIT_CREATED_AT, Query.Direction.ASCENDING)
+      .orderBy(FieldPath.documentId(), Query.Direction.ASCENDING)
+      .let {
+        if (from != null) {
+          // Inclusive (startAt, not startAfter): the boundary commit itself stays in the window,
+          // so its later edits/deletions are still observed live. Its initial re-emit as ADDED is
+          // an idempotent insertOrReplace.
+          it.startAt(from.createdAt, from.id)
+        } else {
+          it
+        }
+      }
+  }
 }

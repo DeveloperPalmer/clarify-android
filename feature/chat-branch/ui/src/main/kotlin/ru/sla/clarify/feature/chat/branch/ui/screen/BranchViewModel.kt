@@ -111,9 +111,7 @@ class BranchViewModel(
         if (state.mergeRequest != null) {
           return@action
         }
-        branchModel.sendMessage.start(
-          argument = text.trim().ifBlank { null }
-        )
+        branchModel.sendMessage(text.trim())
       }
     }
   }

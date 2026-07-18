@@ -1,11 +1,14 @@
 package ru.sla.clarify.uikit.component.chat
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,25 +21,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.component.InviteMemberItem
 import ru.sla.clarify.uikit.component.bubble.BubbleMessageItem
 import ru.sla.clarify.uikit.component.popup.Action
 import ru.sla.clarify.uikit.component.popup.Popup
+import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.compose.resolveTextRef
 import ru.sla.resourcerefs.resRef
 import java.time.LocalDateTime
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
+@Suppress("CyclomaticComplexMethod")
 fun ChatCommits(
-  commits: List<Commit>,
   listState: LazyListState,
+  commits: List<Commit>,
   onCommitsRead: (LocalDateTime) -> Unit,
   modifier: Modifier = Modifier,
+  hasCommitsHistory: Boolean = false,
+  loadingCommitsHistory: Boolean = false,
   selectionEnabled: Boolean = false,
   focusedMessage: Commit.Message? = null,
+  onLoadMore: () -> Unit = {},
   onMessageClick: ((Commit.Message) -> Unit)? = null,
   onMessageLongClick: ((Commit.Message) -> Unit)? = null,
   onCloseMessagePopup: (() -> Unit)? = null,
@@ -84,6 +93,25 @@ fun ChatCommits(
       .collect(onCommitsRead)
   }
 
+  // Load older commits when the user nears the top. With reverseLayout the top (oldest) is the
+  // largest index. Gates guard an empty first frame and a fully-visible short list so neither
+  // can fire a spurious load; distinctUntilChanged + the caller's SkipNew debounce repeats.
+  LaunchedEffect(listState, hasCommitsHistory) {
+    if (!hasCommitsHistory) {
+      return@LaunchedEffect
+    }
+    snapshotFlow {
+      val info = listState.layoutInfo
+      val lastVisibleIndex = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+      info.visibleItemsInfo.isNotEmpty() &&
+        info.totalItemsCount > info.visibleItemsInfo.size &&
+        lastVisibleIndex >= info.totalItemsCount - 1 - LOAD_MORE_PREFETCH
+    }
+      .distinctUntilChanged()
+      .filter { it }
+      .collect { onLoadMore() }
+  }
+
   LazyColumn(
     modifier = modifier,
     state = listState,
@@ -129,6 +157,22 @@ fun ChatCommits(
               .fillMaxWidth()
               .padding(vertical = 8.dp),
             text = resolveTextRef(commit.text)
+          )
+        }
+      }
+    }
+    if (loadingCommitsHistory) {
+      // reverseLayout: the last item is rendered at the very top, above the oldest commit.
+      item(key = "load_more_spinner") {
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          CircularProgressIndicator(
+            modifier = Modifier.size(24.dp),
+            color = AppTheme.colors.contentSecondary
           )
         }
       }
@@ -189,3 +233,6 @@ private fun BubbleMessagePopup(
 }
 
 private val PopupBottomSafePadding = 96.dp
+
+// Trigger the next history page a few items before the very top so it lands seamlessly.
+private const val LOAD_MORE_PREFETCH = 5

@@ -50,6 +50,13 @@ interface FirestoreWrapperProvider {
     limit: Long
   ): Query
 
+  fun commitTailQuery(
+    conversationId: String,
+    whereEqualTo: Branch.Id,
+    whereArrayContains: UserId,
+    from: CommitCursor?
+  ): Query
+
   fun unreadCommitsDocumentRef(
     conversationId: String,
     memberId: String

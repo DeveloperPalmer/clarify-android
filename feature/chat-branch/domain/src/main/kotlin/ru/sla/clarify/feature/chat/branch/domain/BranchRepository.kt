@@ -13,7 +13,7 @@ interface BranchRepository {
   suspend fun subscribeOnBranchCommitsChanges()
   suspend fun subscribeOnBranchUnreadCountChanges()
 
-  suspend fun fetchHistoryCommits(count: Int, before: Commit? = null)
+  suspend fun fetchHistoryCommits(count: Int)
   suspend fun sendCommit(text: String)
   suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean)
 

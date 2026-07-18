@@ -13,7 +13,7 @@ data class ViewState(
   val peer: Peer? = null,
   val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
   val commits: List<Commit> = emptyList(),
-  val hasCommitsHistory: Boolean = false,
+  val hasCommitsHistory: Boolean = true,
   val loadingCommitsHistory: Boolean = false,
   val branches: List<Branch> = emptyList(),
   val unreadCount: Int = 0,

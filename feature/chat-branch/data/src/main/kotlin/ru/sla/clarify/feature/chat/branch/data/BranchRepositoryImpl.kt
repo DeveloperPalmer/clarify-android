@@ -13,7 +13,6 @@ import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
-import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
@@ -29,13 +28,13 @@ import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
-import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.clarify.mapper.data.mapToMember
 import ru.sla.clarify.mapper.data.mapToUser
 import ru.sla.clarify.mapper.data.toDomain
+import ru.sla.clarify.mapper.data.toDomainModel
 import ru.sla.clarify.mapper.data.toLocalDateTime
 import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
@@ -98,7 +97,7 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun fetchHistoryCommits(count: Int, before: Commit?) {
+  override suspend fun fetchHistoryCommits(count: Int) {
     val conversationId = requireConversationId()
     val historyCommits = firestore.readCommits(
       conversationId = conversationId,
@@ -454,21 +453,10 @@ class BranchRepositoryImpl @Inject constructor(
     hasPendingWrites: Boolean
   ) {
     persistedDB.chatCommitQueries.insertOrReplace(
-      ChatCommit(
-        id = commit.id,
+      commit.toDomainModel(
         conversationId = conversationId,
-        branchId = commit.branchId,
-        senderId = commit.senderUid,
-        type = commit.type.value,
-        text = commit.text.orEmpty(),
-        invitedUid = commit.invitedUid,
-        createdAtNanos = commit.createdAt?.toEpochNanos() ?: 0L,
-        isSelf = commit.senderUid == userId.value,
-        status = if (hasPendingWrites) {
-          Commit.Status.Sending.value
-        } else {
-          Commit.Status.Sent.value
-        }
+        selfUserId = userId,
+        hasPendingWrites = hasPendingWrites
       )
     )
   }

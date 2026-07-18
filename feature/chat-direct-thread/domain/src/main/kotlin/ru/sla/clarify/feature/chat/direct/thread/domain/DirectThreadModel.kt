@@ -8,7 +8,6 @@ import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
-import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
@@ -38,26 +37,20 @@ class DirectThreadModel @Inject constructor(
     scope.launch { directThreadRepository.markReadUpTo(lastReadAt) }
   }
 
-  val fetchHistoryCommits = task<Unit>(
-    name = "fetchHistoryCommits"
-  ) {
-    directThreadRepository.fetchCommitsHistory(
-      count = DEFAULT_HISTORY_PAGE_SIZE
-    )
+  fun sendMessage(text: String) {
+    scope.launch { directThreadRepository.sendCommit(text) }
   }
 
-  // Separate from fetchCommitsHistory so its Running state drives isLoadingMore (the top
-  // spinner) without touching the initial contentLoadState (LCE) that fetchCommitsHistory owns.
-  val fetchCommitsHistory = task<Unit>(
-    name = "fetchCommitsHistory"
+  val configureDirectThread = task<Unit>(
+    name = "configureDirectThread"
   ) {
-    directThreadRepository.fetchCommitsHistory()
+    directThreadRepository.fetchLatestCommits()
   }
 
-  val sendMessage = task<String, Unit>(
-    name = "sendMessage"
-  ) { text ->
-    directThreadRepository.sendCommit(text = text)
+  val fetchCommitHistory = task<Unit>(
+    name = "fetchCommitHistory"
+  ) {
+    directThreadRepository.fetchCommitHistory()
   }
 
   val createBranch = task<Branch.Id?, Commit.Message, String, Branch.Id>(
@@ -80,14 +73,8 @@ class DirectThreadModel @Inject constructor(
   val peer: Flow<Peer?> = directThreadRepository.peer
 
   val commits: Flow<List<Commit>> = directThreadRepository.commits
-
-  val hasCommitsHistory: Flow<Boolean> = directThreadRepository.hasCommitsHistory
+  val branches: Flow<List<Branch>> = directThreadRepository.branches
 
   val unreadCount: Flow<Long> = directThreadRepository.unreadCount
-
-  val members: Flow<List<Member>> = directThreadRepository.members
-
-  val branches: Flow<List<Branch>> = directThreadRepository.branches
+  val hasCommitsHistory: Flow<Boolean> = directThreadRepository.hasCommitsHistory
 }
-
-private const val DEFAULT_HISTORY_PAGE_SIZE: Int = 20

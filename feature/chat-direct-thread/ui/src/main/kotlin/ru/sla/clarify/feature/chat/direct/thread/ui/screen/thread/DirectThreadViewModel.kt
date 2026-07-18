@@ -44,7 +44,7 @@ class DirectThreadViewModel(
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState() to {
       directThreadModel.markReadCommits()
-      directThreadModel.fetchHistoryCommits.startOnSubscribe()
+      directThreadModel.configureDirectThread.startOnSubscribe()
     }
 
     onEach(intent(ViewIntents::navigateBack)) {
@@ -60,7 +60,7 @@ class DirectThreadViewModel(
     }
 
     onEach(
-      directThreadModel.fetchHistoryCommits.jobFlow
+      directThreadModel.configureDirectThread.jobFlow
         .asLceState()
         .map { it.toUiLceState() }
     ) {
@@ -91,9 +91,7 @@ class DirectThreadViewModel(
 
     onEach(intent(ViewIntents::loadCommitsHistory)) {
       action { _, _, _ ->
-        // SkipNew: while a page is loading, repeated scroll triggers are silently ignored
-        // (Disallow would throw). The repository Mutex is the second line of defence.
-        directThreadModel.fetchCommitsHistory.start(queueingStrategy = QueueingStrategy.SkipNew)
+        directThreadModel.fetchCommitHistory.start(queueingStrategy = QueueingStrategy.SkipNew)
       }
     }
 
@@ -103,9 +101,20 @@ class DirectThreadViewModel(
       }
     }
 
-    onEach(directThreadModel.fetchCommitsHistory.jobFlow.state.map { it == JobState.Running }) {
+    onEach(directThreadModel.fetchCommitHistory.jobFlow.state.map { it == JobState.Running }) {
       transitionTo { state, loading ->
         state.copy(loadingCommitsHistory = loading)
+      }
+    }
+
+    onEach(directThreadModel.fetchCommitHistory.jobFlow.errors()) {
+      action { _, _, _ ->
+        sendViewEvent(
+          Snackbar(
+            isError = true,
+            message = resRef(R.string.thread_load_history_failed)
+          )
+        )
       }
     }
 
@@ -147,9 +156,7 @@ class DirectThreadViewModel(
   private fun MachineDsl<ViewState>.configureSendMessageTransitions() {
     onEach(intent(ViewIntents::sendMessage)) {
       action { _, _, text ->
-        directThreadModel.sendMessage.start(
-          requireNotNull(text.trim().ifBlank { null })
-        )
+        directThreadModel.sendMessage(text.trim())
       }
     }
   }

@@ -1,13 +1,14 @@
 package ru.sla.clarify.feature.chat.direct.thread.data
 
-import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -18,7 +19,6 @@ import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.PersistedDB
-import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
@@ -39,12 +39,12 @@ import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.epochNanosToTimestamp
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
-import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.clarify.mapper.data.mapToMember
 import ru.sla.clarify.mapper.data.toDomain
+import ru.sla.clarify.mapper.data.toDomainModel
 import ru.sla.clarify.mapper.data.toLocalDateTime
 import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
@@ -65,8 +65,13 @@ class DirectThreadRepositoryImpl @Inject constructor(
   private val peerId = params.peerId
   private val lastReadWatermarkCache = MutableStateFlow<LocalDateTime?>(null)
 
-  private val fetchCommitsHistoryMutex = Mutex()
+  private val fetchCommitHistoryMutex = Mutex()
   private val hasCommitsHistoryCache = MutableStateFlow(true)
+
+  // Completed once the initial page is in cache. The live tail subscribes only after this, so its
+  // lower-bound cursor is the newest cached commit rather than null — a null cursor would stream the
+  // whole history into cache and defeat pagination.
+  private val fetchLatestCommitsCompletable = CompletableDeferred<Unit>()
 
   override suspend fun subscribeOnPeerChanges() {
     val peerUserId = UserId(peerId.value)
@@ -78,10 +83,24 @@ class DirectThreadRepositoryImpl @Inject constructor(
   override suspend fun subscribeOnCommitChanges() {
     val userId = threadMediator.requireUserId()
     val conversationId = threadMediator.awaitConversationId()
+    // Gate on the initial page so the tail cursor is the newest cached commit (see latestCommitsLoaded).
+    fetchLatestCommitsCompletable.await()
+
+    val cursor = withContext(Dispatchers.IO) {
+      persistedDB.chatCommitQueries
+        .selectNewestCursor(conversationId, conversationId)
+        .executeAsOneOrNull()
+    }?.let { newest ->
+      CommitCursor(
+        id = newest.id,
+        createdAt = newest.createdAtNanos.epochNanosToTimestamp()
+      )
+    }
+
     firestore.directCommitsLive(
       peerId = peerId.value,
       branchId = conversationId,
-      limit = LIVE_COMMIT_LIMIT
+      from = cursor
     ).collect { changes ->
       applyCommitChanges(
         conversationId = conversationId,
@@ -129,23 +148,28 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun fetchCommitsHistory(
-    count: Int,
-    before: Commit?
-  ) {
-    val conversationId = threadMediator.conversationId() ?: return
-    val historyCommits = firestore.readCommits(
+  override suspend fun fetchLatestCommits() {
+    val conversationId = threadMediator.conversationId()
+    if (conversationId == null) {
+      // No conversation yet (never messaged): nothing to page, unblock the tail immediately.
+      fetchLatestCommitsCompletable.complete(Unit)
+      return
+    }
+    val latestCommits = firestore.readCommits(
       conversationId = conversationId,
       branchId = conversationId,
-      limit = count.toLong(),
+      limit = LATEST_PAGE_SIZE.toLong(),
       before = null
     )
     applyInsertOrReplaceCommits(
-      commits = historyCommits
+      commits = latestCommits
     )
+    // Completed only after a successful load: a failed initial fetch leaves the tail gated so a
+    // retry re-derives the cursor from a populated cache instead of streaming all history.
+    fetchLatestCommitsCompletable.complete(Unit)
   }
 
-  override suspend fun fetchCommitsHistory() = fetchCommitsHistoryMutex.withLock {
+  override suspend fun fetchCommitHistory() = fetchCommitHistoryMutex.withLock {
     if (!hasCommitsHistoryCache.value) {
       return@withLock
     }
@@ -164,24 +188,17 @@ class DirectThreadRepositoryImpl @Inject constructor(
       )
     }
 
-    val commits = try {
-      firestore.readCommits(
-        conversationId = conversationId,
-        branchId = conversationId,
-        limit = HISTORY_PAGE_SIZE.toLong(),
-        before = cursor,
-        // SERVER (not the default): offline must throw rather than return a truncated cached
-        // page that would be mistaken for "end of history" and latch hasCommitsHistoryCache to false.
-        source = Source.SERVER
-      )
-    } catch (e: FirebaseFirestoreException) {
-      log { "Direct: fetchCommitsHistory failed, will retry on next scroll: $e" }
-      return@withLock
-    }
+    val commitHistory = firestore.readCommits(
+      conversationId = conversationId,
+      branchId = conversationId,
+      limit = HISTORY_PAGE_SIZE.toLong(),
+      before = cursor,
+      source = Source.SERVER
+    )
 
-    applyInsertOrReplaceCommits(commits = commits)
+    applyInsertOrReplaceCommits(commits = commitHistory)
 
-    if (commits.size < HISTORY_PAGE_SIZE) {
+    if (commitHistory.size < HISTORY_PAGE_SIZE) {
       hasCommitsHistoryCache.value = false
     }
   }
@@ -241,6 +258,18 @@ class DirectThreadRepositoryImpl @Inject constructor(
         commitIds = ids.map { it.value }
       )
     }
+    // Optimistic local removal. The live listener is a forward tail from the newest cached commit,
+    // so a deletion of any older message never reaches its window — this device would otherwise keep
+    // showing a commit already gone from Firestore. Runs only after the remote write succeeds.
+    applyDeleteCommits(ids)
+  }
+
+  private suspend fun applyDeleteCommits(ids: List<Commit.Id>) {
+    return withContext(Dispatchers.IO) {
+      persistedDB.transaction {
+        ids.forEach { persistedDB.chatCommitQueries.deleteById(it.value) }
+      }
+    }
   }
 
   private suspend fun deleteCommitsForEveryone(ids: List<Commit.Id>) {
@@ -291,6 +320,9 @@ class DirectThreadRepositoryImpl @Inject constructor(
         ?.toEpochMillis()
         ?.toLocalDateTime()
     }
+      // Skip identical watermarks: memberLive also emits on unrelated metadata changes, and each
+      // pass-through would re-run withReadStatus over the whole (now unbounded) commit list.
+      .distinctUntilChanged()
 
     combine(
       flow = commitsFlow,
@@ -382,21 +414,10 @@ class DirectThreadRepositoryImpl @Inject constructor(
     hasPendingWrites: Boolean
   ) {
     persistedDB.chatCommitQueries.insertOrReplace(
-      ChatCommit(
-        id = commit.id,
+      commit.toDomainModel(
         conversationId = conversationId,
-        branchId = commit.branchId,
-        senderId = commit.senderUid,
-        type = commit.type.value,
-        text = commit.text.orEmpty(),
-        invitedUid = commit.invitedUid,
-        createdAtNanos = commit.createdAt?.toEpochNanos() ?: 0L,
-        isSelf = commit.senderUid == userId.value,
-        status = if (hasPendingWrites) {
-          Commit.Status.Sending.value
-        } else {
-          Commit.Status.Sent.value
-        }
+        selfUserId = userId,
+        hasPendingWrites = hasPendingWrites
       )
     )
   }
@@ -463,5 +484,5 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 }
 
-private const val LIVE_COMMIT_LIMIT = 50L
+private const val LATEST_PAGE_SIZE = 50
 private const val HISTORY_PAGE_SIZE = 30

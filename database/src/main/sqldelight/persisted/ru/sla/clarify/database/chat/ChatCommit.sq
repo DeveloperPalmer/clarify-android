@@ -14,7 +14,7 @@ CREATE TABLE ChatCommit(
 );
 
 CREATE INDEX ChatCommit_conversationId ON ChatCommit(conversationId);
-CREATE INDEX ChatCommit_branchId ON ChatCommit(conversationId, branchId);
+CREATE INDEX ChatCommit_branchId ON ChatCommit(conversationId, branchId, createdAtNanos);
 
 insertOrReplace:
 INSERT OR REPLACE
@@ -42,6 +42,15 @@ SELECT
 FROM ChatCommit
 WHERE conversationId = :conversationId AND branchId = :branchId
 ORDER BY createdAtNanos ASC, id ASC
+LIMIT 1;
+
+selectNewestCursor:
+SELECT
+  id,
+  createdAtNanos
+FROM ChatCommit
+WHERE conversationId = :conversationId AND branchId = :branchId
+ORDER BY createdAtNanos DESC, id DESC
 LIMIT 1;
 
 deleteById:

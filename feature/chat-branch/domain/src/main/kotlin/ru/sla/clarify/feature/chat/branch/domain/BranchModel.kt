@@ -36,18 +36,16 @@ class BranchModel @Inject constructor(
     scope.launch { branchRepository.markReadUpTo(lastReadAt) }
   }
 
+  fun sendMessage(text: String) {
+    scope.launch { branchRepository.sendCommit(text) }
+  }
+
   val fetchHistoryCommits = task<Unit>(
     name = "fetchHistoryCommits"
   ) {
     branchRepository.fetchHistoryCommits(
       count = DEFAULT_HISTORY_PAGE_SIZE
     )
-  }
-
-  val sendMessage = task<String?, Unit>(
-    name = "sendMessage"
-  ) { text ->
-    branchRepository.sendCommit(text = requireNotNull(text))
   }
 
   val deleteCommits = task<List<Commit.Id>, Boolean, Unit>(

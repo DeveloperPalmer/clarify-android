@@ -66,6 +66,7 @@
     <string name="thread_selection_count">Выбрано: %1$d</string>
     <string name="thread_selection_delete_for_peer">Также удалить для %1$s</string>
     <string name="thread_delete_failed">Не удалось удалить сообщения, попробуйте снова</string>
+    <string name="thread_load_history_failed">Не удалось загрузить историю, попробуйте снова</string>
     <string name="thread_menu_create_branch">Создать ветку</string>
     <string name="thread_menu_copy">Копировать</string>
     <string name="thread_menu_select">Выбрать</string>

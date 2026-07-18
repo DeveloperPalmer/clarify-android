@@ -12,7 +12,7 @@ interface GroupThreadRepository {
   suspend fun subscribeOnCommitChanges()
   suspend fun subscribeOnGroupMembers()
 
-  suspend fun fetchHistoryCommits(count: Int, before: Commit? = null)
+  suspend fun fetchHistoryCommits(count: Int)
   suspend fun sendCommit(text: String)
 
   suspend fun markReadUpTo(lastReadAt: LocalDateTime)

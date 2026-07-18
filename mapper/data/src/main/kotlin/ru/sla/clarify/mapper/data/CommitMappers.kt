@@ -3,8 +3,11 @@ package ru.sla.clarify.mapper.data
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
+import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.lib.google.firestore.toTimestamp
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.resRef
@@ -52,6 +55,47 @@ fun mapToCommit(
     }
   }
 }
+
+/**
+ * Reverse of [mapToCommit]: a Firestore [CommitNM] into a cache row. Single source of truth for
+ * the NM -> ChatCommit mapping shared by all thread repositories (direct/group/branch), so fields
+ * like [ChatCommit.createdAtNanos] are wired in exactly one place.
+ */
+fun CommitNM.toDomainModel(
+  conversationId: String,
+  selfUserId: UserId,
+  hasPendingWrites: Boolean
+): ChatCommit {
+  return ChatCommit(
+    id = id,
+    conversationId = conversationId,
+    branchId = branchId,
+    senderId = senderUid,
+    type = type.value,
+    text = text.orEmpty(),
+    invitedUid = invitedUid,
+    createdAtNanos = createdAt?.toEpochNanos() ?: 0L,
+    isSelf = senderUid == selfUserId.value,
+    status = if (hasPendingWrites) Commit.Status.Sending.value else Commit.Status.Sent.value
+  )
+}
+
+fun CommitNM.toChatCommit(
+  conversationId: String,
+  selfUserId: UserId,
+  hasPendingWrites: Boolean
+): ChatCommit = ChatCommit(
+  id = id,
+  conversationId = conversationId,
+  branchId = branchId,
+  senderId = senderUid,
+  type = type.value,
+  text = text.orEmpty(),
+  invitedUid = invitedUid,
+  createdAtNanos = createdAt?.toEpochNanos() ?: 0L,
+  isSelf = senderUid == selfUserId.value,
+  status = if (hasPendingWrites) Commit.Status.Sending.value else Commit.Status.Sent.value
+)
 
 fun formatLastCommitTimestamp(epochSeconds: Long?): TextRef? {
   if (epochSeconds == null || epochSeconds <= 0L) return null
