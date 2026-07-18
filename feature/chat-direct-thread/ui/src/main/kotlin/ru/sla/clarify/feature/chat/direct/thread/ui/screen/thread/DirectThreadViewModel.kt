@@ -8,6 +8,8 @@ import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
+import ru.kode.remo.JobState
+import ru.kode.remo.QueueingStrategy
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
@@ -84,6 +86,26 @@ class DirectThreadViewModel(
     onEach(intent(ViewIntents::markReadUpTo)) {
       action { _, _, lastReadAt ->
         directThreadModel.markReadUpTo(lastReadAt)
+      }
+    }
+
+    onEach(intent(ViewIntents::loadCommitsHistory)) {
+      action { _, _, _ ->
+        // SkipNew: while a page is loading, repeated scroll triggers are silently ignored
+        // (Disallow would throw). The repository Mutex is the second line of defence.
+        directThreadModel.fetchCommitsHistory.start(queueingStrategy = QueueingStrategy.SkipNew)
+      }
+    }
+
+    onEach(directThreadModel.hasCommitsHistory) {
+      transitionTo { state, hasCommitsHistory ->
+        state.copy(hasCommitsHistory = hasCommitsHistory)
+      }
+    }
+
+    onEach(directThreadModel.fetchCommitsHistory.jobFlow.state.map { it == JobState.Running }) {
+      transitionTo { state, loading ->
+        state.copy(loadingCommitsHistory = loading)
       }
     }
 

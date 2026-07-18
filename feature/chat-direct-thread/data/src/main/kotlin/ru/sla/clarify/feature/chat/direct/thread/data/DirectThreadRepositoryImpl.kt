@@ -129,7 +129,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun fetchHistoryCommits(
+  override suspend fun fetchCommitsHistory(
     count: Int,
     before: Commit?
   ) {
@@ -145,7 +145,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     )
   }
 
-  override suspend fun fetchHistoryCommits() = fetchCommitsHistoryMutex.withLock {
+  override suspend fun fetchCommitsHistory() = fetchCommitsHistoryMutex.withLock {
     if (!hasCommitsHistoryCache.value) {
       return@withLock
     }
@@ -171,11 +171,11 @@ class DirectThreadRepositoryImpl @Inject constructor(
         limit = HISTORY_PAGE_SIZE.toLong(),
         before = cursor,
         // SERVER (not the default): offline must throw rather than return a truncated cached
-        // page that would be mistaken for "end of history" and latch hasMoreRemote to false.
+        // page that would be mistaken for "end of history" and latch hasCommitsHistoryCache to false.
         source = Source.SERVER
       )
     } catch (e: FirebaseFirestoreException) {
-      log { "Direct: loadMoreHistory failed, will retry on next scroll: $e" }
+      log { "Direct: fetchCommitsHistory failed, will retry on next scroll: $e" }
       return@withLock
     }
 
@@ -273,7 +273,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     .selectById(peerId.value, ::mapToPeer)
     .observeOneOrNull()
 
-  override val hasMoreCommitsHistory: Flow<Boolean> = hasCommitsHistoryCache
+  override val hasCommitsHistory: Flow<Boolean> = hasCommitsHistoryCache
 
   override val commits: Flow<List<Commit>> = flow {
     val conversationId = threadMediator.awaitConversationId()

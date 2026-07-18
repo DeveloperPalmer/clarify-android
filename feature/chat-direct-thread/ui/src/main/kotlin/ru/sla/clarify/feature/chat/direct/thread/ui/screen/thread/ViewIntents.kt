@@ -12,6 +12,7 @@ class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
   val sendMessage = intent<String>(name = "sendMessage")
   val markReadUpTo = intent<LocalDateTime>(name = "markReadUpTo")
+  val loadCommitsHistory = intent(name = "loadCommitsHistory")
 
   val disableEditMode = intent(name = "disableEditMode")
   val toggleMessageSelection = intent<Commit>(name = "toggleMessageSelection")

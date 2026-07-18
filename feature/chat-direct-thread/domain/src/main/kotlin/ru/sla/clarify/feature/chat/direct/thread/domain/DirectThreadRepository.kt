@@ -13,8 +13,8 @@ interface DirectThreadRepository {
   suspend fun subscribeOnBranchesChanges()
   suspend fun subscribeOnBranchesUnreadCounts()
 
-  suspend fun fetchHistoryCommits(count: Int, before: Commit? = null)
-  suspend fun fetchHistoryCommits()
+  suspend fun fetchCommitsHistory(count: Int, before: Commit? = null)
+  suspend fun fetchCommitsHistory()
 
   suspend fun sendCommit(text: String)
   suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean)
@@ -26,8 +26,9 @@ interface DirectThreadRepository {
 
   val peer: Flow<Peer?>
   val commits: Flow<List<Commit>>
-  val hasMoreCommitsHistory: Flow<Boolean>
   val unreadCount: Flow<Long>
+
+  val hasCommitsHistory: Flow<Boolean>
 
   val members: Flow<List<Member>>
 
