@@ -46,6 +46,14 @@ class DirectThreadModel @Inject constructor(
     )
   }
 
+  // Separate from fetchHistoryCommits so its Running state drives isLoadingMore (the top
+  // spinner) without touching the initial contentLoadState (LCE) that fetchHistoryCommits owns.
+  val loadMoreHistory = task<Unit>(
+    name = "loadMoreHistory"
+  ) {
+    directThreadRepository.fetchHistoryCommits()
+  }
+
   val sendMessage = task<String, Unit>(
     name = "sendMessage"
   ) { text ->
@@ -72,6 +80,9 @@ class DirectThreadModel @Inject constructor(
   val peer: Flow<Peer?> = directThreadRepository.peer
 
   val commits: Flow<List<Commit>> = directThreadRepository.commits
+
+  val hasMoreCommitsHistory: Flow<Boolean> = directThreadRepository.hasMoreCommitsHistory
+
   val unreadCount: Flow<Long> = directThreadRepository.unreadCount
 
   val members: Flow<List<Member>> = directThreadRepository.members
