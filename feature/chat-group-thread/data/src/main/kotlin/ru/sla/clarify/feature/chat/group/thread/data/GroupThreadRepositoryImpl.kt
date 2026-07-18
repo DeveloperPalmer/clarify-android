@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.PersistedDB
+import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Commit
@@ -38,7 +38,7 @@ import java.time.LocalDateTime
 class GroupThreadRepositoryImpl @Inject constructor(
   target: TargetParams,
   private val firestore: Firestore,
-  private val persistedDB: PersistedDB,
+  private val inMemoryDB: InMemoryDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : GroupThreadRepository {
 
@@ -67,7 +67,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
     )
     val userId = requireUserId()
     withContext(Dispatchers.IO) {
-      persistedDB.transaction {
+      inMemoryDB.transaction {
         historyCommits.forEach { commit ->
           applyInsertOrReplaceCommit(
             commit = commit,
@@ -81,7 +81,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun sendCommit(text: String) {
     val memberUids = withContext(Dispatchers.IO) {
-      persistedDB.chatConversationQueries
+      inMemoryDB.chatConversationQueries
         .selectGroupById(
           id = conversationId.value,
           mapper = { _, _, _, memberUids, _, _, _, _, _ -> memberUids }
@@ -120,16 +120,16 @@ class GroupThreadRepositoryImpl @Inject constructor(
   override suspend fun renameGroup(name: String) {
     withContext(Dispatchers.IO) {
       firestore.updateConversationName(conversationId = conversationId.value, name = name)
-      persistedDB.chatConversationQueries.updateGroupName(id = conversationId.value, name = name)
+      inMemoryDB.chatConversationQueries.updateGroupName(id = conversationId.value, name = name)
     }
   }
 
   override suspend fun deleteConversation() {
     withContext(Dispatchers.IO) {
       firestore.deleteConversation(conversationId.value)
-      persistedDB.transaction {
-        persistedDB.chatConversationQueries.deleteById(conversationId.value)
-        persistedDB.chatConversationMemberQueries.deleteByConversation(conversationId.value)
+      inMemoryDB.transaction {
+        inMemoryDB.chatConversationQueries.deleteById(conversationId.value)
+        inMemoryDB.chatConversationMemberQueries.deleteByConversation(conversationId.value)
       }
     }
   }
@@ -137,9 +137,9 @@ class GroupThreadRepositoryImpl @Inject constructor(
   override suspend fun leaveConversation() {
     withContext(Dispatchers.IO) {
       firestore.deleteConversationMember(conversationId.value)
-      persistedDB.transaction {
-        persistedDB.chatConversationQueries.deleteById(conversationId.value)
-        persistedDB.chatConversationMemberQueries.deleteByConversation(conversationId.value)
+      inMemoryDB.transaction {
+        inMemoryDB.chatConversationQueries.deleteById(conversationId.value)
+        inMemoryDB.chatConversationMemberQueries.deleteByConversation(conversationId.value)
       }
     }
   }
@@ -156,15 +156,15 @@ class GroupThreadRepositoryImpl @Inject constructor(
           memberUids = visibleFor
         )
       }
-      persistedDB.transaction {
+      inMemoryDB.transaction {
         ids.forEach { member ->
-          persistedDB.chatConversationMemberQueries.insertOrReplace(
+          inMemoryDB.chatConversationMemberQueries.insertOrReplace(
             conversationId = conversationId.value,
             id = member.value
           )
         }
         val merged = (currentMemberUids() + ids.map { it.value }).distinct()
-        persistedDB.chatConversationQueries.updateMemberUids(
+        inMemoryDB.chatConversationQueries.updateMemberUids(
           id = conversationId.value,
           memberUids = merged
         )
@@ -178,13 +178,13 @@ class GroupThreadRepositoryImpl @Inject constructor(
         conversationId = conversationId.value,
         memberId = id.value
       )
-      persistedDB.transaction {
-        persistedDB.chatConversationMemberQueries.deleteByConversationAndId(
+      inMemoryDB.transaction {
+        inMemoryDB.chatConversationMemberQueries.deleteByConversationAndId(
           conversationId = conversationId.value,
           id = id.value
         )
         val remaining = currentMemberUids() - id.value
-        persistedDB.chatConversationQueries.updateMemberUids(
+        inMemoryDB.chatConversationQueries.updateMemberUids(
           id = conversationId.value,
           memberUids = remaining
         )
@@ -207,7 +207,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   override fun observeGroup(): Flow<Group?> {
-    return persistedDB.chatConversationQueries
+    return inMemoryDB.chatConversationQueries
       .selectGroupById(
         id = conversationId.value,
         mapper = { rowId, name, ownerUid, memberUids, _, _, _, _, memberCount ->
@@ -226,7 +226,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   override fun observeGroupMembers(): Flow<List<GroupMember>> = flow {
     val currentUserId = authSessionPersistence.withKey { readUserId(it) }?.value
     val group = observeGroup()
-    val members = persistedDB.chatConversationMemberQueries
+    val members = inMemoryDB.chatConversationMemberQueries
       .selectByConversationWithEmail(
         conversationId = conversationId.value,
         mapper = { memberId, displayName, email, photoUrl ->
@@ -250,7 +250,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   private fun currentMemberUids(): List<String> {
-    return persistedDB.chatConversationQueries
+    return inMemoryDB.chatConversationQueries
       .selectGroupById(
         id = conversationId.value,
         mapper = { _, _, _, memberUids, _, _, _, _, _ -> memberUids }
@@ -260,7 +260,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   override val commits: Flow<List<Commit>> = flow {
-    persistedDB.chatCommitQueries
+    inMemoryDB.chatCommitQueries
       .selectByBranchId(conversationId.value, conversationId.value, ::mapToCommit)
       .observeList()
       .collect { emit(it) }
@@ -275,11 +275,11 @@ class GroupThreadRepositoryImpl @Inject constructor(
     userId: UserId,
     changes: List<FirestoreChange<CommitNM>>
   ): Unit = withContext(Dispatchers.IO) {
-    persistedDB.transaction {
+    inMemoryDB.transaction {
       changes.forEach { change ->
         when (change.changeType) {
           FirestoreDocumentResult.Removed -> {
-            persistedDB.chatCommitQueries.deleteById(change.data.id)
+            inMemoryDB.chatCommitQueries.deleteById(change.data.id)
           }
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
@@ -299,7 +299,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
     userId: UserId,
     hasPendingWrites: Boolean
   ) {
-    persistedDB.chatCommitQueries.insertOrReplace(
+    inMemoryDB.chatCommitQueries.insertOrReplace(
       commit.toDomainModel(
         conversationId = conversationId.value,
         selfUserId = userId,
@@ -310,18 +310,18 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   private suspend fun applyMemberChanges(changes: List<FirestoreChange<MemberNM>>) {
     return withContext(Dispatchers.IO) {
-      persistedDB.transaction {
+      inMemoryDB.transaction {
         changes.forEach { change ->
           when (change.changeType) {
             FirestoreDocumentResult.Added,
             FirestoreDocumentResult.Modified -> {
-              persistedDB.chatConversationMemberQueries.insertOrReplace(
+              inMemoryDB.chatConversationMemberQueries.insertOrReplace(
                 conversationId = conversationId.value,
                 id = change.data.id
               )
             }
             FirestoreDocumentResult.Removed -> {
-              persistedDB.chatConversationMemberQueries.deleteByConversationAndId(
+              inMemoryDB.chatConversationMemberQueries.deleteByConversationAndId(
                 conversationId = conversationId.value,
                 id = change.data.id
               )

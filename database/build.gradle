@@ -11,9 +11,11 @@ android {
   def genRoot = layout.buildDirectory.get().asFile
   sourceSets {
     debug {
+      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/InMemoryDB/debug"))
       kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/PersistedDB/debug"))
     }
     release {
+      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/InMemoryDB/release"))
       kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/PersistedDB/release"))
     }
   }
@@ -21,6 +23,10 @@ android {
 
 sqldelight {
   databases {
+    InMemoryDB {
+      packageName = "ru.sla.clarify.database"
+      srcDirs('src/main/sqldelight/memory')
+    }
     PersistedDB {
       packageName = "ru.sla.clarify.database"
       srcDirs('src/main/sqldelight/persisted')
@@ -28,12 +34,13 @@ sqldelight {
   }
 }
 
-// KSP runs before Sqldelight codegen by default; Dagger needs the generated PersistedDB types.
+// KSP по умолчанию запускается до кодогенерации Sqldelight; Dagger'у нужны сгенерированные типы InMemoryDB / PersistedDB.
 afterEvaluate {
   ["Debug", "Release"].each { vn ->
     def kspTask = tasks.findByName("ksp${vn}Kotlin")
     if (kspTask != null) {
       kspTask.dependsOn(
+        tasks.named("generate${vn}InMemoryDBInterface"),
         tasks.named("generate${vn}PersistedDBInterface"),
       )
     }

@@ -5,6 +5,7 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import me.tatarka.inject.annotations.Provides
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
+import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.adapter.StringListAdapter
 import ru.sla.clarify.database.chat.ChatConversation
@@ -16,9 +17,9 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 interface DatabaseModule {
   @SingleIn(AppScope::class)
   @Provides
-  fun providePersistedDatabase(@ApplicationContext context: Context): PersistedDB {
-    val driver = AndroidSqliteDriver(PersistedDB.Schema, context, name = "clarify.db")
-    return PersistedDB(
+  fun provideInMemoryDatabase(@ApplicationContext context: Context): InMemoryDB {
+    val driver = AndroidSqliteDriver(InMemoryDB.Schema, context, name = null)
+    return InMemoryDB(
       driver = driver,
       ChatConversationAdapter = ChatConversation.Adapter(
         memberUidsAdapter = StringListAdapter
@@ -27,5 +28,12 @@ interface DatabaseModule {
         approvedByUidsAdapter = StringListAdapter
       )
     )
+  }
+
+  @SingleIn(AppScope::class)
+  @Provides
+  fun providePersistedDatabase(@ApplicationContext context: Context): PersistedDB {
+    val driver = AndroidSqliteDriver(PersistedDB.Schema, context, name = "clarify.db")
+    return PersistedDB(driver)
   }
 }

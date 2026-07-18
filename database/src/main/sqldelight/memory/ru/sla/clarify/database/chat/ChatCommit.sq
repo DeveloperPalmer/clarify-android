@@ -40,17 +40,8 @@ SELECT
   id,
   createdAtNanos
 FROM ChatCommit
-WHERE conversationId = :conversationId AND branchId = :branchId
+WHERE conversationId = :conversationId AND branchId = :branchId AND createdAtNanos > 0
 ORDER BY createdAtNanos ASC, id ASC
-LIMIT 1;
-
-selectNewestCursor:
-SELECT
-  id,
-  createdAtNanos
-FROM ChatCommit
-WHERE conversationId = :conversationId AND branchId = :branchId
-ORDER BY createdAtNanos DESC, id DESC
 LIMIT 1;
 
 deleteById:

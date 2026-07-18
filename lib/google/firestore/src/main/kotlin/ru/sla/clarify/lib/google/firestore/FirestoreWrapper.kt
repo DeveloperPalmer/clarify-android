@@ -186,9 +186,10 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .collection(COMMITS_COLLECTION)
       .whereEqualTo(COMMIT_BRANCH_ID, whereEqualTo.value)
       .whereArrayContains(COMMIT_VISIBLE_FOR, whereArrayContains.value)
-      // documentId() is the ordering tie-break: it makes the (createdAt, id) cursor exact so
-      // pagination never skips/duplicates commits sharing the same createdAt. Same direction as
-      // createdAt, so Firestore serves it from the existing composite index (implicit __name__).
+      // documentId() — тай-брейк сортировки: делает курсор (createdAt, id) точным, чтобы
+      // пагинация не пропускала и не дублировала коммиты с одинаковым createdAt. То же направление,
+      // что и у createdAt, поэтому Firestore обслуживает запрос из существующего composite-индекса
+      // (неявный __name__).
       .orderBy(COMMIT_CREATED_AT, Query.Direction.DESCENDING)
       .orderBy(FieldPath.documentId(), Query.Direction.DESCENDING)
       .let {
@@ -213,18 +214,18 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .collection(COMMITS_COLLECTION)
       .whereEqualTo(COMMIT_BRANCH_ID, whereEqualTo.value)
       .whereArrayContains(COMMIT_VISIBLE_FOR, whereArrayContains.value)
-      // ASCENDING mirror of commitQuery: a forward "tail" from the newest cached commit. Needs its
-      // own composite index (visibleFor array-contains, branchId, createdAt ASC, __name__ ASC) —
-      // arrayContains + multiple orderBy is NOT served by reversing the DESC pagination index.
-      // No limit: an upper bound would evict older rows out of the window and surface phantom
-      // REMOVED changes; the lower-bound cursor alone keeps the listener to newer commits.
+      // Восходящее зеркало commitQuery: forward-«tail» от самого нового закэшированного коммита.
+      // Требует собственный composite-индекс (visibleFor array-contains, branchId, createdAt ASC,
+      // __name__ ASC) — arrayContains + несколько orderBy НЕ обслуживаются разворотом DESC-индекса
+      // пагинации. Без limit: верхняя граница вытесняла бы старые строки из окна и порождала
+      // фантомные REMOVED-изменения; нижняя граница-курсор одна удерживает слушатель на новых коммитах.
       .orderBy(COMMIT_CREATED_AT, Query.Direction.ASCENDING)
       .orderBy(FieldPath.documentId(), Query.Direction.ASCENDING)
       .let {
         if (from != null) {
-          // Inclusive (startAt, not startAfter): the boundary commit itself stays in the window,
-          // so its later edits/deletions are still observed live. Its initial re-emit as ADDED is
-          // an idempotent insertOrReplace.
+          // Включительно (startAt, а не startAfter): граничный коммит сам остаётся в окне,
+          // поэтому его последующие правки/удаления по-прежнему наблюдаются вживую. Его повторная
+          // выдача как ADDED — идемпотентный insertOrReplace.
           it.startAt(from.createdAt, from.id)
         } else {
           it

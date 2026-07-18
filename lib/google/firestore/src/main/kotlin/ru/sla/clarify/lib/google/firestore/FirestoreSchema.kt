@@ -53,12 +53,12 @@ fun Timestamp.toEpochMillis(): Long {
   return toDate().time
 }
 
-/** Collapse the (seconds, nanoseconds) pair into a single nanoseconds-since-epoch value. */
+/** Сворачивает пару (секунды, наносекунды) в единое значение «наносекунд от эпохи». */
 fun Timestamp.toEpochNanos(): Long {
   return seconds * NANOS_PER_SECOND + nanoseconds
 }
 
-/** Inverse of [toEpochNanos]: split nanoseconds-since-epoch back into a [Timestamp]. */
+/** Обратна [toEpochNanos]: раскладывает «наносекунды от эпохи» обратно в [Timestamp]. */
 fun Long.epochNanosToTimestamp(): Timestamp {
   return Timestamp(this / NANOS_PER_SECOND, (this % NANOS_PER_SECOND).toInt())
 }

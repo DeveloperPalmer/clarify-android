@@ -57,9 +57,9 @@ fun mapToCommit(
 }
 
 /**
- * Reverse of [mapToCommit]: a Firestore [CommitNM] into a cache row. Single source of truth for
- * the NM -> ChatCommit mapping shared by all thread repositories (direct/group/branch), so fields
- * like [ChatCommit.createdAtNanos] are wired in exactly one place.
+ * Обратна [mapToCommit]: Firestore-[CommitNM] в строку кэша. Единый источник истины для
+ * отображения NM -> ChatCommit, общего для всех репозиториев тредов (direct/group/branch), так что
+ * поля вроде [ChatCommit.createdAtNanos] задаются ровно в одном месте.
  */
 fun CommitNM.toDomainModel(
   conversationId: String,
@@ -79,23 +79,6 @@ fun CommitNM.toDomainModel(
     status = if (hasPendingWrites) Commit.Status.Sending.value else Commit.Status.Sent.value
   )
 }
-
-fun CommitNM.toChatCommit(
-  conversationId: String,
-  selfUserId: UserId,
-  hasPendingWrites: Boolean
-): ChatCommit = ChatCommit(
-  id = id,
-  conversationId = conversationId,
-  branchId = branchId,
-  senderId = senderUid,
-  type = type.value,
-  text = text.orEmpty(),
-  invitedUid = invitedUid,
-  createdAtNanos = createdAt?.toEpochNanos() ?: 0L,
-  isSelf = senderUid == selfUserId.value,
-  status = if (hasPendingWrites) Commit.Status.Sending.value else Commit.Status.Sent.value
-)
 
 fun formatLastCommitTimestamp(epochSeconds: Long?): TextRef? {
   if (epochSeconds == null || epochSeconds <= 0L) return null

@@ -12,7 +12,7 @@ import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.PersistedDB
+import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
@@ -48,7 +48,7 @@ import java.time.LocalDateTime
 class BranchRepositoryImpl @Inject constructor(
   params: TargetParams,
   private val firestore: Firestore,
-  private val persistedDB: PersistedDB,
+  private val inMemoryDB: InMemoryDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : BranchRepository {
 
@@ -144,7 +144,7 @@ class BranchRepositoryImpl @Inject constructor(
       val deletedIds = ids.toSet()
       val conversationId = requireConversationId()
 
-      val branchCommits = persistedDB.chatCommitQueries
+      val branchCommits = inMemoryDB.chatCommitQueries
         .selectByBranchId(conversationId, branchId.value, ::mapToCommit)
         .executeAsList()
 
@@ -171,7 +171,7 @@ class BranchRepositoryImpl @Inject constructor(
     val userId = requireUserId()
     val conversationId = requireConversationId()
 
-    val memberId = persistedDB.chatConversationMemberQueries
+    val memberId = inMemoryDB.chatConversationMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .executeAsList()
       .firstOrNull { it.id.value != userId.value }
@@ -263,13 +263,13 @@ class BranchRepositoryImpl @Inject constructor(
   override val user: Flow<User?> = flow {
     val userId = authSessionPersistence.withKey { readUserId(it) }
     if (userId == null) return@flow emit(null)
-    persistedDB.userQueries
+    inMemoryDB.userQueries
       .selectById(userId.value, ::mapToUser)
       .observeOneOrNull()
       .collect { emit(it) }
   }
 
-  override val branch: Flow<Branch?> = persistedDB.chatBranchQueries
+  override val branch: Flow<Branch?> = inMemoryDB.chatBranchQueries
     .selectById(branchId.value, ::mapToBranch)
     .observeOneOrNull()
 
@@ -277,7 +277,7 @@ class BranchRepositoryImpl @Inject constructor(
     val conversationId = requireConversationId()
     val selfId = requireUserId()
 
-    val commitsFlow = persistedDB.chatCommitQueries
+    val commitsFlow = inMemoryDB.chatCommitQueries
       .selectByBranchId(conversationId, branchId.value, ::mapToCommit)
       .observeList()
 
@@ -303,7 +303,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   override val members: Flow<List<Member>> = flow {
     val conversationId = requireConversationId()
-    persistedDB.chatConversationMemberQueries
+    inMemoryDB.chatConversationMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .observeList()
       .collect { emit(it) }
@@ -311,7 +311,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   override fun member(id: UserId): Flow<Member?> = flow {
     val conversationId = requireConversationId()
-    persistedDB.chatConversationMemberQueries
+    inMemoryDB.chatConversationMemberQueries
       .selectByConversationAndId(conversationId, id.value, ::mapToMember)
       .observeOneOrNull()
       .collect { emit(it) }
@@ -323,7 +323,7 @@ class BranchRepositoryImpl @Inject constructor(
    */
   private fun peerReadAt(conversationId: String, selfId: UserId): Flow<LocalDateTime?> = flow {
     val peerId = withContext(Dispatchers.IO) {
-      persistedDB.chatConversationMemberQueries
+      inMemoryDB.chatConversationMemberQueries
         .selectByConversation(conversationId, ::mapToMember)
         .executeAsList()
         .firstOrNull { it.id.value != selfId.value }
@@ -347,7 +347,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   private fun memberUids(conversationId: String): List<String> {
-    return persistedDB.chatConversationMemberQueries
+    return inMemoryDB.chatConversationMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .executeAsList()
       .map { it.id.value }
@@ -355,9 +355,9 @@ class BranchRepositoryImpl @Inject constructor(
 
   private suspend fun applyBranchChanges(conversationId: String, branch: BranchNM?) {
     return withContext(Dispatchers.IO) {
-      persistedDB.transaction {
+      inMemoryDB.transaction {
         if (branch == null) {
-          persistedDB.chatBranchQueries.deleteById(branchId.value)
+          inMemoryDB.chatBranchQueries.deleteById(branchId.value)
         } else {
           applyInsertOrReplaceBranch(branch.toDomain(conversationId))
         }
@@ -366,7 +366,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   private fun applyInsertOrReplaceBranch(branch: Branch) {
-    persistedDB.chatBranchQueries.insertOrReplace(
+    inMemoryDB.chatBranchQueries.insertOrReplace(
       id = branch.id.value,
       conversationId = branch.conversationId.value,
       parentBranchId = branch.parentBranchId.value,
@@ -379,7 +379,7 @@ class BranchRepositoryImpl @Inject constructor(
     )
     val mergeRequest = branch.mergeRequest
     if (mergeRequest != null) {
-      persistedDB.mergeRequestQueries.insertOrReplace(
+      inMemoryDB.mergeRequestQueries.insertOrReplace(
         branchId = branch.id.value,
         status = mergeRequest.status.value,
         initiatorUid = mergeRequest.initiatorId.value,
@@ -389,13 +389,13 @@ class BranchRepositoryImpl @Inject constructor(
         mergedIntoBranchId = mergeRequest.mergedIntoBranchId?.value
       )
     } else {
-      persistedDB.mergeRequestQueries.deleteByBranchId(branch.id.value)
+      inMemoryDB.mergeRequestQueries.deleteByBranchId(branch.id.value)
     }
   }
 
   private suspend fun applyUpdateUnreadCount(branchId: String, unreadCount: Long) {
     return withContext(Dispatchers.IO) {
-      persistedDB.chatBranchQueries.updateUnreadCount(
+      inMemoryDB.chatBranchQueries.updateUnreadCount(
         id = branchId,
         unreadCount = unreadCount
       )
@@ -405,7 +405,7 @@ class BranchRepositoryImpl @Inject constructor(
   private suspend fun applyInsertOrReplaceCommits(conversationId: String, commits: List<CommitNM>) {
     return withContext(Dispatchers.IO) {
       val userId = requireUserId()
-      persistedDB.transaction {
+      inMemoryDB.transaction {
         commits.forEach { item ->
           applyInsertOrReplaceCommit(
             conversationId = conversationId,
@@ -424,12 +424,12 @@ class BranchRepositoryImpl @Inject constructor(
     changes: List<FirestoreChange<CommitNM>>
   ) {
     return withContext(Dispatchers.IO) {
-      persistedDB.transaction {
+      inMemoryDB.transaction {
         changes.forEach { change ->
           val commit = change.data
           when (change.changeType) {
             FirestoreDocumentResult.Removed -> {
-              persistedDB.chatCommitQueries.deleteById(commit.id)
+              inMemoryDB.chatCommitQueries.deleteById(commit.id)
             }
             FirestoreDocumentResult.Added,
             FirestoreDocumentResult.Modified -> {
@@ -452,7 +452,7 @@ class BranchRepositoryImpl @Inject constructor(
     userId: UserId,
     hasPendingWrites: Boolean
   ) {
-    persistedDB.chatCommitQueries.insertOrReplace(
+    inMemoryDB.chatCommitQueries.insertOrReplace(
       commit.toDomainModel(
         conversationId = conversationId,
         selfUserId = userId,
@@ -463,7 +463,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   private fun requireConversationId(): String {
     return requireNotNull(
-      persistedDB.chatBranchQueries
+      inMemoryDB.chatBranchQueries
         .selectById(branchId.value, ::mapToBranch)
         .executeAsOneOrNull()
         ?.conversationId

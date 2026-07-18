@@ -93,9 +93,10 @@ fun ChatCommits(
       .collect(onCommitsRead)
   }
 
-  // Load older commits when the user nears the top. With reverseLayout the top (oldest) is the
-  // largest index. Gates guard an empty first frame and a fully-visible short list so neither
-  // can fire a spurious load; distinctUntilChanged + the caller's SkipNew debounce repeats.
+  // Подгружаем более старые коммиты, когда пользователь приближается к верху. При reverseLayout
+  // верх (самый старый) — это наибольший индекс. Условия отсекают пустой первый кадр и полностью
+  // видимый короткий список, чтобы ни один не вызвал ложную загрузку; distinctUntilChanged +
+  // SkipNew-дебаунс на стороне вызывающего гасят повторы.
   LaunchedEffect(listState, hasCommitsHistory) {
     if (!hasCommitsHistory) {
       return@LaunchedEffect
@@ -162,7 +163,7 @@ fun ChatCommits(
       }
     }
     if (loadingCommitsHistory) {
-      // reverseLayout: the last item is rendered at the very top, above the oldest commit.
+      // reverseLayout: последний элемент рендерится в самом верху, над самым старым коммитом.
       item(key = "load_more_spinner") {
         Box(
           modifier = Modifier
@@ -234,5 +235,5 @@ private fun BubbleMessagePopup(
 
 private val PopupBottomSafePadding = 96.dp
 
-// Trigger the next history page a few items before the very top so it lands seamlessly.
+// Запускаем следующую страницу истории за несколько элементов до самого верха, чтобы подгрузка прошла бесшовно.
 private const val LOAD_MORE_PREFETCH = 5

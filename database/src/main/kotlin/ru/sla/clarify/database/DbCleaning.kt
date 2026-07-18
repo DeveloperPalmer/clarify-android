@@ -11,12 +11,12 @@ import ru.sla.log.log
 //      feature has some kind of "registerSessionKeyCleanupCallback" which would be called by some kind of a cleanup
 //      director when the time comes to delete everything. Having it centralized here may be not very good
 
-fun PersistedDB.cleanupBySessionKey(key: String) {
+fun InMemoryDB.cleanupBySessionKey(key: String) {
   transaction {
     log { "cleaning up data for session key=$key" }
-    // Foreign keys are not enabled on the driver, so ON DELETE CASCADE is a no-op:
-    // every table has to be cleared explicitly. Settings is intentionally left intact —
-    // it stores the session itself (tokens/userId), managed by AuthSessionPersistence.
+    // Внешние ключи на драйвере не включены, поэтому ON DELETE CASCADE ничего не делает:
+    // каждую таблицу нужно чистить явно. Settings живёт в PersistedDB (в ней хранится сама
+    // сессия — токены/userId, ей управляет AuthSessionPersistence) и здесь не трогается.
     userQueries.deleteAll()
     chatConversationMemberQueries.deleteAll()
     chatCommitQueries.deleteAll()

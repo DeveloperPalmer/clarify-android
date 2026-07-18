@@ -7,7 +7,7 @@ import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.PersistedDB
+import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
@@ -17,7 +17,7 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 @SingleIn(DirectThreadScope::class)
 class ThreadMediator @Inject constructor(
   params: TargetParams,
-  private val persistedDB: PersistedDB,
+  private val inMemoryDB: InMemoryDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) {
   private val peerId = params.peerId
@@ -25,7 +25,7 @@ class ThreadMediator @Inject constructor(
   suspend fun awaitConversationId(): String {
     conversationId()?.let { return it }
 
-    return persistedDB.chatConversationQueries
+    return inMemoryDB.chatConversationQueries
       .selectIdByMembers(
         type = Type.Direct.value,
         memberUids = directMemberIds()
@@ -38,7 +38,7 @@ class ThreadMediator @Inject constructor(
   suspend fun conversationId(): String? {
     val members = directMemberIds()
     return withContext(Dispatchers.IO) {
-      persistedDB.chatConversationQueries
+      inMemoryDB.chatConversationQueries
         .selectIdByMembers(
           type = Type.Direct.value,
           memberUids = members

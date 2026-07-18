@@ -1159,9 +1159,6 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  // Forward "tail" listener: emits commits from [from] (the newest cached commit at subscription
-  // time) onward, unbounded above. Unlike the limit-windowed commitsLive, it never produces
-  // phantom REMOVED changes from window eviction, so a REMOVED here is always a real deletion.
   private fun commitsLive(
     conversationId: String,
     branchId: String,
