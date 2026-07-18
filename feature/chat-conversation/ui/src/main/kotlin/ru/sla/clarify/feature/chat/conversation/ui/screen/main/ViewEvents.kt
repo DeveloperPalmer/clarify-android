@@ -107,12 +107,14 @@ internal fun showCreateConversationDialog(): ScreenViewEvent<ViewState, ViewInte
           },
           text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-              PrimaryTabsRow(
-                modifier = Modifier.fillMaxWidth(),
-                tabList = CreateConversationTab.entries,
-                selectedTab = state.selectedCreateConversationTab,
-                onTabClick = { intents.changeCreateConversationTab(it) }
-              )
+              if (state.groupsAvailable) {
+                PrimaryTabsRow(
+                  modifier = Modifier.fillMaxWidth(),
+                  tabList = CreateConversationTab.entries,
+                  selectedTab = state.selectedCreateConversationTab,
+                  onTabClick = { intents.changeCreateConversationTab(it) }
+                )
+              }
               when (state.selectedCreateConversationTab) {
                 CreateConversationTab.Direct -> {
                   DirectTabContent(

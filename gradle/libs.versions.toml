@@ -19,6 +19,7 @@ retrofit = "3.0.0"
 sqldelight = "2.3.2"
 # Project versions
 remo = "9.0.1"
+plexus = "1.0.0"
 amvi = "0.9.1"
 way = "0.9.8"
 kotlin-inject = "0.9.0"
@@ -97,6 +98,7 @@ coil-base = { module = "io.coil-kt:coil-base", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 
 remo = { module = "ru.kode:remo", version.ref = "remo" }
+plexus = { module = "ru.kode.plexus:core", version.ref = "plexus" }
 amvi-compose = { module = "ru.kode:amvi-component-compose", version.ref = "amvi" }
 amvi-viewmodel = { module = "ru.kode:amvi-viewmodel", version.ref = "amvi" }
 way = { module = "ru.kode:way", version.ref = "way" }

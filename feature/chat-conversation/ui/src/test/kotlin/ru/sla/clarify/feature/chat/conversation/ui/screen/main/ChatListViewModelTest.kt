@@ -7,7 +7,9 @@ import com.github.michaelbull.result.Result
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -16,10 +18,13 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import ru.kode.plexus.core.Config
+import ru.kode.plexus.core.FeatureConfigsBuilder
 import ru.kode.remo.JobFlow
 import ru.kode.remo.QueueingStrategy
 import ru.kode.remo.Task1
 import ru.sla.clarify.core.domain.entity.Email
+import ru.sla.clarify.core.domain.toggle.AppFeature
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Peer
@@ -48,13 +53,25 @@ internal class ChatListViewModelTest {
     every { conversationModel.getPeerByEmail.jobFlow } returns getPeerByEmailJobFlow
     every { conversationModel.getPeerByEmail.jobFlow.results(any()) } returns getPeerByEmailResults
 
+    createViewModel(groupsAvailable = true)
+  }
+
+  private fun createViewModel(groupsAvailable: Boolean) {
     viewModel = ChatListViewModel(
       dispatcher = testDispatcher,
       eventSink = eventSink,
-      conversationModel = conversationModel
+      conversationModel = conversationModel,
+      featureConfigsManager = FeatureConfigsBuilder()
+        .addConfig(StubConfig(mapOf(AppFeature.GroupsAvailable.key to groupsAvailable.toString())))
+        .build()
     )
     intents = ViewIntents()
     viewModel.attach(intents)
+  }
+
+  private fun recreateViewModel(groupsAvailable: Boolean) {
+    viewModel.destroy()
+    createViewModel(groupsAvailable = groupsAvailable)
   }
 
   @AfterEach
@@ -98,6 +115,43 @@ internal class ChatListViewModelTest {
 
     verify { eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId)) }
   }
+
+  @Test
+  fun `when groups unavailable openGroupConversation should be ignored`() = runTest(testDispatcher) {
+    recreateViewModel(groupsAvailable = false)
+    val conversationId = Conversation.Id("conv-1")
+
+    intents.openGroupConversation(conversationId)
+    advanceUntilIdle()
+
+    verify(exactly = 0) { eventSink.sendEvent(FlowEvent.GroupConversationRequested(conversationId)) }
+  }
+
+  @Test
+  fun `when groups unavailable group conversations should be hidden from list`() =
+    runTest(testDispatcher) {
+      every { conversationModel.conversations } returns flowOf(listOf(directConversation, groupConversation))
+      recreateViewModel(groupsAvailable = false)
+
+      viewModel.viewStateFlow.test {
+        val state = expectMostRecentItem()
+        assertEquals(false, state.groupsAvailable)
+        assertEquals(listOf<Conversation>(directConversation), state.conversations)
+      }
+    }
+
+  @Test
+  fun `when groups available group conversations should be shown in list`() =
+    runTest(testDispatcher) {
+      every { conversationModel.conversations } returns flowOf(listOf(directConversation, groupConversation))
+      recreateViewModel(groupsAvailable = true)
+
+      viewModel.viewStateFlow.test {
+        val state = expectMostRecentItem()
+        assertEquals(true, state.groupsAvailable)
+        assertEquals(listOf(directConversation, groupConversation), state.conversations)
+      }
+    }
 
   @Test
   fun `when changeEmailQuery should update query and clear error`() = runTest(testDispatcher) {
@@ -191,3 +245,36 @@ internal class ChatListViewModelTest {
       verify { eventSink.sendEvent(FlowEvent.DirectConversationRequested(peerId)) }
     }
 }
+
+private class StubConfig(private val features: Map<String, String>) : Config {
+  override fun getValueSync(key: String): String? = features[key]
+
+  override fun getValue(key: String): Flow<String?> = flowOf(features[key])
+
+  override fun getValues(keys: List<String>): Flow<Map<String, String?>> {
+    return flowOf(keys.associateWith { features[it] })
+  }
+}
+
+private val directConversation = Conversation.Direct(
+  id = Conversation.Id("direct-1"),
+  lastCommit = null,
+  lastCommitAt = null,
+  lastCommitTimestamp = 0L,
+  unreadCount = 0L,
+  peer = Peer(
+    id = Peer.Id("peer-1"),
+    displayName = "Peer",
+    photoUrl = null
+  )
+)
+
+private val groupConversation = Conversation.Group(
+  id = Conversation.Id("group-1"),
+  lastCommit = null,
+  lastCommitAt = null,
+  lastCommitTimestamp = 0L,
+  unreadCount = 0L,
+  name = "Group",
+  lastCommitSenderName = null
+)

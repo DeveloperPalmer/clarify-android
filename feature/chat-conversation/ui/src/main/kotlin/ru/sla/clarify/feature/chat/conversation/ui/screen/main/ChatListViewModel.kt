@@ -9,17 +9,21 @@ import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
+import ru.kode.plexus.core.FeatureConfigsManager
 import ru.kode.remo.QueueingStrategy
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
+import ru.sla.clarify.core.domain.toggle.AppFeature
+import ru.sla.clarify.core.domain.toggle.isFeatureEnabled
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
+import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationModel
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
 import ru.sla.clarify.feature.chat.conversation.ui.routing.FlowEvent
@@ -28,19 +32,23 @@ import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 
 class ChatListViewModel(
+  dispatcher: CoroutineDispatcher,
+  featureConfigsManager: FeatureConfigsManager,
   private val eventSink: FlowEventSink,
-  private val conversationModel: ConversationModel,
-  dispatcher: CoroutineDispatcher
+  private val conversationModel: ConversationModel
 ) : ViewModel<ViewState, ViewIntents>(dispatcher) {
 
   @Inject
   constructor(
     eventSink: FlowEventSink,
-    conversationModel: ConversationModel
-  ) : this(eventSink, conversationModel, Dispatchers.Default)
+    conversationModel: ConversationModel,
+    featureConfigsManager: FeatureConfigsManager
+  ) : this(Dispatchers.Default, featureConfigsManager, eventSink, conversationModel)
+
+  private val groupsAvailable = featureConfigsManager.isFeatureEnabled(AppFeature.GroupsAvailable)
 
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState() to null
+    initial = ViewState(groupsAvailable = groupsAvailable) to null
 
     onEach(intent(ViewIntents::navigateBack)) {
       transitionTo { state, _ ->
@@ -96,14 +104,24 @@ class ChatListViewModel(
       }
     }
 
-    onEach(conversationModel.conversations) {
+    onEach(
+      conversationModel.conversations.map { conversations ->
+        if (groupsAvailable) {
+          conversations
+        } else {
+          conversations.filterNot { it is Conversation.Group }
+        }
+      }
+    ) {
       transitionTo { state, conversations ->
         state.copy(conversations = conversations)
       }
     }
 
+    if (groupsAvailable) {
+      configureGroupConversationTransitions()
+    }
     configureDirectConversationTransitions()
-    configureGroupConversationTransitions()
     configureDeleteConversationTransitions()
   }
 

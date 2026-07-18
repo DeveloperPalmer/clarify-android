@@ -10,6 +10,8 @@ dependencyResolutionManagement {
   repositories {
     google()
     mavenCentral()
+    // ru.kode.plexus (feature configs) is published here
+    maven { url 'https://repo.rinekri.com/releases/' }
   }
 }
 

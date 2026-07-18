@@ -6,6 +6,7 @@ plugins {
 dependencies {
   api libs.bundles.core
   api libs.remo
+  api libs.plexus
   api project(":lib:log:log")
   api project(":lib:resource-refs:resource-refs")
 

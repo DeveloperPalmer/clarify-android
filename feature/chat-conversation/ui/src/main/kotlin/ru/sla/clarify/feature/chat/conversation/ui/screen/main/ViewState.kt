@@ -15,6 +15,7 @@ import ru.sla.resourcerefs.resRef
 @Immutable
 data class ViewState(
   val user: User? = null,
+  val groupsAvailable: Boolean = false,
   val conversations: List<Conversation> = emptyList(),
   val editModeEnabled: Boolean = false,
   val selectedConversationsIds: List<Conversation.Id> = emptyList(),
