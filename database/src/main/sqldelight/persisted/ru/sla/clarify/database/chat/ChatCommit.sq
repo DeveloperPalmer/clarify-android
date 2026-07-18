@@ -7,7 +7,7 @@ CREATE TABLE ChatCommit(
   type TEXT NOT NULL DEFAULT 'text',
   text TEXT NOT NULL,
   invitedUid TEXT,
-  timestamp INTEGER NOT NULL,
+  createdAtNanos INTEGER NOT NULL,
   isSelf INTEGER AS Boolean NOT NULL,
   status TEXT NOT NULL,
   FOREIGN KEY(conversationId) REFERENCES ChatConversation(id) ON DELETE CASCADE ON UPDATE CASCADE
@@ -18,24 +18,9 @@ CREATE INDEX ChatCommit_branchId ON ChatCommit(conversationId, branchId);
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO ChatCommit(id, conversationId, branchId, senderId, type, text, invitedUid, timestamp, isSelf, status)
+INTO ChatCommit(id, conversationId, branchId, senderId, type, text, invitedUid, createdAtNanos, isSelf, status)
 VALUES ?;
 
-selectById:
-SELECT
-  id,
-  senderId,
-  type,
-  text,
-  invitedUid,
-  timestamp,
-  isSelf,
-  status
-FROM ChatCommit
-WHERE id = :id;
-
--- Newest first: chat screens render with reverseLayout and expect index 0 to be
--- the newest commit (see ChatCommits in uikit).
 selectByBranchId:
 SELECT
   id,
@@ -43,12 +28,21 @@ SELECT
   type,
   text,
   invitedUid,
-  timestamp,
+  createdAtNanos,
   isSelf,
   status
 FROM ChatCommit
 WHERE conversationId = :conversationId AND branchId = :branchId
-ORDER BY timestamp DESC, id DESC;
+ORDER BY createdAtNanos DESC, id DESC;
+
+selectOldestCursor:
+SELECT
+  id,
+  createdAtNanos
+FROM ChatCommit
+WHERE conversationId = :conversationId AND branchId = :branchId
+ORDER BY createdAtNanos ASC, id ASC
+LIMIT 1;
 
 deleteById:
 DELETE FROM ChatCommit

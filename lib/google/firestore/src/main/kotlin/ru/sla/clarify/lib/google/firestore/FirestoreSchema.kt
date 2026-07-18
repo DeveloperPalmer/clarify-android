@@ -53,8 +53,20 @@ fun Timestamp.toEpochMillis(): Long {
   return toDate().time
 }
 
+/** Collapse the (seconds, nanoseconds) pair into a single nanoseconds-since-epoch value. */
+fun Timestamp.toEpochNanos(): Long {
+  return seconds * NANOS_PER_SECOND + nanoseconds
+}
+
+/** Inverse of [toEpochNanos]: split nanoseconds-since-epoch back into a [Timestamp]. */
+fun Long.epochNanosToTimestamp(): Timestamp {
+  return Timestamp(this / NANOS_PER_SECOND, (this % NANOS_PER_SECOND).toInt())
+}
+
 fun LocalDateTime.toTimestamp(): Timestamp {
   val instant = atZone(ZoneId.systemDefault())
     .toInstant()
   return Timestamp(Date.from(instant))
 }
+
+private const val NANOS_PER_SECOND = 1_000_000_000L

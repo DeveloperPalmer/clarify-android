@@ -95,20 +95,6 @@ selectAllIds:
 SELECT ChatConversation.id
 FROM ChatConversation;
 
-selectById:
-SELECT
-  ChatConversation.id,
-  ChatConversation.type,
-  ChatConversation.memberUids,
-  ChatConversation.name,
-  ChatConversation.ownerUid,
-  ChatConversation.lastCommit,
-  ChatConversation.lastCommitSenderUid,
-  ChatConversation.lastCommitTimestamp,
-  ChatConversation.unreadCount
-FROM ChatConversation
-WHERE ChatConversation.id = :id;
-
 selectIdByMembers:
 SELECT id
 FROM ChatConversation

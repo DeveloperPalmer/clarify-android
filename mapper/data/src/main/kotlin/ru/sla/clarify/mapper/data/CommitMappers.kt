@@ -23,11 +23,12 @@ fun mapToCommit(
   type: String,
   text: String,
   invitedUid: String?,
-  timestamp: Long,
+  createdAtNanos: Long,
   isSelf: Boolean,
   status: String
 ): Commit {
-  val localTimestamp = timestamp.toLocalDateTime()
+  val localTimestamp = (createdAtNanos / NANOS_PER_MILLI).toLocalDateTime()
+
   return when (Commit.Type.fromValue(type)) {
     Commit.Type.Text -> {
       Commit.Message(
@@ -125,3 +126,5 @@ private val newestCommitOrderComparator = compareBy<Commit.Message>(
   { it.timestamp },
   { it.id.value }
 )
+
+private const val NANOS_PER_MILLI = 1_000_000L

@@ -27,7 +27,7 @@ import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.MemberNM
-import ru.sla.clarify.lib.google.firestore.toEpochMillis
+import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.log.log
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
@@ -309,7 +309,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
         type = commit.type.value,
         text = commit.text.orEmpty(),
         invitedUid = commit.invitedUid,
-        timestamp = commit.createdAt?.toEpochMillis() ?: 0L,
+        createdAtNanos = commit.createdAt?.toEpochNanos() ?: 0L,
         isSelf = commit.senderUid == userId.value,
         status = if (hasPendingWrites) {
           Commit.Status.Sending.value
