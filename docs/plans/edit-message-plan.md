@@ -55,7 +55,7 @@
 ## Этапы
 
 ### Этап 1 — Firestore API
-- [ ] Commit: `[firestore] Add updateDirectCommit with edit transaction`
+- [x] Commit: `[firestore] Add updateDirectCommit with edit transaction` — `92bd9a17`
 - `lib/google/firestore/.../Firestore.kt`: `suspend fun updateDirectCommit(conversationId, commitId, text)`.
   - `require(text.isNotBlank())` на границе (fail loud).
   - Транзакция: чтение коммита → `!exists()` → типизированная ошибка (например, `CommitNotFoundException`).

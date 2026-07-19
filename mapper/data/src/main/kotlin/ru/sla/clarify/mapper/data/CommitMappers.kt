@@ -28,7 +28,8 @@ fun mapToCommit(
   invitedUid: String?,
   createdAtNanos: Long,
   isSelf: Boolean,
-  status: String
+  status: String,
+  editedAtNanos: Long?
 ): Commit {
   val localTimestamp = (createdAtNanos / NANOS_PER_MILLI).toLocalDateTime()
 
@@ -40,7 +41,8 @@ fun mapToCommit(
         text = text,
         timestamp = localTimestamp,
         isSelf = isSelf,
-        status = Commit.Status.fromValue(status)
+        status = Commit.Status.fromValue(status),
+        editedAt = editedAtNanos?.let { (it / NANOS_PER_MILLI).toLocalDateTime() }
       )
     }
     Commit.Type.InviteMember -> {
@@ -76,7 +78,8 @@ fun CommitNM.toDomainModel(
     invitedUid = invitedUid,
     createdAtNanos = createdAt?.toEpochNanos() ?: 0L,
     isSelf = senderUid == selfUserId.value,
-    status = if (hasPendingWrites) Commit.Status.Sending.value else Commit.Status.Sent.value
+    status = if (hasPendingWrites) Commit.Status.Sending.value else Commit.Status.Sent.value,
+    editedAtNanos = editedAt?.toEpochNanos()
   )
 }
 

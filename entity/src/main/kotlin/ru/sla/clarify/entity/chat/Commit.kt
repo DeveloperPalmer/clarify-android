@@ -24,7 +24,8 @@ sealed interface Commit {
     override val senderId: UserId,
     override val text: String,
     override val isSelf: Boolean,
-    override val status: Status
+    override val status: Status,
+    val editedAt: LocalDateTime? = null
   ) : Commit
 
   @Immutable

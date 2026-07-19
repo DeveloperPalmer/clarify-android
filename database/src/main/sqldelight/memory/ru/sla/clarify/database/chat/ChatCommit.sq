@@ -10,6 +10,7 @@ CREATE TABLE ChatCommit(
   createdAtNanos INTEGER NOT NULL,
   isSelf INTEGER AS Boolean NOT NULL,
   status TEXT NOT NULL,
+  editedAtNanos INTEGER,
   FOREIGN KEY(conversationId) REFERENCES ChatConversation(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -18,7 +19,7 @@ CREATE INDEX ChatCommit_branchId ON ChatCommit(conversationId, branchId, created
 
 insertOrReplace:
 INSERT OR REPLACE
-INTO ChatCommit(id, conversationId, branchId, senderId, type, text, invitedUid, createdAtNanos, isSelf, status)
+INTO ChatCommit(id, conversationId, branchId, senderId, type, text, invitedUid, createdAtNanos, isSelf, status, editedAtNanos)
 VALUES ?;
 
 selectByBranchId:
@@ -30,7 +31,8 @@ SELECT
   invitedUid,
   createdAtNanos,
   isSelf,
-  status
+  status,
+  editedAtNanos
 FROM ChatCommit
 WHERE conversationId = :conversationId AND branchId = :branchId
 ORDER BY createdAtNanos DESC, id DESC;
