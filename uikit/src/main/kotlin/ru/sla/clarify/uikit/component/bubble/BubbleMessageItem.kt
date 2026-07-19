@@ -41,12 +41,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
@@ -62,17 +65,18 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
- * [popup] is composed inside the bubble container, so an anchored popup in it (context menu)
- * uses the bubble bounds as its anchor.
+ * [onAnchorBounds] reports the bubble's bounds in window coordinates whenever it is (re)positioned.
+ * The context menu is a separate overlay hosted outside the list (so LazyColumn recycling can't kill
+ * it mid-animation); it uses these bounds to place itself over the bubble.
  */
 @Composable
 fun BubbleMessageItem(
   bubble: BubbleMessage,
+  onAnchorBounds: (IntRect) -> Unit,
   modifier: Modifier = Modifier,
   selectionEnabled: Boolean = false,
   onClick: (() -> Unit)? = null,
-  onLongClick: (() -> Unit)? = null,
-  popup: (@Composable () -> Unit)? = null
+  onLongClick: (() -> Unit)? = null
 ) {
   val isRight = bubble.side is BubbleMessage.Side.Right
 
@@ -130,7 +134,7 @@ fun BubbleMessageItem(
       edited = bubble.edited,
       timeColor = timeColor,
       statusReadColor = statusReadColor,
-      popup = popup,
+      onAnchorBounds = onAnchorBounds,
       onClick = onClick.takeIf { !selectionEnabled },
       onLongClick = onLongClick.takeIf { !selectionEnabled }
     )
@@ -238,8 +242,8 @@ private fun BubbleMessageLayout(
   edited: Boolean,
   timeColor: Color,
   statusReadColor: Color,
+  onAnchorBounds: (IntRect) -> Unit,
   modifier: Modifier = Modifier,
-  popup: (@Composable () -> Unit)? = null,
   onClick: (() -> Unit)? = null,
   onLongClick: (() -> Unit)? = null
 ) {
@@ -253,27 +257,35 @@ private fun BubbleMessageLayout(
       Alignment.CenterStart
     }
   ) {
-    // Extra Box so that [menu] gets the bubble itself as the popup anchor,
-    // not the full-width row.
-    Box {
-      BubbleSurface(
-        shape = shape,
-        backgroundColor = backgroundColor,
-        senderLabel = senderLabel,
-        text = text,
-        textColor = textColor,
-        textStyle = textStyle,
-        textMeasurer = textMeasurer,
-        side = side,
-        time = time,
-        edited = edited,
-        timeColor = timeColor,
-        statusReadColor = statusReadColor,
-        onClick = onClick,
-        onLongClick = onLongClick
-      )
-      popup?.invoke()
-    }
+    // Границы самого пузыря (а не полноширинной строки) — по ним встаёт меню-оверлей, живущий
+    // вне списка. Модификатор прямо на BubbleSurface — отдельная обёртка была бы лишней.
+    BubbleSurface(
+      modifier = Modifier.onGloballyPositioned { coordinates ->
+        val bounds = coordinates.boundsInWindow()
+        onAnchorBounds(
+          IntRect(
+            left = bounds.left.roundToInt(),
+            top = bounds.top.roundToInt(),
+            right = bounds.right.roundToInt(),
+            bottom = bounds.bottom.roundToInt()
+          )
+        )
+      },
+      shape = shape,
+      backgroundColor = backgroundColor,
+      senderLabel = senderLabel,
+      text = text,
+      textColor = textColor,
+      textStyle = textStyle,
+      textMeasurer = textMeasurer,
+      side = side,
+      time = time,
+      edited = edited,
+      timeColor = timeColor,
+      statusReadColor = statusReadColor,
+      onClick = onClick,
+      onLongClick = onLongClick
+    )
   }
 }
 
@@ -292,10 +304,11 @@ private fun BubbleSurface(
   timeColor: Color,
   statusReadColor: Color,
   onClick: (() -> Unit)?,
-  onLongClick: (() -> Unit)?
+  onLongClick: (() -> Unit)?,
+  modifier: Modifier = Modifier
 ) {
   SubcomposeLayout(
-    modifier = Modifier
+    modifier = modifier
       .widthIn(max = 280.dp)
       .surface(
         shape = shape,

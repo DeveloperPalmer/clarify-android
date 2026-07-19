@@ -47,6 +47,7 @@ import ru.sla.resourcerefs.strRef
 internal fun Popup(
   visible: Boolean,
   actions: List<Action>,
+  anchorBounds: IntRect,
   onHidden: () -> Unit,
   onDismissRequest: () -> Unit,
   modifier: Modifier = Modifier,
@@ -60,6 +61,9 @@ internal fun Popup(
       bottomSafe = with(density) { bottomSafePadding.roundToPx() }
     )
   }
+  // Границы якоря приходят снаружи (bubble живёт в списке, Popup — в корне). Провайдер заморозит
+  // позицию по первому валидному значению, поэтому дальнейшие обновления границ его не сдвинут.
+  popupPositionProvider.anchorBounds = anchorBounds
   Popup(
     popupPositionProvider = popupPositionProvider,
     properties = PopupProperties(focusable = false),
@@ -161,16 +165,33 @@ private class PopupPositionProvider(
   private val bottomSafe: Int
 ) : PopupPositionProvider {
 
+  // Границы якорного пузыря в координатах окна — задаются снаружи, потому что Popup вынесен из
+  // ячейки списка в корень (иначе виртуализация LazyColumn убивала бы его вместе с ячейкой).
+  // Параметр anchorBounds метода — это границы РОДИТЕЛЯ Popup (корневой Box), их игнорируем.
+  var anchorBounds: IntRect = IntRect.Zero
+
+  // Позиция считается один раз (как только контент измерен) и замораживается на всё время показа.
+  // Меню — это оверлей со scrim'ом: пока оно открыто, список может уезжать под клавиатуру, но само
+  // меню обязано стоять на месте, а не прыгать вслед за якорным сообщением, которое двигает список.
+  private var frozenPosition: IntOffset? = null
+
   override fun calculatePosition(
     anchorBounds: IntRect,
     windowSize: IntSize,
     layoutDirection: LayoutDirection,
     popupContentSize: IntSize
   ): IntOffset {
-    return IntOffset(
-      x = popupX(anchorBounds, windowSize, popupContentSize.width),
-      y = popupY(anchorBounds, windowSize, popupContentSize.height)
+    frozenPosition?.let { return it }
+    val anchor = this.anchorBounds
+    val position = IntOffset(
+      x = popupX(anchor, windowSize, popupContentSize.width),
+      y = popupY(anchor, windowSize, popupContentSize.height)
     )
+    // Пока контент не измерен или границы якоря ещё не пришли — позиция кривая, не фиксируем.
+    if (popupContentSize.width > 0 && popupContentSize.height > 0 && anchor != IntRect.Zero) {
+      frozenPosition = position
+    }
+    return position
   }
 
   private fun popupX(anchor: IntRect, window: IntSize, popupWidth: Int): Int {

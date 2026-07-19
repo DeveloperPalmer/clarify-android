@@ -112,7 +112,8 @@ private fun ColumnScope.ClusterBubblePreview(bubble: BubbleMessage) {
     modifier = Modifier
       .align(alignment)
       .widthIn(max = 260.dp),
-    bubble = bubble
+    bubble = bubble,
+    onAnchorBounds = {}
   )
 }
 
