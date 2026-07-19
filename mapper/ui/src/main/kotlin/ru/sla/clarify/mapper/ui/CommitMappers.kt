@@ -41,6 +41,7 @@ fun List<DomainCommit>.toUiCommits(
             side = commit.side(),
             text = commit.text,
             time = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE),
+            edited = commit.editedAt != null,
             sender = commit.sender(bubbleType, memberNames),
             isSelected = false
           )

@@ -12,6 +12,7 @@ data class BubbleMessage(
   val side: Side,
   val text: String,
   val time: String,
+  val edited: Boolean = false,
   val sender: Sender?,
   val isSelected: Boolean
 ) {

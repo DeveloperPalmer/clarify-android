@@ -71,6 +71,7 @@ private fun BubbleMessage(modifier: Modifier = Modifier) {
         side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Sent),
         text = "Зажимаешь — и готово",
         time = "18:06",
+        edited = true,
         sender = null,
         isSelected = false
       )

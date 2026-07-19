@@ -75,7 +75,7 @@
   Компилятор найдёт остальные точки (group/branch репозитории проносят поле транзитом).
 
 ### Этап 3 — Repository и Model
-- [ ] Commit: `[direct-thread] Add editCommit to repository and model`
+- [x] Commit: `[direct-thread] Add editCommit to repository and model` — `9c2b71f0`
 - `DirectThreadRepository` + `DirectThreadRepositoryImpl`: `editCommit(id: Commit.Id, text: String)`
   → `firestore.updateDirectCommit(...)` → после успеха оптимистичный `insertOrReplace`
   строки с новым text/editedAt (статус не трогать).

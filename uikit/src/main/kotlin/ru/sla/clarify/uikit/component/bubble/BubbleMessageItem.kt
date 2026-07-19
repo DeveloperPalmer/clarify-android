@@ -3,12 +3,15 @@ package ru.sla.clarify.uikit.component.bubble
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -39,6 +42,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -123,6 +127,7 @@ fun BubbleMessageItem(
       text = bubble.text,
       textColor = contentColor,
       time = bubble.time,
+      edited = bubble.edited,
       timeColor = timeColor,
       statusReadColor = statusReadColor,
       popup = popup,
@@ -230,6 +235,7 @@ private fun BubbleMessageLayout(
   text: String,
   textColor: Color,
   time: String,
+  edited: Boolean,
   timeColor: Color,
   statusReadColor: Color,
   modifier: Modifier = Modifier,
@@ -260,6 +266,7 @@ private fun BubbleMessageLayout(
         textMeasurer = textMeasurer,
         side = side,
         time = time,
+        edited = edited,
         timeColor = timeColor,
         statusReadColor = statusReadColor,
         onClick = onClick,
@@ -281,6 +288,7 @@ private fun BubbleSurface(
   textMeasurer: TextMeasurer,
   side: BubbleMessage.Side,
   time: String,
+  edited: Boolean,
   timeColor: Color,
   statusReadColor: Color,
   onClick: (() -> Unit)?,
@@ -295,6 +303,9 @@ private fun BubbleSurface(
         onClick = onClick,
         onLongClick = onLongClick
       )
+      .animateContentSize(
+        animationSpec = AppTheme.motion.mediumTween()
+      )
       .padding(
         vertical = 8.dp,
         horizontal = 12.dp
@@ -308,6 +319,7 @@ private fun BubbleSurface(
     val timeStatusPlaceable = subcompose(BubbleSlot.TimeStatus) {
       BubbleTimeStatus(
         time = time,
+        edited = edited,
         timeColor = timeColor,
         status = (side as? BubbleMessage.Side.Right)?.status,
         statusMutedColor = timeColor,
@@ -387,6 +399,7 @@ private fun BubbleSurface(
 @Composable
 private fun BubbleTimeStatus(
   time: String,
+  edited: Boolean,
   timeColor: Color,
   status: ReadStatus?,
   statusMutedColor: Color,
@@ -397,6 +410,18 @@ private fun BubbleTimeStatus(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(2.dp)
   ) {
+    AnimatedVisibility(
+      visible = edited,
+      enter = fadeIn(AppTheme.motion.mediumTween()),
+      exit = fadeOut(AppTheme.motion.mediumTween())
+    ) {
+      Text(
+        modifier = Modifier.padding(end = 2.dp),
+        text = stringResource(R.string.chat_message_edited),
+        style = AppTheme.typography.caption,
+        color = timeColor
+      )
+    }
     Text(
       text = time,
       style = AppTheme.typography.caption,
@@ -406,15 +431,12 @@ private fun BubbleTimeStatus(
       ReadStatus.Sending -> {
         ClockMark(tint = statusMutedColor)
       }
-
       ReadStatus.Sent -> {
         CheckMark(tint = statusMutedColor)
       }
-
       ReadStatus.Read -> {
         DoubleStatusCheck(tint = statusReadColor)
       }
-
       null -> Unit
     }
   }
