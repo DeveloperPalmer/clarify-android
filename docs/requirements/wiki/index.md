@@ -33,6 +33,7 @@ tags:
 - [direct-commits-live](method/commit/direct-commits-live.md) — живая подписка на сообщения ветки в direct-чате.
 - [group-commits-live](method/commit/group-commits-live.md) — живая подписка на сообщения корневой ветки группы.
 - [create-direct-commit](method/commit/create-direct-commit.md) — отправляет сообщение в direct-чат, при необходимости создавая conversation.
+- [update-direct-commit](method/commit/update-direct-commit.md) — редактирует текст сообщения direct-чата, помечая его как изменённое; при правке последнего обновляет превью беседы.
 - [create-group-commit](method/commit/create-group-commit.md) — отправляет сообщение в корневую ветку групповой беседы.
 - [create-branch-commit](method/commit/create-branch-commit.md) — отправляет сообщение в существующую ветку.
 - [hide-commits](method/commit/hide-commits.md) — скрывает сообщения «только у себя», физически удаляя документ, когда его не видит больше никто.

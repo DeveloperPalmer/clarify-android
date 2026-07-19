@@ -40,17 +40,31 @@
     не переключается скачком. Только существующая мотус-система (`AppTheme.motion`:
     tween-набор, emphasized easing, `mediumTransitionSpec`), никаких локальных
     констант длительностей. Конкретные точки:
-    - **Шапка композера** — появление/скрытие вертикальным expand/collapse + fade.
-      В `AppMotion` добавляются `slideInFromBottom`/`slideOutToBottom` (вертикальные
-      зеркала существующих `slideInFromStart`/`slideOutToStart`) — generic, пригодятся Reply.
+    - **Принцип для анимаций размера: `animateContentSize` всегда ВНУТРИ `.surface()`.**
+      Тогда фон и клип рисуются по анимированному размеру на каждом кадре — граница
+      контейнера целая, «растёт» только содержимое. Анимация снаружи surface рисует фон
+      сразу целевым размером: рост сверху вниз, обрезанные скругления, «стекание» при
+      схлопывании (пройдено, исправлено).
+    - **Поле ввода** — `animateContentSize(BottomStart)` в `TextFieldDecoration` между
+      surface и контентом: нижняя кромка и курсор на месте, контейнер растёт снизу вверх.
+      Внешний `animateContentSize` из `PrimaryTextField` удалён (двойная анимация);
+      текст ошибки анимируется отдельным `AnimatedContent` (fade + expand).
+    - **Шапка композера** — слот с `animateContentSize` + fade содержимого;
+      непроявленная часть уходит вниз за поле ввода (рисуется под ним) — шапка
+      поднимается из-за поля без клипа скруглений. `slideInFromBottom`/`slideOutToBottom`
+      из `AppMotion` удалены за ненадобностью.
     - **Смена цели при открытой шапке** (выбрали другое сообщение) — кроссфейд
       сниппета через `AnimatedContent` + `mediumTransitionSpec`.
     - **Send-кнопка** — морф иконки send ↔ галочка через `AnimatedContent`
       (паттерн `SelectionIndicator`); цвета фона/иконки уже на `animateColorAsState`.
-    - **Пузырь после правки** — изменение размера через `animateContentSize`
-      (`mediumTween`) поверх `BubbleSurface`; сдвиги соседей уже покрыты `animateItem()`.
+    - **Пузырь после правки** — `animateContentSize` (`mediumTween`) внутри surface
+      `BubbleSurface`; сдвиги соседей уже покрыты `animateItem()`.
     - **Метка «изменено»** — fade-in при появлении, скачком не возникает.
-    - Префилл текста поля — без анимации (курсор в конец), это осознанное исключение.
+    - **Текст внутри поля** — программная замена (вход/выход/пере-выбор цели) мягко
+      проявляет новый текст через `contentFadeKey` (ключ = id цели редактирования);
+      обычная печать ключ не меняет и не фейдится. Placeholder подчиняется тому же
+      правилу: fade/кроссфейд только в кадре программного свапа (маркер-поколение
+      в `ContentFadeState`), ручной ввод/вставка/удаление переключают его мгновенно.
 
 ## Этапы
 
@@ -129,7 +143,8 @@
   disabled при `trim == пусто || trim == оригинал`. BackHandler-ы не трогаем.
 
 ### Этап 8 — Строки и тесты
-- [ ] Commit: `[direct-thread] Add edit message strings and view model tests`
+- [x] Commit: `[direct-thread] Add message editing view model tests` — `35f01bbb`
+  (строки добавлены раньше — по этапам 4/6/7, вместе с использующим их кодом)
 - `strings.xml` (en) + `values-ru`: пункт меню, заголовок шапки, snackbar-ы,
   placeholder пустого поля.
 - `DirectThreadViewModelTest`: вход в режим / отмена / успешная отправка /
@@ -139,7 +154,7 @@
   (как для контекстного меню).
 
 ### Этап 9 — Требования (wiki)
-- [ ] Commit: `[docs] Document message editing in requirements wiki`
+- [x] Commit: `[docs] Document message editing in requirements wiki` — `614f31ea`
 - `docs/requirements/wiki/method/commit/update-direct-commit.md` — контракт метода
   (по стилю `create-direct-commit.md`; только публичный контракт).
 - `docs/requirements/wiki/feature/chat-direct-thread.md` — раздел «Редактирование»,
