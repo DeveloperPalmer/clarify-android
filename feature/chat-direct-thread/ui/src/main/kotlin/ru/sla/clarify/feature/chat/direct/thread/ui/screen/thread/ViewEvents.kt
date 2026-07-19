@@ -118,19 +118,24 @@ internal fun showDeleteMessagesDialog(commit: DomainCommit.Id?): ScreenViewEvent
         val state by stateFlow.collectAsState()
         val peerName = state.peer?.displayName.orEmpty()
         var deleteForEveryone by remember { mutableStateOf(true) }
+        val deleteIds = if (commit != null) listOf(commit) else state.selectedCommitIds
         DecisionDialog(
-          title = resQtyRef(
-            R.plurals.thread_selection_delete_title,
-            state.selectedCommitIds.size,
-            state.selectedCommitIds.size
-          ),
+          title = if (deleteIds.size == 1) {
+            resRef(R.string.thread_selection_delete_title_single)
+          } else {
+            resQtyRef(
+              R.plurals.thread_selection_delete_title,
+              deleteIds.size,
+              deleteIds.size
+            )
+          },
           primaryActionTitle = resRef(R.string.conversation_delete_dialog_primary),
           secondaryActionTitle = resRef(R.string.action_cancel),
           isDestructive = true,
           onPrimaryAction = {
             val deleteCommitsParams = DeleteCommitsParams(
-              forEveryone = deleteForEveryone,
-              ids = if (commit != null) listOf(commit) else state.selectedCommitIds
+              ids = deleteIds,
+              forEveryone = deleteForEveryone
             )
             intents.confirmDeleteCommit(deleteCommitsParams)
           }

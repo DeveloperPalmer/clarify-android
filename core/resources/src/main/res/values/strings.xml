@@ -73,6 +73,7 @@
     <string name="thread_commit_status_failed">%1$s • failed</string>
     <string name="thread_system_member_invited">%1$s invited %2$s</string>
     <string name="thread_selection_count">Selected: %1$d</string>
+    <string name="thread_selection_delete_title_single">Delete message?</string>
     <string name="thread_selection_delete_for_peer">Also delete for %1$s</string>
     <string name="thread_delete_failed">Couldn\'t delete messages, try again</string>
     <string name="thread_load_history_failed">Couldn\'t load older messages, try again</string>
