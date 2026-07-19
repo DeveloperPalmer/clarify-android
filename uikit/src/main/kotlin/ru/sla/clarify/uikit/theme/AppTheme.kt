@@ -51,9 +51,11 @@ fun AppTheme(
   val elevation = remember { AppElevation() }
   val typography = remember { AppTypography() }
 
+  // Каретка и её ручка — акцентно-фиолетовые; фон выделенного текста совпадает с фоном
+  // выделения коммита в режиме selection (backgroundAccentPrimary).
   val textSelectionColors = TextSelectionColors(
-    handleColor = colors.cardPrimary,
-    backgroundColor = colors.contentPrimary
+    handleColor = colors.contentAccentPrimary,
+    backgroundColor = colors.backgroundAccentPrimary
   )
   CompositionLocalProvider(
     LocalAppColors provides colors,

@@ -1,6 +1,11 @@
 package ru.sla.clarify.uikit.component.textfield
 
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -32,9 +38,14 @@ fun PrimaryTextField(
   errorText: TextRef? = null,
   placeholder: TextRef = resRef(R.string.chat_input_placeholder),
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-  keyboardActions: KeyboardActions = KeyboardActions.Default
+  keyboardActions: KeyboardActions = KeyboardActions.Default,
+  contentFadeKey: Any? = null,
+  focusRequestKey: Any? = null
 ) {
-  Column(modifier = modifier.animateContentSize()) {
+  // Размер самого поля анимирует TextFieldDecoration внутри своего surface; здесь остаётся
+  // только появление/скрытие текста ошибки — второй animateContentSize снаружи дал бы
+  // двойную анимацию, догоняющую внутреннюю.
+  Column(modifier = modifier) {
     TextFieldInternal(
       modifier = Modifier.fillMaxWidth(),
       value = value,
@@ -45,15 +56,28 @@ fun PrimaryTextField(
       placeholder = placeholder,
       keyboardOptions = keyboardOptions,
       keyboardActions = keyboardActions,
+      contentFadeKey = contentFadeKey,
+      focusRequestKey = focusRequestKey,
       colors = TextFieldDefaults.primaryDefaultColors()
     )
-    if (errorText != null) {
-      Text(
-        modifier = Modifier.padding(top = 6.dp, start = 12.dp),
-        text = resolveTextRef(errorText),
-        style = AppTheme.typography.body3,
-        color = AppTheme.colors.errorPrimary
-      )
+    val fadeTween = AppTheme.motion.mediumTween<Float>()
+    val sizeTween = AppTheme.motion.mediumTween<IntSize>()
+    AnimatedContent(
+      targetState = errorText,
+      transitionSpec = {
+        (fadeIn(fadeTween) + expandVertically(sizeTween))
+          .togetherWith(fadeOut(fadeTween) + shrinkVertically(sizeTween))
+      },
+      label = "textFieldError"
+    ) { targetErrorText ->
+      if (targetErrorText != null) {
+        Text(
+          modifier = Modifier.padding(top = 6.dp, start = 12.dp),
+          text = resolveTextRef(targetErrorText),
+          style = AppTheme.typography.body3,
+          color = AppTheme.colors.errorPrimary
+        )
+      }
     }
   }
 }

@@ -83,7 +83,7 @@
 - `DirectThreadModel`: remo-task `editCommit` (по образцу `deleteCommits`).
 
 ### Этап 4 — uikit: пузырь
-- [ ] Commit: `[uikit] Show edited label in bubble time slot`
+- [x] Commit: `[uikit] Show edited label in bubble time slot` — `92463513`
 - `BubbleMessage`: поле `edited: Boolean`.
 - `BubbleMessageItem` / `BubbleTimeStatus`: локализуемая метка «изменено» перед временем
   (`--type-caption`, цвет как у времени). Слот TimeStatus меряется как placeable —
