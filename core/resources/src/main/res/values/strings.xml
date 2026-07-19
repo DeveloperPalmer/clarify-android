@@ -84,6 +84,10 @@
     <string name="thread_menu_select">Select</string>
     <string name="thread_menu_delete">Delete</string>
     <string name="thread_message_copied">Copied</string>
+    <string name="thread_edit_header_title">Edit message</string>
+    <string name="thread_edit_empty_placeholder">Message can’t be empty</string>
+    <string name="thread_edit_failed">Failed to edit message, try again</string>
+    <string name="thread_edit_target_deleted">Message was deleted</string>
 
     <!-- Group thread / info / invite -->
     <string name="group_thread_empty">No messages yet</string>

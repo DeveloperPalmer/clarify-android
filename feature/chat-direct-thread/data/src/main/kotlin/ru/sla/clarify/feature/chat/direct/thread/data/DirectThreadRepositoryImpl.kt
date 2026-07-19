@@ -31,6 +31,7 @@ import ru.sla.clarify.feature.chat.direct.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.mapToPeer
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
@@ -232,9 +233,10 @@ class DirectThreadRepositoryImpl @Inject constructor(
       )
     } catch (_: CommitNotFoundException) {
       // Цель удалена «у всех» вне live-окна этого устройства — Removed-событие сюда уже не
-      // придёт, поэтому осиротевшую строку кэша убираем сами и пробрасываем ошибку выше.
+      // придёт, поэтому осиротевшую строку кэша убираем сами, а наружу отдаём доменную ошибку:
+      // ui-слой не знает Firestore-типов.
       applyDeleteCommits(listOf(id))
-      throw e
+      throw EditTargetNotFoundException(id)
     }
     // Оптимистичное локальное обновление: транзакции Firestore не дают latency-компенсированных
     // событий, поэтому кэш правим руками после успешной записи. editedAt здесь приближённый —

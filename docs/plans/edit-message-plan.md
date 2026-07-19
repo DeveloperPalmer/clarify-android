@@ -105,7 +105,7 @@
   и на морф иконки send ↔ галочка.
 
 ### Этап 6 — uikit: пункт меню
-- [ ] Commit: `[uikit] Add edit action to message context menu`
+- [x] Commit: `[uikit] Add edit action to message context menu` — `2f3720a3`
 - `ChatCommits`: колбэк `onEditMessage: ((Commit.Message) -> Unit)?`,
   пункт «Редактировать» в `BubbleMessagePopup` (иконка `ic_pencil_24`),
   позиция — после «Ответить»-места, фактически вторым после «Создать ветку»

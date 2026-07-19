@@ -39,6 +39,7 @@ import ru.sla.clarify.uikit.component.chat.Commit
 import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.component.popup.PopupScrim
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
+import ru.sla.clarify.uikit.component.textfield.ChatTextFieldDefaults
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.component.topappbar.rememberTopBarElevation
@@ -47,6 +48,7 @@ import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
+import ru.sla.resourcerefs.resRef
 import java.time.LocalDateTime
 
 @Composable
@@ -58,10 +60,9 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
     val scope = rememberCoroutineScope()
-    val keyboardController = rememberKeyboardController()
     val clipboard = LocalClipboard.current
     BackHandler(
-      enabled = state.editModeEnabled,
+      enabled = state.selectionEnabled,
       onBack = intents.disableEditMode
     )
     BackHandler(
@@ -80,6 +81,9 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
         onDeleteCommits = intents.deleteCommits,
         onCloseMessageMenu = intents.hideMessageMenu,
         onCreateBranch = intents.createBranch,
+        onEditMessage = intents.startEditMessage,
+        onSubmitEdit = intents.submitEditMessage,
+        onCancelEdit = intents.cancelEditMessage,
         onSelectMessage = intents.toggleMessageSelection,
         onCopyMessage = { commit ->
           scope.launch {
@@ -92,13 +96,10 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
         onSend = intents.sendMessage,
         onCommitLongClick = intents.toggleMessageSelection,
         onCommitClick = { commit ->
-          if (state.editModeEnabled) {
+          if (state.selectionEnabled) {
             intents.toggleMessageSelection(commit)
           } else {
-            scope.launch {
-              keyboardController.awaitHide()
-              intents.showMessageMenu(commit)
-            }
+            intents.showMessageMenu(commit)
           }
         }
       )
@@ -121,6 +122,9 @@ private fun DirectThreadReadyContent(
   onDeleteCommits: () -> Unit,
   onDeleteCommit: (Commit) -> Unit,
   onCreateBranch: (Commit.Message) -> Unit,
+  onEditMessage: (Commit.Message) -> Unit,
+  onSubmitEdit: (String) -> Unit,
+  onCancelEdit: () -> Unit,
   onCopyMessage: (Commit.Message) -> Unit,
   onSelectMessage: (Commit) -> Unit,
   modifier: Modifier = Modifier
@@ -136,7 +140,7 @@ private fun DirectThreadReadyContent(
       val listState = rememberLazyListState()
       val topBarElevation = rememberTopBarElevation(listState)
       val keyboardController = rememberKeyboardController()
-      if (state.editModeEnabled) {
+      if (state.selectionEnabled) {
         SelectionTopAppBar(
           modifier = Modifier.bottomShadow { topBarElevation.value },
           selectedCount = state.selectedCommitIds.size,
@@ -171,13 +175,14 @@ private fun DirectThreadReadyContent(
           onLoadMore = onLoadMore,
           hasCommitsHistory = state.hasCommitsHistory,
           loadingCommitsHistory = state.loadingCommitsHistory,
-          selectionEnabled = state.editModeEnabled,
+          selectionEnabled = state.selectionEnabled,
           focusedMessage = state.focusedMessage,
           onCommitsRead = onCommitsRead,
           onMessageClick = onCommitClick,
           onMessageLongClick = onCommitLongClick,
           onCloseMessagePopup = onCloseMessageMenu,
           onCreateBranch = onCreateBranch,
+          onEditMessage = onEditMessage,
           onCopyMessage = onCopyMessage,
           onSelectMessage = onSelectMessage,
           onDeleteCommit = onDeleteCommit
@@ -199,7 +204,10 @@ private fun DirectThreadReadyContent(
         modifier = Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 8.dp),
-        onSend = onSend
+        editingMessage = state.editingMessage,
+        onSend = onSend,
+        onSubmitEdit = onSubmitEdit,
+        onCancelEdit = onCancelEdit
       )
     }
     PopupScrim(
@@ -268,15 +276,60 @@ private fun TopAppBarCenterContent(
 
 @Composable
 private fun BottomArea(
-  modifier: Modifier = Modifier,
-  onSend: (String) -> Unit
+  editingMessage: Commit.Message?,
+  onSend: (String) -> Unit,
+  onSubmitEdit: (String) -> Unit,
+  onCancelEdit: () -> Unit,
+  modifier: Modifier = Modifier
 ) {
   var inputValue by rememberSaveable { mutableStateOf("") }
+  val editingSource = editingMessage?.source
+  // Вход в режим и пере-выбор цели перезаписывают поле текстом оригинала, выход очищает —
+  // черновики осознанно не сохраняются. Сравнение с прошлым id (а не LaunchedEffect от null)
+  // не даёт затереть восстановленный rememberSaveable-текст при пересоздании экрана.
+  var lastEditingId by rememberSaveable { mutableStateOf<String?>(null) }
+  if (editingSource?.id?.value != lastEditingId) {
+    lastEditingId = editingSource?.id?.value
+    inputValue = editingSource?.text.orEmpty()
+  }
   ChatTextField(
     modifier = modifier,
     value = inputValue,
     onValueChange = { inputValue = it },
-    onSend = { onSend(inputValue) },
-    onClear = { inputValue = "" }
+    sendEnabled = editingSource == null || inputValue.trim() != editingSource.text,
+    sendIconRes = if (editingSource != null) R.drawable.ic_check_24 else R.drawable.ic_send_24,
+    // Ключ меняется при входе/выходе/пере-выборе цели — программно заменённый текст
+    // проявляется мягко, обычная печать не фейдится.
+    contentFadeKey = editingSource?.id?.value,
+    // Вход в режим редактирования ставит фокус в поле, поднимает клавиатуру и уводит каретку
+    // в конец текста. null вне режима — фокус не запрашивается при обычной отправке.
+    focusRequestKey = editingSource?.id?.value,
+    placeholder = if (editingSource != null) {
+      resRef(R.string.thread_edit_empty_placeholder)
+    } else {
+      resRef(R.string.chat_input_placeholder)
+    },
+    header = editingMessage?.let { editing ->
+      {
+        ChatTextFieldDefaults.EditHeader(
+          message = editing.source,
+          onClose = onCancelEdit
+        )
+      }
+    },
+    onSend = {
+      if (editingSource != null) {
+        onSubmitEdit(inputValue)
+      } else {
+        onSend(inputValue)
+      }
+    },
+    // При редактировании поле не чистим: ошибка отправки не должна терять правку;
+    // успех очистит его сам через сброс режима.
+    onClear = {
+      if (editingSource == null) {
+        inputValue = ""
+      }
+    }
   )
 }

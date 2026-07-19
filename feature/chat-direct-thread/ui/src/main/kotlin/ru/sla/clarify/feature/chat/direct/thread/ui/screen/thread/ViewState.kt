@@ -18,9 +18,10 @@ data class ViewState(
   val branches: List<Branch> = emptyList(),
   val unreadCount: Int = 0,
   val createBranchError: CreateBranchError? = null,
-  val editModeEnabled: Boolean = false,
+  val selectionEnabled: Boolean = false,
   val selectedCommitIds: List<DomainCommit.Id> = emptyList(),
-  val focusedMessage: Commit.Message? = null
+  val focusedMessage: Commit.Message? = null,
+  val editingMessage: Commit.Message? = null
 ) {
 
   @Immutable

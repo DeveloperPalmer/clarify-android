@@ -19,6 +19,7 @@ import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
+import ru.sla.clarify.feature.chat.direct.thread.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
 import ru.sla.clarify.mapper.ui.toUiCommits
 import ru.sla.clarify.uikit.component.bubble.isSelected
@@ -74,12 +75,21 @@ class DirectThreadViewModel(
         val commitsIds = commits.mapTo(mutableSetOf()) { it.source.id }
         val selectedCommitIds = state.selectedCommitIds.filter { it in commitsIds }
         val menuCommit = state.focusedMessage?.takeIf { it.source.id in commitsIds }
+        val editingMessage = state.editingMessage?.takeIf { it.source.id in commitsIds }
         state.copy(
-          focusedMessage = menuCommit
+          focusedMessage = menuCommit,
+          editingMessage = editingMessage
         ).updateSelection(
           commits = commits,
           selectedCommitIds = selectedCommitIds
         )
+      }
+      action { prevState, newState, _ ->
+        // Цель редактирования исчезла из ленты (удалили здесь или на другом устройстве) —
+        // режим уже сброшен транзишеном выше, осталось объяснить это пользователю.
+        if (prevState.editingMessage != null && newState.editingMessage == null) {
+          sendViewEvent(Snackbar(message = resRef(R.string.thread_edit_target_deleted)))
+        }
       }
     }
 
@@ -128,7 +138,59 @@ class DirectThreadViewModel(
     configureBranchTransitions()
     configureSelectionTransitions()
     configureCommitMenuTransitions()
+    configureCommitEditTransitions()
     configureCommitDeletionTransitions()
+  }
+
+  private fun MachineDsl<ViewState>.configureCommitEditTransitions() {
+    onEach(intent(ViewIntents::startEditMessage)) {
+      transitionTo { state, commit ->
+        state.copy(
+          editingMessage = commit.takeIf { it.source.isSelf },
+          focusedMessage = null
+        )
+      }
+    }
+
+    onEach(intent(ViewIntents::cancelEditMessage)) {
+      transitionTo { state, _ ->
+        state.copy(editingMessage = null)
+      }
+    }
+
+    onEach(intent(ViewIntents::submitEditMessage)) {
+      action { state, _, text ->
+        val editingMessage = state.editingMessage ?: return@action
+        val trimmed = text.trim()
+        // UI гасит кнопку для пустого и неизменённого текста; здесь тот же гейт на случай гонки.
+        if (trimmed.isEmpty() || trimmed == editingMessage.source.text) {
+          return@action
+        }
+        directThreadModel.editCommit.start(
+          argument1 = editingMessage.source.id,
+          argument2 = trimmed
+        )
+      }
+    }
+
+    onEach(directThreadModel.editCommit.jobFlow.successResults()) {
+      transitionTo { state, _ ->
+        state.copy(editingMessage = null)
+      }
+    }
+
+    onEach(directThreadModel.editCommit.jobFlow.errors()) {
+      action { _, _, error ->
+        if (error !is EditTargetNotFoundException) {
+          sendViewEvent(
+            Snackbar(
+              isError = true,
+              message = resRef(R.string.thread_edit_failed)
+            )
+          )
+        }
+      }
+    }
   }
 
   private fun MachineDsl<ViewState>.configureCommitMenuTransitions() {
@@ -297,7 +359,7 @@ private fun ViewState.updateSelection(
 ): ViewState {
   val selectedIds = selectedCommitIds.toSet()
   return copy(
-    editModeEnabled = selectedIds.isNotEmpty(),
+    selectionEnabled = selectedIds.isNotEmpty(),
     selectedCommitIds = selectedCommitIds,
     commits = commits.map { commit ->
       Commit.message.bubble.isSelected.set(commit, commit.source.id in selectedIds)

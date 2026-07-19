@@ -25,6 +25,10 @@ class ViewIntents : BaseViewIntents() {
   val hideMessageMenu = intent(name = "hideMessageMenu")
   val copyMessage = intent(name = "copyMessage")
 
+  val startEditMessage = intent<Commit.Message>(name = "startEditMessage")
+  val cancelEditMessage = intent(name = "cancelEditMessage")
+  val submitEditMessage = intent<String>(name = "submitEditMessage")
+
   val createBranch = intent<Commit.Message>(name = "createBranch")
   val confirmCreateBranchParams = intent<CreateBranchParams>(name = "confirmCreateBranch")
   val openBranch = intent<Branch.Id>(name = "openBranch")

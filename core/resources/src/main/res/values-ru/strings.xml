@@ -75,6 +75,10 @@
     <string name="thread_menu_select">Выбрать</string>
     <string name="thread_menu_delete">Удалить</string>
     <string name="thread_message_copied">Скопировано</string>
+    <string name="thread_edit_header_title">Редактировать сообщение</string>
+    <string name="thread_edit_empty_placeholder">Сообщение не может быть пустым</string>
+    <string name="thread_edit_failed">Не удалось изменить сообщение, попробуйте снова</string>
+    <string name="thread_edit_target_deleted">Сообщение удалено</string>
 
     <!-- Group thread / info / invite -->
     <string name="group_thread_empty">Сообщений пока нет</string>
