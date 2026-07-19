@@ -63,6 +63,12 @@ class DirectThreadModel @Inject constructor(
     )
   }
 
+  val editCommit = task<Commit.Id, String, Unit>(
+    name = "editCommit"
+  ) { id, text ->
+    directThreadRepository.editCommit(id, text)
+  }
+
   val deleteCommits = task<List<Commit.Id>, Boolean, Unit>(
     name = "deleteCommits"
   ) { ids, forEveryone ->

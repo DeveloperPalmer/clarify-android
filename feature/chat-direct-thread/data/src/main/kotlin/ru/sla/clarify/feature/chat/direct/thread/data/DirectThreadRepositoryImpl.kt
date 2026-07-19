@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.direct.thread.data
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.Source
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -36,10 +37,12 @@ import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
+import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.epochNanosToTimestamp
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
+import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToCommit
@@ -217,6 +220,26 @@ class DirectThreadRepositoryImpl @Inject constructor(
       applyInsertOrReplaceBranch(branch)
       branch.id
     }
+  }
+
+  override suspend fun editCommit(id: Commit.Id, text: String) {
+    val conversationId = threadMediator.requireConversationId()
+    try {
+      firestore.updateDirectCommit(
+        conversationId = conversationId,
+        commitId = id.value,
+        text = text
+      )
+    } catch (_: CommitNotFoundException) {
+      // Цель удалена «у всех» вне live-окна этого устройства — Removed-событие сюда уже не
+      // придёт, поэтому осиротевшую строку кэша убираем сами и пробрасываем ошибку выше.
+      applyDeleteCommits(listOf(id))
+      throw e
+    }
+    // Оптимистичное локальное обновление: транзакции Firestore не дают latency-компенсированных
+    // событий, поэтому кэш правим руками после успешной записи. editedAt здесь приближённый —
+    // live-слушатель следом перезапишет строку серверным значением.
+    applyEditCommit(id, text)
   }
 
   override suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean) {
@@ -435,6 +458,16 @@ class DirectThreadRepositoryImpl @Inject constructor(
       )
     } else {
       inMemoryDB.mergeRequestQueries.deleteByBranchId(branch.id.value)
+    }
+  }
+
+  private suspend fun applyEditCommit(id: Commit.Id, text: String) {
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.chatCommitQueries.updateText(
+        id = id.value,
+        text = text,
+        editedAtNanos = Timestamp.now().toEpochNanos()
+      )
     }
   }
 

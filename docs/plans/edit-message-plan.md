@@ -66,7 +66,7 @@
 - Params-класс записи (по образцу `HideCommitParams` / `UpdateLastCommitParams`).
 
 ### Этап 2 — Кэш и доменная модель
-- [ ] Commit: `[database] Add editedAt to commit cache and domain model`
+- [x] Commit: `[database] Add editedAt to commit cache and domain model` — `6f592206`
 - `database/.../chat/ChatCommit.sq`: колонка `editedAtNanos INTEGER` (nullable),
   добавить в `selectByBranchId`. БД in-memory — миграция не нужна.
 - `entity/.../chat/Commit.kt`: `editedAt: LocalDateTime?` в `Commit.Message`
