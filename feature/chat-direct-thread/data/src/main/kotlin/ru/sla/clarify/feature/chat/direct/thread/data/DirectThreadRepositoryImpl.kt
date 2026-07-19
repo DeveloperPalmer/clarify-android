@@ -223,8 +223,18 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
+  @Suppress("TooGenericExceptionCaught")
   override suspend fun editCommit(id: Commit.Id, text: String) {
     val conversationId = threadMediator.requireConversationId()
+    // Оптимистично: сразу показываем новый текст со статусом «в процессе» (часы). Транзакции
+    // Firestore не дают latency-компенсированных событий, поэтому кэш ведём сами — прогресс правки
+    // виден мгновенно, а не после ответа сервера. Прежнее состояние держим для отката.
+    val previous = readEditState(id) ?: return
+    applyEditStatus(
+      id = id,
+      text = text,
+      status = Commit.Status.Sending
+    )
     try {
       firestore.updateDirectCommit(
         conversationId = conversationId,
@@ -237,11 +247,18 @@ class DirectThreadRepositoryImpl @Inject constructor(
       // ui-слой не знает Firestore-типов.
       applyDeleteCommits(listOf(id))
       throw EditTargetNotFoundException(id)
+    } catch (error: Throwable) {
+      // Любая другая ошибка записи — откатываем оптимистичную правку к прежнему тексту/статусу.
+      applyRevertEdit(id, previous)
+      throw error
     }
-    // Оптимистичное локальное обновление: транзакции Firestore не дают latency-компенсированных
-    // событий, поэтому кэш правим руками после успешной записи. editedAt здесь приближённый —
-    // live-слушатель следом перезапишет строку серверным значением.
-    applyEditCommit(id, text)
+    // Успех: гасим часы (Sent). editedAt здесь приближённый — live-слушатель следом перезапишет
+    // строку серверным значением.
+    applyEditStatus(
+      id = id,
+      text = text,
+      status = Commit.Status.Sent
+    )
   }
 
   override suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean) {
@@ -463,12 +480,33 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun applyEditCommit(id: Commit.Id, text: String) {
+  private suspend fun readEditState(id: Commit.Id): EditState? {
     return withContext(Dispatchers.IO) {
-      inMemoryDB.chatCommitQueries.updateText(
+      inMemoryDB.chatCommitQueries
+        .selectEditStateById(id.value)
+        .executeAsOneOrNull()
+        ?.let { EditState(text = it.text, editedAtNanos = it.editedAtNanos, status = it.status) }
+    }
+  }
+
+  private suspend fun applyEditStatus(id: Commit.Id, text: String, status: Commit.Status) {
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.chatCommitQueries.updateEdit(
         id = id.value,
         text = text,
-        editedAtNanos = Timestamp.now().toEpochNanos()
+        editedAtNanos = Timestamp.now().toEpochNanos(),
+        status = status.value
+      )
+    }
+  }
+
+  private suspend fun applyRevertEdit(id: Commit.Id, previous: EditState) {
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.chatCommitQueries.updateEdit(
+        id = id.value,
+        text = previous.text,
+        editedAtNanos = previous.editedAtNanos,
+        status = previous.status
       )
     }
   }
@@ -520,6 +558,13 @@ class DirectThreadRepositoryImpl @Inject constructor(
     return branchId?.value ?: threadMediator.conversationId() ?: error("conversationId not found")
   }
 }
+
+/** Снимок редактируемых полей строки кэша для отката оптимистичной правки при ошибке записи. */
+private data class EditState(
+  val text: String,
+  val editedAtNanos: Long?,
+  val status: String
+)
 
 private const val LATEST_PAGE_SIZE = 50
 private const val HISTORY_PAGE_SIZE = 30

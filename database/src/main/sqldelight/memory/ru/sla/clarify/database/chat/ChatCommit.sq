@@ -46,9 +46,14 @@ WHERE conversationId = :conversationId AND branchId = :branchId AND createdAtNan
 ORDER BY createdAtNanos ASC, id ASC
 LIMIT 1;
 
-updateText:
+selectEditStateById:
+SELECT text, editedAtNanos, status
+FROM ChatCommit
+WHERE id = :id;
+
+updateEdit:
 UPDATE ChatCommit
-SET text = :text, editedAtNanos = :editedAtNanos
+SET text = :text, editedAtNanos = :editedAtNanos, status = :status
 WHERE id = :id;
 
 deleteById:

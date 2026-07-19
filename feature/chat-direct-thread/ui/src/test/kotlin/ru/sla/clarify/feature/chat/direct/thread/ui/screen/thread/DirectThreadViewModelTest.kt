@@ -156,6 +156,8 @@ internal class DirectThreadViewModelTest {
 
         intents.submitEditMessage("  hello edited  ")
 
+        // Композер закрывается сразу (оптимистично), не дожидаясь ответа сервера.
+        assertNull(awaitItem().editingMessage)
         verify { directThreadModel.editCommit.start(DomainCommit.Id("commit-1"), "hello edited") }
       }
     }

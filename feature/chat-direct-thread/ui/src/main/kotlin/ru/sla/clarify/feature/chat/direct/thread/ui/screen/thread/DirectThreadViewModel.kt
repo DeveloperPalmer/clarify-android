@@ -159,10 +159,22 @@ class DirectThreadViewModel(
     }
 
     onEach(intent(ViewIntents::submitEditMessage)) {
-      action { state, _, text ->
-        val editingMessage = state.editingMessage ?: return@action
+      transitionTo { state, text ->
+        val editingMessage = state.editingMessage
         val trimmed = text.trim()
         // UI гасит кнопку для пустого и неизменённого текста; здесь тот же гейт на случай гонки.
+        // Оптимистично закрываем композер сразу: правка уходит в фон, а сообщение уже показывает
+        // новый текст с «часами». Кэш и статус ведёт репозиторий.
+        if (editingMessage != null && trimmed.isNotEmpty() && trimmed != editingMessage.source.text) {
+          state.copy(editingMessage = null)
+        } else {
+          state
+        }
+      }
+      action { state, _, text ->
+        // state здесь — прошлое состояние (ещё с editingMessage), transitionTo его уже обнулил.
+        val editingMessage = state.editingMessage ?: return@action
+        val trimmed = text.trim()
         if (trimmed.isEmpty() || trimmed == editingMessage.source.text) {
           return@action
         }
@@ -173,22 +185,16 @@ class DirectThreadViewModel(
       }
     }
 
-    onEach(directThreadModel.editCommit.jobFlow.successResults()) {
-      transitionTo { state, _ ->
-        state.copy(editingMessage = null)
-      }
-    }
-
     onEach(directThreadModel.editCommit.jobFlow.errors()) {
       action { _, _, error ->
-        if (error !is EditTargetNotFoundException) {
-          sendViewEvent(
-            Snackbar(
-              isError = true,
-              message = resRef(R.string.thread_edit_failed)
-            )
-          )
+        // Композер уже закрыт (оптимистично), поэтому «цель удалена» показываем отсюда, а не через
+        // transitionTo списка коммитов. Прочие ошибки репозиторий откатил — сообщаем красным.
+        val event = if (error is EditTargetNotFoundException) {
+          Snackbar(message = resRef(R.string.thread_edit_target_deleted))
+        } else {
+          Snackbar(isError = true, message = resRef(R.string.thread_edit_failed))
         }
+        sendViewEvent(event)
       }
     }
   }
