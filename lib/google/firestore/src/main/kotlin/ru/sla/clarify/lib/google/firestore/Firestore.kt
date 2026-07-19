@@ -30,6 +30,7 @@ import ru.sla.clarify.lib.google.firestore.codec.sentinel.Increment
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
+import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.MemberNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
@@ -48,9 +49,11 @@ import ru.sla.clarify.lib.google.firestore.entity.write.DeleteMergeRequestParams
 import ru.sla.clarify.lib.google.firestore.entity.write.HideCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateBranchLastCommitParams
+import ru.sla.clarify.lib.google.firestore.entity.write.UpdateCommitMessageParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateConversationMembersParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateConversationNameParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateIncrementParams
+import ru.sla.clarify.lib.google.firestore.entity.write.UpdateLastCommitMessageParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateMergeApprovalParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateMergeFinalizeParams
@@ -785,6 +788,48 @@ class Firestore @Inject constructor(
         }
     }
     batch.commit().await()
+  }
+
+  suspend fun updateDirectCommit(
+    conversationId: String,
+    commitId: String,
+    text: String
+  ) {
+    require(text.isNotBlank()) { "updateDirectCommit called with blank text" }
+    val conversationDocument = conversationDocumentRef(conversationId)
+    val commitDocument = commitsCollectionRef(conversationId).document(commitId)
+
+    val updateCommitMessageParams = UpdateCommitMessageParams(
+      text = text,
+      editedAt = Timestamp.now()
+    )
+
+    runTransaction { transaction ->
+      // Цель могла быть удалена «у всех» вне live-окна этого устройства: merge-set воскресил бы
+      // документ-зомби из двух полей, поэтому сначала проверка существования, затем update.
+      val commitSnapshot = transaction[commitDocument]
+      if (!commitSnapshot.exists()) {
+        throw CommitNotFoundException(commitId)
+      }
+      val commit = codec.decodeFromSnapshot<CommitNM>(commitSnapshot)
+      val lastCommitAt = transaction[conversationDocument]
+        .getTimestamp(FirestoreSchema.CONVERSATION_LAST_COMMIT_AT)
+
+      transaction.update(
+        commitDocument,
+        codec.encodeToMap(updateCommitMessageParams)
+      )
+      // Правится текущее последнее сообщение беседы — превью следует за новым текстом. Сравнение
+      // по серверному lastCommitAt, а не по локальному кэшу: закрывает гонку с параллельной
+      // отправкой более нового сообщения собеседником.
+      if (commit.createdAt != null && commit.createdAt == lastCommitAt) {
+        transaction.set(
+          conversationDocument,
+          codec.encodeToMap(UpdateLastCommitMessageParams(lastCommitText = text)),
+          SetOptions.merge()
+        )
+      }
+    }.await()
   }
 
   suspend fun createGroupCommit(

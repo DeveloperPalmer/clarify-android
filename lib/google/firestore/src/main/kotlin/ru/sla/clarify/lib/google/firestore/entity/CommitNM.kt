@@ -15,7 +15,9 @@ data class CommitNM(
   val invitedUid: String? = null,
   val visibleFor: List<String> = emptyList(),
   @Contextual
-  val createdAt: Timestamp? = null
+  val createdAt: Timestamp? = null,
+  @Contextual
+  val editedAt: Timestamp? = null
 ) {
   @Serializable
   enum class Type(val value: String) {

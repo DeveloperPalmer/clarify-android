@@ -36,6 +36,9 @@ object FirestoreSchema {
   const val CONVERSATION_TYPE = "type"
   const val CONVERSATION_MEMBER_UIDS = "memberUids"
 
+  // Денормализованное превью беседы — getTimestamp-чтение в транзакции редактирования.
+  const val CONVERSATION_LAST_COMMIT_AT = "lastCommitAt"
+
   // commitsCollectionRef-query: orderBy + whereLessThan + whereEqualTo по branchId,
   // whereArrayContains по visibleFor.
   const val COMMIT_CREATED_AT = "createdAt"
