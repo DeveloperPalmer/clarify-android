@@ -70,6 +70,7 @@
     <string name="thread_delete_failed">Не удалось удалить сообщения, попробуйте снова</string>
     <string name="thread_load_history_failed">Не удалось загрузить историю, попробуйте снова</string>
     <string name="thread_menu_create_branch">Создать ветку</string>
+    <string name="thread_menu_edit">Редактировать</string>
     <string name="thread_menu_copy">Копировать</string>
     <string name="thread_menu_select">Выбрать</string>
     <string name="thread_menu_delete">Удалить</string>

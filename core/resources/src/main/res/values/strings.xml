@@ -79,6 +79,7 @@
     <string name="thread_delete_failed">Couldn\'t delete messages, try again</string>
     <string name="thread_load_history_failed">Couldn\'t load older messages, try again</string>
     <string name="thread_menu_create_branch">Create branch</string>
+    <string name="thread_menu_edit">Edit</string>
     <string name="thread_menu_copy">Copy</string>
     <string name="thread_menu_select">Select</string>
     <string name="thread_menu_delete">Delete</string>

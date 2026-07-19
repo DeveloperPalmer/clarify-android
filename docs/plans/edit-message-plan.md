@@ -93,7 +93,7 @@
 - `mapper/ui/CommitMappers.kt`: `edited = commit.editedAt != null`.
 
 ### Этап 5 — uikit: композер
-- [ ] Commit: `[uikit] Add composer header and send icon slot to ChatTextField`
+- [x] Commit: `[uikit] Add composer header and send icon slot to ChatTextField` — `e49d484f`
 - Новый `ComposerHeader` (uikit): иконка + вертикальная полоса + заголовок (accent) +
   сниппет (1 строка, ellipsis) + крестик. Generic — под будущий Reply.
 - `ChatTextField`: опциональный слот шапки над полем; параметр иконки send

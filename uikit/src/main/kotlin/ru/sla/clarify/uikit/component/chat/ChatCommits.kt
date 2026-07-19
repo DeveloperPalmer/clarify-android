@@ -49,6 +49,7 @@ fun ChatCommits(
   onMessageClick: ((Commit.Message) -> Unit)? = null,
   onMessageLongClick: ((Commit.Message) -> Unit)? = null,
   onCloseMessagePopup: (() -> Unit)? = null,
+  onEditMessage: ((Commit.Message) -> Unit)? = null,
   onCopyMessage: ((Commit.Message) -> Unit)? = null,
   onSelectMessage: ((Commit.Message) -> Unit)? = null,
   onDeleteCommit: ((Commit.Message) -> Unit)? = null,
@@ -142,9 +143,16 @@ fun ChatCommits(
                   onHidden = { displayedMessage = null },
                   onDismissRequest = { onCloseMessagePopup?.invoke() },
                   onCreateBranch = onCreateBranch?.let { handler -> { handler(commit) } },
-                  onCopyMessage = onCopyMessage?.let { handler -> { handler(commit) } },
-                  onSelectMessage = onSelectMessage?.let { handler -> { handler(commit) } },
-                  onDeleteMessage = onDeleteCommit?.let { handler -> { handler(commit) } }
+                  // Редактирование доступно только для своих сообщений.
+                  onEditMessage = onEditMessage
+                    ?.takeIf { commit.source.isSelf }
+                    ?.let { handler -> { handler(commit) } },
+                  onCopyMessage = onCopyMessage
+                    ?.let { handler -> { handler(commit) } },
+                  onSelectMessage = onSelectMessage
+                    ?.let { handler -> { handler(commit) } },
+                  onDeleteMessage = onDeleteCommit
+                    ?.let { handler -> { handler(commit) } }
                 )
               }
             } else {
@@ -187,6 +195,7 @@ private fun BubbleMessagePopup(
   onHidden: () -> Unit,
   onDismissRequest: () -> Unit,
   onCreateBranch: (() -> Unit)?,
+  onEditMessage: (() -> Unit)?,
   onCopyMessage: (() -> Unit)?,
   onSelectMessage: (() -> Unit)?,
   onDeleteMessage: (() -> Unit)?
@@ -205,6 +214,13 @@ private fun BubbleMessagePopup(
         Action(
           iconRes = R.drawable.ic_git_fork_24,
           text = resRef(R.string.thread_menu_create_branch),
+          onClick = action(it)
+        )
+      },
+      onEditMessage?.let {
+        Action(
+          iconRes = R.drawable.ic_pencil_24,
+          text = resRef(R.string.thread_menu_edit),
           onClick = action(it)
         )
       },
