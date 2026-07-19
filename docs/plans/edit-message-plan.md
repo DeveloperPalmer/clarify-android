@@ -113,7 +113,7 @@
 - Единый стиль пунктов проекта (без акцентных групп и красного из макета).
 
 ### Этап 7 — Feature UI: проводка режима
-- [ ] Commit: `[direct-thread] Wire message editing mode`
+- [x] Commit: `[direct-thread] Wire message editing mode` — `f2725857`
 - `ViewState`: `editModeEnabled` → `selectionEnabled` (переименование);
   новое поле `editingMessage: Commit.Message?`.
 - `ViewIntents`: `startEditMessage(Commit.Message)`, `cancelEditMessage`,
