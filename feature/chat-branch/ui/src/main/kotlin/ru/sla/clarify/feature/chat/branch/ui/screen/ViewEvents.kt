@@ -50,6 +50,8 @@ internal fun showDeleteMessagesDialog(commit: DomainCommit.Id?): ScreenViewEvent
           primaryActionTitle = resRef(R.string.conversation_delete_dialog_primary),
           secondaryActionTitle = resRef(R.string.action_cancel),
           isDestructive = true,
+          // Удаление вызывают, в т.ч. не выходя из редактирования — диалог не должен гасить клавиатуру.
+          keepImeVisible = true,
           onPrimaryAction = {
             val deleteCommitsParams = DeleteCommitsParams(
               ids = deleteIds,

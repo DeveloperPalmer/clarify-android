@@ -1,5 +1,9 @@
 package ru.sla.clarify.uikit.event
 
+import android.view.View
+import android.view.ViewParent
+import android.view.Window
+import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,9 +17,12 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.PopupProperties
 import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.ViewEvent
@@ -152,6 +159,7 @@ fun ViewEventHostScope.DecisionDialog(
   onPrimaryAction: () -> Unit,
   title: TextRef? = null,
   isDestructive: Boolean = false,
+  keepImeVisible: Boolean = true,
   onSecondaryAction: () -> Unit = {},
   onDismissRequest: () -> Unit = {},
   content: (@Composable () -> Unit)? = null
@@ -177,6 +185,9 @@ fun ViewEventHostScope.DecisionDialog(
     },
     text = content,
     confirmButton = {
+      if (keepImeVisible) {
+        KeepDialogImeVisible()
+      }
       PrimaryTextButton(
         text = resolveTextRef(primaryActionTitle),
         style = if (isDestructive) ButtonStyle.Error else ButtonStyle.Default,
@@ -197,6 +208,31 @@ fun ViewEventHostScope.DecisionDialog(
       )
     }
   )
+}
+
+/**
+ * Помечает окно диалога флагом [WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM]: диалог остаётся
+ * фокусируемым (кнопки, back работают), но перестаёт быть целью IME — клавиатура, поднятая полем
+ * ввода в окне-хосте, при показе диалога не гаснет. Эффект должен вызываться внутри слота диалога,
+ * чтобы [LocalView] указывал в его окно.
+ */
+@Composable
+private fun KeepDialogImeVisible() {
+  val view = LocalView.current
+  SideEffect {
+    view.findDialogWindow()?.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
+  }
+}
+
+private fun View.findDialogWindow(): Window? {
+  var current: ViewParent? = parent
+  while (current != null) {
+    if (current is DialogWindowProvider) {
+      return current.window
+    }
+    current = current.parent
+  }
+  return null
 }
 
 /**
@@ -256,6 +292,7 @@ sealed class Dialog : ViewEvent.Content() {
     override val title: TextRef,
     val buttonText: TextRef,
     override val text: TextRef? = null,
+    val keepImeVisible: Boolean = true,
     val onButtonClick: (() -> Unit)? = null,
     val onDismiss: (() -> Unit)? = null
   ) : Dialog() {
@@ -274,6 +311,9 @@ sealed class Dialog : ViewEvent.Content() {
         title = { Text(resolveTextRef(title)) },
         text = text?.let { textRef -> { Text(resolveTextRef(textRef)) } },
         confirmButton = {
+          if (keepImeVisible) {
+            KeepDialogImeVisible()
+          }
           PrimaryTextButton(
             text = resolveTextRef(buttonText),
             onClick = {
@@ -295,6 +335,7 @@ sealed class Dialog : ViewEvent.Content() {
     override val title: TextRef,
     override val text: TextRef,
     val buttonText: TextRef,
+    val keepImeVisible: Boolean = true,
     val onButtonClick: (() -> Unit)? = null
   ) : Dialog() {
 
@@ -309,6 +350,9 @@ sealed class Dialog : ViewEvent.Content() {
         title = { Text(resolveTextRef(title)) },
         text = { Text(resolveTextRef(text)) },
         confirmButton = {
+          if (keepImeVisible) {
+            KeepDialogImeVisible()
+          }
           PrimaryTextButton(
             text = resolveTextRef(buttonText),
             onClick = {
