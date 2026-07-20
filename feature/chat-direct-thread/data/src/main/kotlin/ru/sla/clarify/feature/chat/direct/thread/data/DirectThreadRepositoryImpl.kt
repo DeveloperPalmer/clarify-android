@@ -21,6 +21,7 @@ import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
@@ -41,6 +42,7 @@ import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
+import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
 import ru.sla.clarify.lib.google.firestore.epochNanosToTimestamp
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
 import ru.sla.clarify.lib.google.firestore.toEpochNanos
@@ -263,19 +265,35 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean) {
     val conversationId = threadMediator.requireConversationId()
-    if (forEveryone) {
-      deleteCommitsForEveryone(ids)
-    } else {
-      firestore.hideCommits(
-        conversationId = conversationId,
-        commitIds = ids.map { it.value }
-      )
-    }
-    // Оптимистичное локальное удаление. Живой слушатель — это forward-tail от самого нового
-    // закэшированного коммита, поэтому удаление любого более старого сообщения не попадает в его
-    // окно — иначе это устройство продолжало бы показывать коммит, уже удалённый из Firestore.
-    // Выполняется только после успешной удалённой записи.
+    // Снимок удаляемых сообщений — вернём их на место, если сервер откажет.
+    val removed = readCachedCommits(ids)
+    // Для «у всех» денормализованные lastCommit/unreadDelta считаем по ПОЛНОМУ кэшу до удаления —
+    // после оптимистичного удаления они уже не увидели бы удаляемые коммиты.
+    val forEveryoneWrite = if (forEveryone) buildDeleteForEveryoneWrite(ids) else null
+    // Оптимистичное локальное удаление ДО записи: лента и выделение не ждут ответа сервера.
+    // Живой слушатель — forward-tail от самого нового коммита, поэтому удаление более старого
+    // сообщения обратно через него не «всплывёт».
     applyDeleteCommits(ids = ids)
+    try {
+      if (forEveryoneWrite != null) {
+        firestore.deleteDirectCommits(
+          conversationId = conversationId,
+          peerId = peerId.value,
+          commitIds = ids.map { it.value },
+          lastCommit = forEveryoneWrite.lastCommit,
+          peerUnreadDelta = forEveryoneWrite.peerUnreadDelta
+        )
+      } else {
+        firestore.hideCommits(
+          conversationId = conversationId,
+          commitIds = ids.map { it.value }
+        )
+      }
+    } catch (error: Throwable) {
+      // Сервер отказал — возвращаем сообщения в кэш; ошибка уходит наверх (ui покажет snackbar).
+      restoreCommits(removed)
+      throw error
+    }
   }
 
   override val peer: Flow<Peer?> = inMemoryDB.userQueries
@@ -519,30 +537,44 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun deleteCommitsForEveryone(ids: List<Commit.Id>) {
+  private suspend fun readCachedCommits(ids: List<Commit.Id>): List<ChatCommit> {
     return withContext(Dispatchers.IO) {
-      val conversationId = threadMediator.awaitConversationId()
-      val rootCommits = inMemoryDB.chatCommitQueries
+      inMemoryDB.chatCommitQueries
+        .selectByIds(ids.map { it.value })
+        .executeAsList()
+    }
+  }
+
+  private suspend fun restoreCommits(commits: List<ChatCommit>) {
+    if (commits.isEmpty()) {
+      return
+    }
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.transaction {
+        commits.forEach { inMemoryDB.chatCommitQueries.insertOrReplace(it) }
+      }
+    }
+  }
+
+  private suspend fun buildDeleteForEveryoneWrite(ids: List<Commit.Id>): DeleteForEveryoneWrite {
+    val conversationId = threadMediator.awaitConversationId()
+    val rootCommits = withContext(Dispatchers.IO) {
+      inMemoryDB.chatCommitQueries
         .selectByBranchId(conversationId, conversationId, ::mapToCommit)
         .executeAsList()
-      val peerMember = firestore.readMember(
-        conversationId = conversationId,
-        memberId = peerId.value
-      )
-      val peerLastReadAt = peerMember?.lastReadAt
-        ?.toEpochMillis()
-        ?.toLocalDateTime()
-
-      val deletedIds = ids.toSet()
-
-      firestore.deleteDirectCommits(
-        conversationId = conversationId,
-        peerId = peerId.value,
-        commitIds = ids.map { it.value },
-        lastCommit = rootCommits.lastCommitWriteAfterDeleting(deletedIds),
-        peerUnreadDelta = rootCommits.unreadDelta(deletedIds, peerLastReadAt)
-      )
     }
+    val peerMember = firestore.readMember(
+      conversationId = conversationId,
+      memberId = peerId.value
+    )
+    val peerLastReadAt = peerMember?.lastReadAt
+      ?.toEpochMillis()
+      ?.toLocalDateTime()
+    val deletedIds = ids.toSet()
+    return DeleteForEveryoneWrite(
+      lastCommit = rootCommits.lastCommitWriteAfterDeleting(deletedIds),
+      peerUnreadDelta = rootCommits.unreadDelta(deletedIds, peerLastReadAt)
+    )
   }
 
   private suspend fun applyUpdateBranchUnreadCount(branchId: String, unreadCount: Long) {
@@ -564,6 +596,12 @@ private data class EditState(
   val text: String,
   val editedAtNanos: Long?,
   val status: String
+)
+
+/** Денормализованные поля для удаления «у всех», посчитанные по полному кэшу до удаления. */
+private data class DeleteForEveryoneWrite(
+  val lastCommit: LastCommitParams,
+  val peerUnreadDelta: Int
 )
 
 private const val LATEST_PAGE_SIZE = 50

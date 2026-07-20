@@ -331,18 +331,15 @@ class DirectThreadViewModel(
     }
 
     onEach(intent(ViewIntents::confirmDeleteCommit)) {
+      transitionTo { state, _ ->
+        // Оптимистично выходим из режима выделения сразу: удаление применяется к кэшу и уходит
+        // в фон, лента не ждёт ответа сервера. При ошибке репозиторий вернёт сообщения на место.
+        state.updateSelection(selectedCommitIds = emptyList())
+      }
       action { _, _, deleteCommits ->
         directThreadModel.deleteCommits.start(
           deleteCommits.ids,
           deleteCommits.forEveryone
-        )
-      }
-    }
-
-    onEach(directThreadModel.deleteCommits.jobFlow.successResults()) {
-      transitionTo { state, _ ->
-        state.updateSelection(
-          selectedCommitIds = emptyList()
         )
       }
     }

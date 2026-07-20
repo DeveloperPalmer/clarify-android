@@ -51,6 +51,11 @@ SELECT text, editedAtNanos, status
 FROM ChatCommit
 WHERE id = :id;
 
+selectByIds:
+SELECT *
+FROM ChatCommit
+WHERE id IN ?;
+
 updateEdit:
 UPDATE ChatCommit
 SET text = :text, editedAtNanos = :editedAtNanos, status = :status
