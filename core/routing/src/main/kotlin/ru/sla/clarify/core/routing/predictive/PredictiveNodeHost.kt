@@ -80,6 +80,10 @@ import ru.sla.clarify.core.routing.noTransition
  * @param transitionSpec обычный (не жестовый) переход между экранами; при выполнении «назад» подавляется
  *   (см. [PredictiveBackController]).
  */
+// SuspendFunSwallowedCancellation: отмена здесь — это отпущенный жест «назад», а не смерть
+// корутины. controller.cancel не приостанавливается, он лишь запускает в scope анимацию возврата,
+// после чего отмена летит дальше немедленно.
+@Suppress("SuspendFunSwallowedCancellation")
 @Composable
 fun PredictiveNodeHost(
   service: NavigationService<*>,

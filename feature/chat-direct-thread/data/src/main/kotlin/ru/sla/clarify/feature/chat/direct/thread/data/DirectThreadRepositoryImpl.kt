@@ -1,5 +1,7 @@
 package ru.sla.clarify.feature.chat.direct.thread.data
 
+import com.github.michaelbull.result.coroutines.runSuspendCatching
+import com.github.michaelbull.result.onFailure
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.Source
 import kotlinx.coroutines.CompletableDeferred
@@ -225,7 +227,6 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  @Suppress("TooGenericExceptionCaught")
   override suspend fun editCommit(id: Commit.Id, text: String) {
     val conversationId = threadMediator.requireConversationId()
     // Оптимистично: сразу показываем новый текст со статусом «в процессе» (часы). Транзакции
@@ -237,25 +238,20 @@ class DirectThreadRepositoryImpl @Inject constructor(
       text = text,
       status = Commit.Status.Sending
     )
-    try {
+    runSuspendCatching {
       firestore.updateDirectCommit(
         conversationId = conversationId,
         commitId = id.value,
         text = text
       )
-    } catch (_: CommitNotFoundException) {
-      // Цель удалена «у всех» вне live-окна этого устройства — Removed-событие сюда уже не
-      // придёт, поэтому осиротевшую строку кэша убираем сами, а наружу отдаём доменную ошибку:
-      // ui-слой не знает Firestore-типов.
-      applyDeleteCommits(listOf(id))
-      throw EditTargetNotFoundException(id)
-    } catch (error: Throwable) {
-      // Любая другая ошибка записи — откатываем оптимистичную правку к прежнему тексту/статусу.
+    }.onFailure { error ->
+      if (error is CommitNotFoundException) {
+        applyDeleteCommits(listOf(id))
+        throw EditTargetNotFoundException(id)
+      }
       applyRevertEdit(id, previous)
       throw error
     }
-    // Успех: гасим часы (Sent). editedAt здесь приближённый — live-слушатель следом перезапишет
-    // строку серверным значением.
     applyEditStatus(
       id = id,
       text = text,
@@ -263,7 +259,6 @@ class DirectThreadRepositoryImpl @Inject constructor(
     )
   }
 
-  @Suppress("TooGenericExceptionCaught")
   override suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean) {
     val conversationId = threadMediator.requireConversationId()
     // Снимок удаляемых сообщений — вернём их на место, если сервер откажет.
@@ -275,7 +270,10 @@ class DirectThreadRepositoryImpl @Inject constructor(
     // Живой слушатель — forward-tail от самого нового коммита, поэтому удаление более старого
     // сообщения обратно через него не «всплывёт».
     applyDeleteCommits(ids = ids)
-    try {
+    // runSuspendCatching, а не try/catch: он пропускает CancellationException мимо, поэтому откат
+    // не запускается из уже отменённой корутины, где suspend-вызов всё равно бросит, не доехав
+    // до кэша. Расхождение в этом случае поправит live-слушатель.
+    runSuspendCatching {
       if (forEveryoneWrite != null) {
         firestore.deleteDirectCommits(
           conversationId = conversationId,
@@ -290,7 +288,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
           commitIds = ids.map { it.value }
         )
       }
-    } catch (error: Throwable) {
+    }.onFailure { error ->
       // Сервер отказал — возвращаем сообщения в кэш; ошибка уходит наверх (ui покажет snackbar).
       restoreCommits(removed)
       throw error

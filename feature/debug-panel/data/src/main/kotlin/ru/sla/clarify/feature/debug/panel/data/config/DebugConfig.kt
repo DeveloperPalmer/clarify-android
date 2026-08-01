@@ -36,7 +36,11 @@ class DebugConfig @Inject constructor(@ApplicationContext context: Context) : Co
   }
 
   private fun readAll(): Map<String, String> {
-    return preferences.all.mapValues { it.value.toString() }
+    // SharedPreferences.all отдаёт Map<String, Any?>: у null-значения toString() дал бы строку
+    // "null", и тумблер получил бы её как значение. Такие ключи просто не считаем заданными.
+    return preferences.all.mapNotNull { (key, value) ->
+      value?.let { key to it.toString() }
+    }.toMap()
   }
 }
 

@@ -29,6 +29,10 @@ import ru.sla.resourcerefs.compose.resolveTextRef
 import ru.sla.resourcerefs.resRef
 import ru.sla.resourcerefs.strRef
 
+// Условие внутри AnimatedContent поднять наружу нельзя: во время exit-анимации лямбда вызывается
+// с прошлым состоянием, и именно поэтому текст ошибки успевает исчезнуть плавно. Поднятое условие
+// сняло бы его мгновенно.
+@Suppress("ConditionCouldBeLifted")
 @Composable
 fun PrimaryTextField(
   value: String,

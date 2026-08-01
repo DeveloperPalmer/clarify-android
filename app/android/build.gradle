@@ -1,5 +1,5 @@
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.DetektCreateBaselineTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -113,7 +113,8 @@ dependencies {
   implementation project(":feature:debug-panel:routing")
   implementation project(":lib:google:firestore")
 
-  detektPlugins(files(rootProject.file("libs/detekt-rules-1.2.0.jar")))
+  // Отключено: jar собран против detekt 1.x API и под 2.0 не регистрируется, см. detekt-config.yml
+  // detektPlugins(files(rootProject.file("libs/detekt-rules-1.2.0.jar")))
   detektPlugins(libs.detekt.rules.compose)
 
   coreLibraryDesugaring(libs.desugar.jdk.libs)
@@ -138,9 +139,9 @@ tasks.withType(Detekt).configureEach {
     it.file.absolutePath.contains("${sep}generated${sep}")
   }
   reports {
-    xml.required.set(false)
+    checkstyle.required.set(false)
     html.required.set(false)
-    txt.required.set(false)
+    markdown.required.set(false)
     sarif.required.set(false)
   }
 }

@@ -5,7 +5,7 @@ plugins {
   id "com.android.library"
   id "org.jetbrains.kotlin.android"
   id "org.gradle.android.cache-fix"
-  id "io.gitlab.arturbosch.detekt"
+  id "dev.detekt"
   id "spotless-convention"
 }
 
@@ -55,7 +55,8 @@ android {
 }
 
 dependencies {
-  detektPlugins(files(rootProject.file("libs/detekt-rules-1.2.0.jar")))
+  // Отключено: jar собран против detekt 1.x API и под 2.0 не регистрируется, см. detekt-config.yml
+  // detektPlugins(files(rootProject.file("libs/detekt-rules-1.2.0.jar")))
   detektPlugins(libs.detekt.rules.compose)
 }
 
@@ -64,7 +65,7 @@ detekt {
   ignoredBuildTypes = ["release"]
 }
 
-tasks.withType(io.gitlab.arturbosch.detekt.Detekt).configureEach {
+tasks.withType(dev.detekt.gradle.Detekt).configureEach {
   jvmTarget = "17"
   // "exclude(**/generated/**)" doesn't work for some reason, see
   // https://github.com/detekt/detekt/issues/4127#issuecomment-1260733842
@@ -74,13 +75,13 @@ tasks.withType(io.gitlab.arturbosch.detekt.Detekt).configureEach {
     it.file.absolutePath.contains("${sep}generated${sep}")
   }
   reports {
-    xml.required.set(false)
+    checkstyle.required.set(false)
     html.required.set(false)
-    txt.required.set(false)
+    markdown.required.set(false)
     sarif.required.set(false)
   }
 }
 
-tasks.withType(io.gitlab.arturbosch.detekt.DetektCreateBaselineTask).configureEach {
+tasks.withType(dev.detekt.gradle.DetektCreateBaselineTask).configureEach {
   jvmTarget = "17"
 }
