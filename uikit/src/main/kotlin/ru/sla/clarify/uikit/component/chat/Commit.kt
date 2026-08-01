@@ -17,14 +17,14 @@ sealed interface Commit {
   data class Message(
     override val key: String,
     override val source: DomainCommit.Message,
-    val text: String,
+    override val text: String,
     val side: Side,
     val shape: Shape,
     val time: String,
     val sender: Sender?,
     val edited: Boolean,
     val selected: Boolean
-  ) : Commit {
+  ) : Commit, Textual {
 
     @optics
     @Immutable

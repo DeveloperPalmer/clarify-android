@@ -57,7 +57,7 @@ internal fun showDeleteMessagesDialog(commit: DomainCommit.Id?): ScreenViewEvent
               ids = deleteIds,
               forEveryone = deleteForEveryone
             )
-            intents.confirmDeleteCommit(deleteCommitsParams)
+            intents.confirmDeleteCommits(deleteCommitsParams)
           }
         ) {
           Row(

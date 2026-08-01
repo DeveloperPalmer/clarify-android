@@ -12,7 +12,6 @@ sealed interface Commit {
 
   val id: Id
   val senderId: UserId
-  val text: String?
   val timestamp: LocalDateTime
   val isSelf: Boolean
   val status: Status
@@ -22,9 +21,9 @@ sealed interface Commit {
     override val id: Id,
     override val timestamp: LocalDateTime,
     override val senderId: UserId,
-    override val text: String,
     override val isSelf: Boolean,
     override val status: Status,
+    val text: String,
     val editedAt: LocalDateTime? = null
   ) : Commit
 
@@ -36,9 +35,7 @@ sealed interface Commit {
     override val isSelf: Boolean,
     override val status: Status,
     val invitedId: UserId
-  ) : Commit {
-    override val text: String? = null
-  }
+  ) : Commit
 
   enum class Status(val value: String) {
     Sending("sending"),

@@ -90,8 +90,15 @@ private fun GroupThreadContent(
         ChatCommits(
           modifier = Modifier.fillMaxSize(),
           listState = listState,
-          commits = state.commits,
-          onCommitsRead = intents.markReadUpTo
+          items = state.commits,
+          onRead = intents.markReadUpTo,
+          hasHistory = false,
+          loadingHistory = false,
+          selectionEnabled = false,
+          focused = null,
+          onLoad = {},
+          onClick = {},
+          onLongClick = {}
         )
       }
     }

@@ -5,11 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,31 +37,31 @@ import kotlin.time.Duration.Companion.milliseconds
 @Suppress("CyclomaticComplexMethod")
 fun ChatCommits(
   listState: LazyListState,
-  commits: List<Commit>,
-  onCommitsRead: (LocalDateTime) -> Unit,
+  items: List<Commit>,
+  hasHistory: Boolean,
+  loadingHistory: Boolean,
+  selectionEnabled: Boolean,
+  focused: Commit?,
+  onLoad: () -> Unit,
+  onRead: (LocalDateTime) -> Unit,
+  onClick: (Commit.Message) -> Unit,
+  onLongClick: (Commit.Message) -> Unit,
   modifier: Modifier = Modifier,
-  hasCommitsHistory: Boolean = false,
-  loadingCommitsHistory: Boolean = false,
-  selectionEnabled: Boolean = false,
-  focusedMessage: Commit.Message? = null,
-  onLoadMore: () -> Unit = {},
-  onMessageClick: ((Commit.Message) -> Unit)? = null,
-  onMessageLongClick: ((Commit.Message) -> Unit)? = null,
-  onCloseMessagePopup: (() -> Unit)? = null,
-  onEditMessage: ((Commit.Message) -> Unit)? = null,
-  onCopyMessage: ((Commit.Message) -> Unit)? = null,
-  onSelectMessage: ((Commit.Message) -> Unit)? = null,
-  onDeleteCommit: ((Commit.Message) -> Unit)? = null,
-  onCreateBranch: ((Commit.Message) -> Unit)? = null
+  onEdit: ((Commit) -> Unit)? = null,
+  onCopy: ((Commit) -> Unit)? = null,
+  onSelect: ((Commit) -> Unit)? = null,
+  onDelete: ((Commit) -> Unit)? = null,
+  onClosePopup: (() -> Unit)? = null,
+  onCreateBranch: ((Commit) -> Unit)? = null
 ) {
-  val newestCommit = commits.firstOrNull()
+  val newestCommit = items.firstOrNull()
   val newestCommitId = newestCommit?.source?.id?.value
   var previousNewestCommitId by remember { mutableStateOf<String?>(null) }
 
   // The menu bubble keeps its slot while the exit animation plays: the last menu commit is
   // latched here and released once the popup reports through onHidden that it has fully hidden.
-  var displayedMessage by remember { mutableStateOf<Commit.Message?>(null) }
-  displayedMessage = focusedMessage ?: displayedMessage
+  var displayedCommit by remember { mutableStateOf<Commit?>(null) }
+  displayedCommit = focused ?: displayedCommit
 
   // Границы якорного пузыря в координатах окна: фокусный item сообщает их сюда, а меню-оверлей
   // живёт в корне (вне LazyColumn), поэтому переживает переработку ячейки и доигрывает fade.
@@ -85,25 +84,25 @@ fun ChatCommits(
     }
   }
 
-  LaunchedEffect(listState, commits) {
+  LaunchedEffect(listState, items) {
     snapshotFlow {
       listState.layoutInfo.visibleItemsInfo
         .asSequence()
-        .filter { it.index <= commits.lastIndex }
-        .maxOfOrNull { commits[it.index].source.timestamp }
+        .filter { it.index <= items.lastIndex }
+        .maxOfOrNull { items[it.index].source.timestamp }
     }
       .filterNotNull()
       .distinctUntilChanged()
       .debounce(300.milliseconds)
-      .collect(onCommitsRead)
+      .collect(onRead)
   }
 
   // Подгружаем более старые коммиты, когда пользователь приближается к верху. При reverseLayout
   // верх (самый старый) — это наибольший индекс. Условия отсекают пустой первый кадр и полностью
   // видимый короткий список, чтобы ни один не вызвал ложную загрузку; distinctUntilChanged +
   // SkipNew-дебаунс на стороне вызывающего гасят повторы.
-  LaunchedEffect(listState, hasCommitsHistory) {
-    if (!hasCommitsHistory) {
+  LaunchedEffect(listState, hasHistory) {
+    if (!hasHistory) {
       return@LaunchedEffect
     }
     snapshotFlow {
@@ -115,7 +114,7 @@ fun ChatCommits(
     }
       .distinctUntilChanged()
       .filter { it }
-      .collect { onLoadMore() }
+      .collect { onLoad() }
   }
 
   Box(modifier = modifier) {
@@ -126,25 +125,24 @@ fun ChatCommits(
       verticalArrangement = Arrangement.spacedBy(0.dp, Alignment.Bottom)
     ) {
       itemsIndexed(
-        items = commits,
+        items = items,
         key = { _, item -> item.source.id.value }
       ) { _, commit ->
         when (commit) {
           is Commit.Message -> {
-            val isMenuAnchor = displayedMessage?.source?.id == commit.source.id
             Message(
               modifier = Modifier.animateItem(),
               message = commit,
               selectionEnabled = selectionEnabled,
-              onClick = { onMessageClick?.invoke(commit) },
-              onLongClick = { onMessageLongClick?.invoke(commit) },
               // Границы нужны только фокусному пузырю — по ним меню-оверлей встаёт на место;
               // остальным репортить нечего.
-              onAnchorBounds = if (isMenuAnchor) {
+              onAnchorBounds = if (displayedCommit?.source?.id == commit.source.id) {
                 { bounds -> anchorBounds = bounds }
               } else {
                 null
-              }
+              },
+              onClick = { onClick(commit) },
+              onLongClick = { onLongClick(commit) }
             )
           }
           is Commit.InviteMember -> {
@@ -157,55 +155,48 @@ fun ChatCommits(
           }
         }
       }
-      if (loadingCommitsHistory) {
+      if (loadingHistory) {
         // reverseLayout: последний элемент рендерится в самом верху, над самым старым коммитом.
         item(key = "load_more_spinner") {
-          Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(vertical = 12.dp),
-            contentAlignment = Alignment.Center
-          ) {
-            CircularProgressIndicator(
-              modifier = Modifier.size(24.dp),
-              color = AppTheme.colors.contentSecondary
-            )
-          }
+          LinearProgressIndicator(
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.contentPrimary
+          )
         }
       }
     }
-
     // Меню-оверлей вне списка: переживает переработку ячейки-якоря (уехала под клавиатуру) и
     // доигрывает exit-fade. Позицию берёт из захваченных границ пузыря, замораживает при открытии.
-    val menuCommit = displayedMessage
+    val popupCommit = displayedCommit
     val menuAnchor = anchorBounds
-    if (menuCommit != null && menuAnchor != null) {
-      BubbleMessagePopup(
-        visible = focusedMessage != null,
+    if (popupCommit != null && menuAnchor != null) {
+      CommitPopup(
+        visible = focused != null,
         anchorBounds = menuAnchor,
+        onDismissRequest = { onClosePopup?.invoke() },
         onHidden = {
-          displayedMessage = null
+          displayedCommit = null
           anchorBounds = null
         },
-        onDismissRequest = { onCloseMessagePopup?.invoke() },
-        onCreateBranch = onCreateBranch?.let { handler -> { handler(menuCommit) } },
         // Редактирование доступно только для своих сообщений.
-        onEditMessage = onEditMessage
-          ?.takeIf { menuCommit.source.isSelf }
-          ?.let { handler -> { handler(menuCommit) } },
-        onCopyMessage = onCopyMessage
-          ?.let { handler -> { handler(menuCommit) } },
-        onSelectMessage = onSelectMessage
-          ?.let { handler -> { handler(menuCommit) } },
-        onDeleteMessage = onDeleteCommit
-          ?.let { handler -> { handler(menuCommit) } }
+        onEditMessage = onEdit
+          ?.takeIf { popupCommit.source.isSelf }
+          ?.let { handler -> { handler(popupCommit) } },
+        onCopyMessage = onCopy
+          ?.let { handler -> { handler(popupCommit) } },
+        onSelectMessage = onSelect
+          ?.let { handler -> { handler(popupCommit) } },
+        onDeleteMessage = onDelete
+          ?.let { handler -> { handler(popupCommit) } },
+        onCreateBranch = onCreateBranch
+          ?.let { handler -> { handler(popupCommit) } }
       )
     }
   }
 }
 
 @Composable
-private fun BubbleMessagePopup(
+private fun CommitPopup(
   visible: Boolean,
   anchorBounds: IntRect,
   onHidden: () -> Unit,

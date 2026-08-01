@@ -36,6 +36,7 @@ import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
 import ru.sla.clarify.uikit.component.button.TertiaryIconButtonSmall
 import ru.sla.clarify.uikit.component.chat.ChatCommits
 import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.clarify.uikit.component.chat.Textual
 import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.component.popup.PopupScrim
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
@@ -63,10 +64,10 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
     val clipboard = LocalClipboard.current
     BackHandler(
       enabled = state.selectionEnabled,
-      onBack = intents.disableEditMode
+      onBack = intents.disableSelectionMode
     )
     BackHandler(
-      enabled = state.focusedMessage != null,
+      enabled = state.focusedCommit != null,
       onBack = intents.hideMessageMenu
     )
     ScreenScaffold(scaffoldState) {
@@ -74,30 +75,32 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
         modifier = Modifier.fillMaxSize(),
         state = state,
         onBack = intents.navigateBack,
-        onClose = intents.disableEditMode,
+        onClose = intents.disableSelectionMode,
         onShowBranches = intents.showBranches,
         onLoadMore = intents.loadCommitsHistory,
         onDeleteCommit = intents.deleteCommit,
         onDeleteCommits = intents.deleteCommits,
         onCloseMessageMenu = intents.hideMessageMenu,
         onCreateBranch = intents.createBranch,
-        onEditMessage = intents.startEditMessage,
-        onSubmitEdit = intents.submitEditMessage,
-        onCancelEdit = intents.cancelEditMessage,
-        onSelectMessage = intents.toggleMessageSelection,
+        onEditMessage = intents.showEditMessage,
+        onSubmitEdit = intents.confirmEditMessage,
+        onCancelEdit = intents.hideEditMessage,
+        onSelectMessage = intents.toggleSelectionMode,
         onCopyMessage = { commit ->
-          scope.launch {
-            val clipData = ClipData.newPlainText(null, commit.text)
-            clipboard.setClipEntry(clipData.toClipEntry())
-            intents.copyMessage()
+          (commit as? Textual)?.text?.let { text ->
+            scope.launch {
+              val clipData = ClipData.newPlainText(null, text)
+              clipboard.setClipEntry(clipData.toClipEntry())
+              intents.copyMessage()
+            }
           }
         },
-        onCommitsRead = intents.markReadUpTo,
+        onCommitsRead = intents.markMessageAsRead,
         onSend = intents.sendMessage,
-        onCommitLongClick = intents.toggleMessageSelection,
+        onCommitLongClick = intents.toggleSelectionMode,
         onCommitClick = { commit ->
           if (state.selectionEnabled) {
-            intents.toggleMessageSelection(commit)
+            intents.toggleSelectionMode(commit)
           } else {
             intents.showMessageMenu(commit)
           }
@@ -121,11 +124,11 @@ private fun DirectThreadReadyContent(
   onCloseMessageMenu: () -> Unit,
   onDeleteCommits: () -> Unit,
   onDeleteCommit: (Commit) -> Unit,
-  onCreateBranch: (Commit.Message) -> Unit,
-  onEditMessage: (Commit.Message) -> Unit,
+  onCreateBranch: (Commit) -> Unit,
+  onEditMessage: (Commit) -> Unit,
   onSubmitEdit: (String) -> Unit,
   onCancelEdit: () -> Unit,
-  onCopyMessage: (Commit.Message) -> Unit,
+  onCopyMessage: (Commit) -> Unit,
   onSelectMessage: (Commit) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -171,21 +174,21 @@ private fun DirectThreadReadyContent(
         ChatCommits(
           modifier = Modifier.fillMaxSize(),
           listState = listState,
-          commits = state.commits,
-          onLoadMore = onLoadMore,
-          hasCommitsHistory = state.hasCommitsHistory,
-          loadingCommitsHistory = state.loadingCommitsHistory,
+          items = state.commits,
+          focused = state.focusedCommit,
           selectionEnabled = state.selectionEnabled,
-          focusedMessage = state.focusedMessage,
-          onCommitsRead = onCommitsRead,
-          onMessageClick = onCommitClick,
-          onMessageLongClick = onCommitLongClick,
-          onCloseMessagePopup = onCloseMessageMenu,
-          onCreateBranch = onCreateBranch,
-          onEditMessage = onEditMessage,
-          onCopyMessage = onCopyMessage,
-          onSelectMessage = onSelectMessage,
-          onDeleteCommit = onDeleteCommit
+          hasHistory = state.canLoadCommitsHistory,
+          loadingHistory = state.loadingCommitsHistory,
+          onRead = onCommitsRead,
+          onClick = onCommitClick,
+          onLongClick = onCommitLongClick,
+          onLoad = onLoadMore,
+          onEdit = onEditMessage,
+          onCopy = onCopyMessage,
+          onSelect = onSelectMessage,
+          onDelete = onDeleteCommit,
+          onClosePopup = onCloseMessageMenu,
+          onCreateBranch = onCreateBranch
         )
         ChatScrollToBottomButton(
           modifier = Modifier
@@ -204,14 +207,14 @@ private fun DirectThreadReadyContent(
         modifier = Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 8.dp),
-        editingMessage = state.editingMessage,
+        editingMessage = state.editingCommit,
         onSend = onSend,
         onSubmitEdit = onSubmitEdit,
         onCancelEdit = onCancelEdit
       )
     }
     PopupScrim(
-      visible = state.focusedMessage != null,
+      visible = state.focusedCommit != null,
       onDismiss = onCloseMessageMenu
     )
   }
@@ -276,7 +279,7 @@ private fun TopAppBarCenterContent(
 
 @Composable
 private fun BottomArea(
-  editingMessage: Commit.Message?,
+  editingMessage: Commit?,
   onSend: (String) -> Unit,
   onSubmitEdit: (String) -> Unit,
   onCancelEdit: () -> Unit,
@@ -284,19 +287,20 @@ private fun BottomArea(
 ) {
   var inputValue by rememberSaveable { mutableStateOf("") }
   val editingSource = editingMessage?.source
+  val editingText = (editingMessage as? Textual)?.text
   // Вход в режим и пере-выбор цели перезаписывают поле текстом оригинала, выход очищает —
   // черновики осознанно не сохраняются. Сравнение с прошлым id (а не LaunchedEffect от null)
   // не даёт затереть восстановленный rememberSaveable-текст при пересоздании экрана.
   var lastEditingId by rememberSaveable { mutableStateOf<String?>(null) }
   if (editingSource?.id?.value != lastEditingId) {
     lastEditingId = editingSource?.id?.value
-    inputValue = editingSource?.text.orEmpty()
+    inputValue = editingText.orEmpty()
   }
   ChatTextField(
     modifier = modifier,
     value = inputValue,
     onValueChange = { inputValue = it },
-    sendEnabled = editingSource == null || inputValue.trim() != editingSource.text,
+    sendEnabled = editingSource == null || inputValue.trim() != editingText,
     sendIconRes = if (editingSource != null) R.drawable.ic_check_24 else R.drawable.ic_send_24,
     // Ключ меняется при входе/выходе/пере-выборе цели — программно заменённый текст
     // проявляется мягко, обычная печать не фейдится.
@@ -309,10 +313,10 @@ private fun BottomArea(
     } else {
       resRef(R.string.chat_input_placeholder)
     },
-    header = editingMessage?.let { editing ->
+    header = editingText?.let { text ->
       {
         ChatTextFieldDefaults.EditHeader(
-          text = editing.text,
+          text = text,
           onClose = onCancelEdit
         )
       }

@@ -52,11 +52,11 @@ internal class DirectThreadViewModelTest {
     val commit = mockk<Commit.Message>(relaxed = true)
 
     viewModel.viewStateFlow.test {
-      assertNull(awaitItem().focusedMessage)
+      assertNull(awaitItem().focusedCommit)
 
       intents.showMessageMenu(commit)
 
-      assertEquals(commit, awaitItem().focusedMessage)
+      assertEquals(commit, awaitItem().focusedCommit)
     }
   }
 
@@ -68,10 +68,10 @@ internal class DirectThreadViewModelTest {
       awaitItem() // initial state
 
       intents.showMessageMenu(commit)
-      assertEquals(commit, awaitItem().focusedMessage)
+      assertEquals(commit, awaitItem().focusedCommit)
 
       intents.hideMessageMenu()
-      assertNull(awaitItem().focusedMessage)
+      assertNull(awaitItem().focusedCommit)
     }
   }
 
@@ -82,7 +82,7 @@ internal class DirectThreadViewModelTest {
     viewModel.viewStateFlow.test {
       awaitItem() // initial state
 
-      intents.confirmDeleteCommit(
+      intents.confirmDeleteCommits(
         ViewState.DeleteCommitsParams(ids = commitIds, forEveryone = true)
       )
 
@@ -101,11 +101,11 @@ internal class DirectThreadViewModelTest {
         intents.showMessageMenu(commit)
         awaitItem()
 
-        intents.startEditMessage(commit)
+        intents.showEditMessage(commit)
 
         val state = awaitItem()
-        assertEquals(commit, state.editingMessage)
-        assertNull(state.focusedMessage)
+        assertEquals(commit, state.editingCommit)
+        assertNull(state.focusedCommit)
       }
     }
 
@@ -120,11 +120,11 @@ internal class DirectThreadViewModelTest {
         intents.showMessageMenu(commit)
         awaitItem()
 
-        intents.startEditMessage(commit)
+        intents.showEditMessage(commit)
 
         val state = awaitItem()
-        assertNull(state.editingMessage)
-        assertNull(state.focusedMessage)
+        assertNull(state.editingCommit)
+        assertNull(state.focusedCommit)
       }
     }
 
@@ -135,11 +135,11 @@ internal class DirectThreadViewModelTest {
     viewModel.viewStateFlow.test {
       awaitItem() // initial state
 
-      intents.startEditMessage(commit)
-      assertEquals(commit, awaitItem().editingMessage)
+      intents.showEditMessage(commit)
+      assertEquals(commit, awaitItem().editingCommit)
 
-      intents.cancelEditMessage()
-      assertNull(awaitItem().editingMessage)
+      intents.hideEditMessage()
+      assertNull(awaitItem().editingCommit)
     }
   }
 
@@ -151,13 +151,13 @@ internal class DirectThreadViewModelTest {
       viewModel.viewStateFlow.test {
         awaitItem() // initial state
 
-        intents.startEditMessage(commit)
+        intents.showEditMessage(commit)
         awaitItem()
 
-        intents.submitEditMessage("  hello edited  ")
+        intents.confirmEditMessage("  hello edited  ")
 
         // Композер закрывается сразу (оптимистично), не дожидаясь ответа сервера.
-        assertNull(awaitItem().editingMessage)
+        assertNull(awaitItem().editingCommit)
         verify { directThreadModel.editCommit.start(DomainCommit.Id("commit-1"), "hello edited") }
       }
     }
@@ -170,11 +170,11 @@ internal class DirectThreadViewModelTest {
       viewModel.viewStateFlow.test {
         awaitItem() // initial state
 
-        intents.startEditMessage(commit)
+        intents.showEditMessage(commit)
         awaitItem()
 
-        intents.submitEditMessage("  hello  ")
-        intents.submitEditMessage("   ")
+        intents.confirmEditMessage("  hello  ")
+        intents.confirmEditMessage("   ")
 
         // Ссылка на таск берётся заранее: verify по цепочке засчитал бы и сам геттер editCommit,
         // который машина зовёт при построении.
@@ -193,13 +193,13 @@ internal class DirectThreadViewModelTest {
     viewModel.viewStateFlow.test {
       awaitItem() // initial state
 
-      intents.startEditMessage(editTarget)
+      intents.showEditMessage(editTarget)
       awaitItem()
 
-      intents.toggleMessageSelection(selectTarget)
+      intents.toggleSelectionMode(selectTarget)
 
       val state = awaitItem()
-      assertEquals(editTarget, state.editingMessage)
+      assertEquals(editTarget, state.editingCommit)
       assertEquals(true, state.selectionEnabled)
     }
   }
@@ -218,12 +218,12 @@ internal class DirectThreadViewModelTest {
         // с начальной, так и прийти отдельно — ждём состояние по условию, а не по счётчику.
         val commit = awaitState { it.commits.isNotEmpty() }.commits.first() as Commit.Message
 
-        intents.startEditMessage(commit)
-        assertEquals(commit, awaitState { it.editingMessage != null }.editingMessage)
+        intents.showEditMessage(commit)
+        assertEquals(commit, awaitState { it.editingCommit != null }.editingCommit)
 
         commitsFlow.value = emptyList()
 
-        assertNull(awaitState { it.commits.isEmpty() }.editingMessage)
+        assertNull(awaitState { it.commits.isEmpty() }.editingCommit)
       }
     }
 

@@ -96,33 +96,13 @@ class BranchViewModel(
       }
     }
 
-    configureSenderCommitTransitions()
-    configurePeerCommitTransitions()
-    configureMergeRequestTransitions()
-    configureCommitMenuTransitions()
-    configureSelectionTransitions()
-    configureCommitDeletionTransitions()
-  }
-
-  private fun MachineDsl<ViewState>.configureSenderCommitTransitions() {
-    onEach(intent(ViewIntents::sendCommit)) {
-      action { state, _, text ->
-        if (state.mergeRequest != null) {
-          return@action
-        }
-        branchModel.sendMessage(text.trim())
-      }
-    }
-  }
-
-  private fun MachineDsl<ViewState>.configurePeerCommitTransitions() {
     onEach(branchModel.commits.map { it.toUiCommits() }) {
       transitionTo { state, commits ->
         val commitsIds = commits.mapTo(mutableSetOf()) { it.source.id }
         val selectedCommitIds = state.selectedCommitIds.filter { it in commitsIds }
-        val menuCommit = state.focusedMessage?.takeIf { it.source.id in commitsIds }
+        val menuCommit = state.focusedCommit?.takeIf { it.source.id in commitsIds }
         state.copy(
-          focusedMessage = menuCommit
+          focusedCommit = menuCommit
         ).updateSelection(
           commits = commits,
           selectedCommitIds = selectedCommitIds
@@ -130,7 +110,7 @@ class BranchViewModel(
       }
     }
 
-    onEach(intent(ViewIntents::markReadUpTo)) {
+    onEach(intent(ViewIntents::markMessageAsRead)) {
       action { _, _, lastReadAt ->
         branchModel.markReadUpTo(lastReadAt)
       }
@@ -139,6 +119,31 @@ class BranchViewModel(
     onEach(branchModel.unreadCount) {
       transitionTo { state, unreadCount ->
         state.copy(unreadCount = unreadCount.toInt())
+      }
+    }
+
+    configureCommitMessageTransitions()
+    configureCommitDeletionTransitions()
+    configureCommitMenuTransitions()
+    configureMergeRequestTransitions()
+    configureSelectionTransitions()
+  }
+
+  private fun MachineDsl<ViewState>.configureCommitMessageTransitions() {
+    onEach(intent(ViewIntents::copyMessage)) {
+      action { _, _, _ ->
+        sendViewEvent(
+          Snackbar(message = resRef(R.string.thread_message_copied))
+        )
+      }
+    }
+
+    onEach(intent(ViewIntents::sendMessage)) {
+      action { state, _, text ->
+        if (state.mergeRequest != null) {
+          return@action
+        }
+        branchModel.sendMessage(text.trim())
       }
     }
   }
@@ -287,27 +292,19 @@ class BranchViewModel(
   private fun MachineDsl<ViewState>.configureCommitMenuTransitions() {
     onEach(intent(ViewIntents::showMessageMenu)) {
       transitionTo { state, commit ->
-        state.copy(focusedMessage = commit)
+        state.copy(focusedCommit = commit)
       }
     }
 
     onEach(intent(ViewIntents::hideMessageMenu)) {
       transitionTo { state, _ ->
-        state.copy(focusedMessage = null)
-      }
-    }
-
-    onEach(intent(ViewIntents::copyMessage)) {
-      action { _, _, _ ->
-        sendViewEvent(
-          Snackbar(message = resRef(R.string.thread_message_copied))
-        )
+        state.copy(focusedCommit = null)
       }
     }
   }
 
   private fun MachineDsl<ViewState>.configureSelectionTransitions() {
-    onEach(intent(ViewIntents::disableEditMode)) {
+    onEach(intent(ViewIntents::disableSelectionMode)) {
       transitionTo { state, _ ->
         state.updateSelection(
           selectedCommitIds = emptyList()
@@ -315,7 +312,7 @@ class BranchViewModel(
       }
     }
 
-    onEach(intent(ViewIntents::toggleMessageSelection)) {
+    onEach(intent(ViewIntents::toggleSelectionMode)) {
       transitionTo { state, commit ->
         val targetCommitId = commit.source.id
         val updatedCommitIds = if (targetCommitId in state.selectedCommitIds) {
@@ -343,7 +340,7 @@ class BranchViewModel(
       }
     }
 
-    onEach(intent(ViewIntents::confirmDeleteCommit)) {
+    onEach(intent(ViewIntents::confirmDeleteCommits)) {
       action { _, _, deleteCommits ->
         branchModel.deleteCommits.start(
           deleteCommits.ids,
@@ -393,7 +390,7 @@ private fun ViewState.updateSelection(
 ): ViewState {
   val selectedIds = selectedCommitIds.toSet()
   return copy(
-    editModeEnabled = selectedIds.isNotEmpty(),
+    selectionEnabled = selectedIds.isNotEmpty(),
     selectedCommitIds = selectedCommitIds,
     commits = commits.map { commit ->
       Commit.message.selected.set(commit, commit.source.id in selectedIds)

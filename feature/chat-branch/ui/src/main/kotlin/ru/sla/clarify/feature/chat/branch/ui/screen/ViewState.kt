@@ -23,9 +23,9 @@ data class ViewState(
   val mergeRequest: Branch.MergeRequest? = null,
   val mergeRequestVisible: Boolean = false,
   val mergeRequestInProgress: Boolean = false,
-  val editModeEnabled: Boolean = false,
+  val selectionEnabled: Boolean = false,
   val selectedCommitIds: List<DomainCommit.Id> = emptyList(),
-  val focusedMessage: Commit.Message? = null
+  val focusedCommit: Commit? = null
 ) {
   val isCurrentUserApproved: Boolean
     get() = mergeRequest != null &&

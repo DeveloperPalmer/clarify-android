@@ -37,46 +37,46 @@ import ru.sla.resourcerefs.resQtyRef
 import ru.sla.resourcerefs.resRef
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
-internal fun showBranchCreationModalSheet(
-  commit: Commit.Message
-): ScreenViewEvent<ViewState, ViewIntents> = ScreenViewEvent { stateFlow, intents ->
-  object : ViewEvent.BottomSheet {
-    override val sheetState = mutableStateOf<SheetState?>(null)
+internal fun showBranchCreationModalSheet(commit: Commit): ScreenViewEvent<ViewState, ViewIntents> {
+  return ScreenViewEvent { stateFlow, intents ->
+    object : ViewEvent.BottomSheet {
+      override val sheetState = mutableStateOf<SheetState?>(null)
 
-    @Composable
-    override fun ViewEventHostScope.Content() {
-      BackHandler {
-        intents.clearCreateBranchError()
-        dismissEventPresentation()
-      }
-      LaunchedEffect(Unit) {
-        intents.clearCreateBranchError()
-      }
-      ModalBottomSheet(
-        visible = true,
-        onUpdateState = { sheetState.value = it },
-        onDismissRequest = {
+      @Composable
+      override fun ViewEventHostScope.Content() {
+        BackHandler {
           intents.clearCreateBranchError()
           dismissEventPresentation()
-        },
-        properties = ModalBottomSheetProperties()
-      ) {
-        val state by stateFlow.collectAsState()
-        BranchCreateContent(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-          commit = commit,
-          branches = state.branches,
-          createBranchError = state.createBranchError,
-          onClearCreateBranchError = intents.clearCreateBranchError,
-          onFailure = intents.showCreateBranchError,
-          onSuccess = { createBranchPayload ->
-            sheetState.value?.hide()
-            intents.confirmCreateBranchParams(createBranchPayload)
+        }
+        LaunchedEffect(Unit) {
+          intents.clearCreateBranchError()
+        }
+        ModalBottomSheet(
+          visible = true,
+          onUpdateState = { sheetState.value = it },
+          onDismissRequest = {
+            intents.clearCreateBranchError()
             dismissEventPresentation()
-          }
-        )
+          },
+          properties = ModalBottomSheetProperties()
+        ) {
+          val state by stateFlow.collectAsState()
+          BranchCreateContent(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(horizontal = 16.dp, vertical = 8.dp),
+            commit = commit,
+            branches = state.branches,
+            createBranchError = state.createBranchError,
+            onClearCreateBranchError = intents.clearCreateBranchError,
+            onFailure = intents.showCreateBranchError,
+            onSuccess = { createBranchPayload ->
+              sheetState.value?.hide()
+              intents.confirmCreateBranch(createBranchPayload)
+              dismissEventPresentation()
+            }
+          )
+        }
       }
     }
   }
@@ -139,7 +139,7 @@ internal fun showDeleteMessagesDialog(commit: DomainCommit.Id?): ScreenViewEvent
               ids = deleteIds,
               forEveryone = deleteForEveryone
             )
-            intents.confirmDeleteCommit(deleteCommitsParams)
+            intents.confirmDeleteCommits(deleteCommitsParams)
           }
         ) {
           Row(

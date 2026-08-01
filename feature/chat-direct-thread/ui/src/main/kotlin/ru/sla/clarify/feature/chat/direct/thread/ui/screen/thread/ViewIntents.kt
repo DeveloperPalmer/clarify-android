@@ -10,27 +10,29 @@ import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents
 
 class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
-  val sendMessage = intent<String>(name = "sendMessage")
-  val markReadUpTo = intent<LocalDateTime>(name = "markReadUpTo")
+
   val loadCommitsHistory = intent(name = "loadCommitsHistory")
 
-  val disableEditMode = intent(name = "disableEditMode")
-  val toggleMessageSelection = intent<Commit>(name = "toggleMessageSelection")
+  val toggleSelectionMode = intent<Commit>(name = "toggleSelectionMode")
+  val disableSelectionMode = intent(name = "disableSelectionMode")
+
+  val sendMessage = intent<String>(name = "sendMessage")
+  val copyMessage = intent(name = "copyMessage")
+  val markMessageAsRead = intent<LocalDateTime>(name = "markMessageAsRead")
 
   val deleteCommit = intent<Commit>(name = "deleteCommit")
   val deleteCommits = intent(name = "deleteCommits")
-  val confirmDeleteCommit = intent<DeleteCommitsParams>(name = "confirmDeleteCommit")
+  val confirmDeleteCommits = intent<DeleteCommitsParams>(name = "confirmDeleteCommits")
 
-  val showMessageMenu = intent<Commit.Message>(name = "showMessageMenu")
+  val showMessageMenu = intent<Commit>(name = "showMessageMenu")
   val hideMessageMenu = intent(name = "hideMessageMenu")
-  val copyMessage = intent(name = "copyMessage")
 
-  val startEditMessage = intent<Commit.Message>(name = "startEditMessage")
-  val cancelEditMessage = intent(name = "cancelEditMessage")
-  val submitEditMessage = intent<String>(name = "submitEditMessage")
+  val showEditMessage = intent<Commit>(name = "showEditMessage")
+  val hideEditMessage = intent(name = "hideEditMessage")
+  val confirmEditMessage = intent<String>(name = "confirmEditMessage")
 
-  val createBranch = intent<Commit.Message>(name = "createBranch")
-  val confirmCreateBranchParams = intent<CreateBranchParams>(name = "confirmCreateBranch")
+  val createBranch = intent<Commit>(name = "createBranch")
+  val confirmCreateBranch = intent<CreateBranchParams>(name = "confirmCreateBranch")
   val openBranch = intent<Branch.Id>(name = "openBranch")
   val showBranches = intent(name = "showBranches")
   val showCreateBranchError = intent<CreateBranchError>(name = "showCreateBranchError")

@@ -34,6 +34,7 @@ import ru.sla.clarify.feature.chat.branch.ui.components.MergeRequestCard
 import ru.sla.clarify.uikit.component.button.ChatScrollToBottomButton
 import ru.sla.clarify.uikit.component.chat.ChatCommits
 import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.clarify.uikit.component.chat.Textual
 import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.component.popup.PopupScrim
 import ru.sla.clarify.uikit.component.scrim.ScrimEffect
@@ -41,7 +42,6 @@ import ru.sla.clarify.uikit.component.textfield.ChatTextField
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.component.topappbar.rememberTopBarElevation
-import ru.sla.clarify.uikit.keyboard.rememberKeyboardController
 import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
@@ -56,14 +56,13 @@ fun BranchScreen(viewModel: BranchViewModel) {
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
     val scope = rememberCoroutineScope()
-    val keyboardController = rememberKeyboardController()
     val clipboard = LocalClipboard.current
     BackHandler(
-      enabled = state.editModeEnabled,
-      onBack = intents.disableEditMode
+      enabled = state.selectionEnabled,
+      onBack = intents.disableSelectionMode
     )
     BackHandler(
-      enabled = state.focusedMessage != null,
+      enabled = state.focusedCommit != null,
       onBack = intents.hideMessageMenu
     )
     ScreenScaffold(scaffoldState) {
@@ -71,25 +70,22 @@ fun BranchScreen(viewModel: BranchViewModel) {
         modifier = Modifier.fillMaxSize(),
         state = state,
         intents = intents,
-        onSelectMessage = intents.toggleMessageSelection,
+        onSelectCommit = intents.toggleSelectionMode,
         onDeleteCommit = intents.deleteCommit,
-        onCloseMessageMenu = intents.hideMessageMenu,
-        onCopyMessage = { commit ->
+        onClosePopup = intents.hideMessageMenu,
+        onCopyCommit = { text ->
           scope.launch {
-            val clipData = ClipData.newPlainText(null, commit.text)
+            val clipData = ClipData.newPlainText(null, text)
             clipboard.setClipEntry(clipData.toClipEntry())
             intents.copyMessage()
           }
         },
-        onCommitLongClick = intents.toggleMessageSelection,
+        onCommitLongClick = intents.toggleSelectionMode,
         onCommitClick = { commit ->
-          if (state.editModeEnabled) {
-            intents.toggleMessageSelection(commit)
+          if (state.selectionEnabled) {
+            intents.toggleSelectionMode(commit)
           } else {
-            scope.launch {
-              keyboardController.awaitHide()
-              intents.showMessageMenu(commit)
-            }
+            intents.showMessageMenu(commit)
           }
         }
       )
@@ -120,11 +116,11 @@ fun BranchScreen(viewModel: BranchViewModel) {
 internal fun BranchReadyContent(
   state: ViewState,
   intents: ViewIntents,
-  onCommitClick: (Commit.Message) -> Unit,
+  onCommitClick: (Commit) -> Unit,
   onCommitLongClick: (Commit) -> Unit,
-  onCloseMessageMenu: () -> Unit,
-  onCopyMessage: (Commit.Message) -> Unit,
-  onSelectMessage: (Commit) -> Unit,
+  onClosePopup: () -> Unit,
+  onCopyCommit: (String) -> Unit,
+  onSelectCommit: (Commit) -> Unit,
   onDeleteCommit: (Commit) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -140,11 +136,11 @@ internal fun BranchReadyContent(
     ) {
       val listState = rememberLazyListState()
       val topBarElevation = rememberTopBarElevation(listState)
-      if (state.editModeEnabled) {
+      if (state.selectionEnabled) {
         SelectionTopAppBar(
           modifier = Modifier.bottomShadow { topBarElevation.value },
           selectedCount = state.selectedCommitIds.size,
-          onClose = intents.disableEditMode,
+          onClose = intents.disableSelectionMode,
           onDelete = intents.deleteCommits
         )
       } else {
@@ -166,16 +162,19 @@ internal fun BranchReadyContent(
         ChatCommits(
           modifier = Modifier.fillMaxSize(),
           listState = listState,
-          commits = state.commits,
-          selectionEnabled = state.editModeEnabled,
-          focusedMessage = state.focusedMessage,
-          onCommitsRead = intents.markReadUpTo,
-          onMessageClick = onCommitClick,
-          onMessageLongClick = onCommitLongClick,
-          onCloseMessagePopup = onCloseMessageMenu,
-          onCopyMessage = onCopyMessage,
-          onSelectMessage = onSelectMessage,
-          onDeleteCommit = onDeleteCommit
+          items = state.commits,
+          selectionEnabled = state.selectionEnabled,
+          focused = state.focusedCommit,
+          hasHistory = false,
+          loadingHistory = false,
+          onClick = onCommitClick,
+          onLongClick = onCommitLongClick,
+          onLoad = {},
+          onRead = intents.markMessageAsRead,
+          onCopy = { commit -> (commit as? Textual)?.text?.let(onCopyCommit) },
+          onSelect = onSelectCommit,
+          onDelete = onDeleteCommit,
+          onClosePopup = onClosePopup
         )
         ChatScrollToBottomButton(
           modifier = Modifier
@@ -192,12 +191,12 @@ internal fun BranchReadyContent(
       }
       BottomArea(
         mergeRequestStatus = state.mergeRequest?.status,
-        onSend = intents.sendCommit
+        onSend = intents.sendMessage
       )
     }
     PopupScrim(
-      visible = state.focusedMessage != null,
-      onDismiss = onCloseMessageMenu
+      visible = state.focusedCommit != null,
+      onDismiss = onClosePopup
     )
   }
 }

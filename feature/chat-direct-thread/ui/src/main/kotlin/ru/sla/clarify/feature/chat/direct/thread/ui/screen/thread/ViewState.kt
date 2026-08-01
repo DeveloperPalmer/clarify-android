@@ -10,24 +10,24 @@ import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 @Immutable
 data class ViewState(
-  val peer: Peer? = null,
   val contentLoadState: ContentLoadState = ContentLoadState.NotStarted,
+  val peer: Peer? = null,
   val commits: List<Commit> = emptyList(),
-  val hasCommitsHistory: Boolean = true,
+  val canLoadCommitsHistory: Boolean = true,
   val loadingCommitsHistory: Boolean = false,
   val branches: List<Branch> = emptyList(),
-  val unreadCount: Int = 0,
   val createBranchError: CreateBranchError? = null,
+  val unreadCount: Int = 0,
   val selectionEnabled: Boolean = false,
   val selectedCommitIds: List<DomainCommit.Id> = emptyList(),
-  val focusedMessage: Commit.Message? = null,
-  val editingMessage: Commit.Message? = null
+  val focusedCommit: Commit? = null,
+  val editingCommit: Commit? = null
 ) {
 
   @Immutable
   data class CreateBranchParams(
     val name: String,
-    val commit: Commit.Message
+    val commit: Commit
   )
 
   @Immutable

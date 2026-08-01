@@ -29,7 +29,7 @@ import ru.sla.resourcerefs.resRef
 
 @Composable
 internal fun BranchCreateContent(
-  commit: Commit.Message,
+  commit: Commit,
   branches: List<Branch>,
   createBranchError: CreateBranchError?,
   onClearCreateBranchError: () -> Unit,

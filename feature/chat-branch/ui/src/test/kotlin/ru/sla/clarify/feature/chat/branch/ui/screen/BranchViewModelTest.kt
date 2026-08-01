@@ -53,11 +53,11 @@ internal class BranchViewModelTest {
     val commit = mockk<Commit.Message>(relaxed = true)
 
     viewModel.viewStateFlow.test {
-      assertNull(awaitItem().focusedMessage)
+      assertNull(awaitItem().focusedCommit)
 
       intents.showMessageMenu(commit)
 
-      assertEquals(commit, awaitItem().focusedMessage)
+      assertEquals(commit, awaitItem().focusedCommit)
     }
   }
 
@@ -69,10 +69,10 @@ internal class BranchViewModelTest {
       awaitItem() // initial state
 
       intents.showMessageMenu(commit)
-      assertEquals(commit, awaitItem().focusedMessage)
+      assertEquals(commit, awaitItem().focusedCommit)
 
       intents.hideMessageMenu()
-      assertNull(awaitItem().focusedMessage)
+      assertNull(awaitItem().focusedCommit)
     }
   }
 
@@ -85,49 +85,49 @@ internal class BranchViewModelTest {
   }
 
   @Test
-  fun `when toggleMessageSelection should enable edit mode and track the commit`() =
+  fun `when toggleSelectionMode should enable edit mode and track the commit`() =
     runTest(testDispatcher) {
       val commitId = DomainCommit.Id("commit-1")
       val commit = commitWithId(commitId)
 
       viewModel.viewStateFlow.test {
         val initial = awaitItem()
-        assertFalse(initial.editModeEnabled)
+        assertFalse(initial.selectionEnabled)
 
-        intents.toggleMessageSelection(commit)
+        intents.toggleSelectionMode(commit)
 
         val selected = awaitItem()
-        assertTrue(selected.editModeEnabled)
+        assertTrue(selected.selectionEnabled)
         assertEquals(listOf(commitId), selected.selectedCommitIds)
       }
     }
 
   @Test
-  fun `when disableEditMode should clear the selection`() = runTest(testDispatcher) {
+  fun `when disableSelectionMode should clear the selection`() = runTest(testDispatcher) {
     val commitId = DomainCommit.Id("commit-1")
     val commit = commitWithId(commitId)
 
     viewModel.viewStateFlow.test {
       awaitItem() // initial state
 
-      intents.toggleMessageSelection(commit)
-      assertTrue(awaitItem().editModeEnabled)
+      intents.toggleSelectionMode(commit)
+      assertTrue(awaitItem().selectionEnabled)
 
-      intents.disableEditMode()
+      intents.disableSelectionMode()
       val cleared = awaitItem()
-      assertFalse(cleared.editModeEnabled)
+      assertFalse(cleared.selectionEnabled)
       assertTrue(cleared.selectedCommitIds.isEmpty())
     }
   }
 
   @Test
-  fun `when confirmDeleteCommit should start deletion for payload ids`() = runTest(testDispatcher) {
+  fun `when confirmDeleteCommits should start deletion for payload ids`() = runTest(testDispatcher) {
     val commitIds = listOf(DomainCommit.Id("commit-1"), DomainCommit.Id("commit-2"))
 
     viewModel.viewStateFlow.test {
       awaitItem() // initial state
 
-      intents.confirmDeleteCommit(
+      intents.confirmDeleteCommits(
         ViewState.DeleteCommitsParams(ids = commitIds, forEveryone = true)
       )
 
