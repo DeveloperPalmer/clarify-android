@@ -263,6 +263,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     )
   }
 
+  @Suppress("TooGenericExceptionCaught")
   override suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean) {
     val conversationId = threadMediator.requireConversationId()
     // Снимок удаляемых сообщений — вернём их на место, если сервер откажет.
