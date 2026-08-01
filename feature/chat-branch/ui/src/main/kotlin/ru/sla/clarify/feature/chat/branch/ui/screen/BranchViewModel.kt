@@ -27,10 +27,9 @@ import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
 import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
 import ru.sla.clarify.mapper.ui.toUiCommits
-import ru.sla.clarify.uikit.component.bubble.isSelected
 import ru.sla.clarify.uikit.component.chat.Commit
-import ru.sla.clarify.uikit.component.chat.bubble
 import ru.sla.clarify.uikit.component.chat.message
+import ru.sla.clarify.uikit.component.chat.selected
 import ru.sla.clarify.uikit.event.Snackbar
 import ru.sla.resourcerefs.resRef
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
@@ -397,7 +396,7 @@ private fun ViewState.updateSelection(
     editModeEnabled = selectedIds.isNotEmpty(),
     selectedCommitIds = selectedCommitIds,
     commits = commits.map { commit ->
-      Commit.message.bubble.isSelected.set(commit, commit.source.id in selectedIds)
+      Commit.message.selected.set(commit, commit.source.id in selectedIds)
     }
   )
 }

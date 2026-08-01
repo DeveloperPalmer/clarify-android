@@ -37,7 +37,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -176,7 +175,7 @@ private fun SendButton(
 object ChatTextFieldDefaults {
   @Composable
   fun EditHeader(
-    message: Commit.Message,
+    text: String,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
   ) {
@@ -184,7 +183,7 @@ object ChatTextFieldDefaults {
       modifier = modifier,
       iconRes = R.drawable.ic_pencil_24,
       title = resRef(R.string.thread_edit_header_title),
-      text = message.text,
+      text = text,
       onClose = onClose
     )
   }

@@ -2,32 +2,76 @@ package ru.sla.clarify.uikit.component.chat
 
 import androidx.compose.runtime.Immutable
 import arrow.optics.optics
-import ru.sla.clarify.uikit.component.bubble.BubbleMessage
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.resourcerefs.TextRef
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 @optics
 @Immutable
 sealed interface Commit {
-
   val key: String
   val source: DomainCommit
 
   @optics
   @Immutable
   data class Message(
-    override val source: DomainCommit.Message,
     override val key: String,
-    val bubble: BubbleMessage
+    override val source: DomainCommit.Message,
+    val text: String,
+    val side: Side,
+    val shape: Shape,
+    val time: String,
+    val sender: Sender?,
+    val edited: Boolean,
+    val selected: Boolean
   ) : Commit {
+
+    @optics
+    @Immutable
+    data class Sender(
+      val id: UserId,
+      val name: String
+    ) {
+      companion object
+    }
+
+    @optics
+    @Immutable
+    sealed interface Side {
+      companion object
+
+      @Immutable
+      data object Left : Side
+
+      @optics
+      @Immutable
+      data class Right(val status: ReadStatus? = null) : Side {
+        companion object
+      }
+    }
+
+    @Immutable
+    enum class ReadStatus {
+      Sending,
+      Sent,
+      Read
+    }
+
+    @Immutable
+    enum class Shape {
+      Top,
+      Middle,
+      Bottom
+    }
+
     companion object
   }
 
   @optics
   @Immutable
   data class InviteMember(
-    override val source: DomainCommit.InviteMember,
     override val key: String,
+    override val source: DomainCommit.InviteMember,
     val text: TextRef
   ) : Commit {
     companion object

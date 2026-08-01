@@ -1,4 +1,4 @@
-package ru.sla.clarify.uikit.component.bubble
+package ru.sla.clarify.uikit.component.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,102 +17,92 @@ import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.AppTheme.colors
 import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
+import java.time.LocalDateTime
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 @Preview
 @Composable
-private fun BubbleMessagePreviewLight() {
+private fun MessagePreviewLight() {
   AppTheme(currentTheme = ColorTheme.Light) {
-    BubbleMessage()
+    MessagePreviewContent()
   }
 }
 
 @Preview
 @Composable
-private fun BubbleMessagePreviewDark() {
+private fun MessagePreviewDark() {
   AppTheme(currentTheme = ColorTheme.Dark) {
-    BubbleMessage()
+    MessagePreviewContent()
   }
 }
 
 @Composable
-private fun BubbleMessage(modifier: Modifier = Modifier) {
+private fun MessagePreviewContent(modifier: Modifier = Modifier) {
   Column(
     modifier = modifier
       .background(colors.backgroundPrimary)
       .padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(2.dp)
   ) {
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Top,
-        side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Read),
+    MessageContent(
+      previewMessage(
+        shape = Commit.Message.Shape.Top,
+        side = Commit.Message.Side.Right(Commit.Message.ReadStatus.Read),
         text = "Спасибо! Сейчас покажу",
-        time = "18:05",
-        sender = null,
-        isSelected = false
+        time = "18:05"
       )
     )
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Middle,
-        side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Sending),
+    MessageContent(
+      previewMessage(
+        shape = Commit.Message.Shape.Middle,
+        side = Commit.Message.Side.Right(Commit.Message.ReadStatus.Sending),
         text = "Вот текущий флоу создания ветки — несколько строк, чтобы было видно перенос времени",
-        time = "18:05",
-        sender = null,
-        isSelected = false
+        time = "18:05"
       )
     )
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Bottom,
-        side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Sent),
+    MessageContent(
+      previewMessage(
+        shape = Commit.Message.Shape.Bottom,
+        side = Commit.Message.Side.Right(Commit.Message.ReadStatus.Sent),
         text = "Зажимаешь — и готово",
         time = "18:06",
-        edited = true,
-        sender = null,
-        isSelected = false
+        edited = true
       )
     )
     VSpacer(12.dp)
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Top,
-        side = BubbleMessage.Side.Left,
+    MessageContent(
+      previewMessage(
+        shape = Commit.Message.Shape.Top,
+        side = Commit.Message.Side.Left,
         text = "Привет! Глянула макет",
-        time = "18:02",
-        sender = null,
-        isSelected = false
+        time = "18:02"
       )
     )
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Bottom,
-        side = BubbleMessage.Side.Left,
+    MessageContent(
+      previewMessage(
+        shape = Commit.Message.Shape.Bottom,
+        side = Commit.Message.Side.Left,
         text = "Особенно как треды выносятся в отдельный экран — это топ",
-        time = "18:03",
-        sender = null,
-        isSelected = false
+        time = "18:03"
       )
     )
   }
 }
 
 @Composable
-private fun ColumnScope.ClusterBubblePreview(bubble: BubbleMessage) {
-  val alignment = when (bubble.side) {
-    is BubbleMessage.Side.Left -> Alignment.Start
-    is BubbleMessage.Side.Right -> Alignment.End
+private fun ColumnScope.MessageContent(message: Commit.Message) {
+  val alignment = when (message.side) {
+    is Commit.Message.Side.Left -> Alignment.Start
+    is Commit.Message.Side.Right -> Alignment.End
   }
-  BubbleMessageItem(
+  Message(
     modifier = Modifier
       .align(alignment)
       .widthIn(max = 260.dp),
-    bubble = bubble,
+    message = message,
+    selectionEnabled = false,
+    onClick = {},
+    onLongClick = {},
     onAnchorBounds = {}
   )
 }
@@ -135,15 +125,15 @@ private fun GroupBubbleMessagePreviewDark() {
 
 @Composable
 private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
-  val anna = BubbleMessage.Sender(
+  val anna = Commit.Message.Sender(
     id = UserId("anna"),
     name = "Аня Котова"
   )
-  val ilya = BubbleMessage.Sender(
+  val ilya = Commit.Message.Sender(
     id = UserId("ilya"),
     name = "Илья Соколов"
   )
-  val maria = BubbleMessage.Sender(
+  val maria = Commit.Message.Sender(
     id = UserId("maria"),
     name = "María García с очень длинным именем"
   )
@@ -153,66 +143,86 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
       .padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(2.dp)
   ) {
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Top,
-        side = BubbleMessage.Side.Left,
+    MessageContent(
+      previewMessage(
+        side = Commit.Message.Side.Left,
+        shape = Commit.Message.Shape.Top,
         text = "Привет всем! Спасибо что собрали",
         time = "18:02",
-        sender = anna,
-        isSelected = false
+        sender = anna
       )
     )
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Bottom,
-        side = BubbleMessage.Side.Left,
+    MessageContent(
+      previewMessage(
+        side = Commit.Message.Side.Left,
+        shape = Commit.Message.Shape.Bottom,
         text = "Давайте сюда скидывать всё по веткам",
         time = "18:02",
-        sender = anna,
-        isSelected = false
+        sender = anna
       )
     )
     VSpacer(12.dp)
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Top,
-        side = BubbleMessage.Side.Left,
+    MessageContent(
+      previewMessage(
+        side = Commit.Message.Side.Left,
+        shape = Commit.Message.Shape.Top,
         text = "Ок",
         time = "18:14",
-        sender = ilya,
-        isSelected = false
+        sender = ilya
       )
     )
     VSpacer(12.dp)
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Top,
-        side = BubbleMessage.Side.Left,
+    MessageContent(
+      previewMessage(
+        side = Commit.Message.Side.Left,
+        shape = Commit.Message.Shape.Top,
         text = "Включаюсь",
         time = "10:30",
-        sender = maria,
-        isSelected = false
+        sender = maria
       )
     )
     VSpacer(12.dp)
-    ClusterBubblePreview(
-      BubbleMessage(
-        id = BubbleMessage.Id(randomUuid()),
-        type = BubbleMessage.Type.Top,
-        side = BubbleMessage.Side.Right(BubbleMessage.ReadStatus.Read),
+    MessageContent(
+      previewMessage(
+        side = Commit.Message.Side.Right(Commit.Message.ReadStatus.Read),
+        shape = Commit.Message.Shape.Top,
         text = "Супер, посмотрю после обеда и соберу мердж",
         time = "12:51",
-        sender = BubbleMessage.Sender(
+        sender = Commit.Message.Sender(
           id = UserId("me"),
           name = "Сергей Лановой"
-        ),
-        isSelected = false
+        )
       )
     )
   }
+}
+
+private fun previewMessage(
+  side: Commit.Message.Side,
+  shape: Commit.Message.Shape,
+  text: String,
+  time: String,
+  sender: Commit.Message.Sender? = null,
+  edited: Boolean = false,
+  selected: Boolean = false
+): Commit.Message {
+  val id = randomUuid()
+  return Commit.Message(
+    key = "message:$id",
+    source = DomainCommit.Message(
+      id = DomainCommit.Id(id),
+      timestamp = LocalDateTime.now(),
+      senderId = sender?.id ?: UserId(id),
+      text = text,
+      isSelf = side is Commit.Message.Side.Right,
+      status = DomainCommit.Status.Sent
+    ),
+    text = text,
+    side = side,
+    shape = shape,
+    time = time,
+    sender = sender,
+    edited = edited,
+    selected = selected
+  )
 }

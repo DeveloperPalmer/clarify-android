@@ -26,8 +26,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.uikit.component.InviteMemberItem
-import ru.sla.clarify.uikit.component.bubble.BubbleMessageItem
 import ru.sla.clarify.uikit.component.popup.Action
 import ru.sla.clarify.uikit.component.popup.Popup
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -134,27 +132,23 @@ fun ChatCommits(
         when (commit) {
           is Commit.Message -> {
             val isMenuAnchor = displayedMessage?.source?.id == commit.source.id
-            BubbleMessageItem(
+            Message(
               modifier = Modifier.animateItem(),
-              bubble = commit.bubble,
+              message = commit,
               selectionEnabled = selectionEnabled,
-              onClick = onMessageClick?.let { handler ->
-                { handler(commit) }
-              },
-              onLongClick = onMessageLongClick?.let { handler ->
-                { handler(commit) }
-              },
+              onClick = { onMessageClick?.invoke(commit) },
+              onLongClick = { onMessageLongClick?.invoke(commit) },
               // Границы нужны только фокусному пузырю — по ним меню-оверлей встаёт на место;
-              // остальные получают заглушку, реализации для них пока нет.
+              // остальным репортить нечего.
               onAnchorBounds = if (isMenuAnchor) {
                 { bounds -> anchorBounds = bounds }
               } else {
-                {}
+                null
               }
             )
           }
           is Commit.InviteMember -> {
-            InviteMemberItem(
+            InviteMember(
               modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),

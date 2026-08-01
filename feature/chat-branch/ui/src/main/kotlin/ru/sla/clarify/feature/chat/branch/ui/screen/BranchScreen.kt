@@ -76,7 +76,7 @@ fun BranchScreen(viewModel: BranchViewModel) {
         onCloseMessageMenu = intents.hideMessageMenu,
         onCopyMessage = { commit ->
           scope.launch {
-            val clipData = ClipData.newPlainText(null, commit.bubble.text)
+            val clipData = ClipData.newPlainText(null, commit.text)
             clipboard.setClipEntry(clipData.toClipEntry())
             intents.copyMessage()
           }

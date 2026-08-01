@@ -1,4 +1,4 @@
-package ru.sla.clarify.uikit.component.bubble
+package ru.sla.clarify.uikit.component.chat
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.component.avatar.stableSeedHash
-import ru.sla.clarify.uikit.component.bubble.BubbleMessage.ReadStatus
+import ru.sla.clarify.uikit.component.chat.Commit.Message.ReadStatus
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.AppTheme.colors
@@ -67,18 +67,19 @@ import kotlin.math.sin
 /**
  * [onAnchorBounds] reports the bubble's bounds in window coordinates whenever it is (re)positioned.
  * The context menu is a separate overlay hosted outside the list (so LazyColumn recycling can't kill
- * it mid-animation); it uses these bounds to place itself over the bubble.
+ * it mid-animation); it uses these bounds to place itself over the bubble. Pass `null` for bubbles
+ * that can never anchor the menu.
  */
 @Composable
-fun BubbleMessageItem(
-  bubble: BubbleMessage,
-  onAnchorBounds: (IntRect) -> Unit,
-  modifier: Modifier = Modifier,
-  selectionEnabled: Boolean = false,
-  onClick: (() -> Unit)? = null,
-  onLongClick: (() -> Unit)? = null
+fun Message(
+  message: Commit.Message,
+  selectionEnabled: Boolean,
+  onClick: () -> Unit,
+  onLongClick: () -> Unit,
+  onAnchorBounds: ((IntRect) -> Unit)?,
+  modifier: Modifier = Modifier
 ) {
-  val isRight = bubble.side is BubbleMessage.Side.Right
+  val isRight = message.side is Commit.Message.Side.Right
 
   val backgroundColor by animateColorAsState(
     label = "backgroundColor",
@@ -100,13 +101,13 @@ fun BubbleMessageItem(
     targetValue = if (isRight) colors.contentAccentSecondary else timeColor
   )
 
-  val shape = when (bubble.type) {
-    BubbleMessage.Type.Top -> topShape(bubble.side)
-    BubbleMessage.Type.Middle -> middleShape(bubble.side)
-    BubbleMessage.Type.Bottom -> bottomShape(bubble.side)
+  val shape = when (message.shape) {
+    Commit.Message.Shape.Top -> topShape(message.side)
+    Commit.Message.Shape.Middle -> middleShape(message.side)
+    Commit.Message.Shape.Bottom -> bottomShape(message.side)
   }
 
-  val senderLabel = bubble.sender?.let { sender ->
+  val senderLabel = message.sender?.let { sender ->
     SenderLabel(
       name = sender.name,
       color = senderNameColor(sender.id)
@@ -114,7 +115,7 @@ fun BubbleMessageItem(
   }
   SelectableBubbleContainer(
     modifier = modifier,
-    selected = bubble.isSelected,
+    selected = message.selected,
     selectionEnabled = selectionEnabled,
     onClick = onClick,
     onLongClick = onLongClick
@@ -124,14 +125,14 @@ fun BubbleMessageItem(
         vertical = 2.dp,
         horizontal = 8.dp
       ),
-      side = bubble.side,
+      side = message.side,
       shape = shape,
       backgroundColor = backgroundColor,
       senderLabel = senderLabel,
-      text = bubble.text,
+      text = message.text,
       textColor = contentColor,
-      time = bubble.time,
-      edited = bubble.edited,
+      time = message.time,
+      edited = message.edited,
       timeColor = timeColor,
       statusReadColor = statusReadColor,
       onAnchorBounds = onAnchorBounds,
@@ -231,8 +232,23 @@ private fun senderNameColor(senderId: UserId): Color {
 }
 
 @Composable
+private fun Modifier.anchorBounds(onAnchorBounds: (IntRect) -> Unit): Modifier {
+  return onGloballyPositioned { coordinates ->
+    val bounds = coordinates.boundsInWindow()
+    onAnchorBounds(
+      IntRect(
+        left = bounds.left.roundToInt(),
+        top = bounds.top.roundToInt(),
+        right = bounds.right.roundToInt(),
+        bottom = bounds.bottom.roundToInt()
+      )
+    )
+  }
+}
+
+@Composable
 private fun BubbleMessageLayout(
-  side: BubbleMessage.Side,
+  side: Commit.Message.Side,
   shape: Shape,
   backgroundColor: Color,
   senderLabel: SenderLabel?,
@@ -242,16 +258,16 @@ private fun BubbleMessageLayout(
   edited: Boolean,
   timeColor: Color,
   statusReadColor: Color,
-  onAnchorBounds: (IntRect) -> Unit,
-  modifier: Modifier = Modifier,
-  onClick: (() -> Unit)? = null,
-  onLongClick: (() -> Unit)? = null
+  onClick: (() -> Unit)?,
+  onLongClick: (() -> Unit)?,
+  onAnchorBounds: ((IntRect) -> Unit)?,
+  modifier: Modifier = Modifier
 ) {
   val textMeasurer = rememberTextMeasurer()
   val textStyle = AppTheme.typography.body1
   Box(
     modifier = modifier.fillMaxWidth(),
-    contentAlignment = if (side is BubbleMessage.Side.Right) {
+    contentAlignment = if (side is Commit.Message.Side.Right) {
       Alignment.CenterEnd
     } else {
       Alignment.CenterStart
@@ -260,17 +276,8 @@ private fun BubbleMessageLayout(
     // Границы самого пузыря (а не полноширинной строки) — по ним встаёт меню-оверлей, живущий
     // вне списка. Модификатор прямо на BubbleSurface — отдельная обёртка была бы лишней.
     BubbleSurface(
-      modifier = Modifier.onGloballyPositioned { coordinates ->
-        val bounds = coordinates.boundsInWindow()
-        onAnchorBounds(
-          IntRect(
-            left = bounds.left.roundToInt(),
-            top = bounds.top.roundToInt(),
-            right = bounds.right.roundToInt(),
-            bottom = bounds.bottom.roundToInt()
-          )
-        )
-      },
+      modifier = Modifier.then(onAnchorBounds?.let { Modifier.anchorBounds(it) } ?: Modifier),
+      side = side,
       shape = shape,
       backgroundColor = backgroundColor,
       senderLabel = senderLabel,
@@ -278,10 +285,9 @@ private fun BubbleMessageLayout(
       textColor = textColor,
       textStyle = textStyle,
       textMeasurer = textMeasurer,
-      side = side,
       time = time,
-      edited = edited,
       timeColor = timeColor,
+      edited = edited,
       statusReadColor = statusReadColor,
       onClick = onClick,
       onLongClick = onLongClick
@@ -291,6 +297,7 @@ private fun BubbleMessageLayout(
 
 @Composable
 private fun BubbleSurface(
+  side: Commit.Message.Side,
   shape: Shape,
   backgroundColor: Color,
   senderLabel: SenderLabel?,
@@ -298,10 +305,9 @@ private fun BubbleSurface(
   textColor: Color,
   textStyle: TextStyle,
   textMeasurer: TextMeasurer,
-  side: BubbleMessage.Side,
   time: String,
-  edited: Boolean,
   timeColor: Color,
+  edited: Boolean,
   statusReadColor: Color,
   onClick: (() -> Unit)?,
   onLongClick: (() -> Unit)?,
@@ -334,7 +340,7 @@ private fun BubbleSurface(
         time = time,
         edited = edited,
         timeColor = timeColor,
-        status = (side as? BubbleMessage.Side.Right)?.status,
+        status = (side as? Commit.Message.Side.Right)?.status,
         statusMutedColor = timeColor,
         statusReadColor = statusReadColor
       )
@@ -555,8 +561,8 @@ private fun DrawScope.drawClockHand(
   )
 }
 
-private fun topShape(side: BubbleMessage.Side): Shape {
-  val isLeft = side is BubbleMessage.Side.Left
+private fun topShape(side: Commit.Message.Side): Shape {
+  val isLeft = side is Commit.Message.Side.Left
   return RoundedCornerShape(
     topStart = bubbleSoftCorner,
     topEnd = bubbleSoftCorner,
@@ -565,8 +571,8 @@ private fun topShape(side: BubbleMessage.Side): Shape {
   )
 }
 
-private fun middleShape(side: BubbleMessage.Side): Shape {
-  val isLeft = side is BubbleMessage.Side.Left
+private fun middleShape(side: Commit.Message.Side): Shape {
+  val isLeft = side is Commit.Message.Side.Left
   return RoundedCornerShape(
     topStart = if (isLeft) bubbleHardCorner else bubbleSoftCorner,
     bottomStart = if (isLeft) bubbleHardCorner else bubbleSoftCorner,
@@ -575,8 +581,8 @@ private fun middleShape(side: BubbleMessage.Side): Shape {
   )
 }
 
-private fun bottomShape(side: BubbleMessage.Side): Shape {
-  val isLeft = side is BubbleMessage.Side.Left
+private fun bottomShape(side: Commit.Message.Side): Shape {
+  val isLeft = side is Commit.Message.Side.Left
   return RoundedCornerShape(
     bottomStart = bubbleSoftCorner,
     bottomEnd = bubbleSoftCorner,

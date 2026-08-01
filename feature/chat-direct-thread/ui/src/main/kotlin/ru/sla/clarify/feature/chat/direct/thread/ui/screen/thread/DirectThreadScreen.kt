@@ -87,7 +87,7 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
         onSelectMessage = intents.toggleMessageSelection,
         onCopyMessage = { commit ->
           scope.launch {
-            val clipData = ClipData.newPlainText(null, commit.bubble.text)
+            val clipData = ClipData.newPlainText(null, commit.text)
             clipboard.setClipEntry(clipData.toClipEntry())
             intents.copyMessage()
           }
@@ -312,7 +312,7 @@ private fun BottomArea(
     header = editingMessage?.let { editing ->
       {
         ChatTextFieldDefaults.EditHeader(
-          message = editing.source,
+          text = editing.text,
           onClose = onCancelEdit
         )
       }

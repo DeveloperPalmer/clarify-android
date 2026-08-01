@@ -1,4 +1,4 @@
-package ru.sla.clarify.uikit.component
+package ru.sla.clarify.uikit.component.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -10,14 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
-import ru.sla.clarify.uikit.theme.ColorTheme
 
 @Composable
-fun InviteMemberItem(
+fun InviteMember(
   text: String,
   modifier: Modifier = Modifier
 ) {
@@ -39,32 +36,3 @@ fun InviteMemberItem(
 }
 
 private val maxCapsuleWidth = 280.dp
-
-@Preview
-@Composable
-private fun SystemMessageItemPreviewLight() {
-  PreviewColumn {
-    SystemMessageItemPreviewContent()
-  }
-}
-
-@Preview
-@Composable
-private fun SystemMessageItemPreviewDark() {
-  PreviewColumn(colorTheme = ColorTheme.Dark) {
-    SystemMessageItemPreviewContent()
-  }
-}
-
-@Composable
-private fun SystemMessageItemPreviewContent() {
-  Box(modifier = Modifier.padding(16.dp)) {
-    InviteMemberItem(text = "Сергей пригласил(а) Аню Котову")
-  }
-  Box(modifier = Modifier.padding(16.dp)) {
-    InviteMemberItem(
-      text = "Сергей пригласил(а) участника с очень длинным именем, " +
-        "которое не помещается в одну строку капсулы"
-    )
-  }
-}
