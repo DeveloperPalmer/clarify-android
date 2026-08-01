@@ -1,12 +1,17 @@
 package ru.sla.clarify.feature.chat.branch.data
 
+import com.google.firebase.firestore.Source
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
@@ -21,12 +26,15 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.branch.domain.BranchRepository
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
+import ru.sla.clarify.feature.chat.branch.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
+import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
+import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
@@ -55,6 +63,11 @@ class BranchRepositoryImpl @Inject constructor(
   private val branchId = params.branchId
   private val lastReadWatermark = MutableStateFlow<LocalDateTime?>(null)
 
+  private val commitCache = BranchCommitCache(inMemoryDB, branchId)
+  private val fetchCommitHistoryMutex = Mutex()
+  private val hasCommitsHistoryCache = MutableStateFlow(true)
+  private val fetchLatestCommitsCompletable = CompletableDeferred<Unit>()
+
   override suspend fun subscribeOnBranchChanges() {
     val conversationId = requireConversationId()
     firestore.branchLive(
@@ -71,11 +84,17 @@ class BranchRepositoryImpl @Inject constructor(
   override suspend fun subscribeOnBranchCommitsChanges() {
     val userId = requireUserId()
     val conversationId = requireConversationId()
-    firestore.commitsLive(
-      conversationId = conversationId,
-      branchId = branchId.value,
-      limit = LIVE_COMMIT_LIMIT
-    ).collect { changes ->
+    // Ждём первую страницу, чтобы первое окно tail было [самый старый в кэше, +inf), а не вся
+    // история: null-курсор потянул бы всё в кэш и свёл бы пагинацию на нет.
+    fetchLatestCommitsCompletable.await()
+
+    commitCache.oldestCursor(conversationId).flatMapLatest { cursor ->
+      firestore.commitsLive(
+        conversationId = conversationId,
+        branchId = branchId.value,
+        from = cursor
+      )
+    }.collect { changes ->
       applyCommitChanges(
         conversationId = conversationId,
         userId = userId,
@@ -97,18 +116,49 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun fetchHistoryCommits(count: Int) {
+  override suspend fun fetchLatestCommits() {
     val conversationId = requireConversationId()
-    val historyCommits = firestore.readCommits(
+    val latestCommits = firestore.readCommits(
       conversationId = conversationId,
       branchId = branchId.value,
-      limit = count.toLong(),
+      limit = LATEST_PAGE_SIZE.toLong(),
       before = null
     )
     applyInsertOrReplaceCommits(
       conversationId = conversationId,
-      commits = historyCommits
+      commits = latestCommits
     )
+    // Завершаем только после успешной загрузки: неудачная первичная выборка оставляет tail
+    // заблокированным, чтобы повтор пере-вычислил курсор из наполненного кэша, а не тянул всю историю.
+    fetchLatestCommitsCompletable.complete(Unit)
+  }
+
+  override suspend fun fetchCommitHistory() = fetchCommitHistoryMutex.withLock {
+    if (!hasCommitsHistoryCache.value) {
+      return@withLock
+    }
+    val conversationId = requireConversationId()
+
+    // Весь кэш уже на экране, поэтому «долистали до верха» означает, что локальный кэш исчерпан:
+    // страничим из Firestore, начиная сразу после самого старого закэшированного коммита ветки.
+    val cursor = commitCache.readOldestCursor(conversationId)
+
+    val commitHistory = firestore.readCommits(
+      conversationId = conversationId,
+      branchId = branchId.value,
+      limit = HISTORY_PAGE_SIZE.toLong(),
+      before = cursor,
+      source = Source.SERVER
+    )
+
+    applyInsertOrReplaceCommits(
+      conversationId = conversationId,
+      commits = commitHistory
+    )
+
+    if (commitHistory.size < HISTORY_PAGE_SIZE) {
+      hasCommitsHistoryCache.value = false
+    }
   }
 
   override suspend fun sendCommit(text: String) {
@@ -123,22 +173,81 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
+  @Suppress("TooGenericExceptionCaught")
+  override suspend fun editCommit(id: Commit.Id, text: String) {
+    val conversationId = requireConversationId()
+    // Оптимистично: сразу показываем новый текст со статусом «в процессе» (часы). Прежнее
+    // состояние держим для отката при ошибке записи.
+    val previous = commitCache.readEditState(id) ?: return
+    commitCache.applyEdit(
+      id = id,
+      text = text,
+      status = Commit.Status.Sending
+    )
+    try {
+      firestore.updateBranchCommit(
+        conversationId = conversationId,
+        branchId = branchId.value,
+        commitId = id.value,
+        text = text
+      )
+    } catch (_: CommitNotFoundException) {
+      // Цель удалена «у всех» вне live-окна этого устройства — Removed-событие сюда уже не придёт,
+      // поэтому осиротевшую строку кэша убираем сами, а наружу отдаём доменную ошибку.
+      commitCache.deleteCommits(listOf(id))
+      throw EditTargetNotFoundException(id)
+    } catch (error: Throwable) {
+      // Любая другая ошибка записи — откатываем оптимистичную правку к прежнему тексту/статусу.
+      commitCache.revertEdit(id, previous)
+      throw error
+    }
+    // Успех: гасим часы (Sent). editedAt здесь приближённый — live-слушатель следом перезапишет
+    // строку серверным значением.
+    commitCache.applyEdit(
+      id = id,
+      text = text,
+      status = Commit.Status.Sent
+    )
+  }
+
+  @Suppress("TooGenericExceptionCaught")
   override suspend fun deleteCommits(
     ids: List<Commit.Id>,
     forEveryone: Boolean
   ) {
     val conversationId = requireConversationId()
-    if (forEveryone) {
-      deleteCommitsForEveryone(ids)
-    } else {
-      firestore.hideCommits(
-        conversationId = conversationId,
-        commitIds = ids.map { it.value }
-      )
+    // Снимок удаляемых сообщений — вернём их на место, если сервер откажет.
+    val removed = commitCache.readCommits(ids)
+    // Для «у всех» денормализованные lastCommit/unreadDelta считаем по ПОЛНОМУ кэшу до удаления —
+    // после оптимистичного удаления они уже не увидели бы удаляемые коммиты.
+    val forEveryoneWrite = if (forEveryone) buildDeleteForEveryoneWrite(ids) else null
+    // Оптимистичное локальное удаление ДО записи: лента и выделение не ждут ответа сервера.
+    // Живой tail-слушатель идёт вперёд от самого старого коммита, поэтому удаление обратно не «всплывёт».
+    commitCache.deleteCommits(ids = ids)
+    try {
+      if (forEveryoneWrite != null) {
+        firestore.deleteBranchCommits(
+          conversationId = conversationId,
+          branchId = branchId.value,
+          peerId = forEveryoneWrite.peerId.value,
+          commitIds = ids.map { it.value },
+          lastCommit = forEveryoneWrite.lastCommit,
+          peerUnreadDelta = forEveryoneWrite.peerUnreadDelta
+        )
+      } else {
+        firestore.hideCommits(
+          conversationId = conversationId,
+          commitIds = ids.map { it.value }
+        )
+      }
+    } catch (error: Throwable) {
+      // Сервер отказал — возвращаем сообщения в кэш; ошибка уходит наверх (ui покажет snackbar).
+      commitCache.restoreCommits(removed)
+      throw error
     }
   }
 
-  private suspend fun deleteCommitsForEveryone(ids: List<Commit.Id>) {
+  private suspend fun buildDeleteForEveryoneWrite(ids: List<Commit.Id>): DeleteForEveryoneWrite {
     return withContext(Dispatchers.IO) {
       val peerId = branchPeerId()
       val deletedIds = ids.toSet()
@@ -156,11 +265,8 @@ class BranchRepositoryImpl @Inject constructor(
         ?.toEpochMillis()
         ?.toLocalDateTime()
 
-      firestore.deleteBranchCommits(
-        conversationId = conversationId,
-        branchId = branchId.value,
-        peerId = peerId.value,
-        commitIds = ids.map { it.value },
+      DeleteForEveryoneWrite(
+        peerId = peerId,
         lastCommit = branchCommits.lastCommitWriteAfterDeleting(deletedIds),
         peerUnreadDelta = branchCommits.unreadDelta(deletedIds, peerLastReadAt)
       )
@@ -272,6 +378,8 @@ class BranchRepositoryImpl @Inject constructor(
   override val branch: Flow<Branch?> = inMemoryDB.chatBranchQueries
     .selectById(branchId.value, ::mapToBranch)
     .observeOneOrNull()
+
+  override val hasCommitsHistory: Flow<Boolean> = hasCommitsHistoryCache
 
   override val commits: Flow<List<Commit>> = flow {
     val conversationId = requireConversationId()
@@ -478,4 +586,12 @@ class BranchRepositoryImpl @Inject constructor(
   }
 }
 
-private const val LIVE_COMMIT_LIMIT = 50L
+/** Денормализованные поля для удаления «у всех», посчитанные по полному кэшу до удаления. */
+private data class DeleteForEveryoneWrite(
+  val peerId: Peer.Id,
+  val lastCommit: LastCommitParams,
+  val peerUnreadDelta: Int
+)
+
+private const val LATEST_PAGE_SIZE = 50
+private const val HISTORY_PAGE_SIZE = 30

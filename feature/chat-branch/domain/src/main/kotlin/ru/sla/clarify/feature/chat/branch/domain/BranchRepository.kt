@@ -13,8 +13,10 @@ interface BranchRepository {
   suspend fun subscribeOnBranchCommitsChanges()
   suspend fun subscribeOnBranchUnreadCountChanges()
 
-  suspend fun fetchHistoryCommits(count: Int)
+  suspend fun fetchLatestCommits()
+  suspend fun fetchCommitHistory()
   suspend fun sendCommit(text: String)
+  suspend fun editCommit(id: Commit.Id, text: String)
   suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean)
 
   suspend fun markAsRead()
@@ -31,6 +33,8 @@ interface BranchRepository {
   val branch: Flow<Branch?>
   val commits: Flow<List<Commit>>
   val unreadCount: Flow<Long>
+
+  val hasCommitsHistory: Flow<Boolean>
 
   val members: Flow<List<Member>>
   fun member(id: UserId): Flow<Member?>

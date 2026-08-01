@@ -40,12 +40,22 @@ class BranchModel @Inject constructor(
     scope.launch { branchRepository.sendCommit(text) }
   }
 
-  val fetchHistoryCommits = task<Unit>(
-    name = "fetchHistoryCommits"
+  val fetchLatestCommits = task<Unit>(
+    name = "fetchLatestCommits"
   ) {
-    branchRepository.fetchHistoryCommits(
-      count = DEFAULT_HISTORY_PAGE_SIZE
-    )
+    branchRepository.fetchLatestCommits()
+  }
+
+  val fetchCommitHistory = task<Unit>(
+    name = "fetchCommitHistory"
+  ) {
+    branchRepository.fetchCommitHistory()
+  }
+
+  val editCommit = task<Commit.Id, String, Unit>(
+    name = "editCommit"
+  ) { id, text ->
+    branchRepository.editCommit(id, text)
   }
 
   val deleteCommits = task<List<Commit.Id>, Boolean, Unit>(
@@ -88,6 +98,7 @@ class BranchModel @Inject constructor(
 
   val commits: Flow<List<Commit>> = branchRepository.commits
   val unreadCount: Flow<Long> = branchRepository.unreadCount
+  val hasCommitsHistory: Flow<Boolean> = branchRepository.hasCommitsHistory
 
   val members: Flow<List<Member>> = branchRepository.members
 
@@ -97,5 +108,3 @@ class BranchModel @Inject constructor(
     .mapDistinctNotNullChanges { it?.mergeRequest?.initiatorId }
     .flatMapLatest(branchRepository::member)
 }
-
-private const val DEFAULT_HISTORY_PAGE_SIZE: Int = 20

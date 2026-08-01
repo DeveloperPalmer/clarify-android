@@ -39,6 +39,7 @@ import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.component.popup.PopupScrim
 import ru.sla.clarify.uikit.component.scrim.ScrimEffect
 import ru.sla.clarify.uikit.component.textfield.ChatTextField
+import ru.sla.clarify.uikit.component.textfield.ChatTextFieldDefaults
 import ru.sla.clarify.uikit.component.topappbar.TopAppBar
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.component.topappbar.rememberTopBarElevation
@@ -46,6 +47,7 @@ import ru.sla.clarify.uikit.modifier.bottomShadow
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
+import ru.sla.resourcerefs.resRef
 
 @Composable
 fun BranchScreen(viewModel: BranchViewModel) {
@@ -165,12 +167,13 @@ internal fun BranchReadyContent(
           items = state.commits,
           selectionEnabled = state.selectionEnabled,
           focused = state.focusedCommit,
-          hasHistory = false,
-          loadingHistory = false,
+          hasHistory = state.canLoadCommitsHistory,
+          loadingHistory = state.loadingCommitsHistory,
           onClick = onCommitClick,
           onLongClick = onCommitLongClick,
-          onLoad = {},
+          onLoad = intents.loadCommitsHistory,
           onRead = intents.markMessageAsRead,
+          onEdit = intents.showEditMessage,
           onCopy = { commit -> (commit as? Textual)?.text?.let(onCopyCommit) },
           onSelect = onSelectCommit,
           onDelete = onDeleteCommit,
@@ -191,7 +194,10 @@ internal fun BranchReadyContent(
       }
       BottomArea(
         mergeRequestStatus = state.mergeRequest?.status,
-        onSend = intents.sendMessage
+        editingMessage = state.editingCommit,
+        onSend = intents.sendMessage,
+        onSubmitEdit = intents.confirmEditMessage,
+        onCancelEdit = intents.hideEditMessage
       )
     }
     PopupScrim(
@@ -249,19 +255,21 @@ private fun TopAppBarCenterContent(
 @Composable
 private fun BottomArea(
   mergeRequestStatus: Status?,
-  onSend: (String) -> Unit
+  editingMessage: Commit?,
+  onSend: (String) -> Unit,
+  onSubmitEdit: (String) -> Unit,
+  onCancelEdit: () -> Unit
 ) {
   when (mergeRequestStatus) {
     null -> {
-      var inputValue by rememberSaveable { mutableStateOf("") }
-      ChatTextField(
+      ChatComposer(
         modifier = Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 8.dp),
-        value = inputValue,
-        onValueChange = { inputValue = it },
-        onSend = { onSend(inputValue) },
-        onClear = { inputValue = "" }
+        editingMessage = editingMessage,
+        onSend = onSend,
+        onSubmitEdit = onSubmitEdit,
+        onCancelEdit = onCancelEdit
       )
     }
     Status.Open,
@@ -278,6 +286,67 @@ private fun BottomArea(
       )
     }
   }
+}
+
+@Composable
+private fun ChatComposer(
+  editingMessage: Commit?,
+  onSend: (String) -> Unit,
+  onSubmitEdit: (String) -> Unit,
+  onCancelEdit: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  var inputValue by rememberSaveable { mutableStateOf("") }
+  val editingSource = editingMessage?.source
+  val editingText = (editingMessage as? Textual)?.text
+  // Вход в режим и пере-выбор цели перезаписывают поле текстом оригинала, выход очищает —
+  // черновики осознанно не сохраняются. Сравнение с прошлым id (а не LaunchedEffect от null)
+  // не даёт затереть восстановленный rememberSaveable-текст при пересоздании экрана.
+  var lastEditingId by rememberSaveable { mutableStateOf<String?>(null) }
+  if (editingSource?.id?.value != lastEditingId) {
+    lastEditingId = editingSource?.id?.value
+    inputValue = editingText.orEmpty()
+  }
+  ChatTextField(
+    modifier = modifier,
+    value = inputValue,
+    onValueChange = { inputValue = it },
+    sendEnabled = editingSource == null || inputValue.trim() != editingText,
+    sendIconRes = if (editingSource != null) R.drawable.ic_check_24 else R.drawable.ic_send_24,
+    // Ключ меняется при входе/выходе/пере-выборе цели — программно заменённый текст
+    // проявляется мягко, обычная печать не фейдится.
+    contentFadeKey = editingSource?.id?.value,
+    // Вход в режим редактирования ставит фокус в поле, поднимает клавиатуру и уводит каретку
+    // в конец текста. null вне режима — фокус не запрашивается при обычной отправке.
+    focusRequestKey = editingSource?.id?.value,
+    placeholder = if (editingSource != null) {
+      resRef(R.string.thread_edit_empty_placeholder)
+    } else {
+      resRef(R.string.chat_input_placeholder)
+    },
+    header = editingText?.let { text ->
+      {
+        ChatTextFieldDefaults.EditHeader(
+          text = text,
+          onClose = onCancelEdit
+        )
+      }
+    },
+    onSend = {
+      if (editingSource != null) {
+        onSubmitEdit(inputValue)
+      } else {
+        onSend(inputValue)
+      }
+    },
+    // При редактировании поле не чистим: ошибка отправки не должна терять правку;
+    // успех очистит его сам через сброс режима.
+    onClear = {
+      if (editingSource == null) {
+        inputValue = ""
+      }
+    }
+  )
 }
 
 @Composable

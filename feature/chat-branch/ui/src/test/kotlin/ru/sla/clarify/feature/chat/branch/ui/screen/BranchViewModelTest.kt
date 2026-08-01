@@ -85,7 +85,7 @@ internal class BranchViewModelTest {
   }
 
   @Test
-  fun `when toggleSelectionMode should enable edit mode and track the commit`() =
+  fun `when toggleSelectionMode should enable selection and track the commit`() =
     runTest(testDispatcher) {
       val commitId = DomainCommit.Id("commit-1")
       val commit = commitWithId(commitId)

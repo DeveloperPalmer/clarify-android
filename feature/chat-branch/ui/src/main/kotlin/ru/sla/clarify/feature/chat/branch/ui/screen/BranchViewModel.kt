@@ -14,20 +14,24 @@ import ru.kode.remo.QueueingStrategy
 import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
+import ru.sla.clarify.core.domain.entity.EditedMessage
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.startOnSubscribe
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
+import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Branch.MergeRequest.Status
 import ru.sla.clarify.feature.chat.branch.domain.BranchModel
+import ru.sla.clarify.feature.chat.branch.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.feature.chat.branch.ui.entity.Approver
 import ru.sla.clarify.feature.chat.branch.ui.routing.FlowEvent
 import ru.sla.clarify.mapper.ui.toUiCommits
 import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.clarify.uikit.component.chat.Textual
 import ru.sla.clarify.uikit.component.chat.message
 import ru.sla.clarify.uikit.component.chat.selected
 import ru.sla.clarify.uikit.event.Snackbar
@@ -51,7 +55,7 @@ class BranchViewModel(
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState(branchId = params.branchId) to {
       branchModel.markReadCommits()
-      branchModel.fetchHistoryCommits.startOnSubscribe()
+      branchModel.fetchLatestCommits.startOnSubscribe()
     }
 
     onEach(intent(ViewIntents::navigateBack)) {
@@ -61,14 +65,12 @@ class BranchViewModel(
     }
 
     onEach(
-      branchModel.fetchHistoryCommits.jobFlow
+      branchModel.fetchLatestCommits.jobFlow
         .asLceState()
         .map { it.toUiLceState() }
     ) {
       transitionTo { state, contentLoadState ->
-        state.copy(
-          contentLoadState = contentLoadState
-        )
+        state.copy(contentLoadState = contentLoadState)
       }
     }
 
@@ -101,12 +103,21 @@ class BranchViewModel(
         val commitsIds = commits.mapTo(mutableSetOf()) { it.source.id }
         val selectedCommitIds = state.selectedCommitIds.filter { it in commitsIds }
         val menuCommit = state.focusedCommit?.takeIf { it.source.id in commitsIds }
+        val editingMessage = state.editingCommit?.takeIf { it.source.id in commitsIds }
         state.copy(
-          focusedCommit = menuCommit
+          focusedCommit = menuCommit,
+          editingCommit = editingMessage
         ).updateSelection(
           commits = commits,
           selectedCommitIds = selectedCommitIds
         )
+      }
+      action { prevState, newState, _ ->
+        // Цель редактирования исчезла из ленты (удалили здесь или на другом устройстве) —
+        // режим уже сброшен транзишеном выше, осталось объяснить это пользователю.
+        if (prevState.editingCommit != null && newState.editingCommit == null) {
+          sendViewEvent(Snackbar(message = resRef(R.string.thread_edit_target_deleted)))
+        }
       }
     }
 
@@ -122,11 +133,49 @@ class BranchViewModel(
       }
     }
 
+    configureCommitHistoryTransitions()
     configureCommitMessageTransitions()
+    configureCommitEditTransitions()
     configureCommitDeletionTransitions()
     configureCommitMenuTransitions()
     configureMergeRequestTransitions()
     configureSelectionTransitions()
+  }
+
+  private fun MachineDsl<ViewState>.configureCommitHistoryTransitions() {
+    onEach(branchModel.hasCommitsHistory) {
+      transitionTo { state, hasCommitsHistory ->
+        state.copy(canLoadCommitsHistory = hasCommitsHistory)
+      }
+    }
+
+    onEach(
+      branchModel.fetchCommitHistory.jobFlow
+        .asLceState()
+        .map { it.toUiLceState() }
+    ) {
+      transitionTo { state, contentLoadState ->
+        state.copy(loadingCommitsHistory = contentLoadState is ContentLoadState.Loading)
+      }
+    }
+
+    onEach(branchModel.fetchCommitHistory.jobFlow.errors()) {
+      action { _, _, _ ->
+        val viewEvent = Snackbar(
+          isError = true,
+          message = resRef(R.string.thread_load_history_failed)
+        )
+        sendViewEvent(viewEvent)
+      }
+    }
+
+    onEach(intent(ViewIntents::loadCommitsHistory)) {
+      action { _, _, _ ->
+        branchModel.fetchCommitHistory.start(
+          queueingStrategy = QueueingStrategy.SkipNew
+        )
+      }
+    }
   }
 
   private fun MachineDsl<ViewState>.configureCommitMessageTransitions() {
@@ -144,6 +193,115 @@ class BranchViewModel(
           return@action
         }
         branchModel.sendMessage(text.trim())
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureCommitEditTransitions() {
+    onEach(intent(ViewIntents::showEditMessage)) {
+      transitionTo { state, commit ->
+        state.copy(
+          editingCommit = commit.takeIf { it.source.isSelf },
+          focusedCommit = null
+        )
+      }
+    }
+
+    onEach(intent(ViewIntents::hideEditMessage)) {
+      transitionTo { state, _ ->
+        state.copy(editingCommit = null)
+      }
+    }
+
+    onEach(intent(ViewIntents::confirmEditMessage)) {
+      transitionTo { state, text ->
+        val editingMessage = state.editingCommit
+        // UI гасит кнопку для пустого и неизменённого текста; здесь тот же гейт на случай гонки.
+        // Оптимистично закрываем композер сразу: правка уходит в фон, а сообщение уже показывает
+        // новый текст с «часами». Кэш и статус ведёт репозиторий.
+        if (editingMessage != null && EditedMessage.validate(text, (editingMessage as? Textual)?.text).isRight()) {
+          state.copy(editingCommit = null)
+        } else {
+          state
+        }
+      }
+      action { state, _, text ->
+        // state здесь — прошлое состояние (ещё с editingCommit), transitionTo его уже обнулил.
+        val editingMessage = state.editingCommit ?: return@action
+        EditedMessage.validate(
+          text = text,
+          original = (editingMessage as? Textual)?.text
+        ).onRight { edited ->
+          branchModel.editCommit.start(
+            argument1 = editingMessage.source.id,
+            argument2 = edited.value
+          )
+        }
+      }
+    }
+
+    onEach(branchModel.editCommit.jobFlow.errors()) {
+      action { _, _, error ->
+        // Композер уже закрыт (оптимистично), поэтому «цель удалена» показываем отсюда, а не через
+        // transitionTo списка коммитов. Прочие ошибки репозиторий откатил — сообщаем красным.
+        val event = if (error is EditTargetNotFoundException) {
+          Snackbar(message = resRef(R.string.thread_edit_target_deleted))
+        } else {
+          Snackbar(isError = true, message = resRef(R.string.thread_edit_failed))
+        }
+        sendViewEvent(event)
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureCommitDeletionTransitions() {
+    onEach(intent(ViewIntents::deleteCommit)) {
+      action { _, _, commit ->
+        sendViewEvent(showDeleteMessagesDialog(commit.source.id))
+      }
+    }
+
+    onEach(intent(ViewIntents::deleteCommits)) {
+      action { _, _, _ ->
+        sendViewEvent(showDeleteMessagesDialog(null))
+      }
+    }
+
+    onEach(intent(ViewIntents::confirmDeleteCommits)) {
+      transitionTo { state, _ ->
+        // Оптимистично выходим из режима выделения сразу: удаление применяется к кэшу и уходит
+        // в фон, лента не ждёт ответа сервера. При ошибке репозиторий вернёт сообщения на место.
+        state.updateSelection(selectedCommitIds = emptyList())
+      }
+      action { _, _, deleteCommits ->
+        branchModel.deleteCommits.start(
+          deleteCommits.ids,
+          deleteCommits.forEveryone
+        )
+      }
+    }
+
+    onEach(branchModel.deleteCommits.jobFlow.errors()) {
+      action { _, _, _ ->
+        val viewEvent = Snackbar(
+          isError = true,
+          message = resRef(R.string.thread_delete_failed)
+        )
+        sendViewEvent(viewEvent)
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureCommitMenuTransitions() {
+    onEach(intent(ViewIntents::showMessageMenu)) {
+      transitionTo { state, commit ->
+        state.copy(focusedCommit = commit)
+      }
+    }
+
+    onEach(intent(ViewIntents::hideMessageMenu)) {
+      transitionTo { state, _ ->
+        state.copy(focusedCommit = null)
       }
     }
   }
@@ -289,20 +447,6 @@ class BranchViewModel(
     }
   }
 
-  private fun MachineDsl<ViewState>.configureCommitMenuTransitions() {
-    onEach(intent(ViewIntents::showMessageMenu)) {
-      transitionTo { state, commit ->
-        state.copy(focusedCommit = commit)
-      }
-    }
-
-    onEach(intent(ViewIntents::hideMessageMenu)) {
-      transitionTo { state, _ ->
-        state.copy(focusedCommit = null)
-      }
-    }
-  }
-
   private fun MachineDsl<ViewState>.configureSelectionTransitions() {
     onEach(intent(ViewIntents::disableSelectionMode)) {
       transitionTo { state, _ ->
@@ -323,47 +467,6 @@ class BranchViewModel(
         state.updateSelection(
           selectedCommitIds = updatedCommitIds
         )
-      }
-    }
-  }
-
-  private fun MachineDsl<ViewState>.configureCommitDeletionTransitions() {
-    onEach(intent(ViewIntents::deleteCommit)) {
-      action { _, _, commit ->
-        sendViewEvent(showDeleteMessagesDialog(commit.source.id))
-      }
-    }
-
-    onEach(intent(ViewIntents::deleteCommits)) {
-      action { _, _, _ ->
-        sendViewEvent(showDeleteMessagesDialog(null))
-      }
-    }
-
-    onEach(intent(ViewIntents::confirmDeleteCommits)) {
-      action { _, _, deleteCommits ->
-        branchModel.deleteCommits.start(
-          deleteCommits.ids,
-          deleteCommits.forEveryone
-        )
-      }
-    }
-
-    onEach(branchModel.deleteCommits.jobFlow.successResults()) {
-      transitionTo { state, _ ->
-        state.updateSelection(
-          selectedCommitIds = emptyList()
-        )
-      }
-    }
-
-    onEach(branchModel.deleteCommits.jobFlow.errors()) {
-      action { _, _, _ ->
-        val viewEvent = Snackbar(
-          isError = true,
-          message = resRef(R.string.thread_delete_failed)
-        )
-        sendViewEvent(viewEvent)
       }
     }
   }
@@ -392,8 +495,6 @@ private fun ViewState.updateSelection(
   return copy(
     selectionEnabled = selectedIds.isNotEmpty(),
     selectedCommitIds = selectedCommitIds,
-    commits = commits.map { commit ->
-      Commit.message.selected.set(commit, commit.source.id in selectedIds)
-    }
+    commits = commits.map { Commit.message.selected.set(it, it.source.id in selectedIds) }
   )
 }

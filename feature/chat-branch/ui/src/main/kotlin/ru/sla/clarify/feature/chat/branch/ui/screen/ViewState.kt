@@ -19,13 +19,16 @@ data class ViewState(
   val approvers: List<Approver> = emptyList(),
   val currentUserId: UserId? = null,
   val commits: List<Commit> = emptyList(),
+  val canLoadCommitsHistory: Boolean = true,
+  val loadingCommitsHistory: Boolean = false,
   val unreadCount: Int = 0,
   val mergeRequest: Branch.MergeRequest? = null,
   val mergeRequestVisible: Boolean = false,
   val mergeRequestInProgress: Boolean = false,
   val selectionEnabled: Boolean = false,
   val selectedCommitIds: List<DomainCommit.Id> = emptyList(),
-  val focusedCommit: Commit? = null
+  val focusedCommit: Commit? = null,
+  val editingCommit: Commit? = null
 ) {
   val isCurrentUserApproved: Boolean
     get() = mergeRequest != null &&

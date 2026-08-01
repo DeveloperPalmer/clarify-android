@@ -832,6 +832,53 @@ class Firestore @Inject constructor(
     }.await()
   }
 
+  suspend fun updateBranchCommit(
+    conversationId: String,
+    branchId: String,
+    commitId: String,
+    text: String
+  ) {
+    require(text.isNotBlank()) { "updateBranchCommit called with blank text" }
+    val branchDocument = branchDocumentRef(conversationId, branchId)
+    val commitDocument = commitsCollectionRef(conversationId).document(commitId)
+
+    val updateCommitMessageParams = UpdateCommitMessageParams(
+      text = text,
+      editedAt = Timestamp.now()
+    )
+
+    runTransaction { transaction ->
+      // Цель могла быть удалена «у всех» вне live-окна этого устройства: merge-set воскресил бы
+      // документ-зомби из двух полей, поэтому сначала проверка существования, затем update.
+      val commitSnapshot = transaction[commitDocument]
+      if (!commitSnapshot.exists()) {
+        throw CommitNotFoundException(commitId)
+      }
+      val commit = codec.decodeFromSnapshot<CommitNM>(commitSnapshot)
+      val branchLastCommitAt = transaction[branchDocument]
+        .getTimestamp(FirestoreSchema.CONVERSATION_LAST_COMMIT_AT)
+
+      transaction.update(
+        commitDocument,
+        codec.encodeToMap(updateCommitMessageParams)
+      )
+      // Правится последнее сообщение ветки — денормализованное превью ветки следует за новым
+      // текстом. Сравнение по серверному lastCommitAt закрывает гонку с параллельной отправкой.
+      if (commit.createdAt != null && commit.createdAt == branchLastCommitAt) {
+        transaction.set(
+          branchDocument,
+          codec.encodeToMap(
+            UpdateBranchLastCommitParams(
+              lastCommitText = text,
+              lastCommitAt = commit.createdAt
+            )
+          ),
+          SetOptions.merge()
+        )
+      }
+    }.await()
+  }
+
   suspend fun createGroupCommit(
     conversationId: String,
     text: String,
@@ -1204,7 +1251,7 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  private fun commitsLive(
+  fun commitsLive(
     conversationId: String,
     branchId: String,
     from: CommitCursor?

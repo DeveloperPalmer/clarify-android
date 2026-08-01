@@ -8,6 +8,8 @@ import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents
 class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
 
+  val loadCommitsHistory = intent(name = "loadCommitsHistory")
+
   val toggleSelectionMode = intent<Commit>(name = "toggleSelectionMode")
   val disableSelectionMode = intent(name = "disableSelectionMode")
 
@@ -21,6 +23,10 @@ class ViewIntents : BaseViewIntents() {
 
   val showMessageMenu = intent<Commit>(name = "showMessageMenu")
   val hideMessageMenu = intent(name = "hideMessageMenu")
+
+  val showEditMessage = intent<Commit>(name = "showEditMessage")
+  val hideEditMessage = intent(name = "hideEditMessage")
+  val confirmEditMessage = intent<String>(name = "confirmEditMessage")
 
   val openMergeRequest = intent(name = "openMergeRequest")
   val approveMergeRequest = intent(name = "approveMergeRequest")
