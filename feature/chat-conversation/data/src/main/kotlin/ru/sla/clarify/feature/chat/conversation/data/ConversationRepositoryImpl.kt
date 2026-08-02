@@ -19,6 +19,7 @@ import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToConversation
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToGroup
@@ -49,14 +50,14 @@ class ConversationRepositoryImpl @Inject constructor(
   override suspend fun subscribeOnMemberProfiles() {
     val userId = authSessionPersistence.withKey { readUserId(it) } ?: return
     inMemoryDB.chatMemberQueries
-      .selectMembersWithoutProfile(userId.value)
+      .selectWithoutProfile(Member.Id(userId.value))
       .observeList()
       .collect(::applyMemberProfiles)
   }
 
   override suspend fun subscribeOnConversationsUnreadCounts() {
     inMemoryDB.chatConversationQueries
-      .selectAllIds()
+      .selectIds()
       .observeList()
       .collectLatest(::subscribeOnConversationsUnreadCounts)
   }
@@ -65,7 +66,7 @@ class ConversationRepositoryImpl @Inject constructor(
     return withContext(Dispatchers.IO) {
       val firestoreUser = firestore.readCurrentUser()
       inMemoryDB.userQueries.insertOrReplace(
-        id = firestoreUser.id,
+        id = UserId(firestoreUser.id),
         email = firestoreUser.email,
         displayName = firestoreUser.displayName,
         photoUrl = firestoreUser.photoUrl
@@ -84,18 +85,18 @@ class ConversationRepositoryImpl @Inject constructor(
       val ownerId = authSessionPersistence.withKey { readUserId(it) }
       if (ownerId != null) {
         inMemoryDB.transaction {
-          inMemoryDB.chatConversationQueries.insertOrReplaceMeta(
-            id = conversationId,
+          inMemoryDB.chatConversationQueries.insertOrReplace(
+            id = Conversation.Id(conversationId),
             type = ConversationNM.Type.Group.value,
             name = name.value,
-            ownerUid = ownerId.value,
+            ownerId = ownerId,
             lastCommit = null,
-            lastCommitSenderUid = null,
+            lastCommitSenderId = null,
             lastCommitTimestamp = 0L
           )
           inMemoryDB.chatMemberQueries.insertOrReplace(
-            conversationId = conversationId,
-            id = ownerId.value
+            id = Member.Id(ownerId.value),
+            conversationId = Conversation.Id(conversationId)
           )
         }
       }
@@ -105,12 +106,11 @@ class ConversationRepositoryImpl @Inject constructor(
 
   override suspend fun deleteConversations(ids: List<Conversation.Id>) {
     return withContext(Dispatchers.IO) {
-      val deletableIds = ids.map { it.value }
-      firestore.deleteConversations(deletableIds)
+      firestore.deleteConversations(ids.map { it.value })
       inMemoryDB.transaction {
-        deletableIds.forEach {
-          inMemoryDB.chatConversationQueries.deleteById(it)
-          inMemoryDB.chatMemberQueries.deleteByConversation(it)
+        ids.forEach {
+          inMemoryDB.chatConversationQueries.delete(it)
+          inMemoryDB.chatMemberQueries.delete(it)
         }
       }
     }
@@ -121,21 +121,23 @@ class ConversationRepositoryImpl @Inject constructor(
     if (userId == null) return@flow emit(null)
 
     inMemoryDB.userQueries
-      .selectById(userId.value, ::mapToUser)
+      .select(userId, ::mapToUser)
       .observeOneOrNull()
       .collect { emit(it) }
   }
 
   override val conversations: Flow<List<Conversation>> = flow {
     val userId = authSessionPersistence.withKey { readUserId(it) }
-    if (userId == null) return@flow emit(emptyList())
+    if (userId == null) {
+      return@flow emit(emptyList())
+    }
 
     val directs = inMemoryDB.chatConversationQueries
-      .selectAllWithPeer(userId.value, ::mapToConversation)
+      .selectDirects(Member.Id(userId.value), ::mapToConversation)
       .observeList()
 
     val groups = inMemoryDB.chatConversationQueries
-      .selectAllGroups(::mapToGroup)
+      .selectGroups(::mapToGroup)
       .observeList()
 
     combine(
@@ -146,18 +148,16 @@ class ConversationRepositoryImpl @Inject constructor(
     }.collect { emit(it) }
   }
 
-  private suspend fun applyMemberProfiles(ids: List<String>) = coroutineScope {
-    ids.forEach { memberId ->
-      launch { applyInsertOrReplaceUsers(memberId) }
-    }
+  private suspend fun applyMemberProfiles(ids: List<Member.Id>) = coroutineScope {
+    ids.forEach { memberId -> launch { applyInsertOrReplace(memberId) } }
   }
 
-  private suspend fun subscribeOnConversationsUnreadCounts(ids: List<String>) {
+  private suspend fun subscribeOnConversationsUnreadCounts(ids: List<Conversation.Id>) {
     return coroutineScope {
       ids.forEach { conversationId ->
         launch {
           firestore.unreadCountLive(
-            conversationId = conversationId
+            conversationId = conversationId.value
           ).collect { unreadCount ->
             applyUpdateUnreadCount(
               conversationId = conversationId,
@@ -179,8 +179,9 @@ class ConversationRepositoryImpl @Inject constructor(
               applyConversationChanges(change.data)
             }
             FirestoreDocumentResult.Removed -> {
-              inMemoryDB.chatConversationQueries.deleteById(change.data.id)
-              inMemoryDB.chatMemberQueries.deleteByConversation(change.data.id)
+              val conversationId = Conversation.Id(change.data.id)
+              inMemoryDB.chatConversationQueries.delete(conversationId)
+              inMemoryDB.chatMemberQueries.delete(conversationId)
             }
           }
         }
@@ -193,51 +194,51 @@ class ConversationRepositoryImpl @Inject constructor(
       conversationId = conversation.id,
       memberUids = conversation.memberUids
     )
-    inMemoryDB.chatConversationQueries.insertOrReplaceMeta(
-      id = conversation.id,
+    inMemoryDB.chatConversationQueries.insertOrReplace(
+      id = Conversation.Id(conversation.id),
       type = conversation.type.value,
       name = conversation.name,
-      ownerUid = conversation.ownerUid,
+      ownerId = conversation.ownerUid?.let(::UserId),
       lastCommit = conversation.lastCommitText,
-      lastCommitSenderUid = conversation.lastCommitSenderUid,
+      lastCommitSenderId = conversation.lastCommitSenderUid?.let(::UserId),
       lastCommitTimestamp = conversation.lastCommitAt?.toEpochSeconds() ?: 0L
     )
   }
 
-  /**
-   * Приводит состав участников беседы к тому, что пришёл в документе: `memberUids` —
-   * полный список, поэтому исключённых нужно убрать, а не только добавить новых.
-   */
   private fun applyMembers(conversationId: String, memberUids: List<String>) {
+    val conversationId = Conversation.Id(conversationId)
+    val memberIds = memberUids.map(Member::Id)
+
     if (memberUids.isEmpty()) {
-      inMemoryDB.chatMemberQueries.deleteByConversation(conversationId)
+      inMemoryDB.chatMemberQueries.delete(conversationId)
       return
     }
-    inMemoryDB.chatMemberQueries.deleteByConversationExcept(
-      conversationId = conversationId,
-      memberIds = memberUids
+
+    inMemoryDB.chatMemberQueries.deleteExcept(
+      memberIds = memberIds,
+      conversationId = conversationId
     )
-    memberUids.forEach { memberId ->
+    memberIds.forEach { memberId ->
       inMemoryDB.chatMemberQueries.insertOrReplace(
-        conversationId = conversationId,
-        id = memberId
+        id = memberId,
+        conversationId = conversationId
       )
     }
   }
 
-  private suspend fun applyInsertOrReplaceUsers(memberId: String) {
-    val profile = firestore.readUser(UserId(memberId)) ?: return
+  private suspend fun applyInsertOrReplace(memberId: Member.Id) {
+    val user = firestore.readUser(UserId(memberId.value)) ?: return
     return withContext(Dispatchers.IO) {
       inMemoryDB.userQueries.insertOrReplace(
-        id = profile.id,
-        email = profile.email,
-        displayName = profile.displayName,
-        photoUrl = profile.photoUrl
+        id = UserId(user.id),
+        email = user.email,
+        displayName = user.displayName,
+        photoUrl = user.photoUrl
       )
     }
   }
 
-  private suspend fun applyUpdateUnreadCount(conversationId: String, unreadCount: Long) {
+  private suspend fun applyUpdateUnreadCount(conversationId: Conversation.Id, unreadCount: Long) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatConversationQueries.updateUnreadCount(
         id = conversationId,

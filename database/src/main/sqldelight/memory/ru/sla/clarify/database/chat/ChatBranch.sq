@@ -1,18 +1,76 @@
+import ru.sla.clarify.core.domain.entity.UserId;
+import ru.sla.clarify.entity.chat.Branch;
+import ru.sla.clarify.entity.chat.Commit;
+import ru.sla.clarify.entity.chat.Conversation;
+
 CREATE TABLE ChatBranch(
-  id TEXT NOT NULL PRIMARY KEY,
-  conversationId TEXT NOT NULL,
-  parentBranchId TEXT NOT NULL,
-  branchedFromCommitId TEXT NOT NULL,
+  id TEXT AS Branch.Id NOT NULL PRIMARY KEY,
+  conversationId TEXT AS Conversation.Id NOT NULL,
+  parentBranchId TEXT AS Branch.Id NOT NULL,
+  branchedFromCommitId TEXT AS Commit.Id NOT NULL,
   name TEXT NOT NULL,
   lastCommit TEXT,
   lastCommitTimestamp INTEGER NOT NULL,
   unreadCount INTEGER NOT NULL DEFAULT 0,
   createdAt INTEGER NOT NULL,
-  createdByUid TEXT NOT NULL,
+  createdById TEXT AS UserId NOT NULL,
   FOREIGN KEY(conversationId) REFERENCES ChatConversation(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE INDEX ChatBranch_conversationId ON ChatBranch(conversationId);
+
+selectIds:
+SELECT
+  id
+FROM ChatBranch
+WHERE conversationId = :conversationId;
+
+selectByConversation:
+SELECT
+  ChatBranch.id,
+  ChatBranch.conversationId,
+  ChatBranch.parentBranchId,
+  ChatBranch.branchedFromCommitId,
+  ChatBranch.name,
+  ChatBranch.lastCommit,
+  ChatBranch.lastCommitTimestamp,
+  ChatBranch.unreadCount,
+  ChatBranch.createdAt,
+  ChatBranch.createdById,
+  MergeRequest.status AS mergeRequestStatus,
+  MergeRequest.initiatorId AS mergeRequestInitiatorId,
+  MergeRequest.requestedAt AS mergeRequestRequestedAt,
+  MergeRequest.approvedByIds AS mergeRequestApprovedByIds,
+  MergeRequest.mergedAt AS mergeRequestMergedAt,
+  MergeRequest.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
+FROM ChatBranch
+LEFT JOIN MergeRequest
+  ON MergeRequest.branchId = ChatBranch.id
+WHERE ChatBranch.conversationId = :conversationId
+ORDER BY ChatBranch.createdAt ASC;
+
+selectById:
+SELECT
+  ChatBranch.id,
+  ChatBranch.conversationId,
+  ChatBranch.parentBranchId,
+  ChatBranch.branchedFromCommitId,
+  ChatBranch.name,
+  ChatBranch.lastCommit,
+  ChatBranch.lastCommitTimestamp,
+  ChatBranch.unreadCount,
+  ChatBranch.createdAt,
+  ChatBranch.createdById,
+  MergeRequest.status AS mergeRequestStatus,
+  MergeRequest.initiatorId AS mergeRequestInitiatorId,
+  MergeRequest.requestedAt AS mergeRequestRequestedAt,
+  MergeRequest.approvedByIds AS mergeRequestApprovedByIds,
+  MergeRequest.mergedAt AS mergeRequestMergedAt,
+  MergeRequest.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
+FROM ChatBranch
+LEFT JOIN MergeRequest
+  ON MergeRequest.branchId = ChatBranch.id
+WHERE ChatBranch.id = :id;
 
 insertOrReplace:
 INSERT OR REPLACE
@@ -26,7 +84,7 @@ INTO ChatBranch(
   lastCommitTimestamp,
   unreadCount,
   createdAt,
-  createdByUid
+  createdById
 )
 VALUES (
   :id,
@@ -38,65 +96,16 @@ VALUES (
   :lastCommitTimestamp,
   COALESCE((SELECT unreadCount FROM ChatBranch WHERE id = :id), 0),
   :createdAt,
-  :createdByUid
+  :createdById
 );
 
 updateUnreadCount:
 UPDATE ChatBranch
-SET unreadCount = :unreadCount
+SET
+  unreadCount = :unreadCount
 WHERE id = :id;
 
-selectIdsByConversationId:
-SELECT id
-FROM ChatBranch
-WHERE conversationId = :conversationId;
-
-selectByConversationId:
-SELECT
-  b.id,
-  b.conversationId,
-  b.parentBranchId,
-  b.branchedFromCommitId,
-  b.name,
-  b.lastCommit,
-  b.lastCommitTimestamp,
-  b.unreadCount,
-  b.createdAt,
-  b.createdByUid,
-  mr.status AS mergeRequestStatus,
-  mr.initiatorUid AS mergeRequestInitiatorUid,
-  mr.requestedAt AS mergeRequestRequestedAt,
-  mr.approvedByUids AS mergeRequestApprovedByUids,
-  mr.mergedAt AS mergeRequestMergedAt,
-  mr.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
-FROM ChatBranch b
-LEFT JOIN MergeRequest mr ON mr.branchId = b.id
-WHERE b.conversationId = :conversationId
-ORDER BY b.createdAt ASC;
-
-selectById:
-SELECT
-  b.id,
-  b.conversationId,
-  b.parentBranchId,
-  b.branchedFromCommitId,
-  b.name,
-  b.lastCommit,
-  b.lastCommitTimestamp,
-  b.unreadCount,
-  b.createdAt,
-  b.createdByUid,
-  mr.status AS mergeRequestStatus,
-  mr.initiatorUid AS mergeRequestInitiatorUid,
-  mr.requestedAt AS mergeRequestRequestedAt,
-  mr.approvedByUids AS mergeRequestApprovedByUids,
-  mr.mergedAt AS mergeRequestMergedAt,
-  mr.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
-FROM ChatBranch b
-LEFT JOIN MergeRequest mr ON mr.branchId = b.id
-WHERE b.id = :id;
-
-deleteById:
+delete:
 DELETE FROM ChatBranch
 WHERE id = ?;
 

@@ -12,8 +12,8 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
-import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadRepository
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
@@ -111,8 +111,14 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun renameGroup(name: String) {
     withContext(Dispatchers.IO) {
-      firestore.updateConversationName(conversationId = conversationId.value, name = name)
-      inMemoryDB.chatConversationQueries.updateGroupName(id = conversationId.value, name = name)
+      firestore.updateConversationName(
+        conversationId = conversationId.value,
+        name = name
+      )
+      inMemoryDB.chatConversationQueries.updateName(
+        id = conversationId,
+        name = name
+      )
     }
   }
 
@@ -120,8 +126,8 @@ class GroupThreadRepositoryImpl @Inject constructor(
     withContext(Dispatchers.IO) {
       firestore.deleteConversation(conversationId.value)
       inMemoryDB.transaction {
-        inMemoryDB.chatConversationQueries.deleteById(conversationId.value)
-        inMemoryDB.chatMemberQueries.deleteByConversation(conversationId.value)
+        inMemoryDB.chatConversationQueries.delete(conversationId)
+        inMemoryDB.chatMemberQueries.delete(conversationId)
       }
     }
   }
@@ -130,8 +136,8 @@ class GroupThreadRepositoryImpl @Inject constructor(
     withContext(Dispatchers.IO) {
       firestore.deleteConversationMember(conversationId.value)
       inMemoryDB.transaction {
-        inMemoryDB.chatConversationQueries.deleteById(conversationId.value)
-        inMemoryDB.chatMemberQueries.deleteByConversation(conversationId.value)
+        inMemoryDB.chatConversationQueries.delete(conversationId)
+        inMemoryDB.chatMemberQueries.delete(conversationId)
       }
     }
   }
@@ -151,8 +157,8 @@ class GroupThreadRepositoryImpl @Inject constructor(
       inMemoryDB.transaction {
         ids.forEach { member ->
           inMemoryDB.chatMemberQueries.insertOrReplace(
-            conversationId = conversationId.value,
-            id = member.value
+            conversationId = conversationId,
+            id = member
           )
         }
       }
@@ -165,9 +171,9 @@ class GroupThreadRepositoryImpl @Inject constructor(
         conversationId = conversationId.value,
         memberId = id.value
       )
-      inMemoryDB.chatMemberQueries.deleteByConversationAndId(
-        conversationId = conversationId.value,
-        id = id.value
+      inMemoryDB.chatMemberQueries.deleteById(
+        id = id,
+        conversationId = conversationId
       )
     }
   }
@@ -188,13 +194,13 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override fun observeGroup(): Flow<Group?> {
     return inMemoryDB.chatConversationQueries
-      .selectGroupById(
-        id = conversationId.value,
-        mapper = { rowId, name, ownerUid, _, _, _, _, memberCount ->
+      .selectGroup(
+        id = conversationId,
+        mapper = { rowId, name, ownerId, _, _, _, _, memberCount ->
           Group(
-            id = Conversation.Id(rowId),
+            id = rowId,
             name = name.orEmpty(),
-            ownerId = UserId(ownerUid.orEmpty()),
+            ownerId = ownerId ?: UserId(""),
             memberCount = memberCount.toInt()
           )
         }
@@ -206,16 +212,16 @@ class GroupThreadRepositoryImpl @Inject constructor(
     val currentUserId = authSessionPersistence.withKey { readUserId(it) }?.value
     val group = observeGroup()
     val members = inMemoryDB.chatMemberQueries
-      .selectByConversationWithEmail(
-        conversationId = conversationId.value,
+      .selectGroup(
+        conversationId = conversationId,
         mapper = { memberId, displayName, email, photoUrl ->
           GroupMember(
-            id = UserId(memberId),
+            id = UserId(memberId.value),
             displayName = displayName,
             email = email,
             photoUrl = photoUrl,
             isOwner = false,
-            isMe = memberId == currentUserId
+            isMe = memberId.value == currentUserId
           )
         }
       )
@@ -230,13 +236,14 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   private fun currentMemberUids(): List<String> {
     return inMemoryDB.chatMemberQueries
-      .selectIdsByConversation(conversationId.value)
+      .selectIds(conversationId)
       .executeAsList()
+      .map { it.value }
   }
 
   override val commits: Flow<List<Commit>> = flow {
     inMemoryDB.chatCommitQueries
-      .selectByBranchId(conversationId.value, conversationId.value, ::mapToCommit)
+      .select(conversationId, Branch.Id(conversationId.value), ::mapToCommit)
       .observeList()
       .collect { emit(it) }
   }
@@ -254,7 +261,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       changes.forEach { change ->
         when (change.changeType) {
           FirestoreDocumentResult.Removed -> {
-            inMemoryDB.chatCommitQueries.deleteById(change.data.id)
+            inMemoryDB.chatCommitQueries.delete(Commit.Id(change.data.id))
           }
           FirestoreDocumentResult.Added,
           FirestoreDocumentResult.Modified -> {
@@ -274,12 +281,23 @@ class GroupThreadRepositoryImpl @Inject constructor(
     userId: UserId,
     hasPendingWrites: Boolean
   ) {
+    val row = commit.toDomainModel(
+      conversationId = conversationId,
+      selfUserId = userId,
+      hasPendingWrites = hasPendingWrites
+    )
     inMemoryDB.chatCommitQueries.insertOrReplace(
-      commit.toDomainModel(
-        conversationId = conversationId.value,
-        selfUserId = userId,
-        hasPendingWrites = hasPendingWrites
-      )
+      id = row.id,
+      conversationId = row.conversationId,
+      branchId = row.branchId,
+      senderId = row.senderId,
+      type = row.type,
+      text = row.text,
+      invitedId = row.invitedId,
+      createdAtNanos = row.createdAtNanos,
+      isSelf = row.isSelf,
+      status = row.status,
+      editedAtNanos = row.editedAtNanos
     )
   }
 
@@ -291,14 +309,14 @@ class GroupThreadRepositoryImpl @Inject constructor(
             FirestoreDocumentResult.Added,
             FirestoreDocumentResult.Modified -> {
               inMemoryDB.chatMemberQueries.insertOrReplace(
-                conversationId = conversationId.value,
-                id = change.data.id
+                conversationId = conversationId,
+                id = Member.Id(change.data.id)
               )
             }
             FirestoreDocumentResult.Removed -> {
-              inMemoryDB.chatMemberQueries.deleteByConversationAndId(
-                conversationId = conversationId.value,
-                id = change.data.id
+              inMemoryDB.chatMemberQueries.deleteById(
+                id = Member.Id(change.data.id),
+                conversationId = conversationId
               )
             }
           }

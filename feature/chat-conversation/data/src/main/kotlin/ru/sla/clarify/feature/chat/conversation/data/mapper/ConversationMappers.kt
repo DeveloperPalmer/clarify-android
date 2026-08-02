@@ -1,26 +1,28 @@
 package ru.sla.clarify.feature.chat.conversation.data.mapper
 
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.mapper.data.formatLastCommitTimestamp
 
 internal fun mapToConversation(
-  id: String,
+  id: Conversation.Id,
   type: String,
   lastCommit: String?,
   lastCommitTimestamp: Long,
   unreadCount: Long,
-  peerId: String,
+  memberId: Member.Id,
   peerDisplayName: String,
   peerPhotoUrl: String?
 ): Conversation {
   return when (ConversationNM.Type.entries.first { it.value == type }) {
     ConversationNM.Type.Direct -> {
       Conversation.Direct(
-        id = Conversation.Id(id),
+        id = id,
         peer = Peer(
-          id = Peer.Id(peerId),
+          id = Peer.Id(memberId.value),
           displayName = peerDisplayName,
           photoUrl = peerPhotoUrl
         ),
@@ -40,13 +42,13 @@ internal fun mapToConversation(
 // TODO: @sla Conversation. Remove "Suppress" when remove UnusedParameter
 @Suppress("UnusedParameter")
 internal fun mapToGroup(
-  id: String,
+  id: Conversation.Id,
   name: String?,
-  // TODO: @sla Conversation. Remove unused "ownerUid"
-  ownerUid: String?,
+  // TODO: @sla Conversation. Remove unused "ownerId"
+  ownerId: UserId?,
   lastCommit: String?,
-  // TODO: @sla Conversation. Remove unused "fake"
-  fake: String?,
+  // TODO: @sla Conversation. Remove unused "lastCommitSenderId"
+  lastCommitSenderId: UserId?,
   lastCommitTimestamp: Long,
   unreadCount: Long,
   // TODO: @sla Conversation. Remove unused "memberCount"
@@ -54,7 +56,7 @@ internal fun mapToGroup(
   lastCommitSenderDisplayName: String?
 ): Conversation.Group {
   return Conversation.Group(
-    id = Conversation.Id(id),
+    id = id,
     name = name.orEmpty(),
     lastCommit = lastCommit,
     lastCommitSenderName = lastCommitSenderDisplayName,

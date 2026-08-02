@@ -3,15 +3,19 @@ CREATE TABLE Settings (
   value TEXT NOT NULL
 );
 
+selectByKey:
+SELECT
+  value
+FROM Settings WHERE key = ?
+LIMIT 1;
+
 insertOrReplace:
 INSERT OR REPLACE
 INTO Settings
-VALUES (?, ?);
-
-selectByKey:
-SELECT value
-FROM Settings WHERE key = ?
-LIMIT 1;
+VALUES (
+  :key,
+  :value
+);
 
 deleteByKey:
 DELETE FROM

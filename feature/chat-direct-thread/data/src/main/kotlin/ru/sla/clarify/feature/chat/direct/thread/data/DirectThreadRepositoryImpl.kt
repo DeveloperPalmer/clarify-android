@@ -31,6 +31,7 @@ import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.data.entity.DeleteForEveryoneWrite
@@ -126,7 +127,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   override suspend fun subscribeOnBranchesUnreadCounts() {
     val conversationId = awaitConversationId()
     inMemoryDB.chatBranchQueries
-      .selectIdsByConversationId(conversationId)
+      .selectIds(Conversation.Id(conversationId))
       .observeList()
       .collectLatest(::subscribeOnBranchUnreadCount)
   }
@@ -163,11 +164,11 @@ class DirectThreadRepositoryImpl @Inject constructor(
     // (точные createdAtNanos + id).
     val cursor = withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries
-        .selectOldestCursor(conversationId, conversationId)
+        .selectOldestCursor(Conversation.Id(conversationId), Branch.Id(conversationId))
         .executeAsOneOrNull()
     }?.let { oldest ->
       CommitCursor(
-        id = oldest.id,
+        id = oldest.id.value,
         createdAt = oldest.createdAtNanos.epochNanosToTimestamp()
       )
     }
@@ -301,7 +302,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override val peer: Flow<Peer?> = inMemoryDB.userQueries
-    .selectById(peerId.value, ::mapToPeer)
+    .select(UserId(peerId.value), ::mapToPeer)
     .observeOneOrNull()
 
   override val hasCommitsHistory: Flow<Boolean> = hasCommitsHistoryCache
@@ -310,7 +311,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     val conversationId = awaitConversationId()
 
     val commitsFlow = inMemoryDB.chatCommitQueries
-      .selectByBranchId(conversationId, conversationId, ::mapToCommit)
+      .select(Conversation.Id(conversationId), Branch.Id(conversationId), ::mapToCommit)
       .observeList()
 
     val peerReadAtFlow = firestore.memberLive(
@@ -334,7 +335,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   override val members: Flow<List<Member>> = flow {
     val conversationId = awaitConversationId()
     inMemoryDB.chatMemberQueries
-      .selectByConversation(conversationId, ::mapToMember)
+      .selectDirect(Conversation.Id(conversationId), ::mapToMember)
       .observeList()
       .collect { emit(it) }
   }
@@ -348,19 +349,19 @@ class DirectThreadRepositoryImpl @Inject constructor(
   override val branches: Flow<List<Branch>> = flow {
     val conversationId = awaitConversationId()
     inMemoryDB.chatBranchQueries
-      .selectByConversationId(conversationId, ::mapToBranch)
+      .selectByConversation(Conversation.Id(conversationId), ::mapToBranch)
       .observeList()
       .collect { emit(it) }
   }
 
-  private suspend fun subscribeOnBranchUnreadCount(ids: List<String>) {
+  private suspend fun subscribeOnBranchUnreadCount(ids: List<Branch.Id>) {
     return coroutineScope {
       val conversationId = awaitConversationId()
       ids.forEach { branchId ->
         launch {
           firestore.branchUnreadCountLive(
             conversationId = conversationId,
-            branchId = branchId
+            branchId = branchId.value
           ).collect { unreadCount ->
             applyUpdateBranchUnreadCount(
               branchId = branchId,
@@ -374,12 +375,12 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   private fun oldestCommitCursor(conversationId: String): Flow<CommitCursor?> {
     return inMemoryDB.chatCommitQueries
-      .selectOldestCursor(conversationId, conversationId)
+      .selectOldestCursor(Conversation.Id(conversationId), Branch.Id(conversationId))
       .observeOneOrNull()
       .map { oldest ->
         oldest?.let {
           CommitCursor(
-            id = it.id,
+            id = it.id.value,
             createdAt = it.createdAtNanos.epochNanosToTimestamp()
           )
         }
@@ -405,7 +406,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   private suspend fun applyPeerChanges(user: UserNM): Unit = withContext(Dispatchers.IO) {
     inMemoryDB.userQueries.insertOrReplace(
-      id = user.id,
+      id = UserId(user.id),
       email = user.email,
       displayName = user.displayName,
       photoUrl = user.photoUrl
@@ -422,7 +423,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
         val commit = change.data
         when (change.changeType) {
           FirestoreDocumentResult.Removed -> {
-            inMemoryDB.chatCommitQueries.deleteById(commit.id)
+            inMemoryDB.chatCommitQueries.delete(Commit.Id(commit.id))
           }
 
           FirestoreDocumentResult.Added,
@@ -445,12 +446,23 @@ class DirectThreadRepositoryImpl @Inject constructor(
     userId: UserId,
     hasPendingWrites: Boolean
   ) {
+    val row = commit.toDomainModel(
+      conversationId = Conversation.Id(conversationId),
+      selfUserId = userId,
+      hasPendingWrites = hasPendingWrites
+    )
     inMemoryDB.chatCommitQueries.insertOrReplace(
-      commit.toDomainModel(
-        conversationId = conversationId,
-        selfUserId = userId,
-        hasPendingWrites = hasPendingWrites
-      )
+      id = row.id,
+      conversationId = row.conversationId,
+      branchId = row.branchId,
+      senderId = row.senderId,
+      type = row.type,
+      text = row.text,
+      invitedId = row.invitedId,
+      createdAtNanos = row.createdAtNanos,
+      isSelf = row.isSelf,
+      status = row.status,
+      editedAtNanos = row.editedAtNanos
     )
   }
 
@@ -461,7 +473,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
         changes.forEach { change ->
           when (change.changeType) {
             FirestoreDocumentResult.Removed -> {
-              inMemoryDB.chatBranchQueries.deleteById(change.data.id)
+              inMemoryDB.chatBranchQueries.delete(Branch.Id(change.data.id))
             }
 
             FirestoreDocumentResult.Added,
@@ -476,36 +488,36 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   private fun applyInsertOrReplaceBranch(branch: Branch) {
     inMemoryDB.chatBranchQueries.insertOrReplace(
-      id = branch.id.value,
-      conversationId = branch.conversationId.value,
-      parentBranchId = branch.parentBranchId.value,
-      branchedFromCommitId = branch.branchedFromCommitId.value,
+      id = branch.id,
+      conversationId = branch.conversationId,
+      parentBranchId = branch.parentBranchId,
+      branchedFromCommitId = branch.branchedFromCommitId,
       name = branch.name,
       lastCommit = branch.lastCommit,
       lastCommitTimestamp = branch.lastCommitTimestamp,
       createdAt = branch.createdAt,
-      createdByUid = branch.createdById.value
+      createdById = branch.createdById
     )
     val mergeRequest = branch.mergeRequest
     if (mergeRequest != null) {
       inMemoryDB.mergeRequestQueries.insertOrReplace(
-        branchId = branch.id.value,
+        branchId = branch.id,
         status = mergeRequest.status.value,
-        initiatorUid = mergeRequest.initiatorId.value,
+        initiatorId = mergeRequest.initiatorId,
         requestedAt = mergeRequest.requestedAt,
-        approvedByUids = mergeRequest.approvedByIds.map { it.value },
+        approvedByIds = mergeRequest.approvedByIds,
         mergedAt = mergeRequest.mergedAt,
-        mergedIntoBranchId = mergeRequest.mergedIntoBranchId?.value
+        mergedIntoBranchId = mergeRequest.mergedIntoBranchId
       )
     } else {
-      inMemoryDB.mergeRequestQueries.deleteByBranchId(branch.id.value)
+      inMemoryDB.mergeRequestQueries.delete(branch.id)
     }
   }
 
   private suspend fun readEditState(id: Commit.Id): EditState? {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries
-        .selectEditStateById(id.value)
+        .selectEditState(id)
         .executeAsOneOrNull()
         ?.let { EditState(text = it.text, editedAtNanos = it.editedAtNanos, status = it.status) }
     }
@@ -514,7 +526,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   private suspend fun applyEditStatus(id: Commit.Id, text: String, status: Commit.Status) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries.updateEdit(
-        id = id.value,
+        id = id,
         text = text,
         editedAtNanos = Timestamp.now().toEpochNanos(),
         status = status.value
@@ -525,7 +537,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   private suspend fun applyRevertEdit(id: Commit.Id, previous: EditState) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries.updateEdit(
-        id = id.value,
+        id = id,
         text = previous.text,
         editedAtNanos = previous.editedAtNanos,
         status = previous.status
@@ -536,7 +548,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   private suspend fun applyDeleteCommits(ids: List<Commit.Id>) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
-        ids.forEach { inMemoryDB.chatCommitQueries.deleteById(it.value) }
+        ids.forEach { inMemoryDB.chatCommitQueries.delete(it) }
       }
     }
   }
@@ -544,7 +556,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   private suspend fun readCachedCommits(ids: List<Commit.Id>): List<ChatCommit> {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries
-        .selectByIds(ids.map { it.value })
+        .selectByIds(ids)
         .executeAsList()
     }
   }
@@ -555,7 +567,21 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
-        commits.forEach { inMemoryDB.chatCommitQueries.insertOrReplace(it) }
+        commits.forEach { commit ->
+          inMemoryDB.chatCommitQueries.insertOrReplace(
+            id = commit.id,
+            conversationId = commit.conversationId,
+            branchId = commit.branchId,
+            senderId = commit.senderId,
+            type = commit.type,
+            text = commit.text,
+            invitedId = commit.invitedId,
+            createdAtNanos = commit.createdAtNanos,
+            isSelf = commit.isSelf,
+            status = commit.status,
+            editedAtNanos = commit.editedAtNanos
+          )
+        }
       }
     }
   }
@@ -564,7 +590,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     val conversationId = awaitConversationId()
     val rootCommits = withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries
-        .selectByBranchId(conversationId, conversationId, ::mapToCommit)
+        .select(Conversation.Id(conversationId), Branch.Id(conversationId), ::mapToCommit)
         .executeAsList()
     }
     val peerMember = firestore.readMember(
@@ -581,7 +607,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     )
   }
 
-  private suspend fun applyUpdateBranchUnreadCount(branchId: String, unreadCount: Long) {
+  private suspend fun applyUpdateBranchUnreadCount(branchId: Branch.Id, unreadCount: Long) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatBranchQueries.updateUnreadCount(
         id = branchId,
@@ -605,12 +631,13 @@ class DirectThreadRepositoryImpl @Inject constructor(
       .observeOneOrNull()
       .filterNotNull()
       .first()
+      .value
   }
 
   private suspend fun findConversationId(): String? {
     val memberIds = directMemberIds()
     return withContext(Dispatchers.IO) {
-      selectIdByMembers(memberIds).executeAsOneOrNull()
+      selectIdByMembers(memberIds).executeAsOneOrNull()?.value
     }
   }
 
@@ -620,11 +647,11 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  private fun selectIdByMembers(memberIds: List<String>): Query<String> {
+  private fun selectIdByMembers(memberIds: List<String>): Query<Conversation.Id> {
     return inMemoryDB.chatConversationQueries.selectIdByMembers(
       type = ConversationNM.Type.Direct.value,
       memberCount = memberIds.size.toLong(),
-      memberIds = memberIds
+      memberIds = memberIds.map(Member::Id)
     )
   }
 

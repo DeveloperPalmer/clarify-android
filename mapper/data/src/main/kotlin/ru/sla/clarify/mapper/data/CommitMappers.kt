@@ -4,7 +4,9 @@ import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.database.chat.ChatCommit
+import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
 import ru.sla.clarify.lib.google.firestore.toEpochNanos
@@ -21,11 +23,11 @@ import java.util.Locale
 
 @Suppress("LongParameterList") // сигнатура строки ChatCommit
 fun mapToCommit(
-  id: String,
-  senderId: String,
+  id: Commit.Id,
+  senderId: UserId,
   type: String,
   text: String,
-  invitedUid: String?,
+  invitedId: UserId?,
   createdAtNanos: Long,
   isSelf: Boolean,
   status: String,
@@ -36,8 +38,8 @@ fun mapToCommit(
   return when (Commit.Type.fromValue(type)) {
     Commit.Type.Text -> {
       Commit.Message(
-        id = Commit.Id(id),
-        senderId = UserId(senderId),
+        id = id,
+        senderId = senderId,
         text = text,
         timestamp = localTimestamp,
         isSelf = isSelf,
@@ -47,12 +49,12 @@ fun mapToCommit(
     }
     Commit.Type.InviteMember -> {
       Commit.InviteMember(
-        id = Commit.Id(id),
-        senderId = UserId(senderId),
+        id = id,
+        senderId = senderId,
         timestamp = localTimestamp,
         isSelf = isSelf,
         status = Commit.Status.fromValue(status),
-        invitedId = UserId(invitedUid.orEmpty())
+        invitedId = invitedId ?: UserId("")
       )
     }
   }
@@ -64,18 +66,18 @@ fun mapToCommit(
  * поля вроде [ChatCommit.createdAtNanos] задаются ровно в одном месте.
  */
 fun CommitNM.toDomainModel(
-  conversationId: String,
+  conversationId: Conversation.Id,
   selfUserId: UserId,
   hasPendingWrites: Boolean
 ): ChatCommit {
   return ChatCommit(
-    id = id,
+    id = Commit.Id(id),
     conversationId = conversationId,
-    branchId = branchId,
-    senderId = senderUid,
+    branchId = Branch.Id(branchId),
+    senderId = UserId(senderUid),
     type = type.value,
     text = text.orEmpty(),
-    invitedUid = invitedUid,
+    invitedId = invitedUid?.let(::UserId),
     createdAtNanos = createdAt?.toEpochNanos() ?: 0L,
     isSelf = senderUid == selfUserId.value,
     status = if (hasPendingWrites) Commit.Status.Sending.value else Commit.Status.Sent.value,

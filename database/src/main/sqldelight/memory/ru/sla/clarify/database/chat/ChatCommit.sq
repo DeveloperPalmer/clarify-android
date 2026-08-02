@@ -1,12 +1,17 @@
 import kotlin.Boolean;
+import ru.sla.clarify.core.domain.entity.UserId;
+import ru.sla.clarify.entity.chat.Branch;
+import ru.sla.clarify.entity.chat.Commit;
+import ru.sla.clarify.entity.chat.Conversation;
+
 CREATE TABLE ChatCommit(
-  id TEXT NOT NULL PRIMARY KEY,
-  conversationId TEXT NOT NULL,
-  branchId TEXT NOT NULL,
-  senderId TEXT NOT NULL,
+  id TEXT AS Commit.Id NOT NULL PRIMARY KEY,
+  conversationId TEXT AS Conversation.Id NOT NULL,
+  branchId TEXT AS Branch.Id NOT NULL,
+  senderId TEXT AS UserId NOT NULL,
   type TEXT NOT NULL DEFAULT 'text',
   text TEXT NOT NULL,
-  invitedUid TEXT,
+  invitedId TEXT AS UserId,
   createdAtNanos INTEGER NOT NULL,
   isSelf INTEGER AS Boolean NOT NULL,
   status TEXT NOT NULL,
@@ -17,18 +22,13 @@ CREATE TABLE ChatCommit(
 CREATE INDEX ChatCommit_conversationId ON ChatCommit(conversationId);
 CREATE INDEX ChatCommit_branchId ON ChatCommit(conversationId, branchId, createdAtNanos);
 
-insertOrReplace:
-INSERT OR REPLACE
-INTO ChatCommit(id, conversationId, branchId, senderId, type, text, invitedUid, createdAtNanos, isSelf, status, editedAtNanos)
-VALUES ?;
-
-selectByBranchId:
+select:
 SELECT
   id,
   senderId,
   type,
   text,
-  invitedUid,
+  invitedId,
   createdAtNanos,
   isSelf,
   status,
@@ -46,8 +46,11 @@ WHERE conversationId = :conversationId AND branchId = :branchId AND createdAtNan
 ORDER BY createdAtNanos ASC, id ASC
 LIMIT 1;
 
-selectEditStateById:
-SELECT text, editedAtNanos, status
+selectEditState:
+SELECT
+  text,
+  editedAtNanos,
+  status
 FROM ChatCommit
 WHERE id = :id;
 
@@ -56,12 +59,44 @@ SELECT *
 FROM ChatCommit
 WHERE id IN ?;
 
+insertOrReplace:
+INSERT OR REPLACE
+INTO ChatCommit(
+  id,
+  conversationId,
+  branchId,
+  senderId,
+  type,
+  text,
+  invitedId,
+  createdAtNanos,
+  isSelf,
+  status,
+  editedAtNanos
+)
+VALUES (
+  :id,
+  :conversationId,
+  :branchId,
+  :senderId,
+  :type,
+  :text,
+  :invitedId,
+  :createdAtNanos,
+  :isSelf,
+  :status,
+  :editedAtNanos
+);
+
 updateEdit:
 UPDATE ChatCommit
-SET text = :text, editedAtNanos = :editedAtNanos, status = :status
+SET
+  text = :text,
+  editedAtNanos = :editedAtNanos,
+  status = :status
 WHERE id = :id;
 
-deleteById:
+delete:
 DELETE FROM ChatCommit
 WHERE id = :id;
 

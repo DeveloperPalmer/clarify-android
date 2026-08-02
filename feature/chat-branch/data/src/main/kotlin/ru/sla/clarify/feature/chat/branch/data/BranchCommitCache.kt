@@ -11,6 +11,7 @@ import ru.sla.clarify.database.chat.SelectOldestCursor
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.epochNanosToTimestamp
 import ru.sla.clarify.lib.google.firestore.toEpochNanos
@@ -25,17 +26,17 @@ internal class BranchCommitCache(
 ) {
 
   /** Курсор самого старого закэшированного коммита — с него страничится история из Firestore. */
-  fun oldestCursor(conversationId: String): Flow<CommitCursor?> {
+  fun oldestCursor(conversationId: Conversation.Id): Flow<CommitCursor?> {
     return inMemoryDB.chatCommitQueries
-      .selectOldestCursor(conversationId, branchId.value)
+      .selectOldestCursor(conversationId, branchId)
       .observeOneOrNull()
       .map { oldest -> oldest?.toCursor() }
   }
 
-  suspend fun readOldestCursor(conversationId: String): CommitCursor? {
+  suspend fun readOldestCursor(conversationId: Conversation.Id): CommitCursor? {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries
-        .selectOldestCursor(conversationId, branchId.value)
+        .selectOldestCursor(conversationId, branchId)
         .executeAsOneOrNull()
         ?.toCursor()
     }
@@ -44,7 +45,7 @@ internal class BranchCommitCache(
   suspend fun readEditState(id: Commit.Id): EditState? {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries
-        .selectEditStateById(id.value)
+        .selectEditState(id)
         .executeAsOneOrNull()
         ?.let { EditState(text = it.text, editedAtNanos = it.editedAtNanos, status = it.status) }
     }
@@ -53,7 +54,7 @@ internal class BranchCommitCache(
   suspend fun applyEdit(id: Commit.Id, text: String, status: Commit.Status) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries.updateEdit(
-        id = id.value,
+        id = id,
         text = text,
         editedAtNanos = Timestamp.now().toEpochNanos(),
         status = status.value
@@ -64,7 +65,7 @@ internal class BranchCommitCache(
   suspend fun revertEdit(id: Commit.Id, previous: EditState) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries.updateEdit(
-        id = id.value,
+        id = id,
         text = previous.text,
         editedAtNanos = previous.editedAtNanos,
         status = previous.status
@@ -75,7 +76,7 @@ internal class BranchCommitCache(
   suspend fun readCommits(ids: List<Commit.Id>): List<ChatCommit> {
     return withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries
-        .selectByIds(ids.map { it.value })
+        .selectByIds(ids)
         .executeAsList()
     }
   }
@@ -83,7 +84,7 @@ internal class BranchCommitCache(
   suspend fun deleteCommits(ids: List<Commit.Id>) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
-        ids.forEach { inMemoryDB.chatCommitQueries.deleteById(it.value) }
+        ids.forEach { inMemoryDB.chatCommitQueries.delete(it) }
       }
     }
   }
@@ -94,7 +95,21 @@ internal class BranchCommitCache(
     }
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
-        commits.forEach { inMemoryDB.chatCommitQueries.insertOrReplace(it) }
+        commits.forEach { commit ->
+          inMemoryDB.chatCommitQueries.insertOrReplace(
+            id = commit.id,
+            conversationId = commit.conversationId,
+            branchId = commit.branchId,
+            senderId = commit.senderId,
+            type = commit.type,
+            text = commit.text,
+            invitedId = commit.invitedId,
+            createdAtNanos = commit.createdAtNanos,
+            isSelf = commit.isSelf,
+            status = commit.status,
+            editedAtNanos = commit.editedAtNanos
+          )
+        }
       }
     }
   }
@@ -109,7 +124,7 @@ internal class BranchCommitCache(
 
 private fun SelectOldestCursor.toCursor(): CommitCursor {
   return CommitCursor(
-    id = id,
+    id = id.value,
     createdAt = createdAtNanos.epochNanosToTimestamp()
   )
 }

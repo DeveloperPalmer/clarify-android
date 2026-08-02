@@ -1,25 +1,40 @@
-import ru.sla.clarify.database.adapter.StringList;
+import kotlin.collections.Set;
+import ru.sla.clarify.core.domain.entity.UserId;
+import ru.sla.clarify.entity.chat.Branch;
 
 CREATE TABLE MergeRequest(
-  branchId TEXT NOT NULL PRIMARY KEY,
+  branchId TEXT AS Branch.Id NOT NULL PRIMARY KEY,
   status TEXT NOT NULL,
-  initiatorUid TEXT NOT NULL,
+  initiatorId TEXT AS UserId NOT NULL,
   requestedAt INTEGER NOT NULL,
-  approvedByUids TEXT AS StringList NOT NULL,
+  approvedByIds TEXT AS Set<UserId> NOT NULL,
   mergedAt INTEGER,
-  mergedIntoBranchId TEXT,
+  mergedIntoBranchId TEXT AS Branch.Id,
   FOREIGN KEY(branchId) REFERENCES ChatBranch(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 insertOrReplace:
 INSERT OR REPLACE
 INTO MergeRequest(
-  branchId, status, initiatorUid, requestedAt, approvedByUids,
-  mergedAt, mergedIntoBranchId
+  branchId,
+  status,
+  initiatorId,
+  requestedAt,
+  approvedByIds,
+  mergedAt,
+  mergedIntoBranchId
 )
-VALUES (?, ?, ?, ?, ?, ?, ?);
+VALUES (
+  :branchId,
+  :status,
+  :initiatorId,
+  :requestedAt,
+  :approvedByIds,
+  :mergedAt,
+  :mergedIntoBranchId
+);
 
-deleteByBranchId:
+delete:
 DELETE FROM MergeRequest
 WHERE branchId = ?;
 

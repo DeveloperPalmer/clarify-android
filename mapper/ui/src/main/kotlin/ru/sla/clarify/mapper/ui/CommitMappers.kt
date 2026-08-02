@@ -87,7 +87,7 @@ private fun bubbleType(
   index: Int,
   commits: List<DomainCommit>
 ): Commit.Message.Shape {
-  // The list is sorted newest-first (selectByBranchId orders by timestamp DESC) and rendered
+  // The list is sorted newest-first (ChatCommit.select orders by timestamp DESC) and rendered
   // bottom-up with reverseLayout, so index-1 is visually below and index+1 is visually above.
   val current = commits[index] as? DomainCommit.Message ?: return Commit.Message.Shape.Top
   val below = (commits.getOrNull(index - 1) as? DomainCommit.Message)

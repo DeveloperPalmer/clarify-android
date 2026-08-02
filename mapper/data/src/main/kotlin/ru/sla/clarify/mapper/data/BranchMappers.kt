@@ -1,7 +1,6 @@
 package ru.sla.clarify.mapper.data
 
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.adapter.StringList
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Conversation
@@ -10,40 +9,40 @@ import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 
 @Suppress("LongParameterList")
 fun mapToBranch(
-  id: String,
-  conversationId: String,
-  parentBranchId: String,
-  branchedFromCommitId: String,
+  id: Branch.Id,
+  conversationId: Conversation.Id,
+  parentBranchId: Branch.Id,
+  branchedFromCommitId: Commit.Id,
   name: String,
   lastCommit: String?,
   lastCommitTimestamp: Long,
   unreadCount: Long,
   createdAt: Long,
-  createdByUid: String,
+  createdById: UserId,
   mergeRequestStatus: String?,
-  mergeRequestInitiatorUid: String?,
+  mergeRequestInitiatorId: UserId?,
   mergeRequestRequestedAt: Long?,
-  mergeRequestApprovedByUids: StringList?,
+  mergeRequestApprovedByIds: Set<UserId>?,
   mergeRequestMergedAt: Long?,
-  mergeRequestMergedIntoBranchId: String?
+  mergeRequestMergedIntoBranchId: Branch.Id?
 ): Branch {
   return Branch(
-    id = Branch.Id(id),
-    conversationId = Conversation.Id(conversationId),
-    parentBranchId = Branch.Id(parentBranchId),
-    branchedFromCommitId = Commit.Id(branchedFromCommitId),
+    id = id,
+    conversationId = conversationId,
+    parentBranchId = parentBranchId,
+    branchedFromCommitId = branchedFromCommitId,
     name = name,
     lastCommit = lastCommit,
     lastCommitAt = formatLastCommitTimestamp(lastCommitTimestamp),
     lastCommitTimestamp = lastCommitTimestamp,
     unreadCount = unreadCount,
     createdAt = createdAt,
-    createdById = UserId(createdByUid),
+    createdById = createdById,
     mergeRequest = mapToMergeRequest(
       status = mergeRequestStatus,
-      initiatorUid = mergeRequestInitiatorUid,
+      initiatorId = mergeRequestInitiatorId,
       requestedAt = mergeRequestRequestedAt,
-      approvedByUids = mergeRequestApprovedByUids,
+      approvedByIds = mergeRequestApprovedByIds,
       mergedAt = mergeRequestMergedAt,
       mergedIntoBranchId = mergeRequestMergedIntoBranchId
     )
