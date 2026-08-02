@@ -129,7 +129,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       firestore.deleteConversation(conversationId.value)
       inMemoryDB.transaction {
         inMemoryDB.chatConversationQueries.deleteById(conversationId.value)
-        inMemoryDB.chatConversationMemberQueries.deleteByConversation(conversationId.value)
+        inMemoryDB.chatMemberQueries.deleteByConversation(conversationId.value)
       }
     }
   }
@@ -139,7 +139,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       firestore.deleteConversationMember(conversationId.value)
       inMemoryDB.transaction {
         inMemoryDB.chatConversationQueries.deleteById(conversationId.value)
-        inMemoryDB.chatConversationMemberQueries.deleteByConversation(conversationId.value)
+        inMemoryDB.chatMemberQueries.deleteByConversation(conversationId.value)
       }
     }
   }
@@ -158,7 +158,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       }
       inMemoryDB.transaction {
         ids.forEach { member ->
-          inMemoryDB.chatConversationMemberQueries.insertOrReplace(
+          inMemoryDB.chatMemberQueries.insertOrReplace(
             conversationId = conversationId.value,
             id = member.value
           )
@@ -179,7 +179,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
         memberId = id.value
       )
       inMemoryDB.transaction {
-        inMemoryDB.chatConversationMemberQueries.deleteByConversationAndId(
+        inMemoryDB.chatMemberQueries.deleteByConversationAndId(
           conversationId = conversationId.value,
           id = id.value
         )
@@ -226,7 +226,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   override fun observeGroupMembers(): Flow<List<GroupMember>> = flow {
     val currentUserId = authSessionPersistence.withKey { readUserId(it) }?.value
     val group = observeGroup()
-    val members = inMemoryDB.chatConversationMemberQueries
+    val members = inMemoryDB.chatMemberQueries
       .selectByConversationWithEmail(
         conversationId = conversationId.value,
         mapper = { memberId, displayName, email, photoUrl ->
@@ -315,13 +315,13 @@ class GroupThreadRepositoryImpl @Inject constructor(
           when (change.changeType) {
             FirestoreDocumentResult.Added,
             FirestoreDocumentResult.Modified -> {
-              inMemoryDB.chatConversationMemberQueries.insertOrReplace(
+              inMemoryDB.chatMemberQueries.insertOrReplace(
                 conversationId = conversationId.value,
                 id = change.data.id
               )
             }
             FirestoreDocumentResult.Removed -> {
-              inMemoryDB.chatConversationMemberQueries.deleteByConversationAndId(
+              inMemoryDB.chatMemberQueries.deleteByConversationAndId(
                 conversationId = conversationId.value,
                 id = change.data.id
               )

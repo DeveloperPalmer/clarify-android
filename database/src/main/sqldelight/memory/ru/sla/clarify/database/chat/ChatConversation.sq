@@ -43,7 +43,7 @@ SELECT
   peerProfile.displayName AS peerDisplayName,
   peerProfile.photoUrl AS peerPhotoUrl
 FROM ChatConversation
-INNER JOIN ChatConversationMember AS peerLink
+INNER JOIN ChatMember AS peerLink
   ON peerLink.conversationId = ChatConversation.id AND peerLink.id != :currentUserId
 INNER JOIN User AS peerProfile
   ON peerProfile.id = peerLink.id
@@ -59,7 +59,7 @@ SELECT
   ChatConversation.lastCommitSenderUid,
   ChatConversation.lastCommitTimestamp,
   ChatConversation.unreadCount,
-  (SELECT COUNT(*) FROM ChatConversationMember WHERE conversationId = ChatConversation.id) AS memberCount,
+  (SELECT COUNT(*) FROM ChatMember WHERE conversationId = ChatConversation.id) AS memberCount,
   senderProfile.displayName AS lastCommitSenderDisplayName
 FROM ChatConversation
 LEFT JOIN User AS senderProfile
@@ -77,7 +77,7 @@ SELECT
   ChatConversation.lastCommitSenderUid,
   ChatConversation.lastCommitTimestamp,
   ChatConversation.unreadCount,
-  (SELECT COUNT(*) FROM ChatConversationMember WHERE conversationId = ChatConversation.id) AS memberCount
+  (SELECT COUNT(*) FROM ChatMember WHERE conversationId = ChatConversation.id) AS memberCount
 FROM ChatConversation
 WHERE ChatConversation.id = :id AND ChatConversation.type = 'group';
 

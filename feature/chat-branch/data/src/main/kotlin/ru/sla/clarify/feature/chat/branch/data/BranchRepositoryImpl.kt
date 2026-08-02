@@ -277,7 +277,7 @@ class BranchRepositoryImpl @Inject constructor(
     val userId = requireUserId()
     val conversationId = requireConversationId()
 
-    val memberId = inMemoryDB.chatConversationMemberQueries
+    val memberId = inMemoryDB.chatMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .executeAsList()
       .firstOrNull { it.id.value != userId.value }
@@ -411,7 +411,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   override val members: Flow<List<Member>> = flow {
     val conversationId = requireConversationId()
-    inMemoryDB.chatConversationMemberQueries
+    inMemoryDB.chatMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .observeList()
       .collect { emit(it) }
@@ -419,7 +419,7 @@ class BranchRepositoryImpl @Inject constructor(
 
   override fun member(id: UserId): Flow<Member?> = flow {
     val conversationId = requireConversationId()
-    inMemoryDB.chatConversationMemberQueries
+    inMemoryDB.chatMemberQueries
       .selectByConversationAndId(conversationId, id.value, ::mapToMember)
       .observeOneOrNull()
       .collect { emit(it) }
@@ -431,7 +431,7 @@ class BranchRepositoryImpl @Inject constructor(
    */
   private fun peerReadAt(conversationId: String, selfId: UserId): Flow<LocalDateTime?> = flow {
     val peerId = withContext(Dispatchers.IO) {
-      inMemoryDB.chatConversationMemberQueries
+      inMemoryDB.chatMemberQueries
         .selectByConversation(conversationId, ::mapToMember)
         .executeAsList()
         .firstOrNull { it.id.value != selfId.value }
@@ -455,7 +455,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   private fun memberUids(conversationId: String): List<String> {
-    return inMemoryDB.chatConversationMemberQueries
+    return inMemoryDB.chatMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .executeAsList()
       .map { it.id.value }

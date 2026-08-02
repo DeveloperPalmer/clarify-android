@@ -48,7 +48,7 @@ class ConversationRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnMemberProfiles() {
     val userId = authSessionPersistence.withKey { readUserId(it) } ?: return
-    inMemoryDB.chatConversationMemberQueries
+    inMemoryDB.chatMemberQueries
       .selectMembersWithoutProfile(userId.value)
       .observeList()
       .collect(::applyMemberProfiles)
@@ -94,7 +94,7 @@ class ConversationRepositoryImpl @Inject constructor(
             lastCommitSenderUid = null,
             lastCommitTimestamp = 0L
           )
-          inMemoryDB.chatConversationMemberQueries.insertOrReplace(
+          inMemoryDB.chatMemberQueries.insertOrReplace(
             conversationId = conversationId,
             id = ownerId.value
           )
@@ -111,7 +111,7 @@ class ConversationRepositoryImpl @Inject constructor(
       inMemoryDB.transaction {
         deletableIds.forEach {
           inMemoryDB.chatConversationQueries.deleteById(it)
-          inMemoryDB.chatConversationMemberQueries.deleteByConversation(it)
+          inMemoryDB.chatMemberQueries.deleteByConversation(it)
         }
       }
     }
@@ -183,7 +183,7 @@ class ConversationRepositoryImpl @Inject constructor(
             }
             FirestoreDocumentResult.Removed -> {
               inMemoryDB.chatConversationQueries.deleteById(change.data.id)
-              inMemoryDB.chatConversationMemberQueries.deleteByConversation(change.data.id)
+              inMemoryDB.chatMemberQueries.deleteByConversation(change.data.id)
             }
           }
         }
@@ -193,7 +193,7 @@ class ConversationRepositoryImpl @Inject constructor(
 
   private fun applyConversationChanges(conversation: ConversationNM) {
     conversation.memberUids.forEach { memberId ->
-      inMemoryDB.chatConversationMemberQueries.insertOrReplace(
+      inMemoryDB.chatMemberQueries.insertOrReplace(
         conversationId = conversation.id,
         id = memberId
       )

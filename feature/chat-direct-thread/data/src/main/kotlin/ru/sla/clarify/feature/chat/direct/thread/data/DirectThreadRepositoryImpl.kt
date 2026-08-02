@@ -328,7 +328,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override val members: Flow<List<Member>> = flow {
     val conversationId = threadMediator.awaitConversationId()
-    inMemoryDB.chatConversationMemberQueries
+    inMemoryDB.chatMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .observeList()
       .collect { emit(it) }

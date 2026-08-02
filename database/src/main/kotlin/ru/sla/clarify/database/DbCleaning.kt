@@ -18,7 +18,7 @@ fun InMemoryDB.cleanupBySessionKey(key: String) {
     // каждую таблицу нужно чистить явно. Settings живёт в PersistedDB (в ней хранится сама
     // сессия — токены/userId, ей управляет AuthSessionPersistence) и здесь не трогается.
     userQueries.deleteAll()
-    chatConversationMemberQueries.deleteAll()
+    chatMemberQueries.deleteAll()
     chatCommitQueries.deleteAll()
     mergeRequestQueries.deleteAll()
     chatBranchQueries.deleteAll()
