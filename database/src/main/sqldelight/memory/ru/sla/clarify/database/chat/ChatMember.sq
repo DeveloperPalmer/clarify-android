@@ -1,6 +1,6 @@
 CREATE TABLE ChatMember(
-  id TEXT NOT NULL,
   conversationId TEXT NOT NULL,
+  id TEXT NOT NULL,
   PRIMARY KEY (conversationId, id)
 );
 

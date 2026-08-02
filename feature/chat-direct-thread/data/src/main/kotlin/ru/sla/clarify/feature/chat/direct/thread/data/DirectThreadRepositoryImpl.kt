@@ -33,6 +33,8 @@ import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
+import ru.sla.clarify.feature.chat.direct.thread.data.entity.DeleteForEveryoneWrite
+import ru.sla.clarify.feature.chat.direct.thread.data.entity.EditState
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.mapToPeer
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
@@ -47,7 +49,6 @@ import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
-import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
 import ru.sla.clarify.lib.google.firestore.epochNanosToTimestamp
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
 import ru.sla.clarify.lib.google.firestore.toEpochNanos
@@ -635,19 +636,6 @@ class DirectThreadRepositoryImpl @Inject constructor(
     return requireNotNull(authSessionPersistence.withKey { readUserId(it) })
   }
 }
-
-/** Снимок редактируемых полей строки кэша для отката оптимистичной правки при ошибке записи. */
-private data class EditState(
-  val text: String,
-  val editedAtNanos: Long?,
-  val status: String
-)
-
-/** Денормализованные поля для удаления «у всех», посчитанные по полному кэшу до удаления. */
-private data class DeleteForEveryoneWrite(
-  val lastCommit: LastCommitParams,
-  val peerUnreadDelta: Int
-)
 
 private const val LATEST_PAGE_SIZE = 50
 private const val HISTORY_PAGE_SIZE = 30
