@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.direct.thread.data
 
+import app.cash.sqldelight.Query
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
 import com.google.firebase.Timestamp
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -21,6 +23,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
+import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.chat.ChatCommit
@@ -30,7 +33,6 @@ import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
-import ru.sla.clarify.feature.chat.direct.thread.data.common.ThreadMediator
 import ru.sla.clarify.feature.chat.direct.thread.data.mapper.mapToPeer
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
@@ -42,6 +44,7 @@ import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
+import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
@@ -62,13 +65,14 @@ import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
 
+@Suppress("TooManyFunctions")
 @SingleIn(DirectThreadScope::class)
 @ContributesBinding(DirectThreadScope::class)
 class DirectThreadRepositoryImpl @Inject constructor(
   params: TargetParams,
   private val firestore: Firestore,
   private val inMemoryDB: InMemoryDB,
-  private val threadMediator: ThreadMediator
+  private val authSessionPersistence: AuthSessionPersistence
 ) : DirectThreadRepository {
 
   private val peerId = params.peerId
@@ -86,8 +90,8 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun subscribeOnCommitChanges() {
-    val userId = threadMediator.requireUserId()
-    val conversationId = threadMediator.awaitConversationId()
+    val userId = requireUserId()
+    val conversationId = awaitConversationId()
     // Ждём первую страницу, чтобы первое окно tail было [самый старый в кэше, +inf), а не вся
     // история: null-курсор потянул бы всё в кэш и свёл бы пагинацию на нет.
     fetchLatestCommitsCompletable.await()
@@ -108,7 +112,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun subscribeOnBranchesChanges() {
-    val conversationId = threadMediator.awaitConversationId()
+    val conversationId = awaitConversationId()
     firestore.branchesLive(
       conversationId = conversationId
     ).collect { changes ->
@@ -119,7 +123,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun subscribeOnBranchesUnreadCounts() {
-    val conversationId = threadMediator.awaitConversationId()
+    val conversationId = awaitConversationId()
     inMemoryDB.chatBranchQueries
       .selectIdsByConversationId(conversationId)
       .observeList()
@@ -127,7 +131,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun fetchLatestCommits() {
-    val conversationId = threadMediator.conversationId()
+    val conversationId = findConversationId()
     if (conversationId == null) {
       // Разговора ещё нет (ни разу не писали): страничить нечего, сразу разблокируем tail.
       fetchLatestCommitsCompletable.complete(Unit)
@@ -151,7 +155,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     if (!hasCommitsHistoryCache.value) {
       return@withLock
     }
-    val conversationId = threadMediator.awaitConversationId()
+    val conversationId = awaitConversationId()
 
     // Весь кэш уже на экране, поэтому «долистали до верха» означает, что локальный кэш исчерпан:
     // страничим из Firestore, начиная сразу после самого старого закэшированного коммита
@@ -184,7 +188,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override suspend fun sendCommit(text: String) {
     firestore.createDirectCommit(
-      conversationId = threadMediator.conversationId(),
+      conversationId = findConversationId(),
       text = text,
       peerId = peerId.value,
       branchId = null
@@ -192,12 +196,12 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun markAsRead() {
-    val conversationId = threadMediator.conversationId() ?: return
+    val conversationId = findConversationId() ?: return
     firestore.updateUnreadCount(conversationId)
   }
 
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
-    val conversationId = threadMediator.conversationId() ?: return
+    val conversationId = findConversationId() ?: return
     val current = lastReadWatermarkCache.value
     if (current != null && !lastReadAt.isAfter(current)) {
       log { "Direct: lastReadAt ($lastReadAt) is not after current watermark ($current), skipping" }
@@ -214,7 +218,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     name: String
   ): Branch.Id {
     return withContext(Dispatchers.IO) {
-      val conversationId = threadMediator.requireConversationId()
+      val conversationId = requireConversationId()
       val remote = firestore.createBranch(
         conversationId = conversationId,
         parentBranchId = resolveBranchId(parentId),
@@ -228,7 +232,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun editCommit(id: Commit.Id, text: String) {
-    val conversationId = threadMediator.requireConversationId()
+    val conversationId = requireConversationId()
     // Оптимистично: сразу показываем новый текст со статусом «в процессе» (часы). Транзакции
     // Firestore не дают latency-компенсированных событий, поэтому кэш ведём сами — прогресс правки
     // виден мгновенно, а не после ответа сервера. Прежнее состояние держим для отката.
@@ -260,7 +264,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun deleteCommits(ids: List<Commit.Id>, forEveryone: Boolean) {
-    val conversationId = threadMediator.requireConversationId()
+    val conversationId = requireConversationId()
     // Снимок удаляемых сообщений — вернём их на место, если сервер откажет.
     val removed = readCachedCommits(ids)
     // Для «у всех» денормализованные lastCommit/unreadDelta считаем по ПОЛНОМУ кэшу до удаления —
@@ -302,7 +306,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   override val hasCommitsHistory: Flow<Boolean> = hasCommitsHistoryCache
 
   override val commits: Flow<List<Commit>> = flow {
-    val conversationId = threadMediator.awaitConversationId()
+    val conversationId = awaitConversationId()
 
     val commitsFlow = inMemoryDB.chatCommitQueries
       .selectByBranchId(conversationId, conversationId, ::mapToCommit)
@@ -327,7 +331,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override val members: Flow<List<Member>> = flow {
-    val conversationId = threadMediator.awaitConversationId()
+    val conversationId = awaitConversationId()
     inMemoryDB.chatMemberQueries
       .selectByConversation(conversationId, ::mapToMember)
       .observeList()
@@ -335,13 +339,13 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override val unreadCount: Flow<Long> = flow {
-    val conversationId = threadMediator.awaitConversationId()
+    val conversationId = awaitConversationId()
     firestore.unreadCountLive(conversationId)
       .collect { emit(it) }
   }
 
   override val branches: Flow<List<Branch>> = flow {
-    val conversationId = threadMediator.awaitConversationId()
+    val conversationId = awaitConversationId()
     inMemoryDB.chatBranchQueries
       .selectByConversationId(conversationId, ::mapToBranch)
       .observeList()
@@ -350,7 +354,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   private suspend fun subscribeOnBranchUnreadCount(ids: List<String>) {
     return coroutineScope {
-      val conversationId = threadMediator.awaitConversationId()
+      val conversationId = awaitConversationId()
       ids.forEach { branchId ->
         launch {
           firestore.branchUnreadCountLive(
@@ -383,8 +387,8 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   private suspend fun applyInsertOrReplaceCommits(commits: List<CommitNM>) {
     return withContext(Dispatchers.IO) {
-      val userId = threadMediator.requireUserId()
-      val conversationId = threadMediator.awaitConversationId()
+      val userId = requireUserId()
+      val conversationId = awaitConversationId()
       inMemoryDB.transaction {
         commits.forEach { item ->
           applyInsertOrReplaceCommit(
@@ -451,7 +455,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   private suspend fun applyBranchesChanges(changes: List<FirestoreChange<BranchNM>>) {
     return withContext(Dispatchers.IO) {
-      val conversationId = threadMediator.awaitConversationId()
+      val conversationId = awaitConversationId()
       inMemoryDB.transaction {
         changes.forEach { change ->
           when (change.changeType) {
@@ -556,7 +560,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   private suspend fun buildDeleteForEveryoneWrite(ids: List<Commit.Id>): DeleteForEveryoneWrite {
-    val conversationId = threadMediator.awaitConversationId()
+    val conversationId = awaitConversationId()
     val rootCommits = withContext(Dispatchers.IO) {
       inMemoryDB.chatCommitQueries
         .selectByBranchId(conversationId, conversationId, ::mapToCommit)
@@ -586,7 +590,49 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   private suspend fun resolveBranchId(branchId: Branch.Id?): String {
-    return branchId?.value ?: threadMediator.conversationId() ?: error("conversationId not found")
+    return branchId?.value ?: findConversationId() ?: error("conversationId not found")
+  }
+
+  /**
+   * Беседы может ещё не быть: direct создаётся первым отправленным коммитом. Подписчики ленты
+   * ждут здесь, пока conversationsLive не заведёт её в кэше.
+   */
+  private suspend fun awaitConversationId(): String {
+    findConversationId()?.let { return it }
+
+    return selectIdByMembers(directMemberIds())
+      .observeOneOrNull()
+      .filterNotNull()
+      .first()
+  }
+
+  private suspend fun findConversationId(): String? {
+    val memberIds = directMemberIds()
+    return withContext(Dispatchers.IO) {
+      selectIdByMembers(memberIds).executeAsOneOrNull()
+    }
+  }
+
+  private suspend fun requireConversationId(): String {
+    return requireNotNull(findConversationId()) {
+      "conversationId is null. A branch can only be created for an existing conversation."
+    }
+  }
+
+  private fun selectIdByMembers(memberIds: List<String>): Query<String> {
+    return inMemoryDB.chatConversationQueries.selectIdByMembers(
+      type = ConversationNM.Type.Direct.value,
+      memberCount = memberIds.size.toLong(),
+      memberIds = memberIds
+    )
+  }
+
+  private suspend fun directMemberIds(): List<String> {
+    return setOf(requireUserId().value, peerId.value).sorted()
+  }
+
+  private suspend fun requireUserId(): UserId {
+    return requireNotNull(authSessionPersistence.withKey { readUserId(it) })
   }
 }
 

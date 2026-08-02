@@ -13,7 +13,6 @@ dependencies {
   implementation project(":core:resources")
   implementation project(":lib:google:firestore")
   implementation project(":auth-session:data")
-  implementation project(":feature:chat-direct-thread:data:common")
   implementation project(":feature:chat-direct-thread:domain")
   implementation project(":feature:chat-branch:domain")
 }
