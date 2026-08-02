@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chat.direct.thread.data.common
 
+import app.cash.sqldelight.Query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -25,11 +26,7 @@ class ThreadMediator @Inject constructor(
   suspend fun awaitConversationId(): String {
     conversationId()?.let { return it }
 
-    return inMemoryDB.chatConversationQueries
-      .selectIdByMembers(
-        type = Type.Direct.value,
-        memberUids = directMemberIds()
-      )
+    return selectIdByMembers(directMemberIds())
       .observeOneOrNull()
       .filterNotNull()
       .first()
@@ -38,13 +35,16 @@ class ThreadMediator @Inject constructor(
   suspend fun conversationId(): String? {
     val members = directMemberIds()
     return withContext(Dispatchers.IO) {
-      inMemoryDB.chatConversationQueries
-        .selectIdByMembers(
-          type = Type.Direct.value,
-          memberUids = members
-        )
-        .executeAsOneOrNull()
+      selectIdByMembers(members).executeAsOneOrNull()
     }
+  }
+
+  private fun selectIdByMembers(memberIds: List<String>): Query<String> {
+    return inMemoryDB.chatConversationQueries.selectIdByMembers(
+      type = Type.Direct.value,
+      memberCount = memberIds.size.toLong(),
+      memberIds = memberIds
+    )
   }
 
   suspend fun requireConversationId(): String {

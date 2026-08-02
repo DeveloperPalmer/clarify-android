@@ -87,7 +87,6 @@ class ConversationRepositoryImpl @Inject constructor(
           inMemoryDB.chatConversationQueries.insertOrReplaceMeta(
             id = conversationId,
             type = ConversationNM.Type.Group.value,
-            memberUids = listOf(ownerId.value),
             name = name.value,
             ownerUid = ownerId.value,
             lastCommit = null,
@@ -175,11 +174,9 @@ class ConversationRepositoryImpl @Inject constructor(
       inMemoryDB.transaction {
         changes.forEach { change ->
           when (change.changeType) {
-            FirestoreDocumentResult.Added -> {
-              applyConversationChanges(change.data)
-            }
+            FirestoreDocumentResult.Added,
             FirestoreDocumentResult.Modified -> {
-              applyInsertOrReplaceMetaConversation(change.data)
+              applyConversationChanges(change.data)
             }
             FirestoreDocumentResult.Removed -> {
               inMemoryDB.chatConversationQueries.deleteById(change.data.id)
@@ -192,22 +189,40 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   private fun applyConversationChanges(conversation: ConversationNM) {
-    conversation.memberUids.forEach { memberId ->
-      inMemoryDB.chatMemberQueries.insertOrReplace(
-        conversationId = conversation.id,
-        id = memberId
-      )
-    }
+    applyMembers(
+      conversationId = conversation.id,
+      memberUids = conversation.memberUids
+    )
     inMemoryDB.chatConversationQueries.insertOrReplaceMeta(
       id = conversation.id,
       type = conversation.type.value,
-      memberUids = conversation.memberUids,
       name = conversation.name,
       ownerUid = conversation.ownerUid,
       lastCommit = conversation.lastCommitText,
       lastCommitSenderUid = conversation.lastCommitSenderUid,
       lastCommitTimestamp = conversation.lastCommitAt?.toEpochSeconds() ?: 0L
     )
+  }
+
+  /**
+   * Приводит состав участников беседы к тому, что пришёл в документе: `memberUids` —
+   * полный список, поэтому исключённых нужно убрать, а не только добавить новых.
+   */
+  private fun applyMembers(conversationId: String, memberUids: List<String>) {
+    if (memberUids.isEmpty()) {
+      inMemoryDB.chatMemberQueries.deleteByConversation(conversationId)
+      return
+    }
+    inMemoryDB.chatMemberQueries.deleteByConversationExcept(
+      conversationId = conversationId,
+      memberIds = memberUids
+    )
+    memberUids.forEach { memberId ->
+      inMemoryDB.chatMemberQueries.insertOrReplace(
+        conversationId = conversationId,
+        id = memberId
+      )
+    }
   }
 
   private suspend fun applyInsertOrReplaceUsers(memberId: String) {
@@ -220,19 +235,6 @@ class ConversationRepositoryImpl @Inject constructor(
         photoUrl = profile.photoUrl
       )
     }
-  }
-
-  private fun applyInsertOrReplaceMetaConversation(conversationNM: ConversationNM) {
-    inMemoryDB.chatConversationQueries.insertOrReplaceMeta(
-      id = conversationNM.id,
-      type = conversationNM.type.value,
-      memberUids = conversationNM.memberUids,
-      name = conversationNM.name,
-      ownerUid = conversationNM.ownerUid,
-      lastCommit = conversationNM.lastCommitText,
-      lastCommitSenderUid = conversationNM.lastCommitSenderUid,
-      lastCommitTimestamp = conversationNM.lastCommitAt?.toEpochSeconds() ?: 0L
-    )
   }
 
   private suspend fun applyUpdateUnreadCount(conversationId: String, unreadCount: Long) {

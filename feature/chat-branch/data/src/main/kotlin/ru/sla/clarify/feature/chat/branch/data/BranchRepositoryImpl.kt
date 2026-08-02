@@ -456,9 +456,8 @@ class BranchRepositoryImpl @Inject constructor(
 
   private fun memberUids(conversationId: String): List<String> {
     return inMemoryDB.chatMemberQueries
-      .selectByConversation(conversationId, ::mapToMember)
+      .selectIdsByConversation(conversationId)
       .executeAsList()
-      .map { it.id.value }
   }
 
   private suspend fun applyBranchChanges(conversationId: String, branch: BranchNM?) {

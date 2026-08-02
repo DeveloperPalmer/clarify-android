@@ -9,6 +9,5 @@ data class Group(
   val id: Conversation.Id,
   val name: String,
   val ownerId: UserId,
-  val memberCount: Int,
-  val memberIds: List<UserId>
+  val memberCount: Int
 )

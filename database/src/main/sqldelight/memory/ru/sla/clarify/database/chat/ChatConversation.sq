@@ -1,9 +1,6 @@
-import ru.sla.clarify.database.adapter.StringList;
-
 CREATE TABLE ChatConversation(
   id TEXT PRIMARY KEY NOT NULL,
   type TEXT NOT NULL,
-  memberUids TEXT AS StringList NOT NULL,
   name TEXT,
   ownerUid TEXT,
   lastCommit TEXT,
@@ -14,11 +11,10 @@ CREATE TABLE ChatConversation(
 
 insertOrReplaceMeta:
 INSERT OR REPLACE
-INTO ChatConversation(id, type, memberUids, name, ownerUid, lastCommit, lastCommitSenderUid, lastCommitTimestamp, unreadCount)
+INTO ChatConversation(id, type, name, ownerUid, lastCommit, lastCommitSenderUid, lastCommitTimestamp, unreadCount)
 VALUES (
   :id,
   :type,
-  :memberUids,
   :name,
   :ownerUid,
   :lastCommit,
@@ -72,7 +68,6 @@ SELECT
   ChatConversation.id,
   ChatConversation.name,
   ChatConversation.ownerUid,
-  ChatConversation.memberUids,
   ChatConversation.lastCommit,
   ChatConversation.lastCommitSenderUid,
   ChatConversation.lastCommitTimestamp,
@@ -86,19 +81,19 @@ UPDATE ChatConversation
 SET name = :name
 WHERE id = :id;
 
-updateMemberUids:
-UPDATE ChatConversation
-SET memberUids = :memberUids
-WHERE id = :id;
-
 selectAllIds:
 SELECT ChatConversation.id
 FROM ChatConversation;
 
 selectIdByMembers:
-SELECT id
+SELECT ChatConversation.id
 FROM ChatConversation
-WHERE type = :type AND memberUids = :memberUids;
+INNER JOIN ChatMember
+  ON ChatMember.conversationId = ChatConversation.id
+WHERE ChatConversation.type = :type
+GROUP BY ChatConversation.id
+HAVING COUNT(*) = :memberCount
+   AND COUNT(CASE WHEN ChatMember.id IN :memberIds THEN 1 END) = :memberCount;
 
 deleteById:
 DELETE FROM ChatConversation

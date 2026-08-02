@@ -8,7 +8,6 @@ import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.adapter.StringListAdapter
-import ru.sla.clarify.database.chat.ChatConversation
 import ru.sla.clarify.database.chat.MergeRequest
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
@@ -21,9 +20,6 @@ interface DatabaseModule {
     val driver = AndroidSqliteDriver(InMemoryDB.Schema, context, name = null)
     return InMemoryDB(
       driver = driver,
-      ChatConversationAdapter = ChatConversation.Adapter(
-        memberUidsAdapter = StringListAdapter
-      ),
       MergeRequestAdapter = MergeRequest.Adapter(
         approvedByUidsAdapter = StringListAdapter
       )

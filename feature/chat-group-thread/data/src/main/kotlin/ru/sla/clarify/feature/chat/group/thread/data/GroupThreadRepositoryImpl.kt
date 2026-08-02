@@ -80,15 +80,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun sendCommit(text: String) {
-    val memberUids = withContext(Dispatchers.IO) {
-      inMemoryDB.chatConversationQueries
-        .selectGroupById(
-          id = conversationId.value,
-          mapper = { _, _, _, memberUids, _, _, _, _, _ -> memberUids }
-        )
-        .executeAsOneOrNull()
-        .orEmpty()
-    }
+    val memberUids = withContext(Dispatchers.IO) { currentMemberUids() }
     firestore.createGroupCommit(
       conversationId = conversationId.value,
       text = text,
@@ -163,11 +155,6 @@ class GroupThreadRepositoryImpl @Inject constructor(
             id = member.value
           )
         }
-        val merged = (currentMemberUids() + ids.map { it.value }).distinct()
-        inMemoryDB.chatConversationQueries.updateMemberUids(
-          id = conversationId.value,
-          memberUids = merged
-        )
       }
     }
   }
@@ -178,17 +165,10 @@ class GroupThreadRepositoryImpl @Inject constructor(
         conversationId = conversationId.value,
         memberId = id.value
       )
-      inMemoryDB.transaction {
-        inMemoryDB.chatMemberQueries.deleteByConversationAndId(
-          conversationId = conversationId.value,
-          id = id.value
-        )
-        val remaining = currentMemberUids() - id.value
-        inMemoryDB.chatConversationQueries.updateMemberUids(
-          id = conversationId.value,
-          memberUids = remaining
-        )
-      }
+      inMemoryDB.chatMemberQueries.deleteByConversationAndId(
+        conversationId = conversationId.value,
+        id = id.value
+      )
     }
   }
 
@@ -210,13 +190,12 @@ class GroupThreadRepositoryImpl @Inject constructor(
     return inMemoryDB.chatConversationQueries
       .selectGroupById(
         id = conversationId.value,
-        mapper = { rowId, name, ownerUid, memberUids, _, _, _, _, memberCount ->
+        mapper = { rowId, name, ownerUid, _, _, _, _, memberCount ->
           Group(
             id = Conversation.Id(rowId),
             name = name.orEmpty(),
             ownerId = UserId(ownerUid.orEmpty()),
-            memberCount = memberCount.toInt(),
-            memberIds = memberUids.map(::UserId)
+            memberCount = memberCount.toInt()
           )
         }
       )
@@ -250,13 +229,9 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   private fun currentMemberUids(): List<String> {
-    return inMemoryDB.chatConversationQueries
-      .selectGroupById(
-        id = conversationId.value,
-        mapper = { _, _, _, memberUids, _, _, _, _, _ -> memberUids }
-      )
-      .executeAsOneOrNull()
-      .orEmpty()
+    return inMemoryDB.chatMemberQueries
+      .selectIdsByConversation(conversationId.value)
+      .executeAsList()
   }
 
   override val commits: Flow<List<Commit>> = flow {
