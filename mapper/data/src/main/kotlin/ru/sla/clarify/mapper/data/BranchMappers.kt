@@ -49,12 +49,12 @@ fun mapToBranch(
   )
 }
 
-fun BranchNM.toDomain(conversationId: String): Branch {
+fun BranchNM.toDomain(conversationId: Conversation.Id): Branch {
   val createdAt = createdAt?.toEpochSeconds() ?: 0L
   val lastCommitAt = lastCommitAt?.toEpochSeconds()
   return Branch(
     id = Branch.Id(id),
-    conversationId = Conversation.Id(conversationId),
+    conversationId = conversationId,
     parentBranchId = Branch.Id(parentBranchId),
     branchedFromCommitId = Commit.Id(branchedFromCommitId),
     name = name,

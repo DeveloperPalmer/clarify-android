@@ -48,7 +48,7 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   override suspend fun subscribeOnMemberProfiles() {
-    val userId = authSessionPersistence.withKey { readUserId(it) } ?: return
+    val userId = findUserId() ?: return
     inMemoryDB.chatMemberQueries
       .selectWithoutProfile(Member.Id(userId.value))
       .observeList()
@@ -81,26 +81,26 @@ class ConversationRepositoryImpl @Inject constructor(
 
   override suspend fun createGroupConversation(name: GroupName): Conversation.Id {
     return withContext(Dispatchers.IO) {
-      val conversationId = firestore.createGroupConversation(name)
-      val ownerId = authSessionPersistence.withKey { readUserId(it) }
-      if (ownerId != null) {
+      val userId = findUserId()
+      val conversationId = Conversation.Id(firestore.createGroupConversation(name))
+      if (userId != null) {
         inMemoryDB.transaction {
           inMemoryDB.chatConversationQueries.insertOrReplace(
-            id = Conversation.Id(conversationId),
+            id = conversationId,
             type = ConversationNM.Type.Group.value,
             name = name.value,
-            ownerId = ownerId,
+            ownerId = userId,
             lastCommit = null,
             lastCommitSenderId = null,
             lastCommitTimestamp = 0L
           )
           inMemoryDB.chatMemberQueries.insertOrReplace(
-            id = Member.Id(ownerId.value),
-            conversationId = Conversation.Id(conversationId)
+            id = Member.Id(userId.value),
+            conversationId = conversationId
           )
         }
       }
-      Conversation.Id(conversationId)
+      conversationId
     }
   }
 
@@ -117,9 +117,7 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   override val user: Flow<User?> = flow {
-    val userId = authSessionPersistence.withKey { readUserId(it) }
-    if (userId == null) return@flow emit(null)
-
+    val userId = findUserId() ?: return@flow emit(null)
     inMemoryDB.userQueries
       .select(userId, ::mapToUser)
       .observeOneOrNull()
@@ -127,10 +125,7 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   override val conversations: Flow<List<Conversation>> = flow {
-    val userId = authSessionPersistence.withKey { readUserId(it) }
-    if (userId == null) {
-      return@flow emit(emptyList())
-    }
+    val userId = findUserId() ?: return@flow emit(emptyList())
 
     val directs = inMemoryDB.chatConversationQueries
       .selectDirects(Member.Id(userId.value), ::mapToConversation)
@@ -148,8 +143,10 @@ class ConversationRepositoryImpl @Inject constructor(
     }.collect { emit(it) }
   }
 
-  private suspend fun applyMemberProfiles(ids: List<Member.Id>) = coroutineScope {
-    ids.forEach { memberId -> launch { applyInsertOrReplace(memberId) } }
+  private suspend fun applyMemberProfiles(ids: List<Member.Id>) {
+    return coroutineScope {
+      ids.forEach { memberId -> launch { applyInsertOrReplace(memberId) } }
+    }
   }
 
   private suspend fun subscribeOnConversationsUnreadCounts(ids: List<Conversation.Id>) {
@@ -215,13 +212,13 @@ class ConversationRepositoryImpl @Inject constructor(
     }
 
     inMemoryDB.chatMemberQueries.deleteExcept(
-      memberIds = memberIds,
-      conversationId = conversationId
+      conversationId = conversationId,
+      memberIds = memberIds
     )
     memberIds.forEach { memberId ->
       inMemoryDB.chatMemberQueries.insertOrReplace(
-        id = memberId,
-        conversationId = conversationId
+        conversationId = conversationId,
+        id = memberId
       )
     }
   }
@@ -245,5 +242,9 @@ class ConversationRepositoryImpl @Inject constructor(
         unreadCount = unreadCount
       )
     }
+  }
+
+  private suspend fun findUserId(): UserId? {
+    return authSessionPersistence.withKey { readUserId(it) }
   }
 }

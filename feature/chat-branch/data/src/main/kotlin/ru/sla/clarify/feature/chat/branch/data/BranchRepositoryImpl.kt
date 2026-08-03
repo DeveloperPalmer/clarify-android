@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chat.branch.data
 
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.Source
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,7 @@ import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
@@ -27,6 +29,10 @@ import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
+import ru.sla.clarify.feature.chat.branch.data.entity.DeleteForEveryoneWrite
+import ru.sla.clarify.feature.chat.branch.data.entity.EditState
+import ru.sla.clarify.feature.chat.branch.data.mapper.toCursor
+import ru.sla.clarify.feature.chat.branch.data.mapper.toDomainModel
 import ru.sla.clarify.feature.chat.branch.domain.BranchRepository
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
 import ru.sla.clarify.feature.chat.branch.domain.entity.EditTargetNotFoundException
@@ -34,11 +40,12 @@ import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
+import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
 import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
-import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
+import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToCommit
@@ -54,6 +61,7 @@ import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
 
+@Suppress("TooManyFunctions")
 @SingleIn(BranchScope::class)
 @ContributesBinding(BranchScope::class)
 class BranchRepositoryImpl @Inject constructor(
@@ -66,7 +74,6 @@ class BranchRepositoryImpl @Inject constructor(
   private val branchId = params.branchId
   private val lastReadWatermark = MutableStateFlow<LocalDateTime?>(null)
 
-  private val commitCache = BranchCommitCache(inMemoryDB, branchId)
   private val fetchCommitHistoryMutex = Mutex()
   private val hasCommitsHistoryCache = MutableStateFlow(true)
   private val fetchLatestCommitsCompletable = CompletableDeferred<Unit>()
@@ -74,7 +81,7 @@ class BranchRepositoryImpl @Inject constructor(
   override suspend fun subscribeOnBranchChanges() {
     val conversationId = requireConversationId()
     firestore.branchLive(
-      conversationId = conversationId,
+      conversationId = conversationId.value,
       branchId = branchId.value
     ).collect { branch ->
       applyBranchChanges(
@@ -91,9 +98,9 @@ class BranchRepositoryImpl @Inject constructor(
     // история: null-курсор потянул бы всё в кэш и свёл бы пагинацию на нет.
     fetchLatestCommitsCompletable.await()
 
-    commitCache.oldestCursor(Conversation.Id(conversationId)).flatMapLatest { cursor ->
+    oldestCursor(conversationId).flatMapLatest { cursor ->
       firestore.commitsLive(
-        conversationId = conversationId,
+        conversationId = conversationId.value,
         branchId = branchId.value,
         from = cursor
       )
@@ -109,7 +116,7 @@ class BranchRepositoryImpl @Inject constructor(
   override suspend fun subscribeOnBranchUnreadCountChanges() {
     val conversationId = requireConversationId()
     firestore.branchUnreadCountLive(
-      conversationId = conversationId,
+      conversationId = conversationId.value,
       branchId = branchId.value
     ).collect { unreadCount ->
       applyUpdateUnreadCount(
@@ -122,7 +129,7 @@ class BranchRepositoryImpl @Inject constructor(
   override suspend fun fetchLatestCommits() {
     val conversationId = requireConversationId()
     val latestCommits = firestore.readCommits(
-      conversationId = conversationId,
+      conversationId = conversationId.value,
       branchId = branchId.value,
       limit = LATEST_PAGE_SIZE.toLong(),
       before = null
@@ -141,13 +148,10 @@ class BranchRepositoryImpl @Inject constructor(
       return@withLock
     }
     val conversationId = requireConversationId()
-
-    // Весь кэш уже на экране, поэтому «долистали до верха» означает, что локальный кэш исчерпан:
-    // страничим из Firestore, начиная сразу после самого старого закэшированного коммита ветки.
-    val cursor = commitCache.readOldestCursor(Conversation.Id(conversationId))
+    val cursor = readOldestCursor(conversationId)
 
     val commitHistory = firestore.readCommits(
-      conversationId = conversationId,
+      conversationId = conversationId.value,
       branchId = branchId.value,
       limit = HISTORY_PAGE_SIZE.toLong(),
       before = cursor,
@@ -168,7 +172,7 @@ class BranchRepositoryImpl @Inject constructor(
     return withContext(Dispatchers.IO) {
       val conversationId = requireConversationId()
       firestore.createBranchCommit(
-        conversationId = conversationId,
+        conversationId = conversationId.value,
         branchId = branchId.value,
         text = text,
         memberUids = memberUids(conversationId)
@@ -180,28 +184,28 @@ class BranchRepositoryImpl @Inject constructor(
     val conversationId = requireConversationId()
     // Оптимистично: сразу показываем новый текст со статусом «в процессе» (часы). Прежнее
     // состояние держим для отката при ошибке записи.
-    val previous = commitCache.readEditState(id) ?: return
-    commitCache.applyEdit(
+    val previous = readEditState(id) ?: return
+    applyEditStatus(
       id = id,
       text = text,
       status = Commit.Status.Sending
     )
     runSuspendCatching {
       firestore.updateBranchCommit(
-        conversationId = conversationId,
+        conversationId = conversationId.value,
         branchId = branchId.value,
         commitId = id.value,
         text = text
       )
     }.onFailure { error ->
       if (error is CommitNotFoundException) {
-        commitCache.deleteCommits(listOf(id))
+        applyDeleteCommits(listOf(id))
         throw EditTargetNotFoundException(id)
       }
-      commitCache.revertEdit(id, previous)
+      applyRevertEdit(id, previous)
       throw error
     }
-    commitCache.applyEdit(
+    applyEditStatus(
       id = id,
       text = text,
       status = Commit.Status.Sent
@@ -214,21 +218,19 @@ class BranchRepositoryImpl @Inject constructor(
     forEveryone: Boolean
   ) {
     val conversationId = requireConversationId()
-    // Снимок удаляемых сообщений — вернём их на место, если сервер откажет.
-    val removed = commitCache.readCommits(ids)
+    val removableCommits = readCachedCommits(ids)
     // Для «у всех» денормализованные lastCommit/unreadDelta считаем по ПОЛНОМУ кэшу до удаления —
     // после оптимистичного удаления они уже не увидели бы удаляемые коммиты.
     val forEveryoneWrite = if (forEveryone) buildDeleteForEveryoneWrite(ids) else null
     // Оптимистичное локальное удаление ДО записи: лента и выделение не ждут ответа сервера.
     // Живой tail-слушатель идёт вперёд от самого старого коммита, поэтому удаление обратно не «всплывёт».
-    commitCache.deleteCommits(ids = ids)
-    // runSuspendCatching, а не try/catch: он пропускает CancellationException мимо, поэтому откат
-    // не запускается из уже отменённой корутины, где suspend-вызов всё равно бросит, не доехав
-    // до кэша. Расхождение в этом случае поправит live-слушатель.
+    applyDeleteCommits(
+      ids = ids
+    )
     runSuspendCatching {
       if (forEveryoneWrite != null) {
         firestore.deleteBranchCommits(
-          conversationId = conversationId,
+          conversationId = conversationId.value,
           branchId = branchId.value,
           peerId = forEveryoneWrite.peerId.value,
           commitIds = ids.map { it.value },
@@ -237,13 +239,12 @@ class BranchRepositoryImpl @Inject constructor(
         )
       } else {
         firestore.hideCommits(
-          conversationId = conversationId,
+          conversationId = conversationId.value,
           commitIds = ids.map { it.value }
         )
       }
     }.onFailure { error ->
-      // Сервер отказал — возвращаем сообщения в кэш; ошибка уходит наверх (ui покажет snackbar).
-      commitCache.restoreCommits(removed)
+      restoreCommits(removableCommits)
       throw error
     }
   }
@@ -255,11 +256,11 @@ class BranchRepositoryImpl @Inject constructor(
       val conversationId = requireConversationId()
 
       val branchCommits = inMemoryDB.chatCommitQueries
-        .select(Conversation.Id(conversationId), branchId, ::mapToCommit)
+        .select(conversationId, branchId, ::mapToCommit)
         .executeAsList()
 
       val peerLastReadAt = firestore.readMember(
-        conversationId = conversationId,
+        conversationId = conversationId.value,
         memberId = peerId.value
       )
         ?.lastReadAt
@@ -279,7 +280,7 @@ class BranchRepositoryImpl @Inject constructor(
     val conversationId = requireConversationId()
 
     val memberId = inMemoryDB.chatMemberQueries
-      .selectDirect(Conversation.Id(conversationId), ::mapToMember)
+      .selectDirect(conversationId, ::mapToMember)
       .executeAsList()
       .firstOrNull { it.id.value != userId.value }
       ?.id
@@ -295,7 +296,7 @@ class BranchRepositoryImpl @Inject constructor(
     return withContext(Dispatchers.IO) {
       firestore.updateBranchUnreadCount(
         branchId = branchId.value,
-        conversationId = requireConversationId()
+        conversationId = requireConversationId().value
       )
     }
   }
@@ -310,12 +311,12 @@ class BranchRepositoryImpl @Inject constructor(
       }
       lastReadWatermark.value = lastReadAt
       firestore.updateReadWatermark(
-        conversationId = conversationId,
+        conversationId = conversationId.value,
         lastReadAt = lastReadAt
       )
       firestore.updateBranchUnreadCount(
         branchId = branchId.value,
-        conversationId = conversationId
+        conversationId = conversationId.value
       )
     }
   }
@@ -324,7 +325,7 @@ class BranchRepositoryImpl @Inject constructor(
     return withContext(Dispatchers.IO) {
       firestore.createOpenMergeRequest(
         branchId = branchId.value,
-        conversationId = requireConversationId()
+        conversationId = requireConversationId().value
       )
     }
   }
@@ -334,7 +335,7 @@ class BranchRepositoryImpl @Inject constructor(
       val conversationId = requireConversationId()
       firestore.updateMergeApproval(
         branchId = branchId.value,
-        conversationId = conversationId,
+        conversationId = conversationId.value,
         memberUids = memberUids(conversationId)
       )
     }
@@ -344,7 +345,7 @@ class BranchRepositoryImpl @Inject constructor(
     return withContext(Dispatchers.IO) {
       firestore.deleteMergeRequestApproval(
         branchId = branchId.value,
-        conversationId = requireConversationId()
+        conversationId = requireConversationId().value
       )
     }
   }
@@ -353,7 +354,7 @@ class BranchRepositoryImpl @Inject constructor(
     return withContext(Dispatchers.IO) {
       firestore.deleteMergeRequest(
         branchId = branchId.value,
-        conversationId = requireConversationId()
+        conversationId = requireConversationId().value
       )
     }
   }
@@ -362,7 +363,7 @@ class BranchRepositoryImpl @Inject constructor(
     return withContext(Dispatchers.IO) {
       firestore.updateMergeFinalize(
         branchId = branchId.value,
-        conversationId = requireConversationId()
+        conversationId = requireConversationId().value
       )
     }
   }
@@ -387,7 +388,7 @@ class BranchRepositoryImpl @Inject constructor(
     val selfId = requireUserId()
 
     val commitsFlow = inMemoryDB.chatCommitQueries
-      .select(Conversation.Id(conversationId), branchId, ::mapToCommit)
+      .select(conversationId, branchId, ::mapToCommit)
       .observeList()
 
     val peerReadAtFlow = peerReadAt(conversationId, selfId)
@@ -406,43 +407,40 @@ class BranchRepositoryImpl @Inject constructor(
     val conversationId = requireConversationId()
     firestore.branchUnreadCountLive(
       branchId = branchId.value,
-      conversationId = conversationId
+      conversationId = conversationId.value
     ).collect { emit(it) }
   }
 
   override val members: Flow<List<Member>> = flow {
     val conversationId = requireConversationId()
     inMemoryDB.chatMemberQueries
-      .selectDirect(Conversation.Id(conversationId), ::mapToMember)
+      .selectDirect(conversationId, ::mapToMember)
       .observeList()
       .collect { emit(it) }
   }
 
   override fun member(id: UserId): Flow<Member?> = flow {
+    val memberId = Member.Id(id.value)
     val conversationId = requireConversationId()
     inMemoryDB.chatMemberQueries
-      .selectDirectById(Conversation.Id(conversationId), Member.Id(id.value), ::mapToMember)
+      .selectDirectById(conversationId, memberId, ::mapToMember)
       .observeOneOrNull()
       .collect { emit(it) }
   }
 
-  /**
-   * Read-watermark пира на уровне conversation (read-receipts общие для всей переписки,
-   * включая ветки). Branch direct-only — участников ровно двое, пир тот, чей id != self.
-   */
-  private fun peerReadAt(conversationId: String, selfId: UserId): Flow<LocalDateTime?> = flow {
-    val peerId = withContext(Dispatchers.IO) {
+  private fun peerReadAt(conversationId: Conversation.Id, selfId: UserId): Flow<LocalDateTime?> = flow {
+    val member = withContext(Dispatchers.IO) {
       inMemoryDB.chatMemberQueries
-        .selectDirect(Conversation.Id(conversationId), ::mapToMember)
+        .selectDirect(conversationId, ::mapToMember)
         .executeAsList()
         .firstOrNull { it.id.value != selfId.value }
-        ?.id
-        ?.value
     }
-    if (peerId != null) {
+    if (member == null) {
+      emit(null)
+    } else {
       firestore.memberLive(
-        conversationId = conversationId,
-        memberId = peerId
+        conversationId = conversationId.value,
+        memberId = member.id.value
       ).map { member ->
         member?.lastReadAt
           ?.toEpochMillis()
@@ -450,19 +448,17 @@ class BranchRepositoryImpl @Inject constructor(
       }.collect {
         emit(it)
       }
-    } else {
-      emit(null)
     }
   }
 
-  private fun memberUids(conversationId: String): List<String> {
+  private fun memberUids(conversationId: Conversation.Id): List<String> {
     return inMemoryDB.chatMemberQueries
-      .selectIds(Conversation.Id(conversationId))
+      .selectIds(conversationId)
       .executeAsList()
       .map { it.value }
   }
 
-  private suspend fun applyBranchChanges(conversationId: String, branch: BranchNM?) {
+  private suspend fun applyBranchChanges(conversationId: Conversation.Id, branch: BranchNM?) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
         if (branch == null) {
@@ -490,10 +486,10 @@ class BranchRepositoryImpl @Inject constructor(
     if (mergeRequest != null) {
       inMemoryDB.mergeRequestQueries.insertOrReplace(
         branchId = branch.id,
-        status = mergeRequest.status.value,
         initiatorId = mergeRequest.initiatorId,
-        requestedAt = mergeRequest.requestedAt,
         approvedByIds = mergeRequest.approvedByIds,
+        status = mergeRequest.status.value,
+        requestedAt = mergeRequest.requestedAt,
         mergedAt = mergeRequest.mergedAt,
         mergedIntoBranchId = mergeRequest.mergedIntoBranchId
       )
@@ -511,7 +507,7 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun applyInsertOrReplaceCommits(conversationId: String, commits: List<CommitNM>) {
+  private suspend fun applyInsertOrReplaceCommits(conversationId: Conversation.Id, commits: List<CommitNM>) {
     return withContext(Dispatchers.IO) {
       val userId = requireUserId()
       inMemoryDB.transaction {
@@ -528,7 +524,7 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   private suspend fun applyCommitChanges(
-    conversationId: String,
+    conversationId: Conversation.Id,
     userId: UserId,
     changes: List<FirestoreChange<CommitNM>>
   ) {
@@ -537,9 +533,6 @@ class BranchRepositoryImpl @Inject constructor(
         changes.forEach { change ->
           val commit = change.data
           when (change.changeType) {
-            FirestoreDocumentResult.Removed -> {
-              inMemoryDB.chatCommitQueries.delete(Commit.Id(commit.id))
-            }
             FirestoreDocumentResult.Added,
             FirestoreDocumentResult.Modified -> {
               applyInsertOrReplaceCommit(
@@ -549,6 +542,9 @@ class BranchRepositoryImpl @Inject constructor(
                 hasPendingWrites = change.hasPendingWrites
               )
             }
+            FirestoreDocumentResult.Removed -> {
+              inMemoryDB.chatCommitQueries.delete(Commit.Id(commit.id))
+            }
           }
         }
       }
@@ -556,13 +552,13 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   private fun applyInsertOrReplaceCommit(
-    conversationId: String,
+    conversationId: Conversation.Id,
     commit: CommitNM,
     userId: UserId,
     hasPendingWrites: Boolean
   ) {
     val row = commit.toDomainModel(
-      conversationId = Conversation.Id(conversationId),
+      conversationId = conversationId,
       selfUserId = userId,
       hasPendingWrites = hasPendingWrites
     )
@@ -581,14 +577,98 @@ class BranchRepositoryImpl @Inject constructor(
     )
   }
 
-  private fun requireConversationId(): String {
-    return requireNotNull(
-      inMemoryDB.chatBranchQueries
-        .selectById(branchId, ::mapToBranch)
+  private fun oldestCursor(conversationId: Conversation.Id): Flow<CommitCursor?> {
+    return inMemoryDB.chatCommitQueries
+      .selectOldestCursor(conversationId, branchId)
+      .observeOneOrNull()
+      .map { oldest -> oldest?.toCursor() }
+  }
+
+  private suspend fun readOldestCursor(conversationId: Conversation.Id): CommitCursor? {
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.chatCommitQueries
+        .selectOldestCursor(conversationId, branchId)
         .executeAsOneOrNull()
-        ?.conversationId
-        ?.value
-    ) {
+        ?.toCursor()
+    }
+  }
+
+  private suspend fun readEditState(id: Commit.Id): EditState? {
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.chatCommitQueries
+        .selectEditState(id)
+        .executeAsOneOrNull()
+        ?.toDomainModel()
+    }
+  }
+
+  private suspend fun applyEditStatus(id: Commit.Id, text: String, status: Commit.Status) {
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.chatCommitQueries.updateEdit(
+        id = id,
+        text = text,
+        status = status.value,
+        editedAtNanos = Timestamp.now().toEpochNanos()
+      )
+    }
+  }
+
+  private suspend fun applyRevertEdit(id: Commit.Id, previous: EditState) {
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.chatCommitQueries.updateEdit(
+        id = id,
+        text = previous.text,
+        status = previous.status,
+        editedAtNanos = previous.editedAtNanos
+      )
+    }
+  }
+
+  private suspend fun applyDeleteCommits(ids: List<Commit.Id>) {
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.transaction { ids.forEach { inMemoryDB.chatCommitQueries.delete(it) } }
+    }
+  }
+
+  private suspend fun readCachedCommits(ids: List<Commit.Id>): List<ChatCommit> {
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.chatCommitQueries
+        .selectByIds(ids)
+        .executeAsList()
+    }
+  }
+
+  private suspend fun restoreCommits(commits: List<ChatCommit>) {
+    if (commits.isEmpty()) {
+      return
+    }
+    return withContext(Dispatchers.IO) {
+      inMemoryDB.transaction {
+        commits.forEach { commit ->
+          inMemoryDB.chatCommitQueries.insertOrReplace(
+            id = commit.id,
+            conversationId = commit.conversationId,
+            branchId = commit.branchId,
+            senderId = commit.senderId,
+            invitedId = commit.invitedId,
+            type = commit.type,
+            status = commit.status,
+            text = commit.text,
+            isSelf = commit.isSelf,
+            editedAtNanos = commit.editedAtNanos,
+            createdAtNanos = commit.createdAtNanos
+          )
+        }
+      }
+    }
+  }
+
+  private fun requireConversationId(): Conversation.Id {
+    val conversationId = inMemoryDB.chatBranchQueries
+      .selectById(branchId, ::mapToBranch)
+      .executeAsOneOrNull()
+      ?.conversationId
+    return requireNotNull(conversationId) {
       "conversationId not found for branch ${branchId.value}"
     }
   }
@@ -597,13 +677,6 @@ class BranchRepositoryImpl @Inject constructor(
     return requireNotNull(authSessionPersistence.withKey { readUserId(it) })
   }
 }
-
-/** Денормализованные поля для удаления «у всех», посчитанные по полному кэшу до удаления. */
-private data class DeleteForEveryoneWrite(
-  val peerId: Peer.Id,
-  val lastCommit: LastCommitParams,
-  val peerUnreadDelta: Int
-)
 
 private const val LATEST_PAGE_SIZE = 50
 private const val HISTORY_PAGE_SIZE = 30
