@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,23 +42,13 @@ internal fun showBranchCreationModalSheet(commit: Commit): ScreenViewEvent<ViewS
 
       @Composable
       override fun ViewEventHostScope.Content() {
-        BackHandler {
-          intents.clearCreateBranchError()
-          dismissEventPresentation()
-        }
-        LaunchedEffect(Unit) {
-          intents.clearCreateBranchError()
-        }
+        val state by stateFlow.collectAsState()
+        BackHandler { dismissEventPresentation() }
         ModalBottomSheet(
           visible = true,
           onUpdateState = { sheetState.value = it },
-          onDismissRequest = {
-            intents.clearCreateBranchError()
-            dismissEventPresentation()
-          },
-          properties = ModalBottomSheetProperties()
+          onDismissRequest = ::dismissEventPresentation
         ) {
-          val state by stateFlow.collectAsState()
           BranchCreateContent(
             modifier = Modifier
               .fillMaxWidth()
@@ -89,13 +77,13 @@ internal fun showBranchesModalSheet(): ScreenViewEvent<ViewState, ViewIntents> {
 
       @Composable
       override fun ViewEventHostScope.Content() {
+        val state by stateFlow.collectAsState()
         BackHandler { dismissEventPresentation() }
         ModalBottomSheet(
           visible = true,
           onUpdateState = { sheetState.value = it },
           onDismissRequest = { dismissEventPresentation() }
         ) {
-          val state by stateFlow.collectAsState()
           BranchesContent(
             modifier = Modifier.fillMaxWidth(),
             branches = state.branches,

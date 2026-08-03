@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +42,7 @@ import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
+import ru.sla.clarify.uikit.theme.HSpacer
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.compose.resolveTextRef
 import ru.sla.resourcerefs.resRef
@@ -199,32 +201,30 @@ private fun EditHeader(
 ) {
   Row(
     modifier = modifier
+      .height(IntrinsicSize.Max)
       .fillMaxWidth()
       .surface(
-        backgroundColor = AppTheme.colors.cardSecondary,
-        shape = AppTheme.shapes.round12
-      )
-      .padding(
-        vertical = 8.dp,
-        horizontal = 12.dp
+        shape = AppTheme.shapes.round12,
+        backgroundColor = AppTheme.colors.cardSecondary
       ),
     verticalAlignment = Alignment.CenterVertically
   ) {
+    HSpacer(12.dp)
     Icon(
-      modifier = Modifier.size(22.dp),
+      modifier = Modifier.size(24.dp),
       painter = painterResource(iconRes),
       tint = AppTheme.colors.contentAccentPrimary,
       contentDescription = null
     )
+    HSpacer(8.dp)
     Box(
       modifier = Modifier
-        .padding(start = 12.dp, end = 8.dp)
         .width(3.dp)
-        .height(32.dp)
+        .fillMaxHeight(0.7f)
         .clip(CircleShape)
         .background(AppTheme.colors.contentAccentPrimary)
-        .fillMaxHeight()
     )
+    HSpacer(8.dp)
     Column(modifier = Modifier.weight(1f)) {
       Text(
         text = resolveTextRef(title),

@@ -61,7 +61,10 @@ internal fun BranchCreateContent(
         branchName = it
         onClearCreateBranchError()
       },
-      placeholder = resRef(R.string.thread_create_branch_sheet_field_name_placeholder)
+      placeholder = resRef(R.string.thread_create_branch_sheet_field_name_placeholder),
+      // Коммит захвачен вместе с событием и за жизнь шита не меняется — фокус запрашивается
+      // единожды, при появлении поля.
+      focusRequestKey = commit.source.id
     )
     VSpacer(12.dp)
     PrimaryButton(

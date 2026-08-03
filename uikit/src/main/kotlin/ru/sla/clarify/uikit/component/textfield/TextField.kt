@@ -85,8 +85,6 @@ internal fun TextFieldInternal(
   // держит выделение/каретку между рекомпозициями. Без него нельзя программно увести каретку.
   var textFieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
   val currentValue = textFieldValue.copy(text = value)
-  // Смена [focusRequestKey] на не-null = вход в режим редактирования: ставим фокус, поднимаем
-  // клавиатуру и уводим каретку в конец текста, чтобы можно было сразу продолжать печатать.
   LaunchedEffect(focusRequestKey) {
     if (focusRequestKey != null) {
       textFieldValue = TextFieldValue(value, TextRange(value.length))
