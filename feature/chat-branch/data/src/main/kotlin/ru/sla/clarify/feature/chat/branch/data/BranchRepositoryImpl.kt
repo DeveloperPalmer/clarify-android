@@ -54,6 +54,7 @@ import ru.sla.clarify.mapper.data.mapToUser
 import ru.sla.clarify.mapper.data.toDomain
 import ru.sla.clarify.mapper.data.toDomainModel
 import ru.sla.clarify.mapper.data.toLocalDateTime
+import ru.sla.clarify.mapper.data.toNetworkModel
 import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
@@ -168,7 +169,7 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun sendCommit(text: String) {
+  override suspend fun sendCommit(text: String, replyCommit: Commit.Message?) {
     return withContext(Dispatchers.IO) {
       val conversationId = requireConversationId()
       firestore.createBranchCommit(
@@ -176,7 +177,7 @@ class BranchRepositoryImpl @Inject constructor(
         branchId = branchId.value,
         text = text,
         memberUids = memberUids(conversationId),
-        replyCommit = null
+        replyCommit = replyCommit?.toNetworkModel()
       )
     }
   }

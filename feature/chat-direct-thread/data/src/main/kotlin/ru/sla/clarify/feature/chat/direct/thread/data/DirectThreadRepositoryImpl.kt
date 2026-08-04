@@ -60,6 +60,7 @@ import ru.sla.clarify.mapper.data.mapToMember
 import ru.sla.clarify.mapper.data.toDomain
 import ru.sla.clarify.mapper.data.toDomainModel
 import ru.sla.clarify.mapper.data.toLocalDateTime
+import ru.sla.clarify.mapper.data.toNetworkModel
 import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
@@ -184,13 +185,13 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  override suspend fun sendCommit(text: String) {
+  override suspend fun sendCommit(text: String, replyCommit: Commit.Message?) {
     firestore.createDirectCommit(
       conversationId = findConversationId()?.value,
       text = text,
       peerId = peerId.value,
       branchId = null,
-      replyCommit = null
+      replyCommit = replyCommit?.toNetworkModel()
     )
   }
 
