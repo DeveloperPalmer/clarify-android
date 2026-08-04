@@ -189,7 +189,8 @@ class DirectThreadRepositoryImpl @Inject constructor(
       conversationId = findConversationId()?.value,
       text = text,
       peerId = peerId.value,
-      branchId = null
+      branchId = null,
+      replyCommit = null
     )
   }
 
@@ -455,6 +456,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       senderId = row.senderId,
       type = row.type,
       text = row.text,
+      replyCommit = row.replyCommit,
       invitedId = row.invitedId,
       createdAtNanos = row.createdAtNanos,
       isSelf = row.isSelf,
@@ -569,6 +571,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
             senderId = commit.senderId,
             type = commit.type,
             text = commit.text,
+            replyCommit = commit.replyCommit,
             invitedId = commit.invitedId,
             createdAtNanos = commit.createdAtNanos,
             isSelf = commit.isSelf,

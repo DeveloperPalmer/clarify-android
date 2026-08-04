@@ -293,6 +293,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       senderId = row.senderId,
       type = row.type,
       text = row.text,
+      replyCommit = row.replyCommit,
       invitedId = row.invitedId,
       createdAtNanos = row.createdAtNanos,
       isSelf = row.isSelf,

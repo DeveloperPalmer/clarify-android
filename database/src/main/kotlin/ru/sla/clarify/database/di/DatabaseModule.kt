@@ -10,6 +10,7 @@ import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.User
 import ru.sla.clarify.database.adapter.BranchIdAdapter
 import ru.sla.clarify.database.adapter.CommitIdAdapter
+import ru.sla.clarify.database.adapter.CommitReplyAdapter
 import ru.sla.clarify.database.adapter.ConversationIdAdapter
 import ru.sla.clarify.database.adapter.MemberIdAdapter
 import ru.sla.clarify.database.adapter.UserIdAdapter
@@ -50,6 +51,7 @@ interface DatabaseModule {
         conversationIdAdapter = ConversationIdAdapter,
         branchIdAdapter = BranchIdAdapter,
         senderIdAdapter = UserIdAdapter,
+        replyCommitAdapter = CommitReplyAdapter,
         invitedIdAdapter = UserIdAdapter
       ),
       ChatMemberAdapter = ChatMember.Adapter(

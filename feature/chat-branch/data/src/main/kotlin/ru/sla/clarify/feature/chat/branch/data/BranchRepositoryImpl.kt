@@ -175,7 +175,8 @@ class BranchRepositoryImpl @Inject constructor(
         conversationId = conversationId.value,
         branchId = branchId.value,
         text = text,
-        memberUids = memberUids(conversationId)
+        memberUids = memberUids(conversationId),
+        replyCommit = null
       )
     }
   }
@@ -569,6 +570,7 @@ class BranchRepositoryImpl @Inject constructor(
       senderId = row.senderId,
       type = row.type,
       text = row.text,
+      replyCommit = row.replyCommit,
       invitedId = row.invitedId,
       createdAtNanos = row.createdAtNanos,
       isSelf = row.isSelf,
@@ -654,6 +656,7 @@ class BranchRepositoryImpl @Inject constructor(
             type = commit.type,
             status = commit.status,
             text = commit.text,
+            replyCommit = commit.replyCommit,
             isSelf = commit.isSelf,
             editedAtNanos = commit.editedAtNanos,
             createdAtNanos = commit.createdAtNanos

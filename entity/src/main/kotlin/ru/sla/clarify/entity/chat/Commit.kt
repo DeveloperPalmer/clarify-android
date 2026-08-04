@@ -24,8 +24,17 @@ sealed interface Commit {
     override val isSelf: Boolean,
     override val status: Status,
     val text: String,
-    val editedAt: LocalDateTime? = null
+    val editedAt: LocalDateTime? = null,
+    val replyCommit: Reply? = null
   ) : Commit
+
+  @Immutable
+  data class Reply(
+    val id: Id,
+    val senderId: UserId,
+    val isSelf: Boolean,
+    val text: String
+  )
 
   @Immutable
   data class InviteMember(

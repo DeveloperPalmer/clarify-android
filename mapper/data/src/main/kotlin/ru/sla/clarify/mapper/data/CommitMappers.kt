@@ -27,6 +27,7 @@ fun mapToCommit(
   senderId: UserId,
   type: String,
   text: String,
+  replyCommit: Commit.Reply?,
   invitedId: UserId?,
   createdAtNanos: Long,
   isSelf: Boolean,
@@ -44,7 +45,8 @@ fun mapToCommit(
         timestamp = localTimestamp,
         isSelf = isSelf,
         status = Commit.Status.fromValue(status),
-        editedAt = editedAtNanos?.let { (it / NANOS_PER_MILLI).toLocalDateTime() }
+        editedAt = editedAtNanos?.let { (it / NANOS_PER_MILLI).toLocalDateTime() },
+        replyCommit = replyCommit
       )
     }
     Commit.Type.InviteMember -> {
@@ -77,6 +79,7 @@ fun CommitNM.toDomainModel(
     senderId = UserId(senderUid),
     type = type.value,
     text = text.orEmpty(),
+    replyCommit = replyCommit?.toDomainModel(selfUserId),
     invitedId = invitedUid?.let(::UserId),
     createdAtNanos = createdAt?.toEpochNanos() ?: 0L,
     isSelf = senderUid == selfUserId.value,
