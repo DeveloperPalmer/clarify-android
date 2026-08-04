@@ -37,7 +37,7 @@ class DirectThreadModel @Inject constructor(
     scope.launch { directThreadRepository.markReadUpTo(lastReadAt) }
   }
 
-  fun sendMessage(text: String, replyCommit: Commit.Message? = null) {
+  fun sendMessage(text: String, replyCommit: Commit.Message?) {
     scope.launch { directThreadRepository.sendCommit(text, replyCommit) }
   }
 

@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import me.tatarka.inject.annotations.Inject
@@ -13,12 +14,14 @@ import ru.kode.remo.errors
 import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.entity.EditedMessage
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.startOnSubscribe
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.entity.ContentLoadState
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.core.ui.toUiLceState
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
@@ -71,25 +74,36 @@ class DirectThreadViewModel(
       }
     }
 
-    onEach(directThreadModel.commits.map { it.toUiCommits() }) {
+    onEach(
+      combine(
+        directThreadModel.commits,
+        directThreadModel.peer
+      ) { commits, peer ->
+        commits.toUiCommits(memberNames = peer.toMemberNames())
+      }
+    ) {
       transitionTo { state, commits ->
         val commitsIds = commits.mapTo(mutableSetOf()) { it.source.id }
         val selectedCommitIds = state.selectedCommitIds.filter { it in commitsIds }
         val menuCommit = state.focusedCommit?.takeIf { it.source.id in commitsIds }
         val editingMessage = state.editingCommit?.takeIf { it.source.id in commitsIds }
+        val replyingMessage = state.replyingCommit?.takeIf { it.source.id in commitsIds }
         state.copy(
           focusedCommit = menuCommit,
-          editingCommit = editingMessage
+          editingCommit = editingMessage,
+          replyingCommit = replyingMessage
         ).updateSelection(
           commits = commits,
           selectedCommitIds = selectedCommitIds
         )
       }
       action { prevState, newState, _ ->
-        // Цель редактирования исчезла из ленты (удалили здесь или на другом устройстве) —
-        // режим уже сброшен транзишеном выше, осталось объяснить это пользователю.
+        // Цель режима исчезла из ленты (удалили здесь или на другом устройстве) — режим уже
+        // сброшен транзишеном выше, осталось объяснить это пользователю.
         if (prevState.editingCommit != null && newState.editingCommit == null) {
           sendViewEvent(Snackbar(message = resRef(R.string.thread_edit_target_deleted)))
+        } else if (prevState.replyingCommit != null && newState.replyingCommit == null) {
+          sendViewEvent(Snackbar(message = resRef(R.string.thread_reply_target_deleted)))
         }
       }
     }
@@ -108,6 +122,7 @@ class DirectThreadViewModel(
 
     configureCommitHistoryTransitions()
     configureCommitMessageTransitions()
+    configureCommitReplyTransitions()
     configureCommitEditTransitions()
     configureCommitDeletionTransitions()
     configureCommitMenuTransitions()
@@ -162,7 +177,55 @@ class DirectThreadViewModel(
 
     onEach(intent(ViewIntents::sendMessage)) {
       action { _, _, text ->
-        directThreadModel.sendMessage(text.trim())
+        directThreadModel.sendMessage(
+          text = text.trim(),
+          replyCommit = null
+        )
+      }
+    }
+
+    onEach(intent(ViewIntents::replyMessage)) {
+      // Режим ответа снимается сразу: композер возвращается в обычный вид, не дожидаясь сервера
+      // (как и при обычной отправке).
+      transitionTo { state, _ ->
+        state.copy(replyingCommit = null)
+      }
+      action { state, _, text ->
+        directThreadModel.sendMessage(
+          text = text.trim(),
+          replyCommit = state.replyingCommit?.source as? DomainCommit.Message
+        )
+      }
+    }
+  }
+
+  private fun MachineDsl<ViewState>.configureCommitReplyTransitions() {
+    onEach(intent(ViewIntents::showReplyMessage)) {
+      transitionTo { state, commit ->
+        // Ответ и редактирование взаимоисключающие: вход в один режим снимает другой.
+        state.copy(
+          replyingCommit = commit,
+          editingCommit = null,
+          focusedCommit = null
+        )
+      }
+    }
+
+    onEach(intent(ViewIntents::hideReplyMessage)) {
+      transitionTo { state, _ ->
+        state.copy(replyingCommit = null)
+      }
+    }
+
+    onEach(intent(ViewIntents::showQuotedMessage)) {
+      transitionTo { state, commitId ->
+        state.copy(highlightedCommitId = commitId)
+      }
+    }
+
+    onEach(intent(ViewIntents::clearHighlightedCommit)) {
+      transitionTo { state, _ ->
+        state.copy(highlightedCommitId = null)
       }
     }
   }
@@ -172,6 +235,7 @@ class DirectThreadViewModel(
       transitionTo { state, commit ->
         state.copy(
           editingCommit = commit.takeIf { it.source.isSelf },
+          replyingCommit = null,
           focusedCommit = null
         )
       }
@@ -363,6 +427,10 @@ class DirectThreadViewModel(
       }
     }
   }
+}
+
+private fun Peer?.toMemberNames(): Map<UserId, String?> {
+  return this?.let { mapOf(UserId(it.id.value) to it.displayName) }.orEmpty()
 }
 
 private fun ViewState.updateSelection(

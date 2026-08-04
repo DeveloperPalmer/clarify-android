@@ -21,7 +21,9 @@ data class ViewState(
   val selectionEnabled: Boolean = false,
   val selectedCommitIds: List<DomainCommit.Id> = emptyList(),
   val focusedCommit: Commit? = null,
-  val editingCommit: Commit? = null
+  val editingCommit: Commit? = null,
+  val replyingCommit: Commit? = null,
+  val highlightedCommitId: DomainCommit.Id? = null
 ) {
 
   @Immutable

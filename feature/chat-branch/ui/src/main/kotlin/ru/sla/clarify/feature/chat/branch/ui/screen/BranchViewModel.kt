@@ -101,8 +101,13 @@ class BranchViewModel(
     // Имя автора цитаты резолвится локально по участникам ветки, поэтому лента собирается
     // вместе с ними: свои цитаты подписываются «Вы», чужие — именем участника.
     onEach(
-      combine(branchModel.commits, branchModel.members) { commits, members ->
-        commits.toUiCommits(memberNames = members.associate { UserId(it.id.value) to it.displayName })
+      combine(
+        branchModel.commits,
+        branchModel.members
+      ) { commits, members ->
+        commits.toUiCommits(
+          memberNames = members.associate { UserId(it.id.value) to it.displayName }
+        )
       }
     ) {
       transitionTo { state, commits ->

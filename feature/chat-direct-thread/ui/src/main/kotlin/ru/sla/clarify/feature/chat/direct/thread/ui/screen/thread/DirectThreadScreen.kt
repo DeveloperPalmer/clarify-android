@@ -51,6 +51,7 @@ import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.resourcerefs.resRef
 import java.time.LocalDateTime
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 @Composable
 fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
@@ -70,6 +71,10 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
       enabled = state.focusedCommit != null,
       onBack = intents.hideMessageMenu
     )
+    BackHandler(
+      enabled = state.replyingCommit != null,
+      onBack = intents.hideReplyMessage
+    )
     ScreenScaffold(scaffoldState) {
       DirectThreadReadyContent(
         modifier = Modifier.fillMaxSize(),
@@ -85,6 +90,10 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
         onEditMessage = intents.showEditMessage,
         onSubmitEdit = intents.confirmEditMessage,
         onCancelEdit = intents.hideEditMessage,
+        onReplyMessage = intents.showReplyMessage,
+        onCancelReply = intents.hideReplyMessage,
+        onQuoteClick = intents.showQuotedMessage,
+        onHighlightHandled = intents.clearHighlightedCommit,
         onSelectMessage = intents.toggleSelectionMode,
         onCopyMessage = { commit ->
           (commit as? Textual)?.text?.let { text ->
@@ -97,6 +106,7 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
         },
         onCommitsRead = intents.markMessageAsRead,
         onSend = intents.sendMessage,
+        onReply = intents.replyMessage,
         onCommitLongClick = intents.toggleSelectionMode,
         onCommitClick = { commit ->
           if (state.selectionEnabled) {
@@ -116,6 +126,7 @@ private fun DirectThreadReadyContent(
   onBack: () -> Unit,
   onClose: () -> Unit,
   onSend: (String) -> Unit,
+  onReply: (String) -> Unit,
   onShowBranches: () -> Unit,
   onLoadMore: () -> Unit,
   onCommitClick: (Commit.Message) -> Unit,
@@ -128,6 +139,10 @@ private fun DirectThreadReadyContent(
   onEditMessage: (Commit) -> Unit,
   onSubmitEdit: (String) -> Unit,
   onCancelEdit: () -> Unit,
+  onReplyMessage: (Commit) -> Unit,
+  onCancelReply: () -> Unit,
+  onQuoteClick: (DomainCommit.Id) -> Unit,
+  onHighlightHandled: () -> Unit,
   onCopyMessage: (Commit) -> Unit,
   onSelectMessage: (Commit) -> Unit,
   modifier: Modifier = Modifier
@@ -183,6 +198,10 @@ private fun DirectThreadReadyContent(
           onClick = onCommitClick,
           onLongClick = onCommitLongClick,
           onLoad = onLoadMore,
+          highlightedCommitId = state.highlightedCommitId,
+          onHighlightHandled = onHighlightHandled,
+          onReply = onReplyMessage,
+          onQuoteClick = onQuoteClick,
           onEdit = onEditMessage,
           onCopy = onCopyMessage,
           onSelect = onSelectMessage,
@@ -208,9 +227,13 @@ private fun DirectThreadReadyContent(
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 8.dp),
         editingMessage = state.editingCommit,
+        replyingMessage = state.replyingCommit,
+        peerName = state.peer?.displayName.orEmpty(),
         onSend = onSend,
+        onReply = onReply,
         onSubmitEdit = onSubmitEdit,
-        onCancelEdit = onCancelEdit
+        onCancelEdit = onCancelEdit,
+        onCancelReply = onCancelReply
       )
     }
     PopupScrim(
@@ -280,14 +303,20 @@ private fun TopAppBarCenterContent(
 @Composable
 private fun BottomArea(
   editingMessage: Commit?,
+  replyingMessage: Commit?,
+  peerName: String,
   onSend: (String) -> Unit,
+  onReply: (String) -> Unit,
   onSubmitEdit: (String) -> Unit,
   onCancelEdit: () -> Unit,
+  onCancelReply: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   var inputValue by rememberSaveable { mutableStateOf("") }
   val editingSource = editingMessage?.source
   val editingText = (editingMessage as? Textual)?.text
+  val replyingSource = replyingMessage?.source
+  val replyingText = (replyingMessage as? Textual)?.text
   // Вход в режим и пере-выбор цели перезаписывают поле текстом оригинала, выход очищает —
   // черновики осознанно не сохраняются. Сравнение с прошлым id (а не LaunchedEffect от null)
   // не даёт затереть восстановленный rememberSaveable-текст при пересоздании экрана.
@@ -303,29 +332,32 @@ private fun BottomArea(
     sendEnabled = editingSource == null || inputValue.trim() != editingText,
     sendIconRes = if (editingSource != null) R.drawable.ic_check_24 else R.drawable.ic_send_24,
     // Ключ меняется при входе/выходе/пере-выборе цели — программно заменённый текст
-    // проявляется мягко, обычная печать не фейдится.
+    // проявляется мягко, обычная печать не фейдится. Ответ текст не подменяет, поэтому в ключ
+    // не входит: набранный черновик остаётся на месте.
     contentFadeKey = editingSource?.id?.value,
-    // Вход в режим редактирования ставит фокус в поле, поднимает клавиатуру и уводит каретку
-    // в конец текста. null вне режима — фокус не запрашивается при обычной отправке.
-    focusRequestKey = editingSource?.id?.value,
+    // Вход в режим редактирования или ответа ставит фокус в поле, поднимает клавиатуру и уводит
+    // каретку в конец текста. null вне режимов — фокус не запрашивается при обычной отправке.
+    focusRequestKey = (editingSource ?: replyingSource)?.id?.value,
     placeholder = if (editingSource != null) {
       resRef(R.string.thread_edit_empty_placeholder)
     } else {
       resRef(R.string.chat_input_placeholder)
     },
-    header = editingText?.let { text ->
-      {
-        ChatTextFieldDefaults.EditHeader(
-          text = text,
-          onClose = onCancelEdit
-        )
-      }
-    },
+    // Редактирование и ответ взаимоисключающие, но шапка одна: приоритет у правки.
+    header = composerHeader(
+      editingText = editingText,
+      replyingMessage = replyingMessage,
+      replyingText = replyingText,
+      peerName = peerName,
+      onCancelEdit = onCancelEdit,
+      onCancelReply = onCancelReply
+    ),
+    // Намерение выбирается здесь, по режиму композера: правка, ответ или обычная отправка.
     onSend = {
-      if (editingSource != null) {
-        onSubmitEdit(inputValue)
-      } else {
-        onSend(inputValue)
+      when {
+        editingSource != null -> onSubmitEdit(inputValue)
+        replyingSource != null -> onReply(inputValue)
+        else -> onSend(inputValue)
       }
     },
     // При редактировании поле не чистим: ошибка отправки не должна терять правку;
@@ -336,4 +368,44 @@ private fun BottomArea(
       }
     }
   )
+}
+
+/**
+ * Шапка композера: правка перекрывает ответ (в состоянии они и так взаимоисключающие), вне обоих
+ * режимов слота нет.
+ */
+@Composable
+private fun composerHeader(
+  editingText: String?,
+  replyingMessage: Commit?,
+  replyingText: String?,
+  peerName: String,
+  onCancelEdit: () -> Unit,
+  onCancelReply: () -> Unit
+): (@Composable () -> Unit)? {
+  val replyAuthor = if (replyingMessage?.source?.isSelf == true) {
+    stringResource(R.string.chat_reply_self)
+  } else {
+    peerName
+  }
+  return when {
+    editingText != null -> {
+      {
+        ChatTextFieldDefaults.EditHeader(
+          text = editingText,
+          onClose = onCancelEdit
+        )
+      }
+    }
+    replyingText != null -> {
+      {
+        ChatTextFieldDefaults.ReplyHeader(
+          author = replyAuthor,
+          text = replyingText,
+          onClose = onCancelReply
+        )
+      }
+    }
+    else -> null
+  }
 }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.ui.FlowEventSink
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.mapper.ui.toUiCommits
 import ru.sla.clarify.uikit.component.chat.Commit
@@ -28,11 +29,20 @@ internal class DirectThreadViewModelTest {
   private val eventSink = mockk<FlowEventSink>(relaxed = true)
   private val directThreadModel = mockk<DirectThreadModel>(relaxed = true)
 
+  private val peer = Peer(
+    id = Peer.Id("peer"),
+    displayName = "Аня Котова",
+    photoUrl = null
+  )
+
   private lateinit var viewModel: DirectThreadViewModel
   private lateinit var intents: ViewIntents
 
   @BeforeEach
   fun setup() {
+    // Лента собирается из коммитов и собеседника (по нему подписываются цитаты), поэтому
+    // без эмиссии peer combine молчал бы и состояние не обновлялось.
+    every { directThreadModel.peer } returns MutableStateFlow(peer)
     viewModel = DirectThreadViewModel(
       eventSink = eventSink,
       directThreadModel = directThreadModel,
