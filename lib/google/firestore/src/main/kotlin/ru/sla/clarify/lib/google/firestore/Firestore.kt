@@ -48,6 +48,7 @@ import ru.sla.clarify.lib.google.firestore.entity.write.DeleteConversationMember
 import ru.sla.clarify.lib.google.firestore.entity.write.DeleteMergeRequestParams
 import ru.sla.clarify.lib.google.firestore.entity.write.HideCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
+import ru.sla.clarify.lib.google.firestore.entity.write.ReplyCommit
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateBranchLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateCommitMessageParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateConversationMembersParams
@@ -649,7 +650,8 @@ class Firestore @Inject constructor(
     conversationId: String,
     branchId: String,
     text: String,
-    memberUids: List<String>
+    memberUids: List<String>,
+    replyCommit: ReplyCommit?
   ) {
     val commitId = randomUuid()
     val createdAt = Timestamp.now()
@@ -666,7 +668,8 @@ class Firestore @Inject constructor(
       type = CommitNM.Type.Text,
       createdAt = createdAt,
       branchId = branchId,
-      visibleFor = memberUids
+      visibleFor = memberUids,
+      replyCommit = replyCommit
     )
     val updateBranchLastCommitParams = UpdateBranchLastCommitParams(
       lastCommitText = text,
@@ -703,7 +706,8 @@ class Firestore @Inject constructor(
     peerId: String,
     branchId: String?,
     conversationId: String?,
-    text: String
+    text: String,
+    replyCommit: ReplyCommit?
   ) {
     val commitId = randomUuid()
     val createdAt = Timestamp.now()
@@ -725,7 +729,8 @@ class Firestore @Inject constructor(
       type = CommitNM.Type.Text,
       createdAt = createdAt,
       branchId = resolvedBranchId,
-      visibleFor = directMemberIds
+      visibleFor = directMemberIds,
+      replyCommit = replyCommit
     )
     val createConversationParams = CreateConversationParams(
       type = ConversationNM.Type.Direct,
@@ -899,7 +904,8 @@ class Firestore @Inject constructor(
       text = text,
       type = CommitNM.Type.Text,
       createdAt = createdAt,
-      visibleFor = memberUids
+      visibleFor = memberUids,
+      replyCommit = null
     )
     val updateGroupLastCommitParams = UpdateLastCommitParams(
       lastCommitText = text,
