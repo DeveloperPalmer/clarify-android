@@ -6,14 +6,14 @@ tags:
 
 **Summary**: Отправляет сообщение в direct-чат, при необходимости создавая conversation и документы участников.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-07-05
+**Last updated**: 2026-08-04
 
 ---
 
 | Analyst          | Claude     |
 |------------------|------------|
 | Publication date | 2026-06-13 |
-| Description      | Универсальный метод для direct-чата. Если `conversationId == null` — conversation создаётся с новым UUID, и для обоих участников создаются документы в подколлекции `members`. Если `branchId == null` — сообщение идёт в корневую ветку (master), чей ID совпадает с `conversationId`. Commit записывается с `visibleFor` — списком UID обоих участников; поле определяет, кто видит сообщение (удаление «только у себя» убирает UID из списка). Root-сообщения обновляют `lastCommit*`-поля conversation и инкрементят `unreadCommits` собеседника. Branch-сообщения обновляют `lastCommit*` ветки и инкрементят `branchUnreadCommits`. Всё выполняется в одном batch. |
+| Description      | Универсальный метод для direct-чата. Сообщение может быть ответом на другое: тогда в документе коммита лежит `replyCommit` — снапшот оригинала (`id`, `senderUid`, `text`), который не пересчитывается при правке и удалении оригинала. Превью беседы и счётчики непрочитанного от наличия ответа не зависят. Если `conversationId == null` — conversation создаётся с новым UUID, и для обоих участников создаются документы в подколлекции `members`. Если `branchId == null` — сообщение идёт в корневую ветку (master), чей ID совпадает с `conversationId`. Commit записывается с `visibleFor` — списком UID обоих участников; поле определяет, кто видит сообщение (удаление «только у себя» убирает UID из списка). Root-сообщения обновляют `lastCommit*`-поля conversation и инкрементят `unreadCommits` собеседника. Branch-сообщения обновляют `lastCommit*` ветки и инкрементят `branchUnreadCommits`. Всё выполняется в одном batch. |
 
 
 ### Signature
@@ -23,7 +23,8 @@ suspend fun createDirectCommit(
   peerId: Peer.Id,
   branchId: String?,
   conversationId: String?,
-  text: String
+  text: String,
+  replyCommit: ReplyCommit?
 )
 ```
 
@@ -35,6 +36,7 @@ suspend fun createDirectCommit(
 | branchId       | N   | String?  | ID ветки. `null` — сообщение идёт в корень conversation (master).                                             |
 | conversationId | N   | String?  | ID существующей conversation. `null` — conversation будет создана с новым UUID.                               |
 | text           | Y   | String   | Текст сообщения.                                                                                              |
+| replyCommit        | N   | ReplyCommit? | Снапшот цитируемого сообщения: `id` оригинала, `senderUid` его автора и `text` на момент ответа. `null` — обычное сообщение. Снапшот денормализован: цитата остаётся читаемой даже после удаления оригинала. |
 
 ### Response parameters
 
@@ -47,7 +49,12 @@ suspend fun createDirectCommit(
   "peerId": "uid-bob",
   "branchId": null,
   "conversationId": null,
-  "text": "Hello!"
+  "text": "Hello!",
+  "replyCommit": {
+    "id": "commit-old",
+    "senderUid": "uid-bob",
+    "text": "Are you here?"
+  }
 }
 ```
 
@@ -62,7 +69,12 @@ suspend fun createDirectCommit(
   "type": "text",
   "createdAt": "2026-06-13T14:30:00Z",
   "branchId": "conv-xyz789",
-  "visibleFor": ["uid-alice", "uid-bob"]
+  "visibleFor": ["uid-alice", "uid-bob"],
+  "replyCommit": {
+    "id": "commit-old",
+    "senderUid": "uid-bob",
+    "text": "Are you here?"
+  }
 }
 ```
 

@@ -6,7 +6,7 @@ tags:
 
 **Summary**: Оглавление всей wiki проекта Clarify.
 
-**Last updated**: 2026-07-18
+**Last updated**: 2026-08-04
 
 ---
 
