@@ -17,6 +17,7 @@ import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.AppTheme.colors
 import ru.sla.clarify.uikit.theme.ColorTheme
 import ru.sla.clarify.uikit.theme.VSpacer
+import ru.sla.resourcerefs.strRef
 import java.time.LocalDateTime
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
@@ -84,6 +85,31 @@ private fun MessagePreviewContent(modifier: Modifier = Modifier) {
         side = Commit.Message.Side.Left,
         text = "Особенно как треды выносятся в отдельный экран — это топ",
         time = "18:03"
+      )
+    )
+    VSpacer(12.dp)
+    MessageContent(
+      previewMessage(
+        shape = Commit.Message.Shape.Top,
+        side = Commit.Message.Side.Right(Commit.Message.ReadStatus.Read),
+        text = "Уже поправил — скинул новый скрин выше",
+        time = "18:07",
+        replyCommit = previewReply(
+          author = "Аня Котова",
+          text = "На превью кнопка прижата к картинке — снизу не хватает отступа"
+        )
+      )
+    )
+    MessageContent(
+      previewMessage(
+        shape = Commit.Message.Shape.Bottom,
+        side = Commit.Message.Side.Left,
+        text = "Ок",
+        time = "18:08",
+        replyCommit = previewReply(
+          author = "Вы",
+          text = "Уже поправил — скинул новый скрин выше"
+        )
       )
     )
   }
@@ -197,12 +223,24 @@ private fun GroupBubbleMessageConversation(modifier: Modifier = Modifier) {
   }
 }
 
+private fun previewReply(
+  author: String,
+  text: String
+): Commit.Message.Reply {
+  return Commit.Message.Reply(
+    targetId = DomainCommit.Id(randomUuid()),
+    author = strRef(author),
+    text = text
+  )
+}
+
 private fun previewMessage(
   side: Commit.Message.Side,
   shape: Commit.Message.Shape,
   text: String,
   time: String,
   sender: Commit.Message.Sender? = null,
+  replyCommit: Commit.Message.Reply? = null,
   edited: Boolean = false,
   selected: Boolean = false
 ): Commit.Message {
@@ -222,6 +260,7 @@ private fun previewMessage(
     shape = shape,
     time = time,
     sender = sender,
+    replyCommit = replyCommit,
     edited = edited,
     selected = selected
   )

@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -49,12 +50,15 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.component.avatar.stableSeedHash
 import ru.sla.clarify.uikit.component.chat.Commit.Message.ReadStatus
+import ru.sla.clarify.uikit.entity.MessageQuoteColors
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.AppTheme.colors
@@ -64,12 +68,6 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-/**
- * [onAnchorBounds] reports the bubble's bounds in window coordinates whenever it is (re)positioned.
- * The context menu is a separate overlay hosted outside the list (so LazyColumn recycling can't kill
- * it mid-animation); it uses these bounds to place itself over the bubble. Pass `null` for bubbles
- * that can never anchor the menu.
- */
 @Composable
 fun Message(
   message: Commit.Message,
@@ -77,7 +75,9 @@ fun Message(
   onClick: () -> Unit,
   onLongClick: () -> Unit,
   onAnchorBounds: ((IntRect) -> Unit)?,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  highlighted: Boolean = false,
+  onQuoteClick: (() -> Unit)? = null
 ) {
   val isRight = message.side is Commit.Message.Side.Right
 
@@ -117,6 +117,7 @@ fun Message(
     modifier = modifier,
     selected = message.selected,
     selectionEnabled = selectionEnabled,
+    highlighted = highlighted,
     onClick = onClick,
     onLongClick = onLongClick
   ) {
@@ -129,6 +130,9 @@ fun Message(
       shape = shape,
       backgroundColor = backgroundColor,
       senderLabel = senderLabel,
+      reply = message.replyCommit,
+      quoteColors = quoteColors(isRight),
+      onQuoteClick = onQuoteClick,
       text = message.text,
       textColor = contentColor,
       time = message.time,
@@ -142,15 +146,25 @@ fun Message(
   }
 }
 
+/**
+ * Подсветка ([highlighted]) — короткая заливка строки после перехода по цитате; в режиме выделения
+ * её перекрывает фон выбранного сообщения, и это ожидаемо: там подсветка не запускается.
+ */
 @Composable
 private fun SelectableBubbleContainer(
   selectionEnabled: Boolean,
   selected: Boolean,
+  highlighted: Boolean,
   onClick: (() -> Unit)?,
   onLongClick: (() -> Unit)?,
   modifier: Modifier = Modifier,
   content: @Composable () -> Unit
 ) {
+  val highlightColor by animateColorAsState(
+    label = "highlightColor",
+    animationSpec = AppTheme.motion.mediumTween(),
+    targetValue = if (highlighted) colors.backgroundAccentPrimary else Color.Transparent
+  )
   Row(
     modifier = if (selectionEnabled) {
       modifier.surface(
@@ -160,7 +174,7 @@ private fun SelectableBubbleContainer(
         onLongClick = { onLongClick?.invoke() }
       )
     } else {
-      modifier
+      modifier.background(color = highlightColor)
     },
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -247,11 +261,33 @@ private fun Modifier.anchorBounds(onAnchorBounds: (IntRect) -> Unit): Modifier {
 }
 
 @Composable
+private fun quoteColors(isRight: Boolean): MessageQuoteColors {
+  return if (isRight) {
+    MessageQuoteColors(
+      background = colors.contentAccentSecondary.copy(alpha = QUOTE_OVERLAY_ALPHA),
+      accent = colors.contentAccentSecondary,
+      author = colors.contentAccentSecondary,
+      text = colors.contentAccentSecondary
+    )
+  } else {
+    MessageQuoteColors(
+      background = colors.contentAccentPrimary.copy(alpha = QUOTE_OVERLAY_ALPHA),
+      accent = colors.contentAccentPrimary,
+      author = colors.contentAccentPrimary,
+      text = colors.contentSecondary
+    )
+  }
+}
+
+@Composable
 private fun BubbleMessageLayout(
   side: Commit.Message.Side,
   shape: Shape,
   backgroundColor: Color,
   senderLabel: SenderLabel?,
+  reply: Commit.Message.Reply?,
+  quoteColors: MessageQuoteColors,
+  onQuoteClick: (() -> Unit)?,
   text: String,
   textColor: Color,
   time: String,
@@ -281,6 +317,9 @@ private fun BubbleMessageLayout(
       shape = shape,
       backgroundColor = backgroundColor,
       senderLabel = senderLabel,
+      reply = reply,
+      quoteColors = quoteColors,
+      onQuoteClick = onQuoteClick,
       text = text,
       textColor = textColor,
       textStyle = textStyle,
@@ -301,6 +340,9 @@ private fun BubbleSurface(
   shape: Shape,
   backgroundColor: Color,
   senderLabel: SenderLabel?,
+  reply: Commit.Message.Reply?,
+  quoteColors: MessageQuoteColors,
+  onQuoteClick: (() -> Unit)?,
   text: String,
   textColor: Color,
   textStyle: TextStyle,
@@ -363,6 +405,22 @@ private fun BubbleSurface(
       0
     }
 
+    // Цитата тянется на всю ширину пузыря, поэтому её меряем последней — по уже посчитанной
+    // ширине. До этого нужна только желаемая ширина, её даёт интринсик (мерить дважды нельзя).
+    val quoteMeasurable = reply?.let {
+      subcompose(BubbleSlot.Quote) {
+        MessageQuote(
+          reply = it,
+          colors = quoteColors,
+          onClick = onQuoteClick
+        )
+      }.first()
+    }
+    val quoteDesiredWidth = quoteMeasurable
+      ?.maxIntrinsicWidth(Constraints.Infinity)
+      ?.coerceAtMost(constraints.maxWidth)
+      ?: 0
+
     val textPlaceable = subcompose(BubbleSlot.Text) {
       Text(
         text = text,
@@ -380,35 +438,47 @@ private fun BubbleSurface(
     val sameLineWidth = lastLineRight + timeStatusPadding.toPx() + timeStatusPlaceable.width
 
     if (sameLineWidth <= constraints.maxWidth.toFloat()) {
-      val height = senderHeight + textPlaceable.height
       val width = max(textPlaceable.width.toFloat(), sameLineWidth)
         .roundToInt()
         .coerceAtLeast(senderPlaceable?.width ?: 0)
+        .coerceAtLeast(quoteDesiredWidth)
         .coerceIn(constraints.minWidth, constraints.maxWidth)
+      val quotePlaceable = quoteMeasurable?.measure(
+        looseConstraints.copy(minWidth = width, maxWidth = width)
+      )
+      val quoteHeight = quoteHeightWithSpacing(quotePlaceable)
+      val height = senderHeight + quoteHeight + textPlaceable.height
 
       layout(width, height) {
         senderPlaceable?.place(0, 0)
-        textPlaceable.place(0, senderHeight)
+        quotePlaceable?.place(0, senderHeight)
+        textPlaceable.place(0, senderHeight + quoteHeight)
         timeStatusPlaceable.place(
           x = width - timeStatusPlaceable.width,
           y = height - timeStatusPlaceable.height
         )
       }
     } else {
-      val height = senderHeight + textPlaceable.height + timeStatusPlaceable.height
       val width = max(textPlaceable.width, timeStatusPlaceable.width)
         .coerceAtLeast(senderPlaceable?.width ?: 0)
+        .coerceAtLeast(quoteDesiredWidth)
         .coerceIn(
           minimumValue = constraints.minWidth,
           maximumValue = constraints.maxWidth
         )
+      val quotePlaceable = quoteMeasurable?.measure(
+        looseConstraints.copy(minWidth = width, maxWidth = width)
+      )
+      val quoteHeight = quoteHeightWithSpacing(quotePlaceable)
+      val height = senderHeight + quoteHeight + textPlaceable.height + timeStatusPlaceable.height
 
       layout(width, height) {
         senderPlaceable?.place(0, 0)
-        textPlaceable.place(0, senderHeight)
+        quotePlaceable?.place(0, senderHeight)
+        textPlaceable.place(0, senderHeight + quoteHeight)
         timeStatusPlaceable.place(
           x = width - timeStatusPlaceable.width,
-          y = senderHeight + textPlaceable.height
+          y = senderHeight + quoteHeight + textPlaceable.height
         )
       }
     }
@@ -591,8 +661,13 @@ private fun bottomShape(side: Commit.Message.Side): Shape {
   )
 }
 
+private fun Density.quoteHeightWithSpacing(placeable: Placeable?): Int {
+  return if (placeable != null) placeable.height + quoteSpacing.roundToPx() else 0
+}
+
 private enum class BubbleSlot {
   Sender,
+  Quote,
   Text,
   TimeStatus
 }
@@ -609,6 +684,8 @@ private val bubbleSoftCorner = 20.dp
 private val selectionRingWidth = 1.5.dp
 private val selectionCheckPadding = 4.dp
 
+private val quoteSpacing = 4.dp
+
 private val timeStatusPadding = 8.dp
 private val timeStatusTopPadding = 2.dp
 private val senderNameSpacing = 2.dp
@@ -621,3 +698,5 @@ private const val CLOCK_HOUR_PERIOD_MILLIS = 5000
 private const val CLOCK_MINUTE_PERIOD_MILLIS = 1500
 
 private const val HALF_TURN_DEGREES = 180f
+
+private const val QUOTE_OVERLAY_ALPHA = 0.18f

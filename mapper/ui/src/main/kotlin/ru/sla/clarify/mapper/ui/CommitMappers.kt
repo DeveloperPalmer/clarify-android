@@ -40,7 +40,8 @@ fun List<DomainCommit>.toUiCommits(
           time = commit.timestamp.format(TIME_FORMATTER_HOUR_MINUTE),
           selected = false,
           edited = commit.editedAt != null,
-          sender = commit.sender(bubbleType, memberNames)
+          sender = commit.sender(bubbleType, memberNames),
+          replyCommit = commit.replyCommit?.toUiModel(memberNames)
         )
       }
     }

@@ -56,6 +56,7 @@
     <string name="chat_input_placeholder">Сообщение</string>
     <string name="chat_input_send_button">Отправить</string>
     <string name="chat_message_edited">изменено</string>
+    <string name="chat_reply_self">Вы</string>
 
     <!-- Thread screen -->
     <string name="thread_branches_count">Ветки · %1$d</string>

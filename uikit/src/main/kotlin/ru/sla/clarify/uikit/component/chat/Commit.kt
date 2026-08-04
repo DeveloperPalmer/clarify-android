@@ -22,9 +22,20 @@ sealed interface Commit {
     val shape: Shape,
     val time: String,
     val sender: Sender?,
+    val replyCommit: Reply?,
     val edited: Boolean,
     val selected: Boolean
   ) : Commit, Textual {
+
+    @optics
+    @Immutable
+    data class Reply(
+      val targetId: DomainCommit.Id,
+      val author: TextRef?,
+      val text: String
+    ) {
+      companion object
+    }
 
     @optics
     @Immutable

@@ -65,6 +65,7 @@
     <string name="chat_input_placeholder">Message</string>
     <string name="chat_input_send_button">Send</string>
     <string name="chat_message_edited">edited</string>
+    <string name="chat_reply_self">You</string>
 
     <!-- Thread screen -->
     <string name="thread_branches_count">Branches · %1$d</string>
