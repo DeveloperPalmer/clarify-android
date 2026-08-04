@@ -36,7 +36,7 @@ class BranchModel @Inject constructor(
     scope.launch { branchRepository.markReadUpTo(lastReadAt) }
   }
 
-  fun sendMessage(text: String, replyCommit: Commit.Message? = null) {
+  fun sendMessage(text: String, replyCommit: Commit.Message?) {
     scope.launch { branchRepository.sendCommit(text, replyCommit) }
   }
 

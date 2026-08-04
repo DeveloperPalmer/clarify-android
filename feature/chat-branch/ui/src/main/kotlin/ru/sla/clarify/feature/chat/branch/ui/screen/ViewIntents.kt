@@ -4,6 +4,7 @@ import ru.sla.clarify.feature.chat.branch.ui.screen.ViewState.DeleteCommitsParam
 import ru.sla.clarify.uikit.component.chat.Commit
 import java.time.LocalDateTime
 import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
@@ -14,6 +15,7 @@ class ViewIntents : BaseViewIntents() {
   val disableSelectionMode = intent(name = "disableSelectionMode")
 
   val sendMessage = intent<String>(name = "sendMessage")
+  val replyMessage = intent<String>(name = "replyMessage")
   val copyMessage = intent(name = "copyMessage")
   val markMessageAsRead = intent<LocalDateTime>(name = "markMessageAsRead")
 
@@ -23,6 +25,11 @@ class ViewIntents : BaseViewIntents() {
 
   val showMessageMenu = intent<Commit>(name = "showMessageMenu")
   val hideMessageMenu = intent(name = "hideMessageMenu")
+
+  val showReplyMessage = intent<Commit>(name = "showReplyMessage")
+  val hideReplyMessage = intent(name = "hideReplyMessage")
+  val showQuotedMessage = intent<DomainCommit.Id>(name = "showQuotedMessage")
+  val clearHighlightedCommit = intent(name = "clearHighlightedCommit")
 
   val showEditMessage = intent<Commit>(name = "showEditMessage")
   val hideEditMessage = intent(name = "hideEditMessage")

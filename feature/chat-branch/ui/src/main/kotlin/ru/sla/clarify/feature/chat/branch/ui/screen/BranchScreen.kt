@@ -67,6 +67,10 @@ fun BranchScreen(viewModel: BranchViewModel) {
       enabled = state.focusedCommit != null,
       onBack = intents.hideMessageMenu
     )
+    BackHandler(
+      enabled = state.replyingCommit != null,
+      onBack = intents.hideReplyMessage
+    )
     ScreenScaffold(scaffoldState) {
       BranchReadyContent(
         modifier = Modifier.fillMaxSize(),
@@ -173,6 +177,10 @@ internal fun BranchReadyContent(
           onLongClick = onCommitLongClick,
           onLoad = intents.loadCommitsHistory,
           onRead = intents.markMessageAsRead,
+          highlightedCommitId = state.highlightedCommitId,
+          onHighlightHandled = intents.clearHighlightedCommit,
+          onReply = intents.showReplyMessage,
+          onQuoteClick = intents.showQuotedMessage,
           onEdit = intents.showEditMessage,
           onCopy = { commit -> (commit as? Textual)?.text?.let(onCopyCommit) },
           onSelect = onSelectCommit,
@@ -195,9 +203,13 @@ internal fun BranchReadyContent(
       BottomArea(
         mergeRequestStatus = state.mergeRequest?.status,
         editingMessage = state.editingCommit,
+        replyingMessage = state.replyingCommit,
+        replyAuthor = state.replyAuthorName(),
         onSend = intents.sendMessage,
+        onReply = intents.replyMessage,
         onSubmitEdit = intents.confirmEditMessage,
-        onCancelEdit = intents.hideEditMessage
+        onCancelEdit = intents.hideEditMessage,
+        onCancelReply = intents.hideReplyMessage
       )
     }
     PopupScrim(
@@ -253,12 +265,29 @@ private fun TopAppBarCenterContent(
 }
 
 @Composable
+private fun ViewState.replyAuthorName(): String {
+  val replyingSource = replyingCommit?.source ?: return ""
+  return if (replyingSource.isSelf) {
+    stringResource(R.string.chat_reply_self)
+  } else {
+    members
+      .firstOrNull { it.id.value == replyingSource.senderId.value }
+      ?.displayName
+      .orEmpty()
+  }
+}
+
+@Composable
 private fun BottomArea(
   mergeRequestStatus: Status?,
   editingMessage: Commit?,
+  replyingMessage: Commit?,
+  replyAuthor: String,
   onSend: (String) -> Unit,
+  onReply: (String) -> Unit,
   onSubmitEdit: (String) -> Unit,
-  onCancelEdit: () -> Unit
+  onCancelEdit: () -> Unit,
+  onCancelReply: () -> Unit
 ) {
   when (mergeRequestStatus) {
     null -> {
@@ -267,9 +296,13 @@ private fun BottomArea(
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 8.dp),
         editingMessage = editingMessage,
+        replyingMessage = replyingMessage,
+        replyAuthor = replyAuthor,
         onSend = onSend,
+        onReply = onReply,
         onSubmitEdit = onSubmitEdit,
-        onCancelEdit = onCancelEdit
+        onCancelEdit = onCancelEdit,
+        onCancelReply = onCancelReply
       )
     }
     Status.Open,
@@ -291,14 +324,20 @@ private fun BottomArea(
 @Composable
 private fun ChatComposer(
   editingMessage: Commit?,
+  replyingMessage: Commit?,
+  replyAuthor: String,
   onSend: (String) -> Unit,
+  onReply: (String) -> Unit,
   onSubmitEdit: (String) -> Unit,
   onCancelEdit: () -> Unit,
+  onCancelReply: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   var inputValue by rememberSaveable { mutableStateOf("") }
   val editingSource = editingMessage?.source
   val editingText = (editingMessage as? Textual)?.text
+  val replyingSource = replyingMessage?.source
+  val replyingText = (replyingMessage as? Textual)?.text
   // Вход в режим и пере-выбор цели перезаписывают поле текстом оригинала, выход очищает —
   // черновики осознанно не сохраняются. Сравнение с прошлым id (а не LaunchedEffect от null)
   // не даёт затереть восстановленный rememberSaveable-текст при пересоздании экрана.
@@ -314,29 +353,44 @@ private fun ChatComposer(
     sendEnabled = editingSource == null || inputValue.trim() != editingText,
     sendIconRes = if (editingSource != null) R.drawable.ic_check_24 else R.drawable.ic_send_24,
     // Ключ меняется при входе/выходе/пере-выборе цели — программно заменённый текст
-    // проявляется мягко, обычная печать не фейдится.
+    // проявляется мягко, обычная печать не фейдится. Ответ текст не подменяет, поэтому в ключ
+    // не входит: набранный черновик остаётся на месте.
     contentFadeKey = editingSource?.id?.value,
-    // Вход в режим редактирования ставит фокус в поле, поднимает клавиатуру и уводит каретку
-    // в конец текста. null вне режима — фокус не запрашивается при обычной отправке.
-    focusRequestKey = editingSource?.id?.value,
+    // Вход в режим редактирования или ответа ставит фокус в поле, поднимает клавиатуру и уводит
+    // каретку в конец текста. null вне режимов — фокус не запрашивается при обычной отправке.
+    focusRequestKey = (editingSource ?: replyingSource)?.id?.value,
     placeholder = if (editingSource != null) {
       resRef(R.string.thread_edit_empty_placeholder)
     } else {
       resRef(R.string.chat_input_placeholder)
     },
-    header = editingText?.let { text ->
-      {
-        ChatTextFieldDefaults.EditHeader(
-          text = text,
-          onClose = onCancelEdit
-        )
+    // Редактирование и ответ взаимоисключающие, но шапка одна: приоритет у правки.
+    header = when {
+      editingText != null -> {
+        {
+          ChatTextFieldDefaults.EditHeader(
+            text = editingText,
+            onClose = onCancelEdit
+          )
+        }
       }
+      replyingText != null -> {
+        {
+          ChatTextFieldDefaults.ReplyHeader(
+            author = replyAuthor,
+            text = replyingText,
+            onClose = onCancelReply
+          )
+        }
+      }
+      else -> null
     },
+    // Намерение выбирается здесь, по режиму композера: правка, ответ или обычная отправка.
     onSend = {
-      if (editingSource != null) {
-        onSubmitEdit(inputValue)
-      } else {
-        onSend(inputValue)
+      when {
+        editingSource != null -> onSubmitEdit(inputValue)
+        replyingSource != null -> onReply(inputValue)
+        else -> onSend(inputValue)
       }
     },
     // При редактировании поле не чистим: ошибка отправки не должна терять правку;
