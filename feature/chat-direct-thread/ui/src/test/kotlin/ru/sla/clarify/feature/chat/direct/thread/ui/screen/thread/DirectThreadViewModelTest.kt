@@ -19,6 +19,7 @@ import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadModel
 import ru.sla.clarify.mapper.ui.toUiCommits
 import ru.sla.clarify.uikit.component.chat.Commit
+import ru.sla.resourcerefs.strRef
 import java.time.LocalDateTime
 import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
@@ -99,6 +100,109 @@ internal class DirectThreadViewModelTest {
       verify { directThreadModel.deleteCommits.start(commitIds, true) }
     }
   }
+
+  @Test
+  fun `when startReplyMessage on peer message should enter reply mode and close menu`() =
+    runTest(testDispatcher) {
+      val commit = uiMessage(id = "commit-1", text = "hello", isSelf = false)
+
+      viewModel.viewStateFlow.test {
+        awaitItem() // initial state
+
+        intents.showMessageMenu(commit)
+        awaitItem()
+
+        intents.showReplyMessage(commit)
+
+        val state = awaitItem()
+        assertEquals(commit, state.replyingCommit)
+        assertNull(state.focusedCommit)
+      }
+    }
+
+  @Test
+  fun `when cancelReplyMessage should reset reply mode`() = runTest(testDispatcher) {
+    val commit = uiMessage(id = "commit-1", text = "hello")
+
+    viewModel.viewStateFlow.test {
+      awaitItem() // initial state
+
+      intents.showReplyMessage(commit)
+      assertEquals(commit, awaitItem().replyingCommit)
+
+      intents.hideReplyMessage()
+      assertNull(awaitItem().replyingCommit)
+    }
+  }
+
+  @Test
+  fun `when reply and edit modes are entered they should replace each other`() =
+    runTest(testDispatcher) {
+      val commit = uiMessage(id = "commit-1", text = "hello")
+
+      viewModel.viewStateFlow.test {
+        awaitItem() // initial state
+
+        intents.showReplyMessage(commit)
+        awaitItem()
+
+        intents.showEditMessage(commit)
+        val editingState = awaitItem()
+        assertEquals(commit, editingState.editingCommit)
+        assertNull(editingState.replyingCommit)
+
+        intents.showReplyMessage(commit)
+        val replyingState = awaitItem()
+        assertEquals(commit, replyingState.replyingCommit)
+        assertNull(replyingState.editingCommit)
+      }
+    }
+
+  @Test
+  fun `when replyMessage should send with reply target and reset mode`() =
+    runTest(testDispatcher) {
+      val commit = uiMessage(id = "commit-1", text = "hello", isSelf = false)
+
+      viewModel.viewStateFlow.test {
+        awaitItem() // initial state
+
+        intents.showReplyMessage(commit)
+        awaitItem()
+
+        intents.replyMessage("  reply text  ")
+
+        assertNull(awaitItem().replyingCommit)
+        verify { directThreadModel.sendMessage("reply text", commit.source) }
+      }
+    }
+
+  @Test
+  fun `when sendMessage should send without reply target`() =
+    runTest(testDispatcher) {
+      viewModel.viewStateFlow.test {
+        awaitItem() // initial state
+
+        intents.sendMessage("  plain text  ")
+
+        verify { directThreadModel.sendMessage("plain text", null) }
+      }
+    }
+
+  @Test
+  fun `when showQuotedMessage should highlight commit until it is handled`() =
+    runTest(testDispatcher) {
+      val targetId = DomainCommit.Id("commit-1")
+
+      viewModel.viewStateFlow.test {
+        assertNull(awaitItem().highlightedCommitId)
+
+        intents.showQuotedMessage(targetId)
+        assertEquals(targetId, awaitItem().highlightedCommitId)
+
+        intents.clearHighlightedCommit()
+        assertNull(awaitItem().highlightedCommitId)
+      }
+    }
 
   @Test
   fun `when startEditMessage on own message should enter editing mode and close menu`() =
@@ -234,6 +338,53 @@ internal class DirectThreadViewModelTest {
         commitsFlow.value = emptyList()
 
         assertNull(awaitState { it.commits.isEmpty() }.editingCommit)
+      }
+    }
+
+  @Test
+  fun `when reply target disappears from commits should reset reply mode`() =
+    runTest(testDispatcher) {
+      val commitsFlow = MutableStateFlow(
+        listOf<DomainCommit>(domainMessage(id = "commit-1", text = "hello"))
+      )
+      every { directThreadModel.commits } returns commitsFlow
+      recreateViewModel()
+
+      viewModel.viewStateFlow.test {
+        val commit = awaitState { it.commits.isNotEmpty() }.commits.first() as Commit.Message
+
+        intents.showReplyMessage(commit)
+        assertEquals(commit, awaitState { it.replyingCommit != null }.replyingCommit)
+
+        commitsFlow.value = emptyList()
+
+        assertNull(awaitState { it.commits.isEmpty() }.replyingCommit)
+      }
+    }
+
+  @Test
+  fun `when replying to peer message quote should be signed with peer name`() =
+    runTest(testDispatcher) {
+      val commitsFlow = MutableStateFlow(
+        listOf<DomainCommit>(
+          domainMessage(id = "commit-2", text = "reply").copy(
+            replyCommit = DomainCommit.Reply(
+              id = DomainCommit.Id("commit-1"),
+              senderId = UserId("peer"),
+              isSelf = false,
+              text = "hello"
+            )
+          )
+        )
+      )
+      every { directThreadModel.commits } returns commitsFlow
+      recreateViewModel()
+
+      viewModel.viewStateFlow.test {
+        val commit = awaitState { it.commits.isNotEmpty() }.commits.first() as Commit.Message
+
+        assertEquals(strRef(peer.displayName), commit.replyCommit?.author)
+        assertEquals("hello", commit.replyCommit?.text)
       }
     }
 

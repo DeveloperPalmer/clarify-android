@@ -121,6 +121,60 @@ internal class BranchViewModelTest {
   }
 
   @Test
+  fun `when showReplyMessage should enter reply mode and close menu`() = runTest(testDispatcher) {
+    val commit = commitWithId(DomainCommit.Id("commit-1"))
+
+    viewModel.viewStateFlow.test {
+      awaitItem() // initial state
+
+      intents.showMessageMenu(commit)
+      awaitItem()
+
+      intents.showReplyMessage(commit)
+
+      val state = awaitItem()
+      assertEquals(commit, state.replyingCommit)
+      assertNull(state.focusedCommit)
+    }
+  }
+
+  @Test
+  fun `when hideReplyMessage should reset reply mode`() = runTest(testDispatcher) {
+    val commit = commitWithId(DomainCommit.Id("commit-1"))
+
+    viewModel.viewStateFlow.test {
+      awaitItem() // initial state
+
+      intents.showReplyMessage(commit)
+      assertEquals(commit, awaitItem().replyingCommit)
+
+      intents.hideReplyMessage()
+      assertNull(awaitItem().replyingCommit)
+    }
+  }
+
+  @Test
+  fun `when replyMessage should send with reply target and reset mode`() =
+    runTest(testDispatcher) {
+      val commit = commitWithId(DomainCommit.Id("commit-1"))
+      // Источник берём заранее: обращение к commit.source внутри verify DSL записалось бы
+      // как ещё один вызов мока и сломало бы сравнение аргументов.
+      val source = commit.source
+
+      viewModel.viewStateFlow.test {
+        awaitItem() // initial state
+
+        intents.showReplyMessage(commit)
+        awaitItem()
+
+        intents.replyMessage("  reply text  ")
+
+        assertNull(awaitItem().replyingCommit)
+        verify { branchModel.sendMessage("reply text", source) }
+      }
+    }
+
+  @Test
   fun `when confirmDeleteCommits should start deletion for payload ids`() = runTest(testDispatcher) {
     val commitIds = listOf(DomainCommit.Id("commit-1"), DomainCommit.Id("commit-2"))
 
