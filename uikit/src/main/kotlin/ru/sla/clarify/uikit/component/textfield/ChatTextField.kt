@@ -181,7 +181,7 @@ object ChatTextFieldDefaults {
     onClose: () -> Unit,
     modifier: Modifier = Modifier
   ) {
-    EditHeader(
+    ComposerHeader(
       modifier = modifier,
       iconRes = R.drawable.ic_pencil_24,
       title = resRef(R.string.thread_edit_header_title),
@@ -189,10 +189,26 @@ object ChatTextFieldDefaults {
       onClose = onClose
     )
   }
+
+  @Composable
+  fun ReplyHeader(
+    author: String,
+    text: String,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+  ) {
+    ComposerHeader(
+      modifier = modifier,
+      iconRes = R.drawable.ic_reply_24,
+      title = resRef(R.string.thread_reply_header_title, author),
+      text = text,
+      onClose = onClose
+    )
+  }
 }
 
 @Composable
-private fun EditHeader(
+private fun ComposerHeader(
   iconRes: Int,
   title: TextRef,
   text: String,
@@ -313,15 +329,22 @@ private fun ComposerHeaderPreviewDark() {
 
 @Composable
 private fun ComposerHeaderPreviewContent() {
-  Box(
+  Column(
     modifier = Modifier
       .background(AppTheme.colors.backgroundPrimary)
-      .padding(8.dp)
+      .padding(8.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    EditHeader(
+    ComposerHeader(
       iconRes = R.drawable.ic_pencil_24,
       title = strRef("Редактировать сообщение"),
       text = "Поправил отступ снизу — кнопка больше не наезжает на картинку",
+      onClose = {}
+    )
+    ComposerHeader(
+      iconRes = R.drawable.ic_reply_24,
+      title = strRef("Ответ · Аня Котова"),
+      text = "На превью кнопка прижата к картинке — снизу не хватает отступа",
       onClose = {}
     )
   }
