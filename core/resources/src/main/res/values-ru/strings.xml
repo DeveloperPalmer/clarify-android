@@ -74,6 +74,7 @@
     <string name="thread_menu_edit">Редактировать</string>
     <string name="thread_menu_copy">Копировать</string>
     <string name="thread_menu_select">Выбрать</string>
+    <string name="thread_menu_reply">Ответить</string>
     <string name="thread_menu_delete">Удалить</string>
     <string name="thread_message_copied">Скопировано</string>
     <string name="thread_edit_header_title">Редактировать сообщение</string>

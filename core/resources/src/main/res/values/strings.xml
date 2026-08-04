@@ -83,6 +83,7 @@
     <string name="thread_menu_edit">Edit</string>
     <string name="thread_menu_copy">Copy</string>
     <string name="thread_menu_select">Select</string>
+    <string name="thread_menu_reply">Reply</string>
     <string name="thread_menu_delete">Delete</string>
     <string name="thread_message_copied">Copied</string>
     <string name="thread_edit_header_title">Edit message</string>

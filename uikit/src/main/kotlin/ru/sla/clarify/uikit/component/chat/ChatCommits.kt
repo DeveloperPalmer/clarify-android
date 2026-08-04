@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -32,6 +33,7 @@ import ru.sla.resourcerefs.compose.resolveTextRef
 import ru.sla.resourcerefs.resRef
 import java.time.LocalDateTime
 import kotlin.time.Duration.Companion.milliseconds
+import ru.sla.clarify.entity.chat.Commit as DomainCommit
 
 @Composable
 @Suppress("CyclomaticComplexMethod")
@@ -47,6 +49,10 @@ fun ChatCommits(
   onClick: (Commit.Message) -> Unit,
   onLongClick: (Commit.Message) -> Unit,
   modifier: Modifier = Modifier,
+  highlightedCommitId: DomainCommit.Id? = null,
+  onHighlightHandled: (() -> Unit)? = null,
+  onReply: ((Commit) -> Unit)? = null,
+  onQuoteClick: ((DomainCommit.Id) -> Unit)? = null,
   onEdit: ((Commit) -> Unit)? = null,
   onCopy: ((Commit) -> Unit)? = null,
   onSelect: ((Commit) -> Unit)? = null,
@@ -82,6 +88,18 @@ fun ChatCommits(
     if (isFirstLoad || newestIsSelf || wasAtBottom) {
       listState.animateScrollToItem(0)
     }
+  }
+
+  // Переход по цитате: оригинал ищем только среди загруженных коммитов — историю до него не тянем.
+  // Держим подсветку заметное время и отдаём ключ обратно, чтобы она мягко погасла.
+  LaunchedEffect(highlightedCommitId, items) {
+    val targetId = highlightedCommitId ?: return@LaunchedEffect
+    val targetIndex = items.indexOfFirst { it.source.id == targetId }
+    if (targetIndex >= 0) {
+      listState.animateScrollToItem(targetIndex)
+      delay(HighlightHoldDuration)
+    }
+    onHighlightHandled?.invoke()
   }
 
   LaunchedEffect(listState, items) {
@@ -134,6 +152,10 @@ fun ChatCommits(
               modifier = Modifier.animateItem(),
               message = commit,
               selectionEnabled = selectionEnabled,
+              highlighted = commit.source.id == highlightedCommitId,
+              onQuoteClick = commit.replyCommit
+                ?.targetId
+                ?.let { targetId -> onQuoteClick?.let { handler -> { handler(targetId) } } },
               // Границы нужны только фокусному пузырю — по ним меню-оверлей встаёт на место;
               // остальным репортить нечего.
               onAnchorBounds = if (displayedCommit?.source?.id == commit.source.id) {
@@ -178,6 +200,8 @@ fun ChatCommits(
           displayedCommit = null
           anchorBounds = null
         },
+        onReplyMessage = onReply
+          ?.let { handler -> { handler(popupCommit) } },
         // Редактирование доступно только для своих сообщений.
         onEditMessage = onEdit
           ?.takeIf { popupCommit.source.isSelf }
@@ -202,6 +226,7 @@ private fun CommitPopup(
   onHidden: () -> Unit,
   onDismissRequest: () -> Unit,
   onCreateBranch: (() -> Unit)?,
+  onReplyMessage: (() -> Unit)?,
   onEditMessage: (() -> Unit)?,
   onCopyMessage: (() -> Unit)?,
   onSelectMessage: (() -> Unit)?,
@@ -222,6 +247,13 @@ private fun CommitPopup(
         Action(
           iconRes = R.drawable.ic_git_fork_24,
           text = resRef(R.string.thread_menu_create_branch),
+          onClick = action(it)
+        )
+      },
+      onReplyMessage?.let {
+        Action(
+          iconRes = R.drawable.ic_reply_24,
+          text = resRef(R.string.thread_menu_reply),
           onClick = action(it)
         )
       },
@@ -258,6 +290,9 @@ private fun CommitPopup(
 }
 
 private val PopupBottomSafePadding = 96.dp
+
+// Сколько подсветка держится на оригинале после перехода по цитате, прежде чем начать гаснуть.
+private val HighlightHoldDuration = 1200.milliseconds
 
 // Запускаем следующую страницу истории за несколько элементов до самого верха, чтобы подгрузка прошла бесшовно.
 private const val LOAD_MORE_PREFETCH = 5
