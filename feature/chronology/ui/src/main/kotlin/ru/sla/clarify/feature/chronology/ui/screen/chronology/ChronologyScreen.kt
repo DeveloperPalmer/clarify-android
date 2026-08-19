@@ -13,7 +13,11 @@ import androidx.compose.ui.unit.dp
 import ru.kode.amvi.component.compose.MviComponent
 import ru.kode.amvi.component.compose.rememberViewIntents
 import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.feature.chronology.ui.components.MessageChip
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphCanvas
+import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphGeometry
+import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphScope
+import ru.sla.clarify.feature.chronology.ui.entity.MessageChipState
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -33,7 +37,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
           contentSize = CANVAS_SIZE,
           lanes = LANES
         ) {
-          // Узлы появятся здесь: пока полотно проверяется фоном и магистралью.
+          DemoNodes()
         }
         Text(
           modifier = Modifier
@@ -46,6 +50,46 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
       }
     }
   }
+}
+
+/**
+ * Временный набор узлов вместо данных.
+ *
+ * Стоит на реальных координатах полотна — это и есть проверка, что дорожки и размещение по центру
+ * работают. Уезжает, как только появится сборка графа из веток и коммитов.
+ */
+@Composable
+private fun GraphScope.DemoNodes() {
+  val trunkY = GraphGeometry.laneY(0)
+  val laneY = GraphGeometry.laneY(-1)
+  MessageChip(
+    modifier = Modifier.nodeAt(x = 200.dp, y = trunkY),
+    text = "Не бьётся по срокам",
+    isMine = false
+  )
+  MessageChip(
+    modifier = Modifier.nodeAt(x = 420.dp, y = trunkY),
+    text = "Где именно?",
+    isMine = true
+  )
+  MessageChip(
+    modifier = Modifier.nodeAt(x = 640.dp, y = trunkY),
+    text = "Выношу в ветку",
+    isMine = true,
+    state = MessageChipState.Edited
+  )
+  MessageChip(
+    modifier = Modifier.nodeAt(x = 760.dp, y = laneY),
+    text = "Готово, ветка тут",
+    isMine = false,
+    state = MessageChipState.Quoted
+  )
+  MessageChip(
+    modifier = Modifier.nodeAt(x = 980.dp, y = laneY),
+    text = "Фиксируем 14-е",
+    isMine = true,
+    state = MessageChipState.Sending
+  )
 }
 
 /**
