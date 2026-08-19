@@ -279,6 +279,32 @@ class AppTypography {
     letterSpacing = 0.4.sp,
     platformStyle = defaultFontPadding
   )
+
+  /**
+   * Разряжённый капслок для микро-подписей: HUD хронологии, легенда, подсказки управления.
+   *
+   * Верхний регистр применяется в точке использования, а не в стиле: стиль задаёт только метрики.
+   * Заведён отдельным стилем, потому что максимальный трекинг остальной системы — 0.5 sp, и
+   * локальный `copy(letterSpacing = ...)` в каждой точке нарушил бы работу компонентов с ролями.
+   */
+  val overline: TextStyle = TextStyle(
+    fontFamily = Roboto,
+    fontWeight = FontWeight.Medium,
+    fontSize = 11.sp,
+    lineHeight = 16.sp,
+    letterSpacing = 1.5.sp,
+    platformStyle = defaultFontPadding
+  )
+
+  /** Крупная бледная подпись группы узлов на полотне хронологии. Тоже капслок в точке использования. */
+  val groupLabel: TextStyle = TextStyle(
+    fontFamily = Roboto,
+    fontWeight = FontWeight.Normal,
+    fontSize = 24.sp,
+    lineHeight = 32.sp,
+    letterSpacing = 4.sp,
+    platformStyle = defaultFontPadding
+  )
 }
 
 internal val LocalAppTypography = staticCompositionLocalOf<AppTypography> {

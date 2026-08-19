@@ -37,6 +37,7 @@ internal val LightColors = AppColors(
   contentAccentDarkSecondary = ColorPalette.gray1000.copy(alpha = 0.64f),
   contentBlue = ColorPalette.cyan200,
   contentGoldPrimary = ColorPalette.gold200,
+  contentAccentReadable = ColorPalette.purple500,
   errorPrimary = ColorPalette.red100,
   errorSecondary = ColorPalette.red0,
   successPrimary = ColorPalette.green200,
@@ -56,7 +57,14 @@ internal val LightColors = AppColors(
   buttonTertiaryContent = ColorPalette.purple300,
   buttonTertiaryContentDisabled = ColorPalette.gray200,
   shimmerColor = ColorPalette.gray100,
-  shimmerHighlightColor = ColorPalette.gray0
+  shimmerHighlightColor = ColorPalette.gray0,
+  graphLane1 = ColorPalette.cyan200,
+  graphLane2 = ColorPalette.blue200,
+  graphLane3 = ColorPalette.teal200,
+  graphLane4 = ColorPalette.magenta200,
+  graphLane5 = ColorPalette.terracotta200,
+  graphLane6 = ColorPalette.slate200,
+  graphMergeContent = ColorPalette.gray0
 )
 
 internal val DarkColors = AppColors(
@@ -89,6 +97,7 @@ internal val DarkColors = AppColors(
   contentAccentDarkSecondary = ColorPalette.gray1000.copy(alpha = 0.64f),
   contentBlue = ColorPalette.cyan200,
   contentGoldPrimary = ColorPalette.gold200,
+  contentAccentReadable = ColorPalette.purple250,
   errorPrimary = ColorPalette.red100,
   errorSecondary = ColorPalette.red900,
   successPrimary = ColorPalette.green0,
@@ -108,7 +117,14 @@ internal val DarkColors = AppColors(
   buttonTertiaryContent = ColorPalette.purple300,
   buttonTertiaryContentDisabled = ColorPalette.gray250,
   shimmerColor = ColorPalette.gray900,
-  shimmerHighlightColor = ColorPalette.gray500
+  shimmerHighlightColor = ColorPalette.gray500,
+  graphLane1 = ColorPalette.cyan200,
+  graphLane2 = ColorPalette.blue200,
+  graphLane3 = ColorPalette.teal200,
+  graphLane4 = ColorPalette.magenta200,
+  graphLane5 = ColorPalette.terracotta200,
+  graphLane6 = ColorPalette.slate200,
+  graphMergeContent = ColorPalette.gray800
 )
 
 internal val LocalAppColors = staticCompositionLocalOf<AppColors> {

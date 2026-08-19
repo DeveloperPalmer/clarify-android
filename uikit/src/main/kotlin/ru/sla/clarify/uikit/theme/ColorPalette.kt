@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 //
 // IMPORTANT: Do not ever make this "public"! See ^^^
 internal object ColorPalette {
-  // region Палитра (gray / purple / red / green / cyan / gold)
+  // region Палитра (gray / purple / red / green / cyan / gold / дорожки графа)
 
   val gray0 = Color(0xFFFFFFFF)
   val gray100 = Color(0xFFF5F5F5)
@@ -38,6 +38,7 @@ internal object ColorPalette {
   val purple100 = Color(0xFF9B3AFC)
   val purple150 = Color(0xFF9730FE)
   val purple200 = Color(0xFF9326FF)
+  val purple250 = Color(0xFFBE9BFF)
   val purple300 = Color(0xFF9934FE)
   val purple400 = Color(0xFF8000FF)
   val purple500 = Color(0xFF7520FF)
@@ -56,6 +57,15 @@ internal object ColorPalette {
   val cyan200 = Color(0xFF05C2CE)
 
   val gold200 = Color(0xFFDFA616)
+
+  // Идентичность дорожки графа хронологии. Оттенки подобраны вне семантики: зелёный, золотой,
+  // фиолетовый и красный уже заняты статусами, поэтому цвет ветки не может их использовать.
+  // Первая дорожка переиспользует cyan200 — дубликат хекса в палитре заводить нельзя.
+  val blue200 = Color(0xFF3B7DE8)
+  val teal200 = Color(0xFF1AA39A)
+  val magenta200 = Color(0xFFC74B93)
+  val terracotta200 = Color(0xFFB4713E)
+  val slate200 = Color(0xFF7A8CA0)
 
   // endregion
 }

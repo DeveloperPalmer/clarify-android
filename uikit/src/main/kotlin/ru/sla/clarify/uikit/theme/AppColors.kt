@@ -34,6 +34,7 @@ data class AppColors(
   val contentAccentDarkSecondary: Color,
   val contentBlue: Color,
   val contentGoldPrimary: Color,
+  val contentAccentReadable: Color,
   val errorPrimary: Color,
   val errorSecondary: Color,
   val successPrimary: Color,
@@ -53,5 +54,12 @@ data class AppColors(
   val buttonTertiaryContent: Color,
   val buttonTertiaryContentDisabled: Color,
   val shimmerColor: Color,
-  val shimmerHighlightColor: Color
+  val shimmerHighlightColor: Color,
+  val graphLane1: Color,
+  val graphLane2: Color,
+  val graphLane3: Color,
+  val graphLane4: Color,
+  val graphLane5: Color,
+  val graphLane6: Color,
+  val graphMergeContent: Color
 )

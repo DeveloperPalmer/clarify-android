@@ -26,6 +26,7 @@ class AppMotion {
   val smallestMillis = 100
   val smallMillis = 150
   val mediumMillis = 250
+  val largeMillis = 400
 
   @Composable
   fun <S> mediumTransitionSpec(): AnimatedContentTransitionScope<S>.() -> ContentTransform {
@@ -67,6 +68,15 @@ class AppMotion {
     )
   }
 
+  /** Длинное движение, затухающее без разгона: перелёты камеры, стягивание линии. */
+  @Composable
+  fun <T> largeTween(): TweenSpec<T> {
+    return tween(
+      easing = AppTheme.motion.decelerate,
+      durationMillis = AppTheme.motion.largeMillis
+    )
+  }
+
   /** Element slides in from the start edge while pushing siblings aside (expand + slide + fade). */
   @Composable
   fun slideInFromStart(): EnterTransition {
@@ -96,6 +106,9 @@ class AppMotion {
   }
 
   val emphasized: Easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+
+  /** Без разгона: движение начинается на полной скорости и тормозит. Для камеры на полотне. */
+  val decelerate: Easing = CubicBezierEasing(0f, 0f, 0f, 1f)
 }
 
 internal val LocalAppMotion = staticCompositionLocalOf<AppMotion> {
