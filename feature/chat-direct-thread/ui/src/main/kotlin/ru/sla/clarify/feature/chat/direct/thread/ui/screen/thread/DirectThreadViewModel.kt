@@ -365,6 +365,13 @@ class DirectThreadViewModel(
       }
     }
 
+    onEach(intent(ViewIntents::openChronology)) {
+      action { state, _, _ ->
+        val peerId = state.peer?.id ?: return@action
+        eventSink.sendEvent(FlowEvent.ChronologyRequested(peerId))
+      }
+    }
+
     onEach(intent(ViewIntents::confirmCreateBranch)) {
       action { _, _, createBranch ->
         directThreadModel.createBranch.start(

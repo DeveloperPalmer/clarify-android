@@ -82,6 +82,7 @@ fun DirectThreadScreen(viewModel: DirectThreadViewModel) {
         onBack = intents.navigateBack,
         onClose = intents.disableSelectionMode,
         onShowBranches = intents.showBranches,
+        onOpenChronology = intents.openChronology,
         onLoadMore = intents.loadCommitsHistory,
         onDeleteCommit = intents.deleteCommit,
         onDeleteCommits = intents.deleteCommits,
@@ -128,6 +129,7 @@ private fun DirectThreadReadyContent(
   onSend: (String) -> Unit,
   onReply: (String) -> Unit,
   onShowBranches: () -> Unit,
+  onOpenChronology: () -> Unit,
   onLoadMore: () -> Unit,
   onCommitClick: (Commit.Message) -> Unit,
   onCommitLongClick: (Commit) -> Unit,
@@ -179,6 +181,16 @@ private fun DirectThreadReadyContent(
                 scope.launch {
                   keyboardController.awaitHide()
                   onShowBranches()
+                }
+              }
+            )
+            IconAction(
+              iconResId = R.drawable.ic_git_network_24,
+              contentDescription = stringResource(R.string.chronology_open),
+              onClick = {
+                scope.launch {
+                  keyboardController.awaitHide()
+                  onOpenChronology()
                 }
               }
             )

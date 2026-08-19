@@ -1,0 +1,12 @@
+plugins {
+  id 'android-library-convention'
+  id "kotlin-inject-convention"
+}
+
+android {
+  namespace "ru.sla.clarify.feature.chronology.data"
+}
+
+dependencies {
+  implementation project(":feature:chronology:domain")
+}

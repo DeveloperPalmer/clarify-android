@@ -1,0 +1,11 @@
+digraph ChronologyFlow {
+  package = "ru.sla.clarify.feature.chronology.routing"
+
+  chronologyFlow [
+    type = "flow"
+    parameterName = "params"
+    parameterType = "ru.sla.clarify.feature.chronology.domain.entity.TargetParams"
+  ]
+
+  chronologyFlow -> chronology
+}

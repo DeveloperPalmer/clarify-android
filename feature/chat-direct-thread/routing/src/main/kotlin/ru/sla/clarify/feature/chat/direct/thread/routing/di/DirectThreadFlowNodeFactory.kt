@@ -12,8 +12,11 @@ import ru.sla.clarify.feature.chat.direct.thread.routing.DirectThreadFlowNode
 import ru.sla.clarify.feature.chat.direct.thread.routing.DirectThreadFlowNodeBuilder
 import ru.sla.clarify.feature.chat.direct.thread.ui.di.Screen
 import ru.sla.clarify.feature.chat.direct.thread.ui.di.WiredScreen
+import ru.sla.clarify.feature.chronology.routing.ChronologyFlow
+import ru.sla.clarify.feature.chronology.routing.di.ChronologyFlowComponent
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams as BranchTargetParams
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams as DirectTargetParams
+import ru.sla.clarify.feature.chronology.domain.entity.TargetParams as ChronologyTargetParams
 
 class DirectThreadFlowNodeFactory @Inject constructor(
   private val flowNode: () -> DirectThreadFlowNode,
@@ -33,5 +36,10 @@ class DirectThreadFlowNodeFactory @Inject constructor(
   override fun createBranchFlowNodeBuilder(params: BranchTargetParams): NodeBuilder {
     val factory = component as BranchFlowComponent.Factory
     return BranchFlow.nodeBuilder(factory.createBranchFlowComponent(params))
+  }
+
+  override fun createChronologyFlowNodeBuilder(params: ChronologyTargetParams): NodeBuilder {
+    val factory = component as ChronologyFlowComponent.Factory
+    return ChronologyFlow.nodeBuilder(factory.createChronologyFlowComponent(params))
   }
 }

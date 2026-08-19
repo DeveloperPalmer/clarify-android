@@ -44,4 +44,6 @@ class ViewIntents : BaseViewIntents() {
   val showBranches = intent(name = "showBranches")
   val showCreateBranchError = intent<CreateBranchError>(name = "showCreateBranchError")
   val clearCreateBranchError = intent(name = "clearCreateBranchError")
+
+  val openChronology = intent(name = "openChronology")
 }

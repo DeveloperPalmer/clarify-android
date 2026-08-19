@@ -177,4 +177,8 @@
     <string name="debug_panel_error_unknown_field">Неизвестное поле: %1$s</string>
     <string name="debug_panel_error_invalid_photo_url">photoUrl должен быть корректным http(s) URL</string>
     <string name="debug_panel_error_invalid_email">Пользователь с таким email уже существует</string>
+
+    <!-- Chronology screen -->
+    <string name="chronology_open">Хронология</string>
+    <string name="chronology_placeholder">Хронология</string>
 </resources>

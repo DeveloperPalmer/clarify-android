@@ -11,10 +11,12 @@ import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
 import ru.sla.clarify.core.routing.FlowNodeScopeDisposalHook
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.ui.routing.FlowEvent
 import software.amazon.lastmile.kotlin.inject.anvil.ForScope
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams as BranchTargetParams
+import ru.sla.clarify.feature.chronology.domain.entity.TargetParams as ChronologyTargetParams
 
 class DirectThreadFlowNode @Inject constructor(
   @ForScope(DirectThreadScope::class)
@@ -36,7 +38,11 @@ class DirectThreadFlowNode @Inject constructor(
       is FlowEvent.BranchRequested -> {
         NavigateTo(buildBranchFlow(event.branchId))
       }
-      is DirectThreadFlowChildFinishRequest.BranchFlow -> {
+      is FlowEvent.ChronologyRequested -> {
+        NavigateTo(buildChronologyFlow(event.peerId))
+      }
+      is DirectThreadFlowChildFinishRequest.BranchFlow,
+      is DirectThreadFlowChildFinishRequest.ChronologyFlow -> {
         NavigateTo(Target.directThreadFlow.directThread)
       }
       else -> Ignore
@@ -47,4 +53,9 @@ class DirectThreadFlowNode @Inject constructor(
 private fun buildBranchFlow(branchId: Branch.Id): Target {
   val params = BranchTargetParams(branchId)
   return Target.directThreadFlow.branchFlow(params)
+}
+
+private fun buildChronologyFlow(peerId: Peer.Id): Target {
+  val params = ChronologyTargetParams(peerId)
+  return Target.directThreadFlow.chronologyFlow(params)
 }

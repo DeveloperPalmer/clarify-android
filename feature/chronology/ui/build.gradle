@@ -1,0 +1,14 @@
+plugins {
+  id 'android-library-convention'
+  id 'android-compose-convention'
+  id "kotlin-inject-convention"
+}
+
+android {
+  namespace "ru.sla.clarify.feature.chronology.ui"
+}
+
+dependencies {
+  implementation project(":uikit")
+  implementation project(":feature:chronology:domain")
+}

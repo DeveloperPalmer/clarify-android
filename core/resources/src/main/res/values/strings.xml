@@ -187,4 +187,8 @@
     <string name="debug_panel_error_unknown_field">Unknown field: %1$s</string>
     <string name="debug_panel_error_invalid_photo_url">photoUrl must be a valid http(s) URL</string>
     <string name="debug_panel_error_invalid_email">User with email already exists</string>
+
+    <!-- Chronology screen -->
+    <string name="chronology_open">Chronology</string>
+    <string name="chronology_placeholder">Chronology</string>
 </resources>
