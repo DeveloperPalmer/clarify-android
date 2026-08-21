@@ -27,12 +27,13 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
+import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.uikit.theme.AppTheme
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Полотно хронологии: фон, магистраль и слой узлов, по которому можно панорамировать.
+ * Полотно хронологии: фон, слой узлов и связи между ними, по которому можно панорамировать.
  *
  * Камера — это сдвиг содержимого: `экран = полотно + камера`. Её границы считаются по фактически
  * размещённым узлам, а не по объявленному размеру полотна: узел ставится центром в точку дорожки
@@ -55,6 +56,7 @@ internal fun GraphCanvas(
       with(density) { Rect(0f, 0f, contentSize.width.toPx(), contentSize.height.toPx()) }
     }
     var contentBounds by remember(declaredBounds) { mutableStateOf(declaredBounds) }
+    var edges by remember { mutableStateOf(emptyList<GraphEdge>()) }
     // null — камера ещё не сдвигалась: тогда она встаёт вплотную к началу истории.
     var camera by remember { mutableStateOf<Offset?>(null) }
 
@@ -93,9 +95,8 @@ internal fun GraphCanvas(
         lanes = lanes
       )
 
-      val trunkColor = AppTheme.colors.contentTertiary
-      val trunkY = GraphGeometry.TrunkY
-      val trunkBounds = contentBounds
+      val edgeColor = AppTheme.colors.contentTertiary
+      val drawnEdges = edges
       Layout(
         // Слой узлов равен вьюпорту, а не полотну. `requiredSize` центрирует содержимое, которое
         // шире входящих ограничений, и полотно уезжало влево на (viewport - content) / 2 мимо
@@ -108,16 +109,14 @@ internal fun GraphCanvas(
             translationY = cameraOffset.y
           }
           .drawBehind {
-            // Магистраль начинается в центре начального узла, а не у левого края полотна: слева
-            // от начала истории её нечему обозначать. Плашка узла её перекрывает, поэтому линия
-            // читается как выходящая из узла вправо.
-            val y = trunkY.toPx()
-            drawLine(
-              color = trunkColor,
-              start = Offset(size.width / 2f, y),
-              end = Offset(trunkBounds.right, y),
-              strokeWidth = TRUNK_WIDTH.toPx()
-            )
+            drawnEdges.forEach { edge ->
+              drawLine(
+                color = edgeColor,
+                start = Offset(edge.startX, edge.y),
+                end = Offset(edge.endX, edge.y),
+                strokeWidth = EDGE_WIDTH.toPx()
+              )
+            }
           },
         content = { GraphScopeInstance.content() }
       ) { measurables, constraints ->
@@ -138,6 +137,7 @@ internal fun GraphCanvas(
           }
         }
         contentBounds = placedBounds(declaredBounds, placeables, offsets)
+        edges = laneEdges(placeables, offsets, positions)
         layout(constraints.maxWidth, constraints.maxHeight) {
           offsets.forEachIndexed { index, offset ->
             if (offset != null) placeables[index].place(offset)
@@ -183,6 +183,42 @@ private fun cameraRange(min: Float, max: Float, viewport: Float): ClosedFloating
   return centered..centered
 }
 
+/**
+ * Отрезки связей между соседними узлами каждой дорожки.
+ *
+ * Ребро существует только там, где есть что связывать: после последнего узла дорожки его нет, и
+ * линия не уходит в пустоту. Узлы одной дорожки объявляют одинаковый `y`, поэтому дорожка — это
+ * группа по нему.
+ */
+private fun laneEdges(
+  placeables: List<Placeable>,
+  offsets: List<IntOffset?>,
+  positions: List<GraphNodePosition?>
+): List<GraphEdge> {
+  val byLane = placeables.indices
+    .filter { offsets[it] != null && positions[it] != null }
+    .groupBy { checkNotNull(positions[it]).y }
+  return byLane.values.flatMap { indices ->
+    indices
+      .sortedBy { checkNotNull(offsets[it]).x }
+      .zipWithNext { fromIndex, toIndex ->
+        val from = checkNotNull(offsets[fromIndex])
+        val startX = (from.x + placeables[fromIndex].width).toFloat()
+        val endX = checkNotNull(offsets[toIndex]).x.toFloat()
+        if (endX <= startX) {
+          null
+        } else {
+          GraphEdge(
+            startX = startX,
+            endX = endX,
+            y = (from.y + placeables[fromIndex].height / 2).toFloat()
+          )
+        }
+      }
+      .filterNotNull()
+  }
+}
+
 /** Объявленное полотно, расширенное выступами узлов за его края. */
 private fun placedBounds(
   declared: Rect,
@@ -204,4 +240,4 @@ private fun placedBounds(
   return Rect(left, top, right, bottom)
 }
 
-private val TRUNK_WIDTH: Dp = 2.dp
+private val EDGE_WIDTH: Dp = 2.dp
