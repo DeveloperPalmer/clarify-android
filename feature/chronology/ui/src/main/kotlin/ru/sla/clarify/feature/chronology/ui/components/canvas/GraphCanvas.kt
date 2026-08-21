@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -27,7 +29,7 @@ import ru.sla.clarify.uikit.theme.AppTheme
  * Полотно хронологии: фон, узлы графа и связи между ними, по которому можно панорамировать.
  *
  * Композабл здесь ничего не считает — только композирует, принимает жест и рисует. Где узлы стоят,
- * знает [GraphGeometry]; где стоит полотно и что получилось после измерения — [GraphCanvasState].
+ * считает [graphPlacementOf]; камеру и результат раскладки держит [GraphCanvasState].
  *
  * Зума и переключения уровней детализации пока нет.
  *
@@ -43,8 +45,10 @@ internal fun GraphCanvas(
   debugOverlayVisible: Boolean = false,
   node: @Composable (id: GraphNode.Id) -> Unit
 ) {
-  state.setTelemetryEnabled(debugOverlayVisible)
-
+  // Жест не пересоздаётся при смене состояния: ключ `Unit` держит обработчик живым, а свежий
+  // экземпляр приходит через rememberUpdatedState. Иначе первое же входящее сообщение отменяло бы
+  // драг под пальцем.
+  val currentState by rememberUpdatedState(state)
   val edgeColor = AppTheme.colors.contentTertiary
 
   Box(
@@ -52,10 +56,10 @@ internal fun GraphCanvas(
     // и панорамирование не работало бы там, где его нет.
     modifier = modifier
       .clipToBounds()
-      .pointerInput(state) {
+      .pointerInput(Unit) {
         detectDragGestures { change, dragAmount ->
           change.consume()
-          state.pan(dragAmount)
+          currentState.pan(dragAmount)
         }
       }
   ) {
@@ -73,12 +77,12 @@ internal fun GraphCanvas(
         .graphicsLayer {
           // Камера читается здесь, а не в композиции: кадр панорамирования обновляет только
           // свойства слоя — ни рекомпозиции, ни повторного измерения, ни новых модификаторов.
-          val camera = state.offset()
+          val camera = state.offset.value
           translationX = camera.x
           translationY = camera.y
         }
         .drawBehind {
-          state.edges().fastForEach { edge ->
+          state.edges.value.fastForEach { edge ->
             drawLine(
               color = edgeColor,
               start = Offset(edge.startX, edge.y),
@@ -98,14 +102,14 @@ internal fun GraphCanvas(
       // Узел меряется свободно: ширину он ограничивает сам, а вьюпорт ему не указ — узел может
       // стоять далеко за правым краем экрана.
       val placeables = measurables.fastMap { it.measure(Constraints()) }
-      state.onMeasure(
+      val placement = state.layout(
         viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight),
         nodeSizes = placeables.fastMap { IntSize(it.width, it.height) },
         density = this
       )
       layout(constraints.maxWidth, constraints.maxHeight) {
         placeables.fastForEachIndexed { index, placeable ->
-          placeable.place(state.placementOf(index))
+          placeable.place(placement.nodes[index])
         }
       }
     }
@@ -116,7 +120,7 @@ internal fun GraphCanvas(
           .fillMaxWidth()
           .navigationBarsPadding()
           .align(Alignment.BottomCenter),
-        info = state.debugInfo()
+        state = state
       )
     }
   }

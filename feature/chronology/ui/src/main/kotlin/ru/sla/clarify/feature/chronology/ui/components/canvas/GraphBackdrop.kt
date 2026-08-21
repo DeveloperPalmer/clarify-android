@@ -41,7 +41,7 @@ internal fun GraphBackdrop(
   Canvas(modifier = modifier) {
     drawDiamondPattern(
       color = patternColor,
-      offset = state.offset() * PARALLAX,
+      offset = state.offset.value * PARALLAX,
       spacing = PATTERN_SPACING.toPx()
     )
   }

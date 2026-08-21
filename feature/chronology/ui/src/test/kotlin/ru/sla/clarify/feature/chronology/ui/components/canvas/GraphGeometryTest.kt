@@ -4,18 +4,55 @@ import androidx.compose.ui.unit.dp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
  * Геометрия вынесена из композабла именно для того, чтобы её можно было проверить без Compose.
  *
- * Тест сторожит три регрессии, каждая из которых уже случалась или ждала своего часа: ось X должна
- * выводиться из паузы, а не из литералов на экране; место магистрали должно считаться от занятых
- * дорожек, а не от константы, совпавшей с половиной высоты полотна; кламп камеры должен вырождаться
- * в центрирование, когда содержимое помещается целиком, а не запирать его у края.
+ * Тест сторожит регрессии, которые уже случались: место магистрали должно считаться от занятых
+ * дорожек, а не от константы, совпавшей с половиной высоты полотна; зазор должен отделять плашки, а
+ * не центры; кламп камеры должен вырождаться в центрирование, когда содержимое помещается целиком, и
+ * в ноль, когда содержимого нет.
  */
 class GraphGeometryTest {
+
+  @Test
+  fun `top lane is never below the trunk`() {
+    assertEquals(0, topLaneOf(listOf(0, 1, 2)), "магистраль учитывается всегда")
+    assertEquals(-2, topLaneOf(listOf(-2, -1, 0)))
+    assertEquals(0, topLaneOf(emptyList()))
+  }
+
+  @Test
+  fun `trunk shifts down when lanes are occupied above it`() {
+    val alone = GraphGeometry(topLaneOf(listOf(0)))
+    val withLaneAbove = GraphGeometry(topLaneOf(listOf(-1, 0)))
+
+    assertTrue(
+      withLaneAbove.laneYOf(0) > alone.laneYOf(0),
+      "магистраль обязана уехать вниз, освободив место дорожке сверху"
+    )
+  }
+
+  @Test
+  fun `lane step is the same between any two neighbours`() {
+    val geometry = GraphGeometry(topLaneOf(listOf(-1, 0, 1)))
+
+    assertEquals(
+      geometry.laneYOf(0) - geometry.laneYOf(-1),
+      geometry.laneYOf(1) - geometry.laneYOf(0)
+    )
+  }
+
+  @Test
+  fun `topmost lane stays inside the canvas`() {
+    val geometry = GraphGeometry(topLaneOf(listOf(-2, 1)))
+
+    assertTrue(
+      geometry.laneYOf(-2) > 0.dp,
+      "самая верхняя дорожка не должна уходить за верх полотна"
+    )
+  }
 
   @Test
   fun `left offsets accumulate gaps and widths`() {
@@ -54,44 +91,6 @@ class GraphGeometryTest {
   }
 
   @Test
-  fun `lane range always contains the trunk`() {
-    val geometry = GraphGeometry(listOf(node(lane = -2), node(lane = -1)))
-
-    assertEquals(-2..0, geometry.laneRange())
-  }
-
-  @Test
-  fun `trunk shifts down when lanes are occupied above it`() {
-    val alone = GraphGeometry(listOf(node(lane = 0)))
-    val withLaneAbove = GraphGeometry(listOf(node(lane = -1), node(lane = 0)))
-
-    assertTrue(
-      withLaneAbove.laneYOf(0) > alone.laneYOf(0),
-      "магистраль обязана уехать вниз, освободив место дорожке сверху"
-    )
-  }
-
-  @Test
-  fun `lane step is the same between any two neighbours`() {
-    val geometry = GraphGeometry(listOf(node(lane = -1), node(lane = 0), node(lane = 1)))
-
-    assertEquals(
-      geometry.laneYOf(0) - geometry.laneYOf(-1),
-      geometry.laneYOf(1) - geometry.laneYOf(0)
-    )
-  }
-
-  @Test
-  fun `topmost lane stays inside the canvas`() {
-    val geometry = GraphGeometry(listOf(node(lane = -2), node(lane = 1)))
-
-    assertTrue(
-      geometry.laneYOf(-2) > 0.dp,
-      "самая верхняя дорожка не должна уходить за верх полотна"
-    )
-  }
-
-  @Test
   fun `pan range spans content wider than the viewport`() {
     val range = panRangeOf(min = 0f, max = 1000f, viewport = 400f)
 
@@ -118,7 +117,11 @@ class GraphGeometryTest {
     assertEquals(100f, range.start)
   }
 
-  private fun node(lane: Int = 0, gap: TimeGap = TimeGap.Minutes): GraphNode {
-    return GraphNode(id = GraphNode.Id("node-$lane-$gap"), lane = lane, gap = gap)
+  @Test
+  fun `pan range stays at zero without content`() {
+    val range = panRangeOf(min = 0f, max = 0f, viewport = 400f)
+
+    assertEquals(0f, range.start, "пустое полотно не должно уезжать на пол-экрана")
+    assertEquals(0f, range.endInclusive)
   }
 }

@@ -15,7 +15,6 @@ import androidx.compose.ui.geometry.Rect
  * @param contentBounds границы содержимого в координатах полотна
  * @param camera сдвиг содержимого после клампа
  * @param isCameraMoved двигали ли камеру хоть раз
- * @param layoutRevision счётчик раскладок: растёт, когда полотно перемерялось
  * @param nodeCount число узлов в модели
  * @param edgeCount число выведенных связей
  * @param dragCount число событий жеста, дошедших до обработчика
@@ -28,7 +27,6 @@ data class GraphDebugInfo(
   val contentBounds: Rect,
   val camera: Offset,
   val isCameraMoved: Boolean,
-  val layoutRevision: Int,
   val nodeCount: Int,
   val edgeCount: Int,
   val dragCount: Int,
