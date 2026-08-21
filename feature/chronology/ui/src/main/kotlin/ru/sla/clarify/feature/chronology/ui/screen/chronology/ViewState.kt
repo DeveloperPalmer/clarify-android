@@ -7,5 +7,6 @@ import ru.sla.clarify.entity.chat.Branch
 @Immutable
 data class ViewState(
   val contentLoadState: ContentLoadState = ContentLoadState.Ready,
-  val branches: List<Branch> = emptyList()
+  val branches: List<Branch> = emptyList(),
+  val debugOverlayVisible: Boolean = false
 )

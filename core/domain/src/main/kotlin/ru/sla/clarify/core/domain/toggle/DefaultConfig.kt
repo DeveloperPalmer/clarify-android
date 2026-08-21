@@ -21,6 +21,7 @@ class DefaultConfig : Config {
   private val features: Map<String, String> = AppFeature.entries.associate { feature ->
     feature.key to when (feature) {
       AppFeature.GroupsAvailable -> "false"
+      AppFeature.ChronologyDebugOverlay -> "false"
     }
   }
 }

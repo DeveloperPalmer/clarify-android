@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.uikit.theme.AppTheme
 import kotlin.math.max
 import kotlin.math.min
@@ -43,6 +46,7 @@ internal fun GraphCanvas(
   contentSize: DpSize,
   lanes: IntRange,
   modifier: Modifier = Modifier,
+  debugOverlayVisible: Boolean = false,
   content: @Composable GraphScope.() -> Unit
 ) {
   BoxWithConstraints(modifier = modifier.clipToBounds()) {
@@ -61,6 +65,10 @@ internal fun GraphCanvas(
       y = (camera?.y ?: cameraY.endInclusive).coerceIn(cameraY)
     )
 
+    // Счётчики для отладочной панели: без них не отличить «жест не дошёл» от «камера упёрлась».
+    var lastDrag by remember { mutableStateOf(Offset.Zero) }
+    var dragCount by remember { mutableIntStateOf(0) }
+
     Box(
       // Жест висит на всём вьюпорте, а не на слое узлов: слой узлов ограничен размером полотна,
       // и панорамирование не работало бы там, где полотно до края экрана не достаёт.
@@ -74,6 +82,8 @@ internal fun GraphCanvas(
               x = (current.x + dragAmount.x).coerceIn(cameraX),
               y = (current.y + dragAmount.y).coerceIn(cameraY)
             )
+            lastDrag = dragAmount
+            dragCount++
           }
         }
     ) {
@@ -134,6 +144,26 @@ internal fun GraphCanvas(
           }
         }
       }
+    }
+
+    if (debugOverlayVisible) {
+      GraphDebugOverlay(
+        modifier = Modifier.align(Alignment.BottomStart),
+        info = GraphDebugInfo(
+          viewportWidth = constraints.maxWidth,
+          viewportHeight = constraints.maxHeight,
+          declaredBounds = declaredBounds,
+          contentBounds = contentBounds,
+          cameraMinX = cameraX.start,
+          cameraMaxX = cameraX.endInclusive,
+          cameraMinY = cameraY.start,
+          cameraMaxY = cameraY.endInclusive,
+          camera = cameraOffset,
+          isCameraMoved = camera != null,
+          dragCount = dragCount,
+          lastDrag = lastDrag
+        )
+      )
     }
   }
 }

@@ -35,7 +35,8 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
         GraphCanvas(
           modifier = Modifier.fillMaxSize(),
           contentSize = CANVAS_SIZE,
-          lanes = LANES
+          lanes = LANES,
+          debugOverlayVisible = state.debugOverlayVisible
         ) {
           DemoNodes()
         }
