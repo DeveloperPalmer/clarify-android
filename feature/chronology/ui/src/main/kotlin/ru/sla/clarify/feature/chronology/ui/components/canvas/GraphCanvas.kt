@@ -3,6 +3,8 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
@@ -110,7 +112,10 @@ internal fun GraphCanvas(
 
     if (debugOverlayVisible) {
       GraphDebugOverlay(
-        modifier = Modifier.align(Alignment.BottomStart),
+        modifier = Modifier
+          .fillMaxWidth()
+          .navigationBarsPadding()
+          .align(Alignment.BottomCenter),
         info = state.debugInfo()
       )
     }
