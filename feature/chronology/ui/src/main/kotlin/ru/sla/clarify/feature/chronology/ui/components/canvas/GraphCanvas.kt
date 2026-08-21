@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberUpdatedState
@@ -19,6 +21,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
@@ -36,7 +39,8 @@ import ru.sla.clarify.uikit.theme.AppTheme
  * @param state камера полотна и результат его последней раскладки
  * @param modifier модификатор корня полотна
  * @param debugOverlayVisible показывать ли отладочную панель камеры
- * @param node содержимое узла с данным `id`
+ * @param node содержимое узла с данным `id`; обязано выпускать ровно один элемент раскладки —
+ *   полотно ставит плашки по одной на узел и считает их по позиции, а не по идентификатору
  */
 @Composable
 internal fun GraphCanvas(
@@ -49,7 +53,13 @@ internal fun GraphCanvas(
   // экземпляр приходит через rememberUpdatedState. Иначе первое же входящее сообщение отменяло бы
   // драг под пальцем.
   val currentState by rememberUpdatedState(state)
+  val telemetry = state.telemetry
+  SideEffect { telemetry.onCanvasComposition() }
   val edgeColor = AppTheme.colors.contentTertiary
+  // Узлы снимаются один раз и уходят и в содержимое, и в измерение. Читать их в measure заново
+  // нельзя: состояние подменяется из `SideEffect`, то есть уже после этой композиции, но ещё до
+  // измерения того же кадра, — и измерение получило бы новый список к старым measurable'ам.
+  val nodes = state.nodes
 
   Box(
     // Жест висит на всём вьюпорте, а не на слое узлов: полотно не всегда достаёт до края экрана,
@@ -77,11 +87,13 @@ internal fun GraphCanvas(
         .graphicsLayer {
           // Камера читается здесь, а не в композиции: кадр панорамирования обновляет только
           // свойства слоя — ни рекомпозиции, ни повторного измерения, ни новых модификаторов.
+          telemetry.onLayerUpdate()
           val camera = state.offset.value
           translationX = camera.x
           translationY = camera.y
         }
         .drawBehind {
+          telemetry.onEdgeDraw()
           state.edges.value.fastForEach { edge ->
             drawLine(
               color = edgeColor,
@@ -92,8 +104,9 @@ internal fun GraphCanvas(
           }
         },
       content = {
-        state.nodes.fastForEach { graphNode ->
+        nodes.fastForEach { graphNode ->
           key(graphNode.id.value) {
+            SideEffect { telemetry.onNodeComposition() }
             node(graphNode.id)
           }
         }
@@ -103,11 +116,13 @@ internal fun GraphCanvas(
       // стоять далеко за правым краем экрана.
       val placeables = measurables.fastMap { it.measure(Constraints()) }
       val placement = state.layout(
+        nodes = nodes,
         viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight),
         nodeSizes = placeables.fastMap { IntSize(it.width, it.height) },
         density = this
       )
       layout(constraints.maxWidth, constraints.maxHeight) {
+        telemetry.onPlacement()
         placeables.fastForEachIndexed { index, placeable ->
           placeable.place(placement.nodes[index])
         }
@@ -117,9 +132,10 @@ internal fun GraphCanvas(
     if (debugOverlayVisible) {
       GraphDebugOverlay(
         modifier = Modifier
-          .fillMaxWidth()
+          .align(Alignment.BottomCenter)
           .navigationBarsPadding()
-          .align(Alignment.BottomCenter),
+          .fillMaxWidth()
+          .padding(12.dp),
         state = state
       )
     }

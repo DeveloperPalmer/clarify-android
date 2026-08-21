@@ -15,10 +15,9 @@ import androidx.compose.ui.geometry.Rect
  * @param contentBounds границы содержимого в координатах полотна
  * @param camera сдвиг содержимого после клампа
  * @param isCameraMoved двигали ли камеру хоть раз
+ * @param centreSpanX отрезок центров плашек, по которому ходит камера
  * @param nodeCount число узлов в модели
  * @param edgeCount число выведенных связей
- * @param dragCount число событий жеста, дошедших до обработчика
- * @param lastDrag последнее приращение жеста
  */
 @Immutable
 data class GraphDebugInfo(
@@ -27,8 +26,7 @@ data class GraphDebugInfo(
   val contentBounds: Rect,
   val camera: Offset,
   val isCameraMoved: Boolean,
+  val centreSpanX: ClosedFloatingPointRange<Float>,
   val nodeCount: Int,
-  val edgeCount: Int,
-  val dragCount: Int,
-  val lastDrag: Offset
+  val edgeCount: Int
 )

@@ -39,6 +39,7 @@ internal fun GraphBackdrop(
 ) {
   val patternColor = AppTheme.colors.contentPrimary.copy(alpha = PATTERN_ALPHA)
   Canvas(modifier = modifier) {
+    state.telemetry.onBackdropDraw()
     drawDiamondPattern(
       color = patternColor,
       offset = state.offset.value * PARALLAX,

@@ -1,0 +1,124 @@
+package ru.sla.clarify.feature.chronology.ui.components.canvas
+
+import androidx.compose.runtime.Stable
+import androidx.compose.ui.geometry.Offset
+import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
+
+/**
+ * Счётчики проходов Compose по полотну.
+ *
+ * Все поля — **обычные**, не снапшот-состояние, и это главное свойство этого класса. Инструмент не
+ * должен вызывать то, что измеряет: снапшот-запись из фазы измерения, которую кто-то читает в
+ * композиции, сама и есть бесконечный цикл, который тут ищут. Панель забирает значения по таймеру,
+ * а не по подписке.
+ *
+ * Счёт идёт всегда, независимо от тогла: инкремент целого стоит ничего, зато числа правдивы с
+ * момента запуска, а не с момента включения панели.
+ */
+@Stable
+class GraphCanvasTelemetry {
+
+  private var canvasCompositions = 0
+  private var nodeCompositions = 0
+  private var overlayCompositions = 0
+  private var measurePasses = 0
+  private var placementPasses = 0
+  private var layerUpdates = 0
+  private var edgeDraws = 0
+  private var backdropDraws = 0
+  private var panEvents = 0
+
+  /** Последнее приращение жеста. */
+  var lastPan: Offset = Offset.Zero
+    private set
+
+  internal fun onCanvasComposition() {
+    canvasCompositions++
+  }
+
+  internal fun onNodeComposition() {
+    nodeCompositions++
+  }
+
+  internal fun onOverlayComposition() {
+    overlayCompositions++
+  }
+
+  internal fun onMeasure() {
+    measurePasses++
+  }
+
+  internal fun onPlacement() {
+    placementPasses++
+  }
+
+  internal fun onLayerUpdate() {
+    layerUpdates++
+  }
+
+  internal fun onEdgeDraw() {
+    edgeDraws++
+  }
+
+  internal fun onBackdropDraw() {
+    backdropDraws++
+  }
+
+  internal fun onPan(delta: Offset) {
+    panEvents++
+    lastPan = delta
+  }
+
+  /**
+   * Снимок счётчиков.
+   *
+   * @return накопленные значения на момент вызова
+   */
+  fun read(): GraphTelemetry {
+    return GraphTelemetry(
+      canvasCompositions = canvasCompositions,
+      nodeCompositions = nodeCompositions,
+      overlayCompositions = overlayCompositions,
+      measurePasses = measurePasses,
+      placementPasses = placementPasses,
+      layerUpdates = layerUpdates,
+      edgeDraws = edgeDraws,
+      backdropDraws = backdropDraws,
+      panEvents = panEvents
+    )
+  }
+}
+
+/**
+ * Скорости изменения счётчиков.
+ *
+ * @param previous предыдущий снимок
+ * @param current текущий снимок
+ * @param elapsedMillis прошедшее между снимками время
+ * @return те же поля, но в единицах в секунду
+ */
+internal fun ratesOf(
+  previous: GraphTelemetry,
+  current: GraphTelemetry,
+  elapsedMillis: Long
+): GraphTelemetry {
+  if (elapsedMillis <= 0L) {
+    return GraphTelemetry.Empty
+  }
+  fun rate(from: Int, to: Int): Int {
+    return ((to - from) * MILLIS_IN_SECOND / elapsedMillis).toInt()
+  }
+  return GraphTelemetry(
+    canvasCompositions = rate(previous.canvasCompositions, current.canvasCompositions),
+    nodeCompositions = rate(previous.nodeCompositions, current.nodeCompositions),
+    overlayCompositions = rate(previous.overlayCompositions, current.overlayCompositions),
+    measurePasses = rate(previous.measurePasses, current.measurePasses),
+    placementPasses = rate(previous.placementPasses, current.placementPasses),
+    layerUpdates = rate(previous.layerUpdates, current.layerUpdates),
+    edgeDraws = rate(previous.edgeDraws, current.edgeDraws),
+    backdropDraws = rate(previous.backdropDraws, current.backdropDraws),
+    panEvents = rate(previous.panEvents, current.panEvents)
+  )
+}
+
+private const val MILLIS_IN_SECOND = 1000L

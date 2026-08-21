@@ -7,7 +7,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -68,9 +67,8 @@ internal class GraphCanvasState {
   private var viewport by mutableStateOf(IntSize.Zero)
   private var placement by mutableStateOf(GraphPlacement.Empty)
 
-  private var telemetryOn by mutableStateOf(false)
-  private var dragCount by mutableIntStateOf(0)
-  private var lastDrag by mutableStateOf(Offset.Zero)
+  /** Счётчики проходов Compose по полотну: обычные поля, снимаются по таймеру. */
+  val telemetry = GraphCanvasTelemetry()
 
   /** Узлы графа в хронологическом порядке. */
   val nodes: List<GraphNode>
@@ -108,10 +106,9 @@ internal class GraphCanvasState {
       contentBounds = placement.bounds,
       camera = offset.value,
       isCameraMoved = isMoved,
+      centreSpanX = placement.centreSpanX,
       nodeCount = graphNodes.size,
-      edgeCount = placement.edges.size,
-      dragCount = dragCount,
-      lastDrag = lastDrag
+      edgeCount = placement.edges.size
     )
   }
 
@@ -129,10 +126,7 @@ internal class GraphCanvasState {
     }
     rawOffsetX += delta.x
     rawOffsetY += delta.y
-    if (telemetryOn) {
-      dragCount++
-      lastDrag = delta
-    }
+    telemetry.onPan(delta)
   }
 
   /**
@@ -141,34 +135,38 @@ internal class GraphCanvasState {
    * Результат возвращается вызывающему, а не забирается потом отдельным запросом: фаза размещения
    * получает то же значение, что посчитала фаза измерения, и рассинхронизировать их нечем.
    *
+   * Узлы приходят параметром, а не берутся из [nodes], и это не украшение сигнатуры. [setNodes]
+   * вызывается из `SideEffect`, то есть между композицией и измерением того же кадра: прочитав
+   * состояние здесь, измерение получило бы новый список узлов к measurable'ам, порождённым старой
+   * композицией, — а это разные длины и индекс за границей списка. Передавая узлы снаружи, полотно
+   * меряет ровно тот набор, который само же и скомпоновало.
+   *
+   * @param nodes узлы, из которых построено содержимое этой композиции
    * @param viewportSize размер видимой области
    * @param nodeSizes измеренные размеры узлов, в порядке [nodes]
    * @param density плотность экрана для перевода координат полотна в пиксели
    * @return раскладка графа
    */
-  fun layout(viewportSize: IntSize, nodeSizes: List<IntSize>, density: Density): GraphPlacement {
-    val lanes = graphNodes.map { it.lane }
+  fun layout(
+    nodes: List<GraphNode>,
+    viewportSize: IntSize,
+    nodeSizes: List<IntSize>,
+    density: Density
+  ): GraphPlacement {
+    val lanes = nodes.map { it.lane }
     val geometry = GraphGeometry(topLaneOf(lanes))
     val result = with(density) {
       graphPlacementOf(
         lanes = lanes,
-        gaps = graphNodes.map { stepWidthOf(it.gap).toPx() },
+        gaps = nodes.map { stepWidthOf(it.gap).toPx() },
         laneYs = lanes.map { geometry.laneYOf(it).toPx() },
         sizes = nodeSizes
       )
     }
     viewport = viewportSize
     placement = result
+    telemetry.onMeasure()
     return result
-  }
-
-  /**
-   * Включает сбор телеметрии для отладочной панели.
-   *
-   * @param enabled собирать ли покадровые счётчики жеста
-   */
-  fun setTelemetryEnabled(enabled: Boolean) {
-    telemetryOn = enabled
   }
 
   /**
