@@ -103,41 +103,75 @@ internal fun leftOffsetsOf(gaps: List<Float>, widths: List<Float>): List<Float> 
  * Чистая функция, и это не эстетика: вся арифметика раскладки, в которой случились все регрессии
  * этой фичи, здесь проверяется юнит-тестом, а не глазами на устройстве.
  *
- * Начало истории встаёт центром в центр экрана: слева от него отступ, а не обрезанная плашка. Сдвиг
- * привязан к первому узлу модели, а не к самому левому из размещённых, — иначе догрузка истории или
- * виртуализация уводили бы весь граф в сторону.
+ * Полотно начинается в нуле: центрировать начало истории здесь незачем и вредно — кламп камеры
+ * прижимал бы содержимое к краю экрана и ровно отменял такое смещение. За то, куда камера наводится,
+ * отвечает [timelinePanRangeOf].
+ *
+ * Все четыре списка обязаны быть одной длины, и это проверяется, а не подразумевается: три из них
+ * описывают модель, четвёртый приходит из фазы измерения, и рассинхрон между этими источниками —
+ * не «невозможное состояние», а ровно тот дефект, который здесь и ловится. Индекс за границей
+ * списка сообщил бы о нём в терминах реализации, а не в терминах нарушенного контракта.
  *
  * @param lanes номер дорожки каждого узла
  * @param gaps зазор перед каждым узлом, в пикселях
  * @param laneYs смещение дорожки каждого узла по Y, в пикселях
  * @param sizes измеренные размеры узлов
- * @param viewportWidth ширина видимой области
  * @return раскладка, пустая при отсутствии узлов
  */
 internal fun graphPlacementOf(
   lanes: List<Int>,
   gaps: List<Float>,
   laneYs: List<Float>,
-  sizes: List<IntSize>,
-  viewportWidth: Int
+  sizes: List<IntSize>
 ): GraphPlacement {
+  check(lanes.size == gaps.size && lanes.size == laneYs.size && lanes.size == sizes.size) {
+    """
+     Раскладка получила рассогласованные списки:
+     lanes=${lanes.size},
+     "gaps=${gaps.size},
+     "laneYs=${laneYs.size},
+     "sizes=${sizes.size}"
+    """.trimIndent()
+  }
   if (sizes.isEmpty()) {
     return GraphPlacement.Empty
   }
   val widths = sizes.map { it.width.toFloat() }
   val lefts = leftOffsetsOf(gaps, widths)
-  val leadingShift = viewportWidth / 2f - lefts.first() - widths.first() / 2f
   val nodes = sizes.mapIndexed { index, size ->
     IntOffset(
-      x = (lefts[index] + leadingShift).roundToInt(),
+      x = lefts[index].roundToInt(),
       y = (laneYs[index] - size.height / 2f).roundToInt()
     )
   }
+  val centres = lefts.mapIndexed { index, left -> left + widths[index] / 2f }
   return GraphPlacement(
     nodes = nodes,
     bounds = boundsOf(nodes, sizes),
-    edges = edgesOf(lanes, laneYs, nodes, sizes)
+    edges = edgesOf(lanes, laneYs, nodes, sizes),
+    // Минимум и максимум, а не первый с последним: агрегат не должен зависеть от того, что порядок
+    // узлов совпадает с порядком по оси.
+    centreSpanX = (centres.min())..(centres.max())
   )
+}
+
+/**
+ * Допустимый сдвиг содержимого по оси времени.
+ *
+ * Камере разрешено наводиться на любой центр плашки и только на него: в покое в центре экрана стоит
+ * самый левый узел, а докрутив вправо до упора — самый правый. Кламп по краям содержимого давал бы
+ * обратное: начало истории у левой кромки, конец у правой.
+ *
+ * @param centreSpanX отрезок центров плашек в координатах полотна
+ * @param viewport ширина видимой области
+ * @return диапазон сдвига, вырожденный в точку при единственном узле
+ */
+internal fun timelinePanRangeOf(
+  centreSpanX: ClosedFloatingPointRange<Float>,
+  viewport: Float
+): ClosedFloatingPointRange<Float> {
+  val centre = viewport / 2f
+  return (centre - centreSpanX.endInclusive)..(centre - centreSpanX.start)
 }
 
 /**

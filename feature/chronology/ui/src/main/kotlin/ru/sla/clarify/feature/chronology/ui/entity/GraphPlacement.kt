@@ -13,13 +13,19 @@ import androidx.compose.ui.unit.IntOffset
  * @param nodes левые верхние углы узлов, в порядке модели
  * @param bounds объединение прямоугольников узлов: единственный источник истины о протяжённости
  * @param edges связи между соседними узлами дорожек
+ * @param centreSpanX отрезок центров плашек по X, парный к [bounds] по краям
  */
 @Immutable
 data class GraphPlacement(
   val nodes: List<IntOffset>,
   val bounds: Rect,
-  val edges: List<GraphEdge>
+  val edges: List<GraphEdge>,
+  val centreSpanX: ClosedFloatingPointRange<Float>
 ) {
+
+  /** Пуст ли граф: панорамировать нечего. */
+  val isEmpty: Boolean
+    get() = nodes.isEmpty()
 
   companion object {
 
@@ -27,7 +33,8 @@ data class GraphPlacement(
     val Empty = GraphPlacement(
       nodes = emptyList(),
       bounds = Rect.Zero,
-      edges = emptyList()
+      edges = emptyList(),
+      centreSpanX = 0f..0f
     )
   }
 }

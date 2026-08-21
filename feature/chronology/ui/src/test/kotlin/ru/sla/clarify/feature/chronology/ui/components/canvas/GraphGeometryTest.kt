@@ -118,6 +118,36 @@ class GraphGeometryTest {
   }
 
   @Test
+  fun `timeline rests with the leftmost plate centred`() {
+    val range = timelinePanRangeOf(centreSpanX = 60f..900f, viewport = 1000f)
+
+    assertEquals(
+      500f - 60f,
+      range.endInclusive,
+      "в покое камера наводится на самый левый узел"
+    )
+  }
+
+  @Test
+  fun `timeline ends with the rightmost plate centred`() {
+    val range = timelinePanRangeOf(centreSpanX = 60f..900f, viewport = 1000f)
+
+    assertEquals(
+      500f - 900f,
+      range.start,
+      "докрутив вправо до упора, пользователь видит последний узел в центре"
+    )
+  }
+
+  @Test
+  fun `a single plate is centred and cannot be panned away`() {
+    val range = timelinePanRangeOf(centreSpanX = 60f..60f, viewport = 1000f)
+
+    assertEquals(range.start, range.endInclusive)
+    assertEquals(440f, range.start)
+  }
+
+  @Test
   fun `pan range stays at zero without content`() {
     val range = panRangeOf(min = 0f, max = 0f, viewport = 400f)
 

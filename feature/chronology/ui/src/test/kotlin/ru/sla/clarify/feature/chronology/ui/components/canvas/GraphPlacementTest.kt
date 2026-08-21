@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
@@ -15,11 +16,22 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 class GraphPlacementTest {
 
   @Test
-  fun `the first node is centred in the viewport`() {
-    val placement = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 50f))
+  fun `the canvas starts at the first gap, not at a centring shift`() {
+    val placement = placementOf(lanes = listOf(0, 0), gaps = listOf(12f, 50f))
 
-    val centre = placement.nodes[0].x + NODE_WIDTH / 2
-    assertEquals(VIEWPORT_WIDTH / 2, centre, "начало истории встаёт в центр экрана")
+    assertEquals(
+      12,
+      placement.nodes[0].x,
+      "центрирование первого узла \u2014 дело камеры, а не раскладки"
+    )
+  }
+
+  @Test
+  fun `the centre span covers the outermost plates`() {
+    val placement = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 40f))
+
+    assertEquals(NODE_WIDTH / 2f, placement.centreSpanX.start)
+    assertEquals(NODE_WIDTH + 40f + NODE_WIDTH / 2f, placement.centreSpanX.endInclusive)
   }
 
   @Test
@@ -72,8 +84,7 @@ class GraphPlacementTest {
       lanes = listOf(0, 0),
       gaps = listOf(0f, 40f),
       laneYs = listOf(LANE_Y, LANE_Y),
-      sizes = listOf(tall, short),
-      viewportWidth = VIEWPORT_WIDTH
+      sizes = listOf(tall, short)
     )
 
     assertEquals(
@@ -97,11 +108,56 @@ class GraphPlacementTest {
       lanes = emptyList(),
       gaps = emptyList(),
       laneYs = emptyList(),
-      sizes = emptyList(),
-      viewportWidth = VIEWPORT_WIDTH
+      sizes = emptyList()
     )
 
     assertEquals(GraphPlacement.Empty, placement)
+  }
+
+  /**
+   * Модель и результат измерения — разные источники, и разъехаться они могут только по ошибке
+   * вызывающего. Отказ обязан называть эту ошибку, а не проявляться индексом за границей списка
+   * где-то в середине арифметики.
+   */
+  @Test
+  fun `a model out of step with the measured sizes is refused, not indexed past the end`() {
+    val grown = assertThrows(IllegalStateException::class.java) {
+      graphPlacementOf(
+        lanes = listOf(0, 0, 0),
+        gaps = listOf(0f, 40f, 40f),
+        laneYs = listOf(LANE_Y, LANE_Y, LANE_Y),
+        sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT))
+      )
+    }
+    assertTrue(
+      grown.message.orEmpty().contains("lanes=3"),
+      "сообщение обязано называть длины, иначе оно не помогает"
+    )
+
+    assertThrows(IllegalStateException::class.java) {
+      graphPlacementOf(
+        lanes = listOf(0),
+        gaps = listOf(0f),
+        laneYs = listOf(LANE_Y),
+        sizes = List(3) { IntSize(NODE_WIDTH, NODE_HEIGHT) }
+      )
+    }
+  }
+
+  /**
+   * Пустая модель при непустом измерении — не «пустой граф», а тот же рассинхрон. Ранний выход по
+   * пустым размерам не должен превращать его в молчаливо пустую раскладку.
+   */
+  @Test
+  fun `an empty model with measured nodes is refused too`() {
+    assertThrows(IllegalStateException::class.java) {
+      graphPlacementOf(
+        lanes = emptyList(),
+        gaps = emptyList(),
+        laneYs = emptyList(),
+        sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT))
+      )
+    }
   }
 
   private fun placementOf(lanes: List<Int>, gaps: List<Float>): GraphPlacement {
@@ -109,13 +165,11 @@ class GraphPlacementTest {
       lanes = lanes,
       gaps = gaps,
       laneYs = lanes.map { LANE_Y + it * LANE_Y },
-      sizes = lanes.map { IntSize(NODE_WIDTH, NODE_HEIGHT) },
-      viewportWidth = VIEWPORT_WIDTH
+      sizes = lanes.map { IntSize(NODE_WIDTH, NODE_HEIGHT) }
     )
   }
 }
 
-private const val VIEWPORT_WIDTH = 1000
 private const val NODE_WIDTH = 120
 private const val NODE_HEIGHT = 28
 private const val LANE_Y = 200f

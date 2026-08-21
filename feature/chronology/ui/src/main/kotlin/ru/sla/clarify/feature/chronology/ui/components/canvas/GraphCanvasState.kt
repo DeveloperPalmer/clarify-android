@@ -83,7 +83,13 @@ internal class GraphCanvasState {
    */
   val offset: State<Offset> = derivedStateOf {
     val bounds = placement.bounds
-    val rangeX = panRangeOf(bounds.left, bounds.right, viewport.width.toFloat())
+    // По времени камера ходит от «первый узел в центре» до «последний узел в центре»; по дорожкам —
+    // от края до края, потому что вертикаль надо видеть целиком, а не наводить на неё.
+    val rangeX = if (placement.isEmpty) {
+      0f..0f
+    } else {
+      timelinePanRangeOf(placement.centreSpanX, viewport.width.toFloat())
+    }
     val rangeY = panRangeOf(bounds.top, bounds.bottom, viewport.height.toFloat())
     Offset(
       x = if (isMoved) rawOffsetX.coerceIn(rangeX) else rangeX.endInclusive,
@@ -148,8 +154,7 @@ internal class GraphCanvasState {
         lanes = lanes,
         gaps = graphNodes.map { stepWidthOf(it.gap).toPx() },
         laneYs = lanes.map { geometry.laneYOf(it).toPx() },
-        sizes = nodeSizes,
-        viewportWidth = viewportSize.width
+        sizes = nodeSizes
       )
     }
     viewport = viewportSize
