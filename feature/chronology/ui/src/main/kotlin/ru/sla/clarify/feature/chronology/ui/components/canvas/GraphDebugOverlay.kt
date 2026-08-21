@@ -10,11 +10,17 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.uikit.theme.AppTheme
 
 /**
- * Отладочная панель камеры полотна, под тоглом `chronologyDebugOverlay`.
+ * Отладочная панель полотна, под тоглом `chronologyDebugOverlay`.
  *
  * Панель отвечает на два вопроса, которые не разделить по внешнему виду графа: доходит ли жест до
- * обработчика (`drags`) и не упёрлась ли камера в границу (`camera` против `rangeX`/`rangeY`).
- * Пока панорамирование не устоялось, снимать её рано.
+ * обработчика (`drags`) и не упёрлась ли камера в границу (`camera` против `bounds`). Пока
+ * панорамирование не устоялось, снимать её рано.
+ *
+ * Это единственное место, где значения камеры читаются в композиции, и потому единственное, что
+ * рекомпонуется на кадрах панорамирования. Цена включённого тогла, не более.
+ *
+ * @param info снимок камеры и последней раскладки
+ * @param modifier модификатор панели
  */
 @Composable
 internal fun GraphDebugOverlay(
@@ -27,11 +33,10 @@ internal fun GraphDebugOverlay(
       .padding(6.dp),
     text = buildString {
       appendLine("viewport = ${info.viewportWidth} x ${info.viewportHeight}")
-      appendLine("declared = ${info.declaredBounds}")
       appendLine("bounds   = ${info.contentBounds}")
-      appendLine("rangeX   = ${info.cameraMinX} .. ${info.cameraMaxX}")
-      appendLine("rangeY   = ${info.cameraMinY} .. ${info.cameraMaxY}")
       appendLine("camera   = ${info.camera}${if (info.isCameraMoved) "" else " (at rest)"}")
+      appendLine("nodes    = ${info.nodeCount}, edges = ${info.edgeCount}")
+      appendLine("layouts  = ${info.layoutRevision}")
       append("drags    = ${info.dragCount}, last = ${info.lastDrag}")
     },
     style = AppTheme.typography.caption.copy(color = AppTheme.colors.contentPrimary)

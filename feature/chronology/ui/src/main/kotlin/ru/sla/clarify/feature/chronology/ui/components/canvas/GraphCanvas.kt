@@ -2,146 +2,108 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.Placeable
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastForEachIndexed
+import androidx.compose.ui.util.fastMap
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.uikit.theme.AppTheme
-import kotlin.math.max
-import kotlin.math.min
 
 /**
- * Полотно хронологии: фон, слой узлов и связи между ними, по которому можно панорамировать.
+ * Полотно хронологии: фон, узлы графа и связи между ними, по которому можно панорамировать.
  *
- * Камера — это сдвиг содержимого: `экран = полотно + камера`. Её границы считаются по фактически
- * размещённым узлам, а не по объявленному размеру полотна: узел ставится центром в точку дорожки
- * и потому выступает за край на половину своей ширины, а по объявленному размеру этот выступ
- * недостижим прокруткой.
+ * Композабл здесь ничего не считает — только композирует, принимает жест и рисует. Где узлы стоят,
+ * знает [GraphGeometry]; где стоит полотно и что получилось после измерения — [GraphCanvasState].
  *
- * Зума и переключения уровней детализации здесь пока нет.
+ * Зума и переключения уровней детализации пока нет.
+ *
+ * @param state камера полотна и результат его последней раскладки
+ * @param modifier модификатор корня полотна
+ * @param debugOverlayVisible показывать ли отладочную панель камеры
+ * @param node содержимое узла с данным `id`
  */
 @Composable
 internal fun GraphCanvas(
-  contentSize: DpSize,
-  lanes: IntRange,
+  state: GraphCanvasState,
   modifier: Modifier = Modifier,
   debugOverlayVisible: Boolean = false,
-  content: @Composable GraphScope.() -> Unit
+  node: @Composable (id: GraphNode.Id) -> Unit
 ) {
-  BoxWithConstraints(modifier = modifier.clipToBounds()) {
-    val density = LocalDensity.current
-    val declaredBounds = remember(contentSize, density) {
-      with(density) { Rect(0f, 0f, contentSize.width.toPx(), contentSize.height.toPx()) }
-    }
-    var contentBounds by remember(declaredBounds) { mutableStateOf(declaredBounds) }
-    var edges by remember { mutableStateOf(emptyList<GraphEdge>()) }
-    // null — камера ещё не сдвигалась: тогда она встаёт вплотную к началу истории.
-    var camera by remember { mutableStateOf<Offset?>(null) }
+  state.setTelemetryEnabled(debugOverlayVisible)
 
-    val cameraX = cameraRange(contentBounds.left, contentBounds.right, constraints.maxWidth.toFloat())
-    val cameraY = cameraRange(contentBounds.top, contentBounds.bottom, constraints.maxHeight.toFloat())
-    val cameraOffset = Offset(
-      x = (camera?.x ?: cameraX.endInclusive).coerceIn(cameraX),
-      y = (camera?.y ?: cameraY.endInclusive).coerceIn(cameraY)
+  val edgeColor = AppTheme.colors.contentTertiary
+
+  Box(
+    // Жест висит на всём вьюпорте, а не на слое узлов: полотно не всегда достаёт до края экрана,
+    // и панорамирование не работало бы там, где его нет.
+    modifier = modifier
+      .clipToBounds()
+      .pointerInput(state) {
+        detectDragGestures { change, dragAmount ->
+          change.consume()
+          state.pan(dragAmount)
+        }
+      }
+  ) {
+    GraphBackdrop(
+      modifier = Modifier.fillMaxSize(),
+      state = state
     )
 
-    // Счётчики для отладочной панели: без них не отличить «жест не дошёл» от «камера упёрлась».
-    var lastDrag by remember { mutableStateOf(Offset.Zero) }
-    var dragCount by remember { mutableIntStateOf(0) }
-
-    Box(
-      // Жест висит на всём вьюпорте, а не на слое узлов: слой узлов ограничен размером полотна,
-      // и панорамирование не работало бы там, где полотно до края экрана не достаёт.
+    Layout(
+      // Слой узлов равен вьюпорту, а не полотну: `requiredSize` центрирует содержимое шире
+      // входящих ограничений, и полотно уезжало бы мимо камеры. Узлы выходят за границы слоя —
+      // слой не обрезает, обрезает вьюпорт снаружи.
       modifier = Modifier
-        .matchParentSize()
-        .pointerInput(cameraX, cameraY) {
-          detectDragGestures { change, dragAmount ->
-            change.consume()
-            val current = camera ?: Offset(cameraX.endInclusive, cameraY.endInclusive)
-            camera = Offset(
-              x = (current.x + dragAmount.x).coerceIn(cameraX),
-              y = (current.y + dragAmount.y).coerceIn(cameraY)
+        .fillMaxSize()
+        .graphicsLayer {
+          // Камера читается здесь, а не в композиции: кадр панорамирования обновляет только
+          // свойства слоя — ни рекомпозиции, ни повторного измерения, ни новых модификаторов.
+          val camera = state.offset()
+          translationX = camera.x
+          translationY = camera.y
+        }
+        .drawBehind {
+          state.edges().fastForEach { edge ->
+            drawLine(
+              color = edgeColor,
+              start = Offset(edge.startX, edge.y),
+              end = Offset(edge.endX, edge.y),
+              strokeWidth = EDGE_WIDTH.toPx()
             )
-            lastDrag = dragAmount
-            dragCount++
+          }
+        },
+      content = {
+        state.nodes.fastForEach { graphNode ->
+          key(graphNode.id.value) {
+            node(graphNode.id)
           }
         }
-    ) {
-      GraphBackdrop(
-        modifier = Modifier.fillMaxSize(),
-        camera = cameraOffset,
-        lanes = lanes
+      }
+    ) { measurables, constraints ->
+      // Узел меряется свободно: ширину он ограничивает сам, а вьюпорт ему не указ — узел может
+      // стоять далеко за правым краем экрана.
+      val placeables = measurables.fastMap { it.measure(Constraints()) }
+      state.onMeasure(
+        viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight),
+        nodeSizes = placeables.fastMap { IntSize(it.width, it.height) },
+        density = this
       )
-
-      val edgeColor = AppTheme.colors.contentTertiary
-      val drawnEdges = edges
-      Layout(
-        // Слой узлов равен вьюпорту, а не полотну. `requiredSize` центрирует содержимое, которое
-        // шире входящих ограничений, и полотно уезжало влево на (viewport - content) / 2 мимо
-        // камеры: её предел считался от нуля, а полотно начиналось левее. Узлы выходят за границы
-        // слоя — это допустимо, слой не обрезает, обрезает вьюпорт снаружи.
-        modifier = Modifier
-          .fillMaxSize()
-          .graphicsLayer {
-            translationX = cameraOffset.x
-            translationY = cameraOffset.y
-          }
-          .drawBehind {
-            drawnEdges.forEach { edge ->
-              drawLine(
-                color = edgeColor,
-                start = Offset(edge.startX, edge.y),
-                end = Offset(edge.endX, edge.y),
-                strokeWidth = EDGE_WIDTH.toPx()
-              )
-            }
-          },
-        content = { GraphScopeInstance.content() }
-      ) { measurables, constraints ->
-        // Узел меряется свободно: ширину он ограничивает сам, а вьюпорт ему не указ — узел может
-        // стоять далеко за правым краем экрана.
-        val placeables = measurables.map { it.measure(Constraints()) }
-        val positions = measurables.map { it.parentData as? GraphNodePosition }
-        // Начало истории встаёт центром в центр экрана: слева от него отступ, а не обрезанная
-        // плашка. Сдвиг общий для всех узлов, иначе поедет относительная геометрия графа.
-        val leadingX = positions.filterNotNull().minOfOrNull { it.x }
-        val leadingShift = if (leadingX == null) 0 else constraints.maxWidth / 2 - leadingX.roundToPx()
-        val offsets = placeables.mapIndexed { index, placeable ->
-          positions[index]?.let {
-            IntOffset(
-              x = it.x.roundToPx() + leadingShift - placeable.width / 2,
-              y = it.y.roundToPx() - placeable.height / 2
-            )
-          }
-        }
-        contentBounds = placedBounds(declaredBounds, placeables, offsets)
-        edges = laneEdges(placeables, offsets, positions)
-        layout(constraints.maxWidth, constraints.maxHeight) {
-          offsets.forEachIndexed { index, offset ->
-            if (offset != null) placeables[index].place(offset)
-          }
+      layout(constraints.maxWidth, constraints.maxHeight) {
+        placeables.fastForEachIndexed { index, placeable ->
+          placeable.place(state.placementOf(index))
         }
       }
     }
@@ -149,95 +111,8 @@ internal fun GraphCanvas(
     if (debugOverlayVisible) {
       GraphDebugOverlay(
         modifier = Modifier.align(Alignment.BottomStart),
-        info = GraphDebugInfo(
-          viewportWidth = constraints.maxWidth,
-          viewportHeight = constraints.maxHeight,
-          declaredBounds = declaredBounds,
-          contentBounds = contentBounds,
-          cameraMinX = cameraX.start,
-          cameraMaxX = cameraX.endInclusive,
-          cameraMinY = cameraY.start,
-          cameraMaxY = cameraY.endInclusive,
-          camera = cameraOffset,
-          isCameraMoved = camera != null,
-          dragCount = dragCount,
-          lastDrag = lastDrag
-        )
+        info = state.debugInfo()
       )
     }
   }
 }
-
-/**
- * Допустимый сдвиг содержимого по одной оси.
- *
- * Чтобы начало содержимого встало у начала экрана, нужен сдвиг `-min`; чтобы конец содержимого
- * встал у конца экрана — `viewport - max`. Если содержимое короче экрана, обе границы схлопываются
- * в одно центрирующее значение: содержимое незачем прижимать к краю, когда оно целиком помещается.
- */
-private fun cameraRange(min: Float, max: Float, viewport: Float): ClosedFloatingPointRange<Float> {
-  val lower = viewport - max
-  val upper = -min
-  if (lower <= upper) return lower..upper
-  val centered = (viewport - (max - min)) / 2f - min
-  return centered..centered
-}
-
-/**
- * Отрезки связей между соседними узлами каждой дорожки.
- *
- * Ребро существует только там, где есть что связывать: после последнего узла дорожки его нет, и
- * линия не уходит в пустоту. Узлы одной дорожки объявляют одинаковый `y`, поэтому дорожка — это
- * группа по нему.
- */
-private fun laneEdges(
-  placeables: List<Placeable>,
-  offsets: List<IntOffset?>,
-  positions: List<GraphNodePosition?>
-): List<GraphEdge> {
-  val byLane = placeables.indices
-    .filter { offsets[it] != null && positions[it] != null }
-    .groupBy { checkNotNull(positions[it]).y }
-  return byLane.values.flatMap { indices ->
-    indices
-      .sortedBy { checkNotNull(offsets[it]).x }
-      .zipWithNext { fromIndex, toIndex ->
-        val from = checkNotNull(offsets[fromIndex])
-        val startX = (from.x + placeables[fromIndex].width).toFloat()
-        val endX = checkNotNull(offsets[toIndex]).x.toFloat()
-        if (endX <= startX) {
-          null
-        } else {
-          GraphEdge(
-            startX = startX,
-            endX = endX,
-            y = (from.y + placeables[fromIndex].height / 2).toFloat()
-          )
-        }
-      }
-      .filterNotNull()
-  }
-}
-
-/** Объявленное полотно, расширенное выступами узлов за его края. */
-private fun placedBounds(
-  declared: Rect,
-  placeables: List<Placeable>,
-  offsets: List<IntOffset?>
-): Rect {
-  var left = declared.left
-  var top = declared.top
-  var right = declared.right
-  var bottom = declared.bottom
-  offsets.forEachIndexed { index, offset ->
-    if (offset == null) return@forEachIndexed
-    val placeable = placeables[index]
-    left = min(left, offset.x.toFloat())
-    top = min(top, offset.y.toFloat())
-    right = max(right, (offset.x + placeable.width).toFloat())
-    bottom = max(bottom, (offset.y + placeable.height).toFloat())
-  }
-  return Rect(left, top, right, bottom)
-}
-
-private val EDGE_WIDTH: Dp = 2.dp

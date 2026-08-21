@@ -11,4 +11,8 @@ android {
 dependencies {
   implementation project(":uikit")
   implementation project(":feature:chronology:domain")
+
+  testImplementation libs.bundles.unittest
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.platform.launcher
 }

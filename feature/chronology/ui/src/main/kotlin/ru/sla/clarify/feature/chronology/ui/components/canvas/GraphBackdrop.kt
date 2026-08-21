@@ -13,33 +13,36 @@ import kotlin.math.floor
 import kotlin.math.sqrt
 
 /**
- * Фон полотна: ромбовидный паттерн и направляющие дорожек.
+ * Фон полотна: ромбовидный паттерн.
  *
- * Паттерн двигается медленнее графа ([PARALLAX]) — это даёт ощущение глубины и опору взгляду
- * при панорамировании. Направляющие двигаются вместе с графом, без параллакса: они объясняют,
- * почему узлы стоят именно на этих высотах.
+ * Паттерн двигается медленнее графа ([PARALLAX]) — это даёт ощущение глубины и опору взгляду при
+ * панорамировании.
  *
- * Сетка рисуется `contentPrimary` с очень низкой альфой, а не `cardQuinary`: в тёмной теме
+ * Дорожки на фоне не рисуются. Дорожка — это приём раскладки, а не сведение для читающего: где
+ * проходит ветка, видно по самим узлам и связям между ними, а лишняя горизонтальная сетка спорила
+ * бы с графом за внимание и превращала бы карту в разлинованный лист. Технически дорожки есть,
+ * визуально их нет.
+ *
+ * Паттерн рисуется `contentPrimary` с очень низкой альфой, а не `cardQuinary`: в тёмной теме
  * `cardQuinary` равен `cardPrimary`, и узлы слились бы с фоном.
+ *
+ * Камера читается внутри `Canvas`, а не в композиции: иначе фон перерисовывался бы через
+ * рекомпозицию на каждом кадре панорамирования.
+ *
+ * @param state камера полотна
+ * @param modifier модификатор фона
  */
 @Composable
 internal fun GraphBackdrop(
-  camera: Offset,
-  lanes: IntRange,
+  state: GraphCanvasState,
   modifier: Modifier = Modifier
 ) {
   val patternColor = AppTheme.colors.contentPrimary.copy(alpha = PATTERN_ALPHA)
-  val guideColor = AppTheme.colors.contentPrimary.copy(alpha = GUIDE_ALPHA)
   Canvas(modifier = modifier) {
     drawDiamondPattern(
       color = patternColor,
-      offset = camera * PARALLAX,
+      offset = state.offset() * PARALLAX,
       spacing = PATTERN_SPACING.toPx()
-    )
-    drawLaneGuides(
-      color = guideColor,
-      offset = camera,
-      lanes = lanes
     )
   }
 }
@@ -61,8 +64,22 @@ private fun DrawScope.drawDiamondPattern(
   val height = size.height
   val width = size.width
 
-  drawDiagonals(color, phase(offset.x - offset.y, stepX), stepX, width, height, slopeDown = true)
-  drawDiagonals(color, phase(offset.x + offset.y, stepX), stepX, width, height, slopeDown = false)
+  drawDiagonals(
+    color = color,
+    phase = phase(offset.x - offset.y, stepX),
+    stepX = stepX,
+    width = width,
+    height = height,
+    slopeDown = true
+  )
+  drawDiagonals(
+    color = color,
+    phase = phase(offset.x + offset.y, stepX),
+    stepX = stepX,
+    width = width,
+    height = height,
+    slopeDown = false
+  )
 }
 
 @Suppress("LongParameterList")
@@ -91,29 +108,12 @@ private fun DrawScope.drawDiagonals(
   }
 }
 
-private fun DrawScope.drawLaneGuides(
-  color: Color,
-  offset: Offset,
-  lanes: IntRange
-) {
-  lanes.forEach { index ->
-    val y = GraphGeometry.laneY(index).toPx() + offset.y
-    if (y in 0f..size.height) {
-      drawLine(
-        color = color,
-        start = Offset(0f, y),
-        end = Offset(size.width, y),
-        strokeWidth = LINE_WIDTH.toPx()
-      )
-    }
-  }
-}
-
 /** Остаток от деления, приведённый к `[0, step)` — `%` в Kotlin сохраняет знак делимого. */
-private fun phase(value: Float, step: Float): Float = value - step * floor(value / step)
+private fun phase(value: Float, step: Float): Float {
+  return value - step * floor(value / step)
+}
 
 private const val PARALLAX = 0.3f
 private const val PATTERN_ALPHA = 0.04f
-private const val GUIDE_ALPHA = 0.06f
 private val PATTERN_SPACING: Dp = 120.dp
 private val LINE_WIDTH: Dp = 1.dp
