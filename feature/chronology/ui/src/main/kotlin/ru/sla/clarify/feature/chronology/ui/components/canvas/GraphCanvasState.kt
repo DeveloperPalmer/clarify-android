@@ -13,7 +13,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
@@ -70,9 +69,9 @@ internal class GraphCanvasState(val nodes: List<GraphNode>) {
   private var placements: List<IntOffset> = emptyList()
   private var laneEdges: List<GraphEdge> = emptyList()
 
-  // Телеметрия отладочной панели. Ревизия — единственная снапшот-запись из measure, и она
-  // происходит только при включённом тогле: панель в композиции иначе не узнает, что раскладка
-  // сменилась. Выключенный тогл не стоит ничего.
+  // Телеметрия отладочной панели. Ревизия — единственная снапшот-запись из measure: панель в
+  // композиции иначе не узнает, что раскладка сменилась. Счётчики жеста растут покадрово, поэтому
+  // они, в отличие от ревизии, под тоглом.
   private var isTelemetryEnabled = false
   private var layoutRevision by mutableIntStateOf(0)
   private var dragCount by mutableIntStateOf(0)
@@ -135,26 +134,26 @@ internal class GraphCanvasState(val nodes: List<GraphNode>) {
    */
   fun onMeasure(viewportSize: IntSize, nodeSizes: List<IntSize>, density: Density) {
     viewport = viewportSize
-    val offsetsX = geometry.offsetsX()
+    val widths = nodeSizes.map { it.width.toFloat() }
+    val gaps = with(density) { nodes.map { stepWidthOf(it.gap).toPx() } }
+    val lefts = leftOffsetsOf(gaps, widths)
     // Начало истории встаёт центром в центр экрана: слева от него отступ, а не обрезанная плашка.
     // Сдвиг привязан к первому узлу модели, а не к самому левому из размещённых: иначе догрузка
     // истории или виртуализация уводили бы весь граф в сторону.
-    val leadingShift = with(density) {
-      viewportSize.width / 2f - (offsetsX.firstOrNull() ?: 0.dp).toPx()
-    }
+    val leadingShift = viewportSize.width / 2f -
+      (lefts.firstOrNull() ?: 0f) - (widths.firstOrNull() ?: 0f) / 2f
     placements = nodeSizes.mapIndexed { index, size ->
-      with(density) {
-        IntOffset(
-          x = (offsetsX[index].toPx() + leadingShift).toInt() - size.width / 2,
-          y = geometry.laneYOf(nodes[index].lane).toPx().toInt() - size.height / 2
-        )
-      }
+      IntOffset(
+        x = (lefts[index] + leadingShift).toInt(),
+        y = with(density) { geometry.laneYOf(nodes[index].lane).toPx() }.toInt() - size.height / 2
+      )
     }
     contentBounds = boundsOf(placements, nodeSizes)
     laneEdges = edgesOf(placements, nodeSizes)
-    if (isTelemetryEnabled) {
-      layoutRevision++
-    }
+    // Без условия на тогл: пока панель не показана, у ревизии нет читателей, и снапшот-запись
+    // никого не оповещает. А под условием счётчик так и остался бы нулём — включение тогла само
+    // раскладку не перезапускает.
+    layoutRevision++
   }
 
   /**
@@ -170,7 +169,7 @@ internal class GraphCanvasState(val nodes: List<GraphNode>) {
   /**
    * Включает сбор телеметрии для отладочной панели.
    *
-   * @param enabled собирать ли счётчики и ревизию раскладки
+   * @param enabled собирать ли покадровые счётчики жеста
    */
   fun setTelemetryEnabled(enabled: Boolean) {
     isTelemetryEnabled = enabled

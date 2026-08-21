@@ -18,19 +18,39 @@ import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 class GraphGeometryTest {
 
   @Test
-  fun `x accumulates step widths of gaps`() {
-    val geometry = GraphGeometry(
-      listOf(
-        node(gap = TimeGap.Minutes),
-        node(gap = TimeGap.Hours),
-        node(gap = TimeGap.Long)
-      )
+  fun `left offsets accumulate gaps and widths`() {
+    val lefts = leftOffsetsOf(
+      gaps = listOf(10f, 20f, 30f),
+      widths = listOf(100f, 200f, 300f)
     )
 
+    assertEquals(listOf(10f, 130f, 360f), lefts)
+  }
+
+  @Test
+  fun `a plate wider than the gap does not swallow its neighbour`() {
+    val gaps = listOf(0f, 40f)
+    val widths = listOf(600f, 100f)
+
+    val lefts = leftOffsetsOf(gaps, widths)
+
     assertEquals(
-      listOf(40.dp, 40.dp + 96.dp, 40.dp + 96.dp + 152.dp),
-      geometry.offsetsX()
+      40f,
+      lefts[1] - (lefts[0] + widths[0]),
+      "зазор отделяет плашки, а не центры: иначе широкая плашка накрыла бы соседнюю"
     )
+  }
+
+  @Test
+  fun `a longer pause never gives a smaller gap`() {
+    val ordered = listOf(TimeGap.Minutes, TimeGap.Hour, TimeGap.Hours, TimeGap.Day, TimeGap.Long)
+
+    ordered.zipWithNext { shorter, longer ->
+      assertTrue(
+        stepWidthOf(longer) > stepWidthOf(shorter),
+        "пауза $longer обязана давать зазор больше, чем $shorter"
+      )
+    }
   }
 
   @Test
