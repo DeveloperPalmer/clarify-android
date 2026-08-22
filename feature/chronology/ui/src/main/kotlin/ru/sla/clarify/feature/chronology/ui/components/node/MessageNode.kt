@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components
+package ru.sla.clarify.feature.chronology.ui.components.node
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,25 +19,30 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import ru.sla.clarify.feature.chronology.ui.entity.MessageChipState
+import ru.sla.clarify.feature.chronology.ui.entity.MessageNodeState
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconResId
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 
 /**
- * Сообщение как узел графа — самый мелкий вес узла на полотне.
+ * Отдельное сообщение как узел графа — самый мелкий вес узла на полотне.
  *
- * Заливка `cardSecondary` у сообщения собеседника здесь допустима: чип лежит на полотне, а не на
+ * Рисуется на **третьем уровне детализации**: на первом узлы вырождаются в глифы, на втором дорожка
+ * собрана в эпизоды, и только на третьем видно отдельные сообщения. Уровень записан здесь, а не в
+ * имени, — перевести узел на другой уровень тогда стоит правки одной строки описания, а не
+ * переименования компонента и всех ссылок на него.
+ *
+ * Заливка `cardSecondary` у сообщения собеседника здесь допустима: узел лежит на полотне, а не на
  * карточке, — в отличие от узлов покрупнее, которым в светлой теме `cardSecondary` совпал бы с
  * фоном.
  */
 @Composable
-internal fun MessageChip(
+internal fun MessageNode(
   text: String,
   isMine: Boolean,
   modifier: Modifier = Modifier,
-  state: MessageChipState = MessageChipState.Normal
+  state: MessageNodeState = MessageNodeState.Normal
 ) {
   val background = if (isMine) {
     AppTheme.colors.backgroundAccentPrimary
@@ -46,7 +51,7 @@ internal fun MessageChip(
   }
   Row(
     modifier = modifier
-      .graphicsLayer { alpha = if (state == MessageChipState.Sending) SENDING_ALPHA else 1f }
+      .graphicsLayer { alpha = if (state == MessageNodeState.Sending) SENDING_ALPHA else 1f }
       .widthIn(max = MAX_WIDTH)
       .defaultMinSize(minHeight = MIN_HEIGHT)
       .background(background, AppTheme.shapes.round12)
@@ -80,30 +85,30 @@ private val ICON_SIZE: Dp = 12.dp
 
 @Preview
 @Composable
-private fun MessageChipPreviewLight(
-  @PreviewParameter(MessageChipPreviewProvider::class)
-  chip: MessageChipPreview
+private fun MessageNodePreviewLight(
+  @PreviewParameter(MessageNodePreviewProvider::class)
+  message: MessageNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Light) {
-    MessageChip(
-      text = chip.text,
-      isMine = chip.isMine,
-      state = chip.state
+    MessageNode(
+      text = message.text,
+      isMine = message.isMine,
+      state = message.state
     )
   }
 }
 
 @Preview
 @Composable
-private fun MessageChipPreviewDark(
-  @PreviewParameter(MessageChipPreviewProvider::class)
-  chip: MessageChipPreview
+private fun MessageNodePreviewDark(
+  @PreviewParameter(MessageNodePreviewProvider::class)
+  message: MessageNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Dark) {
-    MessageChip(
-      text = chip.text,
-      isMine = chip.isMine,
-      state = chip.state
+    MessageNode(
+      text = message.text,
+      isMine = message.isMine,
+      state = message.state
     )
   }
 }

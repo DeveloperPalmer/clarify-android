@@ -14,9 +14,9 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
-import ru.sla.clarify.feature.chronology.ui.components.MessageChip
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphCanvas
 import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberGraphCanvasState
+import ru.sla.clarify.feature.chronology.ui.components.node.MessageNode
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
@@ -44,10 +44,10 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
           debugOverlayVisible = state.debugOverlayVisible
         ) { id ->
           val item = contentById.getValue(id)
-          MessageChip(
+          MessageNode(
             text = item.text,
             isMine = item.isMine,
-            state = item.chipState
+            state = item.state
           )
         }
         TopAppBarDefaults.NavigationIcon(

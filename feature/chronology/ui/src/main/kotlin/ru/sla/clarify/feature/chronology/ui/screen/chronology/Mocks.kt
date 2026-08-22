@@ -2,7 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
-import ru.sla.clarify.feature.chronology.ui.entity.MessageChipState
+import ru.sla.clarify.feature.chronology.ui.entity.MessageNodeState
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
@@ -30,19 +30,19 @@ internal fun mockNodes(): List<MockNode> {
       node = GraphNode(id = GraphNode.Id("3"), lane = 0, gap = TimeGap.Hour),
       text = "Выношу в ветку",
       isMine = true,
-      chipState = MessageChipState.Edited
+      state = MessageNodeState.Edited
     ),
     MockNode(
       node = GraphNode(id = GraphNode.Id("4"), lane = -1, gap = TimeGap.Minutes),
       text = "Готово, ветка тут",
       isMine = false,
-      chipState = MessageChipState.Quoted
+      state = MessageNodeState.Quoted
     ),
     MockNode(
       node = GraphNode(id = GraphNode.Id("5"), lane = -1, gap = TimeGap.Day),
       text = "Фиксируем 14-е",
       isMine = true,
-      chipState = MessageChipState.Sending
+      state = MessageNodeState.Sending
     )
   )
 }
@@ -56,12 +56,12 @@ internal fun mockNodes(): List<MockNode> {
  * @param node раскладочная часть: дорожка и пауза
  * @param text текст сообщения
  * @param isMine своё сообщение или собеседника
- * @param chipState состояние плашки: иконка и прозрачность
+ * @param state состояние плашки: иконка и прозрачность
  */
 @Immutable
 internal data class MockNode(
   val node: GraphNode,
   val text: String,
   val isMine: Boolean,
-  val chipState: MessageChipState = MessageChipState.Normal
+  val state: MessageNodeState = MessageNodeState.Normal
 )

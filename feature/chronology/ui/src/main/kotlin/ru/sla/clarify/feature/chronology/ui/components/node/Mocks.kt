@@ -1,45 +1,45 @@
-package ru.sla.clarify.feature.chronology.ui.components
+package ru.sla.clarify.feature.chronology.ui.components.node
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import ru.sla.clarify.feature.chronology.ui.entity.MessageChipState
+import ru.sla.clarify.feature.chronology.ui.entity.MessageNodeState
 
 /**
- * Набор сообщений для превью [MessageChip].
+ * Набор сообщений для превью [MessageNode].
  *
  * Каждое значение — отдельный кадр превью, а не ещё одна плашка в общей колонке: варианты, собранные
  * в одном кадре, скрывают, что именно сломалось, и растут в высоту с каждым новым состоянием.
  *
- * Последнее значение проверяет обрезку: текст заведомо длиннее [MessageChip] и обязан упереться в
+ * Последнее значение проверяет обрезку: текст заведомо длиннее [MessageNode] и обязан упереться в
  * максимальную ширину, а не растянуть плашку.
  */
 @Immutable
-internal class MessageChipPreviewProvider : PreviewParameterProvider<MessageChipPreview> {
+internal class MessageNodePreviewProvider : PreviewParameterProvider<MessageNodePreview> {
   override val values = sequenceOf(
-    MessageChipPreview(
+    MessageNodePreview(
       text = "Не бьётся по срокам",
       isMine = false
     ),
-    MessageChipPreview(
+    MessageNodePreview(
       text = "Где именно?",
       isMine = true
     ),
-    MessageChipPreview(
+    MessageNodePreview(
       text = "Выношу в ветку",
       isMine = true,
-      state = MessageChipState.Edited
+      state = MessageNodeState.Edited
     ),
-    MessageChipPreview(
+    MessageNodePreview(
       text = "Готово, ветка тут",
       isMine = false,
-      state = MessageChipState.Quoted
+      state = MessageNodeState.Quoted
     ),
-    MessageChipPreview(
+    MessageNodePreview(
       text = "Фиксируем 14-е",
       isMine = true,
-      state = MessageChipState.Sending
+      state = MessageNodeState.Sending
     ),
-    MessageChipPreview(
+    MessageNodePreview(
       text = "Очень длинный текст сообщения, который обязан обрезаться эллипсисом",
       isMine = false
     )
@@ -47,15 +47,15 @@ internal class MessageChipPreviewProvider : PreviewParameterProvider<MessageChip
 }
 
 /**
- * Один кадр превью [MessageChip].
+ * Один кадр превью [MessageNode].
  *
  * @param text текст сообщения
  * @param isMine своё сообщение или собеседника
  * @param state состояние плашки: иконка и прозрачность
  */
 @Immutable
-internal data class MessageChipPreview(
+internal data class MessageNodePreview(
   val text: String,
   val isMine: Boolean,
-  val state: MessageChipState = MessageChipState.Normal
+  val state: MessageNodeState = MessageNodeState.Normal
 )
