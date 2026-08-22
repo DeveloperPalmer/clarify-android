@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -17,6 +18,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.MessageNodeState
@@ -111,4 +113,50 @@ private fun MessageNodePreviewDark(
       state = message.state
     )
   }
+}
+
+@Immutable
+private data class MessageNodePreview(
+  val text: String,
+  val isMine: Boolean,
+  val state: MessageNodeState = MessageNodeState.Normal
+)
+
+/**
+ * Кадры превью [MessageNode] — по одному на состояние.
+ *
+ * Последнее значение проверяет обрезку: текст заведомо длиннее максимальной ширины узла и обязан
+ * упереться в неё, а не растянуть плашку.
+ */
+@Immutable
+private class MessageNodePreviewProvider : PreviewParameterProvider<MessageNodePreview> {
+  override val values = sequenceOf(
+    MessageNodePreview(
+      text = "Не бьётся по срокам",
+      isMine = false
+    ),
+    MessageNodePreview(
+      text = "Где именно?",
+      isMine = true
+    ),
+    MessageNodePreview(
+      text = "Выношу в ветку",
+      isMine = true,
+      state = MessageNodeState.Edited
+    ),
+    MessageNodePreview(
+      text = "Готово, ветка тут",
+      isMine = false,
+      state = MessageNodeState.Quoted
+    ),
+    MessageNodePreview(
+      text = "Фиксируем 14-е",
+      isMine = true,
+      state = MessageNodeState.Sending
+    ),
+    MessageNodePreview(
+      text = "Очень длинный текст сообщения, который обязан обрезаться эллипсисом",
+      isMine = false
+    )
+  )
 }

@@ -33,27 +33,34 @@ val offset: State<Offset> = derivedStateOf { … }
 ```kotlin
 @Preview
 @Composable
-private fun MessageChipPreviewLight(
-  @PreviewParameter(MessageChipPreviewProvider::class)
-  chip: MessageChipPreview
+private fun MessageNodePreviewLight(
+  @PreviewParameter(MessageNodePreviewProvider::class)
+  chip: MessageNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Light) {
-    MessageChip(text = chip.text, isMine = chip.isMine, state = chip.state)
+    MessageNode(text = chip.text, isMine = chip.isMine, state = chip.state)
   }
 }
 ```
 
 На тему — своя функция (Light/Dark), обе берут один и тот же провайдер.
 
+Провайдер и модель его кадра объявляются `private` и лежат **в хвосте файла компонента**, под
+превью-функциями. В `Mocks.kt` они не уезжают.
+
 **Почему:** варианты, слитые в один кадр, скрывают, какой именно сломался, и колонка растёт в высоту
 с каждым новым состоянием. Через провайдер новое состояние добавляется в одном месте и появляется
-сразу во всех темах.
+сразу во всех темах. А лежит он рядом с превью потому, что описывает кадры компонента, а не
+подменяет данные: настоящая поставка данных провайдер не отменяет, и, уехав в `Mocks.kt`, он уехал
+бы вместе с ним.
 
 ## Моки — в `Mocks.kt`
 
-Всё, что относится к мокам, — функции, классы, наборы данных, провайдеры превью — живёт в отдельном
-файле `Mocks.kt`, лежащем плоско рядом с тем, что он мокает: `screen/<name>/Mocks.kt`,
-`components/Mocks.kt`. Правило «один класс — один файл» здесь не действует.
+Всё, что относится к мокам, — функции, классы, наборы данных — живёт в отдельном файле `Mocks.kt`,
+лежащем плоско рядом с тем, что он мокает: `screen/<name>/Mocks.kt`, `components/Mocks.kt`. Правило
+«один класс — один файл» здесь не действует.
+
+Провайдеры превью — не моки, их место другое: см. «Превью — через `@PreviewParameter`».
 
 **Почему:** мок виден как мок по имени файла, а не по комментарию внутри, и уезжает целиком вместе с
 файлом, когда появляются настоящие данные. Разложенный по entity-пакетам, он переживёт свою

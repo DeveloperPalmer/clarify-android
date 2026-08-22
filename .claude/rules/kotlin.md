@@ -16,15 +16,17 @@ paths:
 - Файл называется по классу; `private data class` при выносе становится `internal`.
 - Правило про **классы**. Приватные top-level константы остаются в файле, где используются.
 - Исключение — `Mocks.kt`: моки собираются вместе намеренно.
+- Исключение — превью: `private`-провайдер `@PreviewParameter` и модель его кадра остаются в хвосте
+  файла компонента, а не уезжают в `entity` (см. `compose.md`).
 
 ## Expression body запрещён у функций
 
 ```kotlin
 // нельзя
-private fun MessageChipState.toIconResId(): Int? = when (this) { … }
+private fun MessageNodeState.toIconResId(): Int? = when (this) { … }
 
 // нужно
-private fun MessageChipState.toIconResId(): Int? {
+private fun MessageNodeState.toIconResId(): Int? {
   return when (this) { … }
 }
 ```
