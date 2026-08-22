@@ -19,7 +19,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.MessageNodeState
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconResId
@@ -53,9 +52,9 @@ internal fun MessageNode(
   }
   Row(
     modifier = modifier
-      .graphicsLayer { alpha = if (state == MessageNodeState.Sending) SENDING_ALPHA else 1f }
-      .widthIn(max = MAX_WIDTH)
-      .defaultMinSize(minHeight = MIN_HEIGHT)
+      .graphicsLayer { alpha = if (state == MessageNodeState.Sending) 0.6f else 1f }
+      .widthIn(max = 180.dp)
+      .defaultMinSize(minHeight = 28.dp)
       .background(background, AppTheme.shapes.round12)
       .padding(horizontal = 14.dp, vertical = 5.dp),
     verticalAlignment = Alignment.CenterVertically,
@@ -71,7 +70,7 @@ internal fun MessageNode(
     val iconResId = state.toIconResId()
     if (iconResId != null) {
       Icon(
-        modifier = Modifier.size(ICON_SIZE),
+        modifier = Modifier.size(12.dp),
         painter = painterResource(iconResId),
         tint = AppTheme.colors.contentTertiary,
         contentDescription = null
@@ -79,11 +78,6 @@ internal fun MessageNode(
     }
   }
 }
-
-private const val SENDING_ALPHA = 0.6f
-private val MIN_HEIGHT: Dp = 28.dp
-private val MAX_WIDTH: Dp = 180.dp
-private val ICON_SIZE: Dp = 12.dp
 
 @Preview
 @Composable

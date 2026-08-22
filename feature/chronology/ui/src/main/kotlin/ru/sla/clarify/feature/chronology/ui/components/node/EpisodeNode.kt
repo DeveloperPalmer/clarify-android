@@ -64,16 +64,16 @@ internal fun EpisodeNode(
   val unread = unreadCount > 0
   Box(
     modifier = modifier
-      .graphicsLayer { alpha = if (dim) DIM_ALPHA else 1f }
+      .graphicsLayer { alpha = if (dim) 0.6f else 1f }
       // Гало рисуется за пределами плашки и намеренно не влияет на раскладку: иначе непрочитанный
       // узел был бы шире прочитанного и сдвигал бы соседей по дорожке.
       .drawBehind { if (unread) drawUnreadHalo(accentColor) }
-      .width(WIDTH)
-      .defaultMinSize(minHeight = MIN_HEIGHT)
+      .width(200.dp)
+      .defaultMinSize(minHeight = 72.dp)
       .surface(
         backgroundColor = AppTheme.colors.cardPrimary,
         shape = AppTheme.shapes.round16,
-        border = if (unread) BorderStroke(RING_WIDTH, accentColor) else null,
+        border = if (unread) BorderStroke(1.5.dp, accentColor) else null,
         elevation = AppTheme.elevation.small
       )
   ) {
@@ -92,7 +92,8 @@ internal fun EpisodeNode(
         modifier = Modifier
           .fillMaxWidth()
           // Место под бейдж: он висит в углу плашки, и мета-строка не должна заезжать под него.
-          .padding(end = if (unread) BADGE_RESERVE else 0.dp),
+          // 24 = ширина бейджа плюс зазор.
+          .padding(end = if (unread) 24.dp else 0.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
       ) {
@@ -146,8 +147,8 @@ private fun RepliesShareBar(
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .height(BAR_HEIGHT)
-      .background(AppTheme.colors.cardQuaternary)
+      .height(3.dp)
+      .background(AppTheme.colors.contentQuaternary)
   ) {
     Box(
       modifier = Modifier
@@ -161,27 +162,18 @@ private fun RepliesShareBar(
 private fun DrawScope.drawUnreadHalo(color: Color) {
   val spread = HALO_WIDTH.toPx()
   drawRoundRect(
-    color = color.copy(alpha = HALO_ALPHA),
+    color = color.copy(alpha = 0.16f),
     topLeft = Offset(-spread, -spread),
     size = Size(size.width + spread * 2, size.height + spread * 2),
-    cornerRadius = CornerRadius(HALO_CORNER.toPx())
+    // Скругление плашки плюс ширина гало: иначе кольцо срезало бы углы карточки.
+    cornerRadius = CornerRadius((16.dp + HALO_WIDTH).toPx())
   )
 }
 
 internal const val DEFAULT_MY_SHARE = 0.5f
-private const val DIM_ALPHA = 0.6f
-private const val HALO_ALPHA = 0.16f
-private val WIDTH: Dp = 200.dp
-private val MIN_HEIGHT: Dp = 72.dp
-private val BAR_HEIGHT: Dp = 3.dp
 
-/** Ширина бейджа плюс зазор: на столько мета-строка ужимается, когда бейдж есть. */
-private val BADGE_RESERVE: Dp = 24.dp
-private val RING_WIDTH: Dp = 1.5.dp
+/** Насколько гало выступает за плашку. Читается и при отрисовке, и в отступе превью. */
 private val HALO_WIDTH: Dp = 6.dp
-
-/** Скругление плашки плюс ширина гало: иначе кольцо срезало бы углы карточки. */
-private val HALO_CORNER: Dp = 22.dp
 
 @Preview
 @Composable
