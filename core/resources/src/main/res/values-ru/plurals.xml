@@ -12,4 +12,10 @@
         <item quantity="many">Удалить %d сообщений?</item>
         <item quantity="other">Удалить %d сообщения?</item>
     </plurals>
+    <plurals name="chronology_episode_messages_count">
+        <item quantity="one">%d сообщение</item>
+        <item quantity="few">%d сообщения</item>
+        <item quantity="many">%d сообщений</item>
+        <item quantity="other">%d сообщения</item>
+    </plurals>
 </resources>

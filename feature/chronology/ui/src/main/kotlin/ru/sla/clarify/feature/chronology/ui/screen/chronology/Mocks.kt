@@ -1,8 +1,8 @@
 package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
 import androidx.compose.runtime.Immutable
+import ru.sla.clarify.feature.chronology.ui.components.node.DEFAULT_MY_SHARE
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
-import ru.sla.clarify.feature.chronology.ui.entity.MessageNodeState
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
@@ -18,31 +18,39 @@ internal fun mockNodes(): List<MockNode> {
   return listOf(
     MockNode(
       node = GraphNode(id = GraphNode.Id("1"), lane = 0, gap = TimeGap.Hours),
-      text = "Не бьётся по срокам",
-      isMine = false
+      time = "6 мар, 09:40",
+      count = 14,
+      snippet = "Ок, вынес сроки в отдельную ветку",
+      myShare = 0.38f
     ),
     MockNode(
-      node = GraphNode(id = GraphNode.Id("2"), lane = 0, gap = TimeGap.Minutes),
-      text = "Где именно?",
-      isMine = true
+      node = GraphNode(id = GraphNode.Id("2"), lane = 0, gap = TimeGap.Day),
+      time = "7 мар, 11:20",
+      count = 6,
+      snippet = "Тогда и бюджет пересчитаем",
+      myShare = 0.6f
     ),
     MockNode(
       node = GraphNode(id = GraphNode.Id("3"), lane = 0, gap = TimeGap.Hour),
-      text = "Выношу в ветку",
-      isMine = true,
-      state = MessageNodeState.Edited
+      time = "сегодня, 09:12",
+      count = 4,
+      snippet = "Слушай, а стикеры мы так и не сделали",
+      unreadCount = 4
     ),
     MockNode(
       node = GraphNode(id = GraphNode.Id("4"), lane = -1, gap = TimeGap.Minutes),
-      text = "Готово, ветка тут",
-      isMine = false,
-      state = MessageNodeState.Quoted
+      time = "6 мар, 10:02",
+      count = 9,
+      snippet = "Готово, ветка тут",
+      myShare = 0.2f,
+      dim = true
     ),
     MockNode(
-      node = GraphNode(id = GraphNode.Id("5"), lane = -1, gap = TimeGap.Day),
-      text = "Фиксируем 14-е",
-      isMine = true,
-      state = MessageNodeState.Sending
+      node = GraphNode(id = GraphNode.Id("5"), lane = -1, gap = TimeGap.Long),
+      time = "9 мар, 18:40",
+      count = 1,
+      snippet = "Фиксируем 14-е",
+      myShare = 1f
     )
   )
 }
@@ -54,14 +62,20 @@ internal fun mockNodes(): List<MockNode> {
  * домена, а не из литералов экрана.
  *
  * @param node раскладочная часть: дорожка и пауза
- * @param text текст сообщения
- * @param isMine своё сообщение или собеседника
- * @param state состояние плашки: иконка и прозрачность
+ * @param time время начала эпизода
+ * @param count число сообщений в кластере
+ * @param snippet последнее сообщение эпизода
+ * @param myShare доля своих реплик
+ * @param unreadCount счётчик непрочитанных
+ * @param dim эпизод внутри слитой ветки
  */
 @Immutable
 internal data class MockNode(
   val node: GraphNode,
-  val text: String,
-  val isMine: Boolean,
-  val state: MessageNodeState = MessageNodeState.Normal
+  val time: String,
+  val count: Int,
+  val snippet: String,
+  val myShare: Float = DEFAULT_MY_SHARE,
+  val unreadCount: Long = 0,
+  val dim: Boolean = false
 )

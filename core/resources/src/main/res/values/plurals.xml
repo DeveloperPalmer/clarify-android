@@ -8,4 +8,8 @@
         <item quantity="one">Delete %d message?</item>
         <item quantity="other">Delete %d messages?</item>
     </plurals>
+    <plurals name="chronology_episode_messages_count">
+        <item quantity="one">%d message</item>
+        <item quantity="other">%d messages</item>
+    </plurals>
 </resources>

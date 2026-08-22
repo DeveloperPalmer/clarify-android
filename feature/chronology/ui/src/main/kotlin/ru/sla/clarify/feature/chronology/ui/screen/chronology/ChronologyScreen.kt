@@ -16,7 +16,7 @@ import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphCanvas
 import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberGraphCanvasState
-import ru.sla.clarify.feature.chronology.ui.components.node.MessageNode
+import ru.sla.clarify.feature.chronology.ui.components.node.EpisodeNode
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
@@ -44,10 +44,13 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
           debugOverlayVisible = state.debugOverlayVisible
         ) { id ->
           val item = contentById.getValue(id)
-          MessageNode(
-            text = item.text,
-            isMine = item.isMine,
-            state = item.state
+          EpisodeNode(
+            time = item.time,
+            count = item.count,
+            snippet = item.snippet,
+            myShare = item.myShare,
+            unreadCount = item.unreadCount,
+            dim = item.dim
           )
         }
         TopAppBarDefaults.NavigationIcon(
