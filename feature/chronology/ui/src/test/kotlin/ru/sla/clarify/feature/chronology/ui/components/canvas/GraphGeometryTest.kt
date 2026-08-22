@@ -4,7 +4,6 @@ import androidx.compose.ui.unit.dp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
  * Геометрия вынесена из композабла именно для того, чтобы её можно было проверить без Compose.
@@ -76,18 +75,6 @@ class GraphGeometryTest {
       lefts[1] - (lefts[0] + widths[0]),
       "зазор отделяет плашки, а не центры: иначе широкая плашка накрыла бы соседнюю"
     )
-  }
-
-  @Test
-  fun `a longer pause never gives a smaller gap`() {
-    val ordered = listOf(TimeGap.Minutes, TimeGap.Hour, TimeGap.Hours, TimeGap.Day, TimeGap.Long)
-
-    ordered.zipWithNext { shorter, longer ->
-      assertTrue(
-        stepWidthOf(longer) > stepWidthOf(shorter),
-        "пауза $longer обязана давать зазор больше, чем $shorter"
-      )
-    }
   }
 
   @Test

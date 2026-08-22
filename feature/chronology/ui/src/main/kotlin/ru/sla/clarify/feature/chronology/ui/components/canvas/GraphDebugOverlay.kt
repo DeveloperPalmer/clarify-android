@@ -18,8 +18,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,14 +25,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import kotlinx.coroutines.delay
-import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
 import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
+import ru.sla.clarify.feature.chronology.ui.mapper.toFactRows
+import ru.sla.clarify.feature.chronology.ui.mapper.toPhaseRows
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.HSpacer
 import ru.sla.clarify.uikit.theme.VSpacer
-import kotlin.math.roundToInt
 
 /**
  * Отладочная панель полотна, под тоглом `chronologyDebugOverlay`.
@@ -81,10 +79,15 @@ internal fun GraphDebugOverlay(
       previousMillis = millis
     }
   }
-
-  val phases = remember(totals, rates) { phaseRowsOf(totals, rates) }
-  val facts = remember(info, totals) { factRowsOf(info, telemetry.lastPan) }
-
+  val phases = remember(totals, rates) {
+    totals.toPhaseRows(rates)
+  }
+  val facts = remember(info, totals) {
+    info.toFactRows(
+      lastPan = telemetry.lastPan,
+      tickMillis = TICK_MILLIS
+    )
+  }
   Column(
     modifier = modifier.surface(
       backgroundColor = AppTheme.colors.cardPrimary,
@@ -168,109 +171,8 @@ private fun GraphDebugColumn(
   }
 }
 
-/**
- * Строки по фазам Compose.
- *
- * Пределы разные, потому что фазы разные по назначению: измерение, размещение и рекомпозиция
- * полотна в покое обязаны стоять, а слой камеры, связи, фон, панель и жест идут покадрово.
- *
- * @param totals накопленные значения
- * @param rates значения в секунду
- * @return строки левой колонки
- */
-private fun phaseRowsOf(totals: GraphTelemetry, rates: GraphTelemetry): List<GraphDebugRow> {
-  return listOf(
-    phaseRow("canvas", totals.canvasCompositions, rates.canvasCompositions, IDLE_LIMIT),
-    phaseRow("nodes", totals.nodeCompositions, rates.nodeCompositions, NODE_LIMIT),
-    phaseRow("overlay", totals.overlayCompositions, rates.overlayCompositions, FRAME_LIMIT),
-    phaseRow("measure", totals.measurePasses, rates.measurePasses, IDLE_LIMIT),
-    phaseRow("placement", totals.placementPasses, rates.placementPasses, IDLE_LIMIT),
-    phaseRow("layer", totals.layerUpdates, rates.layerUpdates, FRAME_LIMIT),
-    phaseRow("edges", totals.edgeDraws, rates.edgeDraws, FRAME_LIMIT),
-    phaseRow("backdrop", totals.backdropDraws, rates.backdropDraws, FRAME_LIMIT),
-    phaseRow("pan", totals.panEvents, rates.panEvents, FRAME_LIMIT)
-  )
-}
-
-/**
- * Строка фазы: скорость впереди, накопленное значение следом.
- *
- * Скорость стоит первой не для красоты: зависание видно по тому, что фаза тикает при снятом пальце,
- * а накопленное число за смену только растёт и само по себе ни о чём не говорит.
- *
- * @param label подпись фазы
- * @param total накопленное значение
- * @param rate значений в секунду
- * @param limit предел, выше которого значение аномально
- * @return строка панели
- */
-private fun phaseRow(label: String, total: Int, rate: Int, limit: Int): GraphDebugRow {
-  return GraphDebugRow(
-    label = label,
-    value = "$rate/s · $total",
-    isAnomalous = rate > limit
-  )
-}
-
-/**
- * Строки с фактами о полотне.
- *
- * Числа округляются до целых пикселей: доли пикселя в диагностике ничего не решают, а строку вроде
- * `Rect.fromLTRB(252.0, 100.0, 2629.0, 447.0)` в колонку не уложить.
- *
- * @param info снимок камеры и раскладки
- * @param lastPan последнее приращение жеста
- * @return строки правой колонки
- */
-private fun factRowsOf(info: GraphDebugInfo, lastPan: Offset): List<GraphDebugRow> {
-  return listOf(
-    GraphDebugRow("viewport", "${info.viewportWidth} × ${info.viewportHeight}"),
-    GraphDebugRow(
-      label = "camera",
-      value = lineOf(info.camera) + if (info.isCameraMoved) "" else " · rest",
-      isAnomalous = !info.camera.isValid()
-    ),
-    GraphDebugRow("bounds", lineOf(info.contentBounds)),
-    GraphDebugRow(
-      label = "span x",
-      value = "${info.centreSpanX.start.roundToInt()} … ${info.centreSpanX.endInclusive.roundToInt()}"
-    ),
-    GraphDebugRow(
-      label = "nodes",
-      value = "${info.nodeCount} · edges ${info.edgeCount}",
-      isAnomalous = info.nodeCount > 0 && info.contentBounds.isEmpty
-    ),
-    GraphDebugRow("last pan", lineOf(lastPan)),
-    GraphDebugRow("tick", "$TICK_MILLIS ms")
-  )
-}
-
-private fun lineOf(offset: Offset): String {
-  if (!offset.isValid()) {
-    return offset.toString()
-  }
-  return "${offset.x.roundToInt()}, ${offset.y.roundToInt()}"
-}
-
-private fun lineOf(rect: Rect): String {
-  return "${rect.left.roundToInt()}, ${rect.top.roundToInt()} … " +
-    "${rect.right.roundToInt()}, ${rect.bottom.roundToInt()}"
-}
-
 private const val TICK_MILLIS = 500L
 private const val VISIBLE_ROWS = 10
-
-// Фазы, которые в покое обязаны стоять. Несколько проходов на одно действие пользователя — норма,
-// устойчивый поток — уже нет: именно так выглядит цикл «запись из измерения, чтение в композиции».
-private const val IDLE_LIMIT = 8
-
-// Рекомпозиция содержимого считается суммой по всем узлам, поэтому один полный проход небольшого
-// графа сам по себе даёт десятки.
-private const val NODE_LIMIT = 60
-
-// Фазы, которые по построению идут покадрово: слой камеры, связи, фон, панель и сам жест. Выше
-// частоты обновления экрана это означает больше одного прохода на кадр.
-private const val FRAME_LIMIT = 140
 
 private val PANEL_PADDING = 12.dp
 private val PHASE_COLUMN_WIDTH = 148.dp

@@ -7,7 +7,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 import kotlin.math.roundToInt
 
 /**
@@ -54,26 +53,6 @@ internal fun topLaneOf(lanes: List<Int>): Int {
     if (lane < top) top = lane
   }
   return top
-}
-
-/**
- * Зазор перед узлом.
- *
- * Пять дискретных значений вместо реальной длительности: абсолютное время растянуло бы ночную
- * паузу на километры пустоты, а одинаковый зазор стёр бы паузы вовсе. Дискретный зазор оставляет
- * порядок величины, а точную длительность выводит подпись.
- *
- * @param gap квантованная пауза перед узлом
- * @return расстояние от предыдущей плашки
- */
-internal fun stepWidthOf(gap: TimeGap): Dp {
-  return when (gap) {
-    TimeGap.Minutes -> 40.dp
-    TimeGap.Hour -> 68.dp
-    TimeGap.Hours -> 96.dp
-    TimeGap.Day -> 124.dp
-    TimeGap.Long -> 152.dp
-  }
 }
 
 /**
@@ -125,13 +104,11 @@ internal fun graphPlacementOf(
   sizes: List<IntSize>
 ): GraphPlacement {
   check(lanes.size == gaps.size && lanes.size == laneYs.size && lanes.size == sizes.size) {
-    """
-     Раскладка получила рассогласованные списки:
-     lanes=${lanes.size},
-     "gaps=${gaps.size},
-     "laneYs=${laneYs.size},
-     "sizes=${sizes.size}"
-    """.trimIndent()
+    "Раскладка получила рассогласованные списки: " +
+      "lanes=${lanes.size}, " +
+      "gaps=${gaps.size}, " +
+      "laneYs=${laneYs.size}, " +
+      "sizes=${sizes.size}"
   }
   if (sizes.isEmpty()) {
     return GraphPlacement.Empty

@@ -17,6 +17,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
+import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
 /**
  * Состояние полотна, живущее весь срок экрана.
@@ -158,7 +159,7 @@ internal class GraphCanvasState {
     val result = with(density) {
       graphPlacementOf(
         lanes = lanes,
-        gaps = nodes.map { stepWidthOf(it.gap).toPx() },
+        gaps = nodes.map { it.gap.toStepWidth().toPx() },
         laneYs = lanes.map { geometry.laneYOf(it).toPx() },
         sizes = nodeSizes
       )

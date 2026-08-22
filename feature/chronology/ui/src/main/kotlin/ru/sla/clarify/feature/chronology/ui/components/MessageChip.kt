@@ -16,10 +16,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.feature.chronology.ui.entity.MessageChipState
+import ru.sla.clarify.feature.chronology.ui.mapper.toIconResId
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -60,7 +61,7 @@ internal fun MessageChip(
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
-    val iconResId = state.iconResId()
+    val iconResId = state.toIconResId()
     if (iconResId != null) {
       Icon(
         modifier = Modifier.size(ICON_SIZE),
@@ -72,14 +73,6 @@ internal fun MessageChip(
   }
 }
 
-private fun MessageChipState.iconResId(): Int? = when (this) {
-  MessageChipState.Normal,
-  MessageChipState.Sending -> null
-  MessageChipState.Edited -> R.drawable.ic_pencil_24
-  // Иконки кавычек в core/resources нет — временно берём «ответить». Заведена в список к дизайнеру.
-  MessageChipState.Quoted -> R.drawable.ic_reply_24
-}
-
 private const val SENDING_ALPHA = 0.6f
 private val MIN_HEIGHT: Dp = 28.dp
 private val MAX_WIDTH: Dp = 180.dp
@@ -87,47 +80,30 @@ private val ICON_SIZE: Dp = 12.dp
 
 @Preview
 @Composable
-private fun MessageChipPreviewLight() {
+private fun MessageChipPreviewLight(
+  @PreviewParameter(MessageChipPreviewProvider::class)
+  chip: MessageChipPreview
+) {
   PreviewColumn(colorTheme = ColorTheme.Light) {
-    MessageChipPreviewContent()
+    MessageChip(
+      text = chip.text,
+      isMine = chip.isMine,
+      state = chip.state
+    )
   }
 }
 
 @Preview
 @Composable
-private fun MessageChipPreviewDark() {
+private fun MessageChipPreviewDark(
+  @PreviewParameter(MessageChipPreviewProvider::class)
+  chip: MessageChipPreview
+) {
   PreviewColumn(colorTheme = ColorTheme.Dark) {
-    MessageChipPreviewContent()
+    MessageChip(
+      text = chip.text,
+      isMine = chip.isMine,
+      state = chip.state
+    )
   }
-}
-
-@Composable
-private fun MessageChipPreviewContent() {
-  MessageChip(
-    text = "Не бьётся по срокам",
-    isMine = false
-  )
-  MessageChip(
-    text = "Где именно?",
-    isMine = true
-  )
-  MessageChip(
-    text = "Выношу в ветку",
-    isMine = true,
-    state = MessageChipState.Edited
-  )
-  MessageChip(
-    text = "Готово, ветка тут",
-    isMine = false,
-    state = MessageChipState.Quoted
-  )
-  MessageChip(
-    text = "Фиксируем 14-е",
-    isMine = true,
-    state = MessageChipState.Sending
-  )
-  MessageChip(
-    text = "Очень длинный текст сообщения, который обязан обрезаться эллипсисом",
-    isMine = false
-  )
 }
