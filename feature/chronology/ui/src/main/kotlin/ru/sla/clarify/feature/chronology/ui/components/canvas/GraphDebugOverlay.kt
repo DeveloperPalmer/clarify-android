@@ -2,23 +2,31 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -50,19 +58,34 @@ import ru.sla.clarify.uikit.theme.VSpacer
  * панорамирования. Это единственное место в полотне, где такое чтение допустимо.
  *
  * @param state камера полотна и результат его последней раскладки
+ * @param onBoundsChanged куда панель встала и когда её не стало: полотно ловит жест на всём
+ *   вьюпорте и по этой зоне отличает палец, положенный на панель, от пальца на графе. Убранная
+ *   панель обязана снять зону за собой — иначе полотно продолжит обходить стороной пустое место
  * @param modifier модификатор панели
  */
 @Composable
 internal fun GraphDebugOverlay(
   state: GraphCanvasState,
+  onBoundsChanged: (Rect) -> Unit,
   modifier: Modifier = Modifier
 ) {
   val telemetry = state.telemetry
   SideEffect { telemetry.onOverlayComposition() }
 
+  val currentOnBoundsChanged by rememberUpdatedState(onBoundsChanged)
+  DisposableEffect(Unit) {
+    onDispose { currentOnBoundsChanged(Rect.Zero) }
+  }
+
   val info by state.debugInfo
   var totals by remember { mutableStateOf(GraphTelemetry.Empty) }
   var rates by remember { mutableStateOf(GraphTelemetry.Empty) }
+  // Пик и снимок полотна на момент пика. Хранятся вместе намеренно: пиковое число без того, где в
+  // этот миг стояла камера и сколько было узлов, отвечает «стало плохо», но не «на чём».
+  var peaks by remember { mutableStateOf(GraphTelemetry.Empty) }
+  var peakTotals by remember { mutableStateOf(GraphTelemetry.Empty) }
+  var peakInfo by remember { mutableStateOf(state.debugInfo.value) }
+  var peakPan by remember { mutableStateOf(telemetry.lastPan) }
 
   // Один снимок на такт и одна запись состояния — панель обновляется сама, не дожидаясь жеста,
   // и при этом не подписана ни на что из фаз измерения и рисования.
@@ -74,7 +97,16 @@ internal fun GraphDebugOverlay(
       val current = telemetry.read()
       val millis = System.currentTimeMillis()
       totals = current
-      rates = ratesOf(previous, current, millis - previousMillis)
+      val tickRates = ratesOf(previous, current, millis - previousMillis)
+      rates = tickRates
+      val updatedPeaks = peaksOf(peaks, tickRates)
+      if (updatedPeaks != peaks) {
+        peaks = updatedPeaks
+        peakTotals = current
+        // Состояние читается из корутины, а не из композиции: подписки это не создаёт.
+        peakInfo = state.debugInfo.value
+        peakPan = telemetry.lastPan
+      }
       previous = current
       previousMillis = millis
     }
@@ -88,6 +120,47 @@ internal fun GraphDebugOverlay(
       tickMillis = TICK_MILLIS
     )
   }
+  val peakPhases = remember(peakTotals, peaks) {
+    peakTotals.toPhaseRows(peaks)
+  }
+  val peakFacts = remember(peakInfo, peakPan) {
+    peakInfo.toFactRows(
+      lastPan = peakPan,
+      tickMillis = TICK_MILLIS
+    )
+  }
+  val pagerState = rememberPagerState(pageCount = { 2 })
+  HorizontalPager(
+    state = pagerState,
+    pageSpacing = 8.dp,
+    // Край соседней страницы обязан выглядывать: иначе о второй странице неоткуда узнать — панель
+    // без полосы прокрутки и без единого намёка, что её можно листать.
+    contentPadding = PaddingValues(end = PEEK_WIDTH),
+    modifier = modifier.onGloballyPositioned { onBoundsChanged(it.boundsInParent()) }
+  ) { page ->
+    GraphDebugPage(
+      title = if (page == 0) "GRAPH DEBUG" else "GRAPH PEAKS",
+      phases = if (page == 0) phases else peakPhases,
+      facts = if (page == 0) facts else peakFacts
+    )
+  }
+}
+
+/**
+ * Страница панели: заголовок и две колонки под ним.
+ *
+ * @param title заголовок страницы
+ * @param phases строки фаз Compose
+ * @param facts строки фактов о полотне
+ * @param modifier модификатор страницы
+ */
+@Composable
+private fun GraphDebugPage(
+  title: String,
+  phases: List<GraphDebugRow>,
+  facts: List<GraphDebugRow>,
+  modifier: Modifier = Modifier
+) {
   Column(
     modifier = modifier.surface(
       backgroundColor = AppTheme.colors.cardPrimary,
@@ -98,7 +171,7 @@ internal fun GraphDebugOverlay(
     VSpacer(PANEL_PADDING)
     BasicText(
       modifier = Modifier.padding(horizontal = PANEL_PADDING),
-      text = "GRAPH DEBUG",
+      text = title,
       style = AppTheme.typography.label3Bold.copy(color = AppTheme.colors.contentTertiary)
     )
     VSpacer(8.dp)
@@ -175,6 +248,9 @@ private const val TICK_MILLIS = 500L
 private const val VISIBLE_ROWS = 11
 
 private val PANEL_PADDING = 12.dp
+
+// Сколько соседней страницы видно с текущей: ровно чтобы прочитывалось как «дальше есть ещё».
+private val PEEK_WIDTH = 28.dp
 private val PHASE_COLUMN_WIDTH = 148.dp
 private val PHASE_LABEL_WIDTH = 68.dp
 private val FACT_LABEL_WIDTH = 60.dp

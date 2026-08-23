@@ -148,4 +148,31 @@ internal fun ratesOf(
   )
 }
 
+/**
+ * Поэлементный максимум двух снимков.
+ *
+ * Аномалия живёт один такт панели и исчезает: к тому моменту, как её заметили глазом, строка уже
+ * снова зелёная. Пик её удерживает — по каждой фазе отдельно, потому что всплески у них не
+ * совпадают по времени.
+ *
+ * @param peaks накопленные максимумы
+ * @param rates скорости последнего такта
+ * @return максимум по каждой фазе
+ */
+internal fun peaksOf(peaks: GraphTelemetry, rates: GraphTelemetry): GraphTelemetry {
+  return GraphTelemetry(
+    canvasCompositions = maxOf(peaks.canvasCompositions, rates.canvasCompositions),
+    nodeCompositions = maxOf(peaks.nodeCompositions, rates.nodeCompositions),
+    overlayCompositions = maxOf(peaks.overlayCompositions, rates.overlayCompositions),
+    measurePasses = maxOf(peaks.measurePasses, rates.measurePasses),
+    placementPasses = maxOf(peaks.placementPasses, rates.placementPasses),
+    layerUpdates = maxOf(peaks.layerUpdates, rates.layerUpdates),
+    edgeDraws = maxOf(peaks.edgeDraws, rates.edgeDraws),
+    backdropDraws = maxOf(peaks.backdropDraws, rates.backdropDraws),
+    panEvents = maxOf(peaks.panEvents, rates.panEvents),
+    flingSteps = maxOf(peaks.flingSteps, rates.flingSteps),
+    flingStalls = maxOf(peaks.flingStalls, rates.flingStalls)
+  )
+}
+
 private const val MILLIS_IN_SECOND = 1000L

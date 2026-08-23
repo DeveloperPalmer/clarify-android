@@ -52,4 +52,22 @@ class GraphCanvasTelemetryTest {
 
     assertEquals(current, rates, "за секунду скорость равна приращению")
   }
+
+  @Test
+  fun `a peak is held per phase, not per tick`() {
+    val loudMeasure = GraphTelemetry.Empty.copy(measurePasses = 87, layerUpdates = 45)
+    val loudLayer = GraphTelemetry.Empty.copy(measurePasses = 0, layerUpdates = 120)
+
+    val peaks = peaksOf(peaksOf(GraphTelemetry.Empty, loudMeasure), loudLayer)
+
+    assertEquals(87, peaks.measurePasses, "всплеск держится и после спокойного такта")
+    assertEquals(120, peaks.layerUpdates, "у каждой фазы свой пик: они не совпадают по времени")
+  }
+
+  @Test
+  fun `a quiet tick cannot lower a peak`() {
+    val peaks = peaksOf(GraphTelemetry.Empty.copy(measurePasses = 87), GraphTelemetry.Empty)
+
+    assertEquals(87, peaks.measurePasses, "пик существует ровно затем, чтобы пережить свой такт")
+  }
 }

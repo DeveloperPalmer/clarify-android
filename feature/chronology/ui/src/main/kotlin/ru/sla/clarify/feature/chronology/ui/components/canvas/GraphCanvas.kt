@@ -10,13 +10,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -62,6 +66,16 @@ internal fun GraphCanvas(
   val currentDecay by rememberUpdatedState(AppTheme.motion.flingDecay<Float>())
   // Затухание доигрывает после того, как корутина жеста уже отменена, поэтому scope нужен свой.
   val flingScope = rememberCoroutineScope()
+  // Где лежит отладочная панель, в координатах этого же Box: полотно ловит жест на всём вьюпорте и
+  // по этой зоне отличает палец, положенный на инструмент, от пальца, положенного на граф. Зону
+  // объявляет и снимает сама панель — полотно её не вычисляет и о её существовании не знает.
+  //
+  // Поглощать жесты внутри панели нельзя, хотя это выглядело бы проще: `clickable` потребляет лишь
+  // нажатие с отпусканием, а камеру двигает протяжка, и полотно принимает даже потреблённое
+  // нажатие. Потреблять же сами движения — значит убить листание панели: детекторы жестов
+  // проверяют потребление ещё и в Final-проходе, и вложенный пейджер отменяется.
+  var panelBounds by remember { mutableStateOf(Rect.Zero) }
+  val currentPanelBounds by rememberUpdatedState(panelBounds)
   val telemetry = state.telemetry
   SideEffect { telemetry.onCanvasComposition() }
   val edgeColor = AppTheme.colors.contentTertiary
@@ -79,14 +93,20 @@ internal fun GraphCanvas(
         // Трекер живёт со всем обработчиком: ключ `Unit` держит его между жестами, а сбрасывается
         // он на каждом касании. Скорость foundation не считает — она отдаёт только up-событие.
         val tracker = VelocityTracker()
+        // Решение принимается один раз, на касании, и держится весь жест: палец, ушедший с панели
+        // на полотно, не должен посреди движения начать таскать камеру.
+        var startedOnPanel = false
         detectDragGestures(
           orientationLock = null,
           onDragStart = { down, _, _ ->
+            startedOnPanel = currentPanelBounds.contains(down.position)
+            if (startedOnPanel) return@detectDragGestures
             currentState.stopFling()
             tracker.resetTracking()
             tracker.addPointerInputChange(down)
           },
           onDragEnd = { up ->
+            if (startedOnPanel) return@detectDragGestures
             tracker.addPointerInputChange(up)
             // Кламп по осям, как у платформы: у трекера полиномиальная подгонка, и дрожание перед
             // отпусканием умеет отдать десятки тысяч px/s, а пролёт растёт как v^1.736.
@@ -99,6 +119,7 @@ internal fun GraphCanvas(
           },
           onDragCancel = { tracker.resetTracking() },
           onDrag = { change, dragAmount ->
+            if (startedOnPanel) return@detectDragGestures
             // `change.consume()` здесь не нужен: перегрузка с `orientationLock` консьюмит сама —
             // и на пересечении слопа, и на каждом последующем событии.
             tracker.addPointerInputChange(change)
@@ -170,7 +191,8 @@ internal fun GraphCanvas(
           .navigationBarsPadding()
           .fillMaxWidth()
           .padding(12.dp),
-        state = state
+        state = state,
+        onBoundsChanged = { bounds -> panelBounds = bounds }
       )
     }
   }
