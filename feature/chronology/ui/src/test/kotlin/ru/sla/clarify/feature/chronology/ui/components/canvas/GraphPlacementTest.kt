@@ -84,7 +84,8 @@ class GraphPlacementTest {
       lanes = listOf(0, 0),
       gaps = listOf(0f, 40f),
       laneYs = listOf(LANE_Y, LANE_Y),
-      sizes = listOf(tall, short)
+      sizes = listOf(tall, short),
+      edgePadding = 0f
     )
 
     assertEquals(
@@ -108,7 +109,8 @@ class GraphPlacementTest {
       lanes = emptyList(),
       gaps = emptyList(),
       laneYs = emptyList(),
-      sizes = emptyList()
+      sizes = emptyList(),
+      edgePadding = 0f
     )
 
     assertEquals(GraphPlacement.Empty, placement)
@@ -126,7 +128,8 @@ class GraphPlacementTest {
         lanes = listOf(0, 0, 0),
         gaps = listOf(0f, 40f, 40f),
         laneYs = listOf(LANE_Y, LANE_Y, LANE_Y),
-        sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT))
+        sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT)),
+        edgePadding = 0f
       )
     }
     assertTrue(
@@ -139,7 +142,8 @@ class GraphPlacementTest {
         lanes = listOf(0),
         gaps = listOf(0f),
         laneYs = listOf(LANE_Y),
-        sizes = List(3) { IntSize(NODE_WIDTH, NODE_HEIGHT) }
+        sizes = List(3) { IntSize(NODE_WIDTH, NODE_HEIGHT) },
+        edgePadding = 0f
       )
     }
   }
@@ -155,9 +159,39 @@ class GraphPlacementTest {
         lanes = emptyList(),
         gaps = emptyList(),
         laneYs = emptyList(),
-        sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT))
+        sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT)),
+        edgePadding = 0f
       )
     }
+  }
+
+  @Test
+  fun `canvas margins keep the content off the screen edge`() {
+    val bare = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 40f))
+
+    val padded = graphPlacementOf(
+      lanes = listOf(0, 0),
+      gaps = listOf(0f, 40f),
+      laneYs = listOf(LANE_Y, LANE_Y),
+      sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT), IntSize(NODE_WIDTH, NODE_HEIGHT)),
+      edgePadding = 32f
+    )
+
+    assertEquals(bare.bounds.left - 32f, padded.bounds.left, "поля входят в протяжённость полотна")
+    assertEquals(bare.bounds.bottom + 32f, padded.bounds.bottom)
+    assertEquals(
+      bare.centreSpanX.start,
+      padded.centreSpanX.start,
+      "на наведение камеры поля не влияют: она ходит по центрам плашек"
+    )
+  }
+
+  @Test
+  fun `the first centre is the first plate, not the leftmost`() {
+    val placement = placementOf(lanes = listOf(0, 0), gaps = listOf(12f, 40f))
+
+    assertEquals(12f + NODE_WIDTH / 2f, placement.firstCentre.x)
+    assertEquals(LANE_Y, placement.firstCentre.y, "центр плашки по вертикали — это её дорожка")
   }
 
   private fun placementOf(lanes: List<Int>, gaps: List<Float>): GraphPlacement {
@@ -165,7 +199,8 @@ class GraphPlacementTest {
       lanes = lanes,
       gaps = gaps,
       laneYs = lanes.map { LANE_Y + it * LANE_Y },
-      sizes = lanes.map { IntSize(NODE_WIDTH, NODE_HEIGHT) }
+      sizes = lanes.map { IntSize(NODE_WIDTH, NODE_HEIGHT) },
+      edgePadding = 0f
     )
   }
 }

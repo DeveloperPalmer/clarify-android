@@ -169,6 +169,44 @@ class GraphGeometryTest {
   }
 
   @Test
+  fun `the camera rests with the first plate centred`() {
+    val viewport = IntSize(width = 1000, height = 600)
+    // Содержимое выше экрана, а первая плашка — в его середине: центр экрана ей достижим.
+    val tall = placement().copy(
+      bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 2000f),
+      firstCentre = Offset(x = 60f, y = 800f)
+    )
+
+    val rest = cameraRestOf(tall, viewport, cameraRangeOf(tall, viewport))
+
+    assertEquals(500f - 60f, rest.x, "начало истории обязано оказаться под глазами, а не в углу")
+    assertEquals(300f - 800f, rest.y)
+  }
+
+  @Test
+  fun `a first plate that cannot reach the centre stops at the boundary`() {
+    val viewport = IntSize(width = 1000, height = 600)
+    // Первая плашка у самого верха: центрировать её значило бы оторвать содержимое от края.
+    val tall = placement().copy(
+      bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 2000f),
+      firstCentre = Offset(x = 60f, y = 40f)
+    )
+
+    val rest = cameraRestOf(tall, viewport, cameraRangeOf(tall, viewport))
+
+    assertEquals(0f, rest.y, "наведение зажимается диапазоном, а не выносит содержимое за границу")
+  }
+
+  @Test
+  fun `an empty graph rests at zero`() {
+    val viewport = IntSize(width = 1000, height = 600)
+
+    val rest = cameraRestOf(GraphPlacement.Empty, viewport, GraphCameraRange.Empty)
+
+    assertEquals(Offset.Zero, rest)
+  }
+
+  @Test
   fun `consumed delta equals the request while the camera has room`() {
     val step = panStepOf(
       camera = Offset(x = 0f, y = 0f),
@@ -279,7 +317,8 @@ class GraphGeometryTest {
       nodes = listOf(IntOffset.Zero),
       bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 100f),
       edges = emptyList(),
-      centreSpanX = 60f..900f
+      centreSpanX = 60f..900f,
+      firstCentre = Offset(x = 60f, y = 50f)
     )
   }
 

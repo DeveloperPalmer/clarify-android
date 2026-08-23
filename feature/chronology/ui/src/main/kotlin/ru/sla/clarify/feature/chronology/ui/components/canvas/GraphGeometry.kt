@@ -98,13 +98,15 @@ internal fun leftOffsetsOf(gaps: List<Float>, widths: List<Float>): List<Float> 
  * @param gaps зазор перед каждым узлом, в пикселях
  * @param laneYs смещение дорожки каждого узла по Y, в пикселях
  * @param sizes измеренные размеры узлов
+ * @param edgePadding поля полотна вокруг содержимого, в пикселях
  * @return раскладка, пустая при отсутствии узлов
  */
 internal fun graphPlacementOf(
   lanes: List<Int>,
   gaps: List<Float>,
   laneYs: List<Float>,
-  sizes: List<IntSize>
+  sizes: List<IntSize>,
+  edgePadding: Float
 ): GraphPlacement {
   check(lanes.size == gaps.size && lanes.size == laneYs.size && lanes.size == sizes.size) {
     "Раскладка получила рассогласованные списки: " +
@@ -127,11 +129,16 @@ internal fun graphPlacementOf(
   val centres = lefts.mapIndexed { index, left -> left + widths[index] / 2f }
   return GraphPlacement(
     nodes = nodes,
-    bounds = boundsOf(nodes, sizes),
+    // Поля входят в протяжённость полотна, а не добавляются камере отдельным слагаемым: диапазон
+    // выводится из bounds, и раздутый прямоугольник сам даёт зазор у каждой границы. Иначе крайняя
+    // плашка упирается в кромку экрана, будто история обрезана.
+    bounds = boundsOf(nodes, sizes).inflate(edgePadding),
     edges = edgesOf(lanes, laneYs, nodes, sizes),
     // Минимум и максимум, а не первый с последним: агрегат не должен зависеть от того, что порядок
     // узлов совпадает с порядком по оси.
-    centreSpanX = (centres.min())..(centres.max())
+    centreSpanX = (centres.min())..(centres.max()),
+    // Именно первый узел списка, а не самый левый: в покое камера наводится на начало истории.
+    firstCentre = Offset(x = centres.first(), y = laneYs.first())
   )
 }
 
@@ -203,6 +210,34 @@ internal fun cameraRangeOf(placement: GraphPlacement, viewport: IntSize): GraphC
     x = timelinePanRangeOf(placement.centreSpanX, viewport.width.toFloat()),
     y = panRangeOf(placement.bounds.top, placement.bounds.bottom, viewport.height.toFloat())
   )
+}
+
+/**
+ * Где камера стоит, пока её не двигали.
+ *
+ * Наводится на **первую** плашку, а не прижимается к краю содержимого: экран открывают, чтобы
+ * увидеть начало истории, и оно должно оказаться под глазами, а не в углу. Наведение зажимается
+ * диапазоном — у короткой истории центр экрана недостижим, и тогда камера встаёт настолько близко
+ * к нему, насколько содержимое позволяет.
+ *
+ * @param placement последняя раскладка графа
+ * @param viewport размер видимой области
+ * @param range где камере разрешено быть
+ * @return положение камеры в покое
+ */
+internal fun cameraRestOf(
+  placement: GraphPlacement,
+  viewport: IntSize,
+  range: GraphCameraRange
+): Offset {
+  if (placement.isEmpty) {
+    return Offset.Zero
+  }
+  val centred = Offset(
+    x = viewport.width / 2f - placement.firstCentre.x,
+    y = viewport.height / 2f - placement.firstCentre.y
+  )
+  return range.clamp(centred)
 }
 
 /**
@@ -338,6 +373,10 @@ private fun edgesOf(
   }
   return edges
 }
+
+// Поля полотна: содержимое не должно упираться в кромку экрана — крайняя плашка вплотную к краю
+// читается как обрезанная история, а не как её конец.
+internal val CANVAS_PADDING: Dp = 32.dp
 
 private val LANE_STEP: Dp = 104.dp
 

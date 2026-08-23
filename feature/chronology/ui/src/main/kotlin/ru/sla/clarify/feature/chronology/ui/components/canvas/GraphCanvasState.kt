@@ -93,7 +93,7 @@ internal class GraphCanvasState {
    * Пока камеру не двигали, она стоит вплотную к началу истории.
    */
   val offset: State<Offset> = derivedStateOf {
-    if (isMoved) camera else cameraRangeOf(placement, viewport).rest
+    if (isMoved) camera else restingCamera()
   }
 
   /** Связи между соседними узлами каждой дорожки, в координатах полотна. */
@@ -178,11 +178,15 @@ internal class GraphCanvasState {
     }
   }
 
+  private fun restingCamera(): Offset {
+    return cameraRestOf(placement, viewport, cameraRangeOf(placement, viewport))
+  }
+
   private fun applyPan(delta: Offset): Offset {
     val range = cameraRangeOf(placement, viewport)
     // Первое движение стартует от того места, где камера стояла в покое, а не от нуля: иначе
     // полотно прыгнуло бы к началу координат под первым же пальцем.
-    val from = if (isMoved) camera else range.rest
+    val from = if (isMoved) camera else cameraRestOf(placement, viewport, range)
     val step = panStepOf(camera = from, delta = delta, range = range)
     camera = step.camera
     isMoved = true
@@ -220,7 +224,8 @@ internal class GraphCanvasState {
         lanes = lanes,
         gaps = nodes.map { it.gap.toStepWidth().toPx() },
         laneYs = lanes.map { geometry.laneYOf(it).toPx() },
-        sizes = nodeSizes
+        sizes = nodeSizes,
+        edgePadding = CANVAS_PADDING.toPx()
       )
     }
     viewport = viewportSize

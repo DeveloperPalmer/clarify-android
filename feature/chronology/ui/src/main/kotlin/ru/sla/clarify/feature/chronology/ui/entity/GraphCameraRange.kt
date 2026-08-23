@@ -22,9 +22,15 @@ data class GraphCameraRange(
   val y: ClosedFloatingPointRange<Float>
 ) {
 
-  /** Где камера стоит, пока её не двигали: начало истории в центре экрана. */
-  val rest: Offset
-    get() = Offset(x.endInclusive, y.endInclusive)
+  /**
+   * Загоняет камеру внутрь диапазона.
+   *
+   * @param camera желаемое положение
+   * @return ближайшее допустимое
+   */
+  fun clamp(camera: Offset): Offset {
+    return Offset(x = camera.x.coerceIn(x), y = camera.y.coerceIn(y))
+  }
 
   companion object {
 

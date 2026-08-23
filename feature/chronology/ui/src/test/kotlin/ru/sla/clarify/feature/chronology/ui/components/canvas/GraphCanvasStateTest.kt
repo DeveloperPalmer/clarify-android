@@ -55,7 +55,7 @@ class GraphCanvasStateTest {
     val narrowed = state.place(count = 1)
 
     assertEquals(
-      cameraRangeOf(narrowed, VIEWPORT).rest,
+      restOf(narrowed),
       state.offset.value,
       "камера обязана сойтись с новым диапазоном в том же кадре, а не уехать телепортом позже"
     )
@@ -69,7 +69,7 @@ class GraphCanvasStateTest {
 
     val grown = state.place(count = 3)
 
-    assertEquals(cameraRangeOf(grown, VIEWPORT).rest, state.offset.value)
+    assertEquals(restOf(grown), state.offset.value)
     assertEquals(alone, state.offset.value, "покой наводится на первый узел, а он не сдвинулся")
   }
 
@@ -105,6 +105,16 @@ class GraphCanvasStateTest {
       "камера пишется каждый кадр движения: подписав на неё измерение, полотно пере-измеряется " +
         "всю дорогу вместо того, чтобы двигать слой"
     )
+  }
+
+  /**
+   * Где камера обязана стоять в покое при этой раскладке.
+   *
+   * @param placement раскладка
+   * @return положение покоя
+   */
+  private fun restOf(placement: GraphPlacement): Offset {
+    return cameraRestOf(placement, VIEWPORT, cameraRangeOf(placement, VIEWPORT))
   }
 
   /**
