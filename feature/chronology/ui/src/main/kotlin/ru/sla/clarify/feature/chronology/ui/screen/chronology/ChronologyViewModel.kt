@@ -30,8 +30,12 @@ class ChronologyViewModel @Inject constructor(
       transitionTo { state, branches -> state.copy(branches = branches) }
     }
 
+    onEach(intent(ViewIntents::toggleDebugOverlay)) {
+      transitionTo { state, _ -> state.copy(debugOverlayVisible = !state.debugOverlayVisible) }
+    }
+
     onEach(featureConfigsManager.isFeatureEnabledLive(AppFeature.ChronologyDebugOverlay)) {
-      transitionTo { state, visible -> state.copy(debugOverlayVisible = visible) }
+      transitionTo { state, enabled -> state.copy(debugOverlayAvailable = enabled) }
     }
   }
 }

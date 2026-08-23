@@ -4,4 +4,5 @@ import ru.kode.amvi.viewmodel.ViewIntents as BaseViewIntents
 
 class ViewIntents : BaseViewIntents() {
   val navigateBack = intent(name = "navigateBack")
+  val toggleDebugOverlay = intent(name = "toggleDebugOverlay")
 }
