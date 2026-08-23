@@ -212,13 +212,17 @@ internal class GraphCanvasState {
    * @param viewportSize размер видимой области
    * @param nodeSizes измеренные размеры узлов, в порядке [nodes]
    * @param density плотность экрана для перевода координат полотна в пиксели
+   * @param statusBar высота строки состояния в пикселях
+   * @param navigationBar высота навигационной полосы в пикселях
    * @return раскладка графа
    */
   fun layout(
     nodes: List<GraphNode>,
     viewportSize: IntSize,
     nodeSizes: List<IntSize>,
-    density: Density
+    density: Density,
+    statusBar: Float,
+    navigationBar: Float
   ): GraphPlacement {
     val lanes = nodes.map { it.lane }
     val geometry = GraphGeometry(topLaneOf(lanes))
@@ -228,7 +232,11 @@ internal class GraphCanvasState {
         gaps = nodes.map { it.gap.toStepWidth().toPx() },
         laneYs = lanes.map { geometry.laneYOf(it).toPx() },
         sizes = nodeSizes,
-        edgePadding = CANVAS_PADDING.toPx()
+        margins = canvasMarginsOf(
+          base = CANVAS_PADDING.toPx(),
+          statusBar = statusBar,
+          navigationBar = navigationBar
+        )
       )
     }
     viewport = viewportSize

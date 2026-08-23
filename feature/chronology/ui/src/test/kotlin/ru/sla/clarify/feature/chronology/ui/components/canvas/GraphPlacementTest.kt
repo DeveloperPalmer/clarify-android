@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 
 /**
@@ -85,7 +86,7 @@ class GraphPlacementTest {
       gaps = listOf(0f, 40f),
       laneYs = listOf(LANE_Y, LANE_Y),
       sizes = listOf(tall, short),
-      edgePadding = 0f
+      margins = GraphCanvasMargins.Zero
     )
 
     assertEquals(
@@ -110,7 +111,7 @@ class GraphPlacementTest {
       gaps = emptyList(),
       laneYs = emptyList(),
       sizes = emptyList(),
-      edgePadding = 0f
+      margins = GraphCanvasMargins.Zero
     )
 
     assertEquals(GraphPlacement.Empty, placement)
@@ -129,7 +130,7 @@ class GraphPlacementTest {
         gaps = listOf(0f, 40f, 40f),
         laneYs = listOf(LANE_Y, LANE_Y, LANE_Y),
         sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT)),
-        edgePadding = 0f
+        margins = GraphCanvasMargins.Zero
       )
     }
     assertTrue(
@@ -143,7 +144,7 @@ class GraphPlacementTest {
         gaps = listOf(0f),
         laneYs = listOf(LANE_Y),
         sizes = List(3) { IntSize(NODE_WIDTH, NODE_HEIGHT) },
-        edgePadding = 0f
+        margins = GraphCanvasMargins.Zero
       )
     }
   }
@@ -160,7 +161,7 @@ class GraphPlacementTest {
         gaps = emptyList(),
         laneYs = emptyList(),
         sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT)),
-        edgePadding = 0f
+        margins = GraphCanvasMargins.Zero
       )
     }
   }
@@ -174,7 +175,7 @@ class GraphPlacementTest {
       gaps = listOf(0f, 40f),
       laneYs = listOf(LANE_Y, LANE_Y),
       sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT), IntSize(NODE_WIDTH, NODE_HEIGHT)),
-      edgePadding = 32f
+      margins = GraphCanvasMargins(left = 32f, top = 32f, right = 32f, bottom = 32f)
     )
 
     assertEquals(bare.bounds.left - 32f, padded.bounds.left, "поля входят в протяжённость полотна")
@@ -183,6 +184,28 @@ class GraphPlacementTest {
       bare.centreSpanX.start,
       padded.centreSpanX.start,
       "на наведение камеры поля не влияют: она ходит по центрам плашек"
+    )
+  }
+
+  @Test
+  fun `canvas margins differ per side`() {
+    val bare = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 40f))
+
+    val padded = graphPlacementOf(
+      lanes = listOf(0, 0),
+      gaps = listOf(0f, 40f),
+      laneYs = listOf(LANE_Y, LANE_Y),
+      sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT), IntSize(NODE_WIDTH, NODE_HEIGHT)),
+      margins = canvasMarginsOf(base = 32f, statusBar = 60f, navigationBar = 40f)
+    )
+
+    assertEquals(bare.bounds.left - 32f, padded.bounds.left, "по бокам только базовое поле")
+    assertEquals(bare.bounds.right + 32f, padded.bounds.right)
+    assertEquals(bare.bounds.top - 92f, padded.bounds.top, "сверху к нему прибавлен статус-бар")
+    assertEquals(
+      bare.bounds.bottom + 72f,
+      padded.bounds.bottom,
+      "снизу — навигационная полоса: иначе крайняя плашка уезжает под неё"
     )
   }
 
@@ -201,7 +224,7 @@ class GraphPlacementTest {
       gaps = gaps,
       laneYs = lanes.map { LANE_Y + it * LANE_Y },
       sizes = lanes.map { IntSize(NODE_WIDTH, NODE_HEIGHT) },
-      edgePadding = 0f
+      margins = GraphCanvasMargins.Zero
     )
   }
 }

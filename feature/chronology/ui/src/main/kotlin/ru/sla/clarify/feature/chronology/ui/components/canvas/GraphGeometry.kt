@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import kotlin.math.roundToInt
@@ -96,7 +97,7 @@ internal fun leftOffsetsOf(gaps: List<Float>, widths: List<Float>): List<Float> 
  * @param gaps зазор перед каждым узлом, в пикселях
  * @param laneYs смещение дорожки каждого узла по Y, в пикселях
  * @param sizes измеренные размеры узлов
- * @param edgePadding поля полотна вокруг содержимого, в пикселях
+ * @param margins поля полотна вокруг содержимого
  * @return раскладка, пустая при отсутствии узлов
  */
 internal fun graphPlacementOf(
@@ -104,7 +105,7 @@ internal fun graphPlacementOf(
   gaps: List<Float>,
   laneYs: List<Float>,
   sizes: List<IntSize>,
-  edgePadding: Float
+  margins: GraphCanvasMargins
 ): GraphPlacement {
   check(lanes.size == gaps.size && lanes.size == laneYs.size && lanes.size == sizes.size) {
     "Раскладка получила рассогласованные списки: " +
@@ -131,7 +132,7 @@ internal fun graphPlacementOf(
     // Поля входят в протяжённость полотна, а не добавляются камере отдельным слагаемым: диапазон
     // выводится из bounds, и раздутый прямоугольник сам даёт зазор у каждой границы. Иначе крайняя
     // плашка упирается в кромку экрана, будто история обрезана.
-    bounds = boundsOf(nodes, sizes).inflate(edgePadding),
+    bounds = boundsOf(nodes, sizes).expandedBy(margins),
     edges = edgesOf(lanes, laneYs, nodes, sizes),
     // Минимум и максимум, а не первый с последним: агрегат не должен зависеть от того, что порядок
     // узлов совпадает с порядком по оси.
@@ -140,6 +141,42 @@ internal fun graphPlacementOf(
     // которого здесь избегают.
     centreSpanX = (centresX.min())..(centresX.max()),
     centres = centres
+  )
+}
+
+/**
+ * Поля полотна: базовый отступ со всех сторон плюс системные врезки сверху и снизу.
+ *
+ * Полотно занимает весь экран под системными барами — иначе панорамирование обрывалось бы там, где
+ * начинается статус-бар, а фон не доходил бы до кромки. Значит уводить плашки из-под баров должны
+ * поля, а не размер полотна.
+ *
+ * @param base отступ, одинаковый со всех сторон
+ * @param statusBar высота строки состояния
+ * @param navigationBar высота навигационной полосы
+ * @return поля по четырём сторонам
+ */
+internal fun canvasMarginsOf(base: Float, statusBar: Float, navigationBar: Float): GraphCanvasMargins {
+  return GraphCanvasMargins(
+    left = base,
+    top = base + statusBar,
+    right = base,
+    bottom = base + navigationBar
+  )
+}
+
+/**
+ * Прямоугольник, раздутый полями.
+ *
+ * @param margins поля по четырём сторонам
+ * @return прямоугольник, включающий поля
+ */
+private fun Rect.expandedBy(margins: GraphCanvasMargins): Rect {
+  return Rect(
+    left = left - margins.left,
+    top = top - margins.top,
+    right = right + margins.right,
+    bottom = bottom + margins.bottom
   )
 }
 
@@ -208,6 +245,6 @@ private fun edgesOf(
   return edges
 }
 
+internal val CANVAS_PADDING: Dp = 64.dp
 private val LANE_STEP: Dp = 104.dp
-
 internal val EDGE_WIDTH: Dp = 2.dp

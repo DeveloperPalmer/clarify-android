@@ -130,7 +130,9 @@ class GraphFlingTest {
       nodes = nodes,
       viewportSize = IntSize(width = 400, height = 200),
       nodeSizes = List(nodes.size) { IntSize(width = 120, height = 28) },
-      density = Density(density = 1f)
+      density = Density(density = 1f),
+      statusBar = 0f,
+      navigationBar = 0f
     )
     return state
   }

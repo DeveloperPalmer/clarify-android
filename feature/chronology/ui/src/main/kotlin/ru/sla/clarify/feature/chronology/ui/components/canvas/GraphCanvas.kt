@@ -3,7 +3,10 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -52,9 +55,10 @@ import ru.sla.clarify.uikit.theme.AppTheme
 internal fun GraphCanvas(
   state: GraphCanvasState,
   modifier: Modifier = Modifier,
-  overlay: @Composable BoxScope.(onBoundsChanged: (Rect) -> Unit) -> Unit = { },
-  node: @Composable (id: GraphNode.Id) -> Unit
+  node: @Composable (id: GraphNode.Id) -> Unit,
+  overlay: @Composable BoxScope.(onBoundsChanged: (Rect) -> Unit) -> Unit = { }
 ) {
+  val telemetry = state.telemetry
   // Жест не пересоздаётся при смене состояния: ключ `Unit` держит обработчик живым, а свежий
   // экземпляр приходит через rememberUpdatedState. Иначе первое же входящее сообщение отменяло бы
   // драг под пальцем.
@@ -74,14 +78,12 @@ internal fun GraphCanvas(
   // проверяют потребление ещё и в Final-проходе, и вложенный пейджер отменяется.
   var panelBounds by remember { mutableStateOf(Rect.Zero) }
   val currentPanelBounds by rememberUpdatedState(panelBounds)
-  val telemetry = state.telemetry
+
   SideEffect { telemetry.onCanvasComposition() }
-  val edgeColor = AppTheme.colors.contentTertiary
   // Узлы снимаются один раз и уходят и в содержимое, и в измерение. Читать их в measure заново
   // нельзя: состояние подменяется из `SideEffect`, то есть уже после этой композиции, но ещё до
   // измерения того же кадра, — и измерение получило бы новый список к старым measurable'ам.
   val nodes = state.nodes
-
   Box(
     // Жест висит на всём вьюпорте, а не на слое узлов: полотно не всегда достаёт до края экрана,
     // и панорамирование не работало бы там, где его нет.
@@ -115,13 +117,15 @@ internal fun GraphCanvas(
               decay = currentDecay
             )
           },
-          onDragCancel = { tracker.resetTracking() },
           onDrag = { change, dragAmount ->
             if (startedOnPanel) return@detectDragGestures
             // `change.consume()` здесь не нужен: перегрузка с `orientationLock` консьюмит сама —
             // и на пересечении слопа, и на каждом последующем событии.
             tracker.addPointerInputChange(change)
             currentState.pan(dragAmount)
+          },
+          onDragCancel = {
+            tracker.resetTracking()
           }
         )
       }
@@ -130,58 +134,87 @@ internal fun GraphCanvas(
       modifier = Modifier.fillMaxSize(),
       state = state
     )
+    GraphNodesLayer(
+      state = state,
+      nodes = nodes,
+      node = node
+    )
+    overlay { bounds -> panelBounds = bounds }
+  }
+}
 
-    Layout(
-      // Слой узлов равен вьюпорту, а не полотну: `requiredSize` центрирует содержимое шире
-      // входящих ограничений, и полотно уезжало бы мимо камеры. Узлы выходят за границы слоя —
-      // слой не обрезает, обрезает вьюпорт снаружи.
-      modifier = Modifier
-        .fillMaxSize()
-        .graphicsLayer {
-          // Камера читается здесь, а не в композиции: кадр панорамирования обновляет только
-          // свойства слоя — ни рекомпозиции, ни повторного измерения, ни новых модификаторов.
-          telemetry.onLayerUpdate()
-          val camera = state.offset.value
-          translationX = camera.x
-          translationY = camera.y
-        }
-        .drawBehind {
-          telemetry.onEdgeDraw()
-          state.edges.value.fastForEach { edge ->
-            drawLine(
-              color = edgeColor,
-              start = Offset(edge.startX, edge.y),
-              end = Offset(edge.endX, edge.y),
-              strokeWidth = EDGE_WIDTH.toPx()
-            )
-          }
-        },
-      content = {
-        nodes.fastForEach { graphNode ->
-          key(graphNode.id.value) {
-            SideEffect { telemetry.onNodeComposition() }
-            node(graphNode.id)
-          }
-        }
+/**
+ * Слой узлов: плашки, связи между ними и камера, двигающая их все разом.
+ *
+ * Слой равен вьюпорту, а не полотну: `requiredSize` центрирует содержимое шире входящих
+ * ограничений, и полотно уезжало бы мимо камеры. Узлы выходят за границы слоя — слой не обрезает,
+ * обрезает вьюпорт снаружи.
+ *
+ * Жест сюда не приходит: он висит на всём вьюпорте, потому что полотно не всегда достаёт до края
+ * экрана и панорамирование не работало бы там, где узлов нет.
+ *
+ * @param state камера полотна и результат его последней раскладки
+ * @param nodes узлы, из которых строится содержимое; приходят параметром, а не читаются из [state],
+ *   чтобы композиция и измерение одного кадра видели один и тот же список
+ * @param modifier модификатор слоя
+ * @param node содержимое узла с данным `id`
+ */
+@Composable
+private fun GraphNodesLayer(
+  state: GraphCanvasState,
+  nodes: List<GraphNode>,
+  modifier: Modifier = Modifier,
+  node: @Composable (id: GraphNode.Id) -> Unit
+) {
+  val telemetry = state.telemetry
+  val edgeColor = AppTheme.colors.contentTertiary
+  val statusBar = WindowInsets.statusBars
+  val navigationBar = WindowInsets.navigationBars
+  Layout(
+    modifier = modifier
+      .fillMaxSize()
+      .graphicsLayer {
+        // Камера читается здесь, а не в композиции: кадр панорамирования обновляет только
+        // свойства слоя — ни рекомпозиции, ни повторного измерения, ни новых модификаторов.
+        telemetry.onLayerUpdate()
+        val camera = state.offset.value
+        translationX = camera.x
+        translationY = camera.y
       }
-    ) { measurables, constraints ->
-      // Узел меряется свободно: ширину он ограничивает сам, а вьюпорт ему не указ — узел может
-      // стоять далеко за правым краем экрана.
-      val placeables = measurables.fastMap { it.measure(Constraints()) }
-      val placement = state.layout(
-        nodes = nodes,
-        viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight),
-        nodeSizes = placeables.fastMap { IntSize(it.width, it.height) },
-        density = this
-      )
-      layout(constraints.maxWidth, constraints.maxHeight) {
-        telemetry.onPlacement()
-        placeables.fastForEachIndexed { index, placeable ->
-          placeable.place(placement.nodes[index])
+      .drawBehind {
+        telemetry.onEdgeDraw()
+        state.edges.value.fastForEach { edge ->
+          drawLine(
+            color = edgeColor,
+            start = Offset(edge.startX, edge.y),
+            end = Offset(edge.endX, edge.y),
+            strokeWidth = EDGE_WIDTH.toPx()
+          )
+        }
+      },
+    content = {
+      nodes.fastForEach { graphNode ->
+        key(graphNode.id.value) {
+          SideEffect { telemetry.onNodeComposition() }
+          node(graphNode.id)
         }
       }
     }
-
-    overlay { bounds -> panelBounds = bounds }
+  ) { measurables, constraints ->
+    // Узел меряется свободно: ширину он ограничивает сам, а вьюпорт ему не указ — узел может
+    // стоять далеко за правым краем экрана.
+    val placeables = measurables.fastMap { it.measure(Constraints()) }
+    val placement = state.layout(
+      density = this,
+      statusBar = statusBar.getTop(this).toFloat(),
+      navigationBar = navigationBar.getBottom(this).toFloat(),
+      viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight),
+      nodes = nodes,
+      nodeSizes = placeables.fastMap { IntSize(it.width, it.height) }
+    )
+    layout(constraints.maxWidth, constraints.maxHeight) {
+      telemetry.onPlacement()
+      placeables.fastForEachIndexed { index, placeable -> placeable.place(placement.nodes[index]) }
+    }
   }
 }

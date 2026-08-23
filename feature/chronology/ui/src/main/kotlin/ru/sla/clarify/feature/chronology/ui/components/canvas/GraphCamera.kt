@@ -1,9 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
@@ -138,7 +136,11 @@ internal fun panStepOf(camera: Offset, delta: Offset, range: GraphCameraRange): 
     x = (camera.x + delta.x).coerceIn(range.x),
     y = (camera.y + delta.y).coerceIn(range.y)
   )
-  return GraphPanStep(requested = delta, camera = moved, consumed = moved - camera)
+  return GraphPanStep(
+    requested = delta,
+    camera = moved,
+    consumed = moved - camera
+  )
 }
 
 /**
@@ -164,7 +166,15 @@ internal fun panStepOf(camera: Offset, delta: Offset, range: GraphCameraRange): 
  * @return `true`, когда двигаться некуда и затухание пора обрывать
  */
 internal fun isCameraStuck(camera: Offset, direction: Offset, range: GraphCameraRange): Boolean {
-  return isAxisStuck(camera.x, direction.x, range.x) && isAxisStuck(camera.y, direction.y, range.y)
+  return isAxisStuck(
+    camera = camera.x,
+    direction = direction.x,
+    range = range.x
+  ) && isAxisStuck(
+    camera = camera.y,
+    direction = direction.y,
+    range = range.y
+  )
 }
 
 /**
@@ -185,9 +195,9 @@ private fun isAxisStuck(
   if (direction == 0f || range.start >= range.endInclusive) {
     return true
   }
-  return if (direction > 0f) camera >= range.endInclusive else camera <= range.start
+  return if (direction > 0f) {
+    camera >= range.endInclusive
+  } else {
+    camera <= range.start
+  }
 }
-
-// Поля полотна: содержимое не должно упираться в кромку экрана — крайняя плашка вплотную к краю
-// читается как обрезанная история, а не как её конец.
-internal val CANVAS_PADDING: Dp = 32.dp

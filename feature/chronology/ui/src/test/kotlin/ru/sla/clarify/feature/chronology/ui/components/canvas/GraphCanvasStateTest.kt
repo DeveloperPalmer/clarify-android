@@ -131,7 +131,9 @@ class GraphCanvasStateTest {
       nodes = nodes,
       viewportSize = VIEWPORT,
       nodeSizes = List(count) { IntSize(width = 120, height = 28) },
-      density = Density(density = 1f)
+      density = Density(density = 1f),
+      statusBar = 0f,
+      navigationBar = 0f
     )
   }
 }
