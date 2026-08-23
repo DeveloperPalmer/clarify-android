@@ -1,5 +1,8 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.DecayAnimationSpec
+import androidx.compose.animation.core.animateDecay
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -10,9 +13,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Velocity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
@@ -68,6 +77,9 @@ internal class GraphCanvasState {
   private var viewport by mutableStateOf(IntSize.Zero)
   private var placement by mutableStateOf(GraphPlacement.Empty)
 
+  // Обычное поле, не снапшот: за «идёт ли затухание» никто не рисует, а панель снимает по таймеру.
+  private var flingJob: Job? = null
+
   /** Счётчики проходов Compose по полотну: обычные поля, снимаются по таймеру. */
   val telemetry = GraphCanvasTelemetry()
 
@@ -111,6 +123,62 @@ internal class GraphCanvasState {
    * @return часть [delta], которую камера отработала; меньше запрошенного — значит упёрлись
    */
   fun pan(delta: Offset): Offset {
+    stopFling()
+    val consumed = applyPan(delta)
+    telemetry.onPan(delta)
+    return consumed
+  }
+
+  /**
+   * Доигрывает инерцию после отпускания.
+   *
+   * Scope приходит параметром и держателю не принадлежит — как у `PredictiveBackController`:
+   * корутина жеста отменяется в момент отпускания, а затухать надо уже после неё.
+   *
+   * Спека тоже приходит снаружи: она зависит от плотности экрана, о которой держатель не знает, а в
+   * тесте подменяется на ту, что не тянет за собой Android-фреймворк.
+   *
+   * @param scope scope, переживающий жест
+   * @param velocity скорость отпускания в пикселях в секунду
+   * @param decay кривая затухания, см. `AppMotion.flingDecay`
+   */
+  fun fling(scope: CoroutineScope, velocity: Velocity, decay: DecayAnimationSpec<Float>) {
+    stopFling()
+    val direction = FlingDirection(velocity)
+    // Барьер платформенный и он не про UX: кривая берёт логарифм скорости и ниже единицы отдаёт
+    // NaN. Слабый бросок гасить не нужно — она сама делает его невидимым, 137 dp/s пролетают 3 px.
+    if (direction.magnitude.isNaN() || direction.magnitude <= 1f) {
+      return
+    }
+    flingJob = scope.launch { runFling(direction, decay) }
+  }
+
+  /** Обрывает инерцию: новое касание отбирает камеру у анимации. */
+  fun stopFling() {
+    flingJob?.cancel()
+    flingJob = null
+  }
+
+  private suspend fun runFling(direction: FlingDirection, decay: DecayAnimationSpec<Float>) {
+    withContext(FlingDurationScale) {
+      var travelled = 0f
+      AnimationState(initialValue = 0f, initialVelocity = direction.magnitude)
+        .animateDecay(decay) {
+          // Анимируется путь вдоль броска, а не сама камера: камеру пере-зажимает раскладка, и
+          // анимация, владеющая ею напрямую, разъехалась бы с этим на первом же входящем сообщении.
+          val step = direction.offsetOf(value - travelled)
+          travelled = value
+          telemetry.onFlingStep(step, applyPan(step))
+          // Диапазон перечитывается каждый кадр, а не снимается на старте: пришло сообщение,
+          // раскладка сузила границы — затухание узнает об этом сразу, а не доиграет мимо них.
+          if (isCameraStuck(camera, direction.vector, cameraRangeOf(placement, viewport))) {
+            cancelAnimation()
+          }
+        }
+    }
+  }
+
+  private fun applyPan(delta: Offset): Offset {
     val range = cameraRangeOf(placement, viewport)
     // Первое движение стартует от того места, где камера стояла в покое, а не от нуля: иначе
     // полотно прыгнуло бы к началу координат под первым же пальцем.
@@ -118,7 +186,6 @@ internal class GraphCanvasState {
     val step = panStepOf(camera = from, delta = delta, range = range)
     camera = step.camera
     isMoved = true
-    telemetry.onPan(delta)
     return step.consumed
   }
 
@@ -186,4 +253,12 @@ internal class GraphCanvasState {
   fun setNodes(nodes: List<GraphNode>) {
     graphNodes = nodes
   }
+}
+
+// Инерция — физика жеста, а не переход, поэтому системный множитель длительности анимаций к ней не
+// применяется. Без этого «Animator duration scale» из опций разработчика менял бы пролёт броска, а
+// при значении «Off» весь путь приезжал бы одной дельтой. Платформа оборачивает свой fling так же.
+private val FlingDurationScale = object : MotionDurationScale {
+  override val scaleFactor: Float
+    get() = 1f
 }

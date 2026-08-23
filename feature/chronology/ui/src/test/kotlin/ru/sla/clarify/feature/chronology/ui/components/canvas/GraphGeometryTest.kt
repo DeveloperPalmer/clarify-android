@@ -229,6 +229,51 @@ class GraphGeometryTest {
     )
   }
 
+  @Test
+  fun `a fling survives a wall while the other axis has room`() {
+    val stuck = isCameraStuck(
+      camera = Offset(x = -400f, y = 0f),
+      direction = Offset(x = -0.8f, y = 0.6f),
+      range = GraphCameraRange(x = -400f..440f, y = -200f..200f)
+    )
+
+    assertTrue(!stuck, "пока бросок несёт хоть одна ось, инерция едет вдоль стенки")
+  }
+
+  @Test
+  fun `a fling dies when the only live axis hits its wall`() {
+    val stuck = isCameraStuck(
+      camera = Offset(x = -400f, y = 0f),
+      direction = Offset(x = -0.8f, y = 0.6f),
+      // Одна дорожка: вертикаль вырождена и нести бросок ей нечем.
+      range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+    )
+
+    assertTrue(stuck)
+  }
+
+  @Test
+  fun `a fling along an axis ignores the range of the other one`() {
+    val stuck = isCameraStuck(
+      camera = Offset(x = -400f, y = 0f),
+      direction = Offset(x = -1f, y = 0f),
+      range = GraphCameraRange(x = -400f..440f, y = -200f..200f)
+    )
+
+    assertTrue(stuck, "запас по Y не оживляет бросок, у которого по Y нет скорости")
+  }
+
+  @Test
+  fun `a fling is not stuck before it has moved`() {
+    val stuck = isCameraStuck(
+      camera = Offset(x = 0f, y = 0f),
+      direction = Offset(x = -0.8f, y = 0.6f),
+      range = GraphCameraRange(x = -400f..440f, y = -200f..200f)
+    )
+
+    assertTrue(!stuck, "нулевой кадр в начале затухания не должен читаться как упор")
+  }
+
   private fun placement(): GraphPlacement {
     return GraphPlacement(
       nodes = listOf(IntOffset.Zero),

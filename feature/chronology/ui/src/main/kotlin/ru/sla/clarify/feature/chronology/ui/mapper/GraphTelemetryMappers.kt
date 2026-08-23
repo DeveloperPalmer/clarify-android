@@ -22,7 +22,12 @@ internal fun GraphTelemetry.toPhaseRows(rates: GraphTelemetry): List<GraphDebugR
     phaseRow("layer", layerUpdates, rates.layerUpdates, FRAME_LIMIT),
     phaseRow("edges", edgeDraws, rates.edgeDraws, FRAME_LIMIT),
     phaseRow("backdrop", backdropDraws, rates.backdropDraws, FRAME_LIMIT),
-    phaseRow("pan", panEvents, rates.panEvents, FRAME_LIMIT)
+    phaseRow("pan", panEvents, rates.panEvents, FRAME_LIMIT),
+    phaseRow("fling", flingSteps, rates.flingSteps, FRAME_LIMIT),
+    // Предел здесь как у фаз покоя, а не как у покадровых: у затухания отказной кадр может быть
+    // только один на бросок, потому что следом идёт остановка. Устойчивый поток означает, что
+    // правило остановки сломано и анимация молотит в стенку.
+    phaseRow("stuck", flingStalls, rates.flingStalls, IDLE_LIMIT)
   )
 }
 

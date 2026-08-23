@@ -43,7 +43,9 @@ class GraphCanvasTelemetryTest {
       layerUpdates = 6,
       edgeDraws = 7,
       backdropDraws = 8,
-      panEvents = 9
+      panEvents = 9,
+      flingSteps = 10,
+      flingStalls = 11
     )
 
     val rates = ratesOf(GraphTelemetry.Empty, current, elapsedMillis = 1000L)

@@ -27,8 +27,10 @@ class GraphCanvasTelemetry {
   private var edgeDraws = 0
   private var backdropDraws = 0
   private var panEvents = 0
+  private var flingSteps = 0
+  private var flingStalls = 0
 
-  /** Последнее приращение жеста. */
+  /** Последнее приращение жеста. Затухание сюда не пишет: иначе строка вырождается в «0, 0». */
   var lastPan: Offset = Offset.Zero
     private set
 
@@ -70,6 +72,27 @@ class GraphCanvasTelemetry {
   }
 
   /**
+   * Кадр затухания.
+   *
+   * Кадры жеста сюда не попадают, и это не мелочь учёта: без разделения панель не отличит «идёт
+   * инерция» от «инерция молотит в стенку», а именно это она и заведена показывать. Отпечаток
+   * зависшего затухания — `fling` тикает при стоящем `layer`.
+   *
+   * Отказ считается только под затуханием: палец, прижатый к краю, отдаёт полсотни отказов в
+   * секунду совершенно законно, и красная строка на нём была бы ложной тревогой. У затухания же
+   * отказной кадр может быть только один на бросок — следующим действием идёт остановка.
+   *
+   * @param delta запрошенное приращение
+   * @param consumed то, что камера из него взяла
+   */
+  internal fun onFlingStep(delta: Offset, consumed: Offset) {
+    flingSteps++
+    if (consumed == Offset.Zero && delta != Offset.Zero) {
+      flingStalls++
+    }
+  }
+
+  /**
    * Снимок счётчиков.
    *
    * @return накопленные значения на момент вызова
@@ -84,7 +107,9 @@ class GraphCanvasTelemetry {
       layerUpdates = layerUpdates,
       edgeDraws = edgeDraws,
       backdropDraws = backdropDraws,
-      panEvents = panEvents
+      panEvents = panEvents,
+      flingSteps = flingSteps,
+      flingStalls = flingStalls
     )
   }
 }
@@ -117,7 +142,9 @@ internal fun ratesOf(
     layerUpdates = rate(previous.layerUpdates, current.layerUpdates),
     edgeDraws = rate(previous.edgeDraws, current.edgeDraws),
     backdropDraws = rate(previous.backdropDraws, current.backdropDraws),
-    panEvents = rate(previous.panEvents, current.panEvents)
+    panEvents = rate(previous.panEvents, current.panEvents),
+    flingSteps = rate(previous.flingSteps, current.flingSteps),
+    flingStalls = rate(previous.flingStalls, current.flingStalls)
   )
 }
 

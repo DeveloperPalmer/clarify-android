@@ -172,7 +172,7 @@ private fun GraphDebugColumn(
 }
 
 private const val TICK_MILLIS = 500L
-private const val VISIBLE_ROWS = 10
+private const val VISIBLE_ROWS = 11
 
 private val PANEL_PADDING = 12.dp
 private val PHASE_COLUMN_WIDTH = 148.dp

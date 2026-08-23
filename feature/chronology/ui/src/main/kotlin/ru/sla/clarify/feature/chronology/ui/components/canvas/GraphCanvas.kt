@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,9 +19,12 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
@@ -53,6 +57,11 @@ internal fun GraphCanvas(
   // экземпляр приходит через rememberUpdatedState. Иначе первое же входящее сообщение отменяло бы
   // драг под пальцем.
   val currentState by rememberUpdatedState(state)
+  // Спека тоже обновляется через rememberUpdatedState: `pointerInput(Unit)` не пересоздаётся, и
+  // смена плотности иначе заморозила бы внутри жеста кривую от старого экрана.
+  val currentDecay by rememberUpdatedState(AppTheme.motion.flingDecay<Float>())
+  // Затухание доигрывает после того, как корутина жеста уже отменена, поэтому scope нужен свой.
+  val flingScope = rememberCoroutineScope()
   val telemetry = state.telemetry
   SideEffect { telemetry.onCanvasComposition() }
   val edgeColor = AppTheme.colors.contentTertiary
@@ -67,10 +76,35 @@ internal fun GraphCanvas(
     modifier = modifier
       .clipToBounds()
       .pointerInput(Unit) {
-        detectDragGestures { change, dragAmount ->
-          change.consume()
-          currentState.pan(dragAmount)
-        }
+        // Трекер живёт со всем обработчиком: ключ `Unit` держит его между жестами, а сбрасывается
+        // он на каждом касании. Скорость foundation не считает — она отдаёт только up-событие.
+        val tracker = VelocityTracker()
+        detectDragGestures(
+          orientationLock = null,
+          onDragStart = { down, _, _ ->
+            currentState.stopFling()
+            tracker.resetTracking()
+            tracker.addPointerInputChange(down)
+          },
+          onDragEnd = { up ->
+            tracker.addPointerInputChange(up)
+            // Кламп по осям, как у платформы: у трекера полиномиальная подгонка, и дрожание перед
+            // отпусканием умеет отдать десятки тысяч px/s, а пролёт растёт как v^1.736.
+            val maximum = viewConfiguration.maximumFlingVelocity
+            currentState.fling(
+              scope = flingScope,
+              velocity = tracker.calculateVelocity(Velocity(maximum, maximum)),
+              decay = currentDecay
+            )
+          },
+          onDragCancel = { tracker.resetTracking() },
+          onDrag = { change, dragAmount ->
+            // `change.consume()` здесь не нужен: перегрузка с `orientationLock` консьюмит сама —
+            // и на пересечении слопа, и на каждом последующем событии.
+            tracker.addPointerInputChange(change)
+            currentState.pan(dragAmount)
+          }
+        )
       }
   ) {
     GraphBackdrop(
