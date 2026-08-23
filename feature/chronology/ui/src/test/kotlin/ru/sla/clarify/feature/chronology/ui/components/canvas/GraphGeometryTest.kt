@@ -1,9 +1,15 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
+import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 
 /**
  * Геометрия вынесена из композабла именно для того, чтобы её можно было проверить без Compose.
@@ -140,5 +146,99 @@ class GraphGeometryTest {
 
     assertEquals(0f, range.start, "пустое полотно не должно уезжать на пол-экрана")
     assertEquals(0f, range.endInclusive)
+  }
+
+  @Test
+  fun `an empty graph has nowhere to pan`() {
+    val range = cameraRangeOf(GraphPlacement.Empty, IntSize(width = 1000, height = 600))
+
+    assertEquals(GraphCameraRange.Empty, range)
+  }
+
+  @Test
+  fun `a lone lane leaves the vertical axis degenerate`() {
+    val range = cameraRangeOf(placement(), IntSize(width = 1000, height = 600))
+
+    assertEquals(-400f, range.x.start)
+    assertEquals(440f, range.x.endInclusive)
+    assertEquals(
+      range.y.start,
+      range.y.endInclusive,
+      "одна дорожка помещается по высоте целиком, и это норма экрана, а не краевой случай"
+    )
+  }
+
+  @Test
+  fun `consumed delta equals the request while the camera has room`() {
+    val step = panStepOf(
+      camera = Offset(x = 0f, y = 0f),
+      delta = Offset(x = 100f, y = 0f),
+      range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+    )
+
+    assertEquals(Offset(x = 100f, y = 0f), step.camera)
+    assertEquals(Offset(x = 100f, y = 0f), step.consumed)
+  }
+
+  @Test
+  fun `consumed delta is truncated at the boundary`() {
+    val step = panStepOf(
+      camera = Offset(x = -350f, y = 0f),
+      delta = Offset(x = -200f, y = 0f),
+      range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+    )
+
+    assertEquals(-400f, step.camera.x, "камера обязана встать ровно на границе")
+    assertEquals(-50f, step.consumed.x, "потреблено ровно то, что уместилось")
+  }
+
+  @Test
+  fun `consumed delta is zero on a saturated axis`() {
+    val step = panStepOf(
+      camera = Offset(x = -400f, y = 0f),
+      delta = Offset(x = -120f, y = 0f),
+      range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+    )
+
+    assertEquals(Offset.Zero, step.consumed, "нулевое потребление — это и есть сигнал упора")
+  }
+
+  @Test
+  fun `a degenerate range consumes nothing`() {
+    val step = panStepOf(
+      camera = Offset(x = 440f, y = 0f),
+      delta = Offset(x = 60f, y = 90f),
+      range = GraphCameraRange(x = 440f..440f, y = 0f..0f)
+    )
+
+    assertEquals(Offset(x = 440f, y = 0f), step.camera)
+    assertEquals(Offset.Zero, step.consumed)
+  }
+
+  @Test
+  fun `a rejected delta cannot be banked for later`() {
+    val range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+    val intoTheWall = panStepOf(camera = 440f.asCamera(), delta = Offset(x = -3840f, y = 0f), range)
+
+    val back = panStepOf(camera = intoTheWall.camera, delta = Offset(x = 100f, y = 0f), range)
+
+    assertEquals(
+      -300f,
+      back.camera.x,
+      "жест обратно двигает картинку сразу: отвергнутое за границей нигде не копится"
+    )
+  }
+
+  private fun placement(): GraphPlacement {
+    return GraphPlacement(
+      nodes = listOf(IntOffset.Zero),
+      bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 100f),
+      edges = emptyList(),
+      centreSpanX = 60f..900f
+    )
+  }
+
+  private fun Float.asCamera(): Offset {
+    return Offset(x = this, y = 0f)
   }
 }

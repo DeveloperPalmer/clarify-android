@@ -1,11 +1,14 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
+import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import kotlin.math.roundToInt
 
@@ -179,6 +182,49 @@ internal fun panRangeOf(min: Float, max: Float, viewport: Float): ClosedFloating
   }
   val centered = (viewport - (max - min)) / 2f - min
   return centered..centered
+}
+
+/**
+ * Где камере разрешено быть при этой раскладке и этом вьюпорте.
+ *
+ * Собирает обе оси в одну величину, чтобы «где камере можно быть» имело единственное определение:
+ * то же самое значение читается при показе, проверяется при записи и пере-накладывается после
+ * раскладки. Пока определение жило выражением внутри чтения, запись о нём не знала.
+ *
+ * @param placement последняя раскладка графа
+ * @param viewport размер видимой области
+ * @return диапазоны по обеим осям; вырожденные — норма, а не краевой случай
+ */
+internal fun cameraRangeOf(placement: GraphPlacement, viewport: IntSize): GraphCameraRange {
+  if (placement.isEmpty) {
+    return GraphCameraRange.Empty
+  }
+  return GraphCameraRange(
+    x = timelinePanRangeOf(placement.centreSpanX, viewport.width.toFloat()),
+    y = panRangeOf(placement.bounds.top, placement.bounds.bottom, viewport.height.toFloat())
+  )
+}
+
+/**
+ * Двигает камеру на [delta], не выпуская её за [range].
+ *
+ * Кламп стоит на записи, а не на чтении, и это не перестановка мест. Накапливая незажатый сдвиг,
+ * состояние банкует перерегулирование: упор в стенку на три тысячи пикселей превращается в мёртвую
+ * зону такой же величины, которая сама не рассасывается — жест обратно сначала выбирает её и только
+ * потом двигает картинку. Вылезает это не залипанием, а телепортом: следующая раскладка расширяет
+ * диапазон, и камера за кадр уезжает на величину банка.
+ *
+ * @param camera текущий сдвиг содержимого
+ * @param delta запрошенное приращение
+ * @param range где камере разрешено быть
+ * @return новый сдвиг и та часть [delta], которая в него уместилась
+ */
+internal fun panStepOf(camera: Offset, delta: Offset, range: GraphCameraRange): GraphPanStep {
+  val moved = Offset(
+    x = (camera.x + delta.x).coerceIn(range.x),
+    y = (camera.y + delta.y).coerceIn(range.y)
+  )
+  return GraphPanStep(camera = moved, consumed = moved - camera)
 }
 
 /**

@@ -6,10 +6,10 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
@@ -56,10 +56,10 @@ internal class GraphCanvasState {
 
   private var graphNodes by mutableStateOf(emptyList<GraphNode>())
 
-  // Сдвиг камеры без клампа: кламп накладывается на чтении. Хранить уже ограниченное значение
-  // означало бы потерять то, что понадобится для оттяжки за край и для затухания инерции.
-  private var rawOffsetX by mutableFloatStateOf(0f)
-  private var rawOffsetY by mutableFloatStateOf(0f)
+  // Камера хранится уже зажатой. Незажатый сдвиг заводился ради оттяжки за край и затухания —
+  // обоим он оказался не нужен: оттяжка держит своё состояние сама, а затуханию нужен признак
+  // отказа, а не банк перерегулирования. Банк же обходился дорого, см. KDoc `panStepOf`.
+  private var camera by mutableStateOf(Offset.Zero)
 
   // Флаг, а не сравнение сдвига с границей: значение, выведенное из сдвига, подписало бы читателя
   // на покадровые изменения.
@@ -81,19 +81,7 @@ internal class GraphCanvasState {
    * Пока камеру не двигали, она стоит вплотную к началу истории.
    */
   val offset: State<Offset> = derivedStateOf {
-    val bounds = placement.bounds
-    // По времени камера ходит от «первый узел в центре» до «последний узел в центре»; по дорожкам —
-    // от края до края, потому что вертикаль надо видеть целиком, а не наводить на неё.
-    val rangeX = if (placement.isEmpty) {
-      0f..0f
-    } else {
-      timelinePanRangeOf(placement.centreSpanX, viewport.width.toFloat())
-    }
-    val rangeY = panRangeOf(bounds.top, bounds.bottom, viewport.height.toFloat())
-    Offset(
-      x = if (isMoved) rawOffsetX.coerceIn(rangeX) else rangeX.endInclusive,
-      y = if (isMoved) rawOffsetY.coerceIn(rangeY) else rangeY.endInclusive
-    )
+    if (isMoved) camera else cameraRangeOf(placement, viewport).rest
   }
 
   /** Связи между соседними узлами каждой дорожки, в координатах полотна. */
@@ -116,18 +104,22 @@ internal class GraphCanvasState {
   /**
    * Двигает камеру на [delta].
    *
+   * Чтение [placement] и [viewport] здесь ничего не подписывает: вызывают отсюда из корутины жеста,
+   * а не из фазы Compose.
+   *
    * @param delta сдвиг в пикселях экрана
+   * @return часть [delta], которую камера отработала; меньше запрошенного — значит упёрлись
    */
-  fun pan(delta: Offset) {
-    if (!isMoved) {
-      val resting = offset.value
-      rawOffsetX = resting.x
-      rawOffsetY = resting.y
-      isMoved = true
-    }
-    rawOffsetX += delta.x
-    rawOffsetY += delta.y
+  fun pan(delta: Offset): Offset {
+    val range = cameraRangeOf(placement, viewport)
+    // Первое движение стартует от того места, где камера стояла в покое, а не от нуля: иначе
+    // полотно прыгнуло бы к началу координат под первым же пальцем.
+    val from = if (isMoved) camera else range.rest
+    val step = panStepOf(camera = from, delta = delta, range = range)
+    camera = step.camera
+    isMoved = true
     telemetry.onPan(delta)
+    return step.consumed
   }
 
   /**
@@ -166,6 +158,22 @@ internal class GraphCanvasState {
     }
     viewport = viewportSize
     placement = result
+    // Диапазон только что изменился, и хранимая камера обязана сойтись с ним в этом же кадре.
+    // Диапазон считается от аргументов, а не от полей выше, по той же причине, по которой узлы
+    // приходят параметром: измерение не должно читать состояние, которое само же и пишет.
+    //
+    // Камеру читаем без подписки, и это не оптимизация, а условие работоспособности. Обычное чтение
+    // здесь подписало бы **измерение** на камеру — а её пишет каждый кадр жеста и затухания, то есть
+    // полотно пере-измерялось бы всю дорогу вместо того, чтобы двигать слой. Панель показывала это
+    // как measure и placement, тикающие вдвое чаще кадров.
+    Snapshot.withoutReadObservation {
+      if (isMoved) {
+        val clamped = panStepOf(camera, Offset.Zero, cameraRangeOf(result, viewportSize)).camera
+        if (clamped != camera) {
+          camera = clamped
+        }
+      }
+    }
     telemetry.onMeasure()
     return result
   }
