@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.IntOffset
  * @param bounds объединение прямоугольников узлов: единственный источник истины о протяжённости
  * @param edges связи между соседними узлами дорожек
  * @param centreSpanX отрезок центров плашек по X, парный к [bounds] по краям
- * @param firstCentre центр первой плашки: то место, на которое камера наводится в покое
+ * @param centres центры плашек, в порядке модели: куда наводиться, решает камера, а не раскладка
  */
 @Immutable
 data class GraphPlacement(
@@ -23,7 +23,7 @@ data class GraphPlacement(
   val bounds: Rect,
   val edges: List<GraphEdge>,
   val centreSpanX: ClosedFloatingPointRange<Float>,
-  val firstCentre: Offset
+  val centres: List<Offset>
 ) {
 
   /** Пуст ли граф: панорамировать нечего. */
@@ -38,7 +38,7 @@ data class GraphPlacement(
       bounds = Rect.Zero,
       edges = emptyList(),
       centreSpanX = 0f..0f,
-      firstCentre = Offset.Zero
+      centres = emptyList()
     )
   }
 }

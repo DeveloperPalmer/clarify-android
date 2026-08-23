@@ -54,6 +54,27 @@ class GraphCanvasTelemetryTest {
   }
 
   @Test
+  fun `every counter is peaked, not just the first`() {
+    val loud = GraphTelemetry(
+      canvasCompositions = 1,
+      nodeCompositions = 2,
+      overlayCompositions = 3,
+      measurePasses = 4,
+      placementPasses = 5,
+      layerUpdates = 6,
+      edgeDraws = 7,
+      backdropDraws = 8,
+      panEvents = 9,
+      flingSteps = 10,
+      flingStalls = 11
+    )
+
+    val peaks = peaksOf(GraphTelemetry.Empty, loud)
+
+    assertEquals(loud, peaks, "счётчик, забытый в peaksOf, дал бы вечный ноль в строке пика")
+  }
+
+  @Test
   fun `a peak is held per phase, not per tick`() {
     val loudMeasure = GraphTelemetry.Empty.copy(measurePasses = 87, layerUpdates = 45)
     val loudLayer = GraphTelemetry.Empty.copy(measurePasses = 0, layerUpdates = 120)

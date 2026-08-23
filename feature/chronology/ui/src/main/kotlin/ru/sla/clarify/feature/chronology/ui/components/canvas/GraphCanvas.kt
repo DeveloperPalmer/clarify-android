@@ -2,10 +2,8 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -15,7 +13,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -29,7 +26,6 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
@@ -46,7 +42,9 @@ import ru.sla.clarify.uikit.theme.AppTheme
  *
  * @param state камера полотна и результат его последней раскладки
  * @param modifier модификатор корня полотна
- * @param debugOverlayVisible показывать ли отладочную панель камеры
+ * @param overlay что нарисовать поверх полотна: панель, линейка, что угодно. Слот получает
+ *   обработчик, которым содержимое объявляет занятую им зону, — жест, начатый в этой зоне, до
+ *   камеры не доходит. Полотно при этом не знает, что именно там лежит
  * @param node содержимое узла с данным `id`; обязано выпускать ровно один элемент раскладки —
  *   полотно ставит плашки по одной на узел и считает их по позиции, а не по идентификатору
  */
@@ -54,7 +52,7 @@ import ru.sla.clarify.uikit.theme.AppTheme
 internal fun GraphCanvas(
   state: GraphCanvasState,
   modifier: Modifier = Modifier,
-  debugOverlayVisible: Boolean = false,
+  overlay: @Composable BoxScope.(onBoundsChanged: (Rect) -> Unit) -> Unit = { },
   node: @Composable (id: GraphNode.Id) -> Unit
 ) {
   // Жест не пересоздаётся при смене состояния: ключ `Unit` держит обработчик живым, а свежий
@@ -66,9 +64,9 @@ internal fun GraphCanvas(
   val currentDecay by rememberUpdatedState(AppTheme.motion.flingDecay<Float>())
   // Затухание доигрывает после того, как корутина жеста уже отменена, поэтому scope нужен свой.
   val flingScope = rememberCoroutineScope()
-  // Где лежит отладочная панель, в координатах этого же Box: полотно ловит жест на всём вьюпорте и
-  // по этой зоне отличает палец, положенный на инструмент, от пальца, положенного на граф. Зону
-  // объявляет и снимает сама панель — полотно её не вычисляет и о её существовании не знает.
+  // Зона, занятая тем, что лежит поверх полотна, в координатах этого же Box: полотно ловит жест на
+  // всём вьюпорте и по ней отличает палец, положенный на инструмент, от пальца на графе. Зону
+  // объявляет и снимает само содержимое слота — полотно её не вычисляет и о её природе не знает.
   //
   // Поглощать жесты внутри панели нельзя, хотя это выглядело бы проще: `clickable` потребляет лишь
   // нажатие с отпусканием, а камеру двигает протяжка, и полотно принимает даже потреблённое
@@ -184,16 +182,6 @@ internal fun GraphCanvas(
       }
     }
 
-    if (debugOverlayVisible) {
-      GraphDebugOverlay(
-        modifier = Modifier
-          .align(Alignment.BottomCenter)
-          .navigationBarsPadding()
-          .fillMaxWidth()
-          .padding(12.dp),
-        state = state,
-        onBoundsChanged = { bounds -> panelBounds = bounds }
-      )
-    }
+    overlay { bounds -> panelBounds = bounds }
   }
 }

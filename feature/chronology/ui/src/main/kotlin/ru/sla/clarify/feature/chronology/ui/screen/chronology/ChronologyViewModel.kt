@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
 import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
+import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
 import ru.kode.plexus.core.FeatureConfigsManager
 import ru.sla.clarify.core.domain.toggle.AppFeature
@@ -17,8 +18,13 @@ class ChronologyViewModel @Inject constructor(
   private val featureConfigsManager: FeatureConfigsManager
 ) : ViewModel<ViewState, ViewIntents>() {
 
+  private val episodes = mockNodes()
+
   override fun buildMachine(): Machine<ViewState> = machine {
-    initial = ViewState() to null
+    initial = ViewState(
+      nodes = episodes.map { it.node },
+      episodeById = episodes.associateBy { it.node.id }
+    ) to null
 
     onEach(intent(ViewIntents::navigateBack)) {
       action { _, _, _ ->
@@ -30,12 +36,20 @@ class ChronologyViewModel @Inject constructor(
       transitionTo { state, branches -> state.copy(branches = branches) }
     }
 
-    onEach(intent(ViewIntents::toggleDebugOverlay)) {
-      transitionTo { state, _ -> state.copy(debugOverlayVisible = !state.debugOverlayVisible) }
+    configureDebugOverlay()
+  }
+
+  private fun MachineDsl<ViewState>.configureDebugOverlay() {
+    onEach(featureConfigsManager.isFeatureEnabledLive(AppFeature.ChronologyDebugOverlay)) {
+      transitionTo { state, enabled ->
+        state.copy(debugOverlayAvailable = enabled)
+      }
     }
 
-    onEach(featureConfigsManager.isFeatureEnabledLive(AppFeature.ChronologyDebugOverlay)) {
-      transitionTo { state, enabled -> state.copy(debugOverlayAvailable = enabled) }
+    onEach(intent(ViewIntents::toggleDebugOverlay)) {
+      transitionTo { state, _ ->
+        state.copy(debugOverlayVisible = !state.debugOverlayVisible)
+      }
     }
   }
 }

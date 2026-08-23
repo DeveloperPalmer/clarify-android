@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import kotlinx.coroutines.delay
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
+import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugSnapshot
 import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
 import ru.sla.clarify.feature.chronology.ui.mapper.toFactRows
 import ru.sla.clarify.feature.chronology.ui.mapper.toPhaseRows
@@ -79,12 +80,16 @@ internal fun GraphDebugOverlay(
   val info by state.debugInfo
   var totals by remember { mutableStateOf(GraphTelemetry.Empty) }
   var rates by remember { mutableStateOf(GraphTelemetry.Empty) }
-  // Пик и снимок полотна на момент пика. Хранятся вместе намеренно: пиковое число без того, где в
-  // этот миг стояла камера и сколько было узлов, отвечает «стало плохо», но не «на чём».
-  var peaks by remember { mutableStateOf(GraphTelemetry.Empty) }
-  var peakTotals by remember { mutableStateOf(GraphTelemetry.Empty) }
-  var peakInfo by remember { mutableStateOf(state.debugInfo.value) }
-  var peakPan by remember { mutableStateOf(telemetry.lastPan) }
+  var peak by remember {
+    mutableStateOf(
+      GraphDebugSnapshot(
+        rates = GraphTelemetry.Empty,
+        totals = GraphTelemetry.Empty,
+        info = state.debugInfo.value,
+        lastPan = telemetry.lastPan
+      )
+    )
+  }
 
   // Один снимок на такт и одна запись состояния — панель обновляется сама, не дожидаясь жеста,
   // и при этом не подписана ни на что из фаз измерения и рисования.
@@ -98,13 +103,15 @@ internal fun GraphDebugOverlay(
       totals = current
       val tickRates = ratesOf(previous, current, millis - previousMillis)
       rates = tickRates
-      val updatedPeaks = peaksOf(peaks, tickRates)
-      if (updatedPeaks != peaks) {
-        peaks = updatedPeaks
-        peakTotals = current
+      val updatedPeaks = peaksOf(peak.rates, tickRates)
+      if (updatedPeaks != peak.rates) {
         // Состояние читается из корутины, а не из композиции: подписки это не создаёт.
-        peakInfo = state.debugInfo.value
-        peakPan = telemetry.lastPan
+        peak = GraphDebugSnapshot(
+          rates = updatedPeaks,
+          totals = current,
+          info = state.debugInfo.value,
+          lastPan = telemetry.lastPan
+        )
       }
       previous = current
       previousMillis = millis
@@ -119,12 +126,12 @@ internal fun GraphDebugOverlay(
       tickMillis = TICK_MILLIS
     )
   }
-  val peakPhases = remember(peakTotals, peaks) {
-    peakTotals.toPhaseRows(peaks)
+  val peakPhases = remember(peak) {
+    peak.totals.toPhaseRows(peak.rates)
   }
-  val peakFacts = remember(peakInfo, peakPan) {
-    peakInfo.toFactRows(
-      lastPan = peakPan,
+  val peakFacts = remember(peak) {
+    peak.info.toFactRows(
+      lastPan = peak.lastPan,
       tickMillis = TICK_MILLIS
     )
   }

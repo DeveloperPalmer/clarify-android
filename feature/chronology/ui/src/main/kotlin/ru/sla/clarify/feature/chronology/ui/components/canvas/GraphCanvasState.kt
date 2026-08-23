@@ -22,9 +22,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
+import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
@@ -124,9 +126,9 @@ internal class GraphCanvasState {
    */
   fun pan(delta: Offset): Offset {
     stopFling()
-    val consumed = applyPan(delta)
+    val step = applyPan(delta, cameraRangeOf(placement, viewport))
     telemetry.onPan(delta)
-    return consumed
+    return step.consumed
   }
 
   /**
@@ -166,12 +168,14 @@ internal class GraphCanvasState {
         .animateDecay(decay) {
           // Анимируется путь вдоль броска, а не сама камера: камеру пере-зажимает раскладка, и
           // анимация, владеющая ею напрямую, разъехалась бы с этим на первом же входящем сообщении.
-          val step = direction.offsetOf(value - travelled)
-          travelled = value
-          telemetry.onFlingStep(step, applyPan(step))
           // Диапазон перечитывается каждый кадр, а не снимается на старте: пришло сообщение,
           // раскладка сузила границы — затухание узнает об этом сразу, а не доиграет мимо них.
-          if (isCameraStuck(camera, direction.vector, cameraRangeOf(placement, viewport))) {
+          // Один раз за кадр: шаг и признак упора обязаны судить по одним и тем же границам.
+          val range = cameraRangeOf(placement, viewport)
+          val delta = direction.offsetOf(value - travelled)
+          travelled = value
+          telemetry.onFlingStep(applyPan(delta, range).isRejected)
+          if (isCameraStuck(camera, direction.vector, range)) {
             cancelAnimation()
           }
         }
@@ -182,15 +186,14 @@ internal class GraphCanvasState {
     return cameraRestOf(placement, viewport, cameraRangeOf(placement, viewport))
   }
 
-  private fun applyPan(delta: Offset): Offset {
-    val range = cameraRangeOf(placement, viewport)
+  private fun applyPan(delta: Offset, range: GraphCameraRange): GraphPanStep {
     // Первое движение стартует от того места, где камера стояла в покое, а не от нуля: иначе
     // полотно прыгнуло бы к началу координат под первым же пальцем.
     val from = if (isMoved) camera else cameraRestOf(placement, viewport, range)
     val step = panStepOf(camera = from, delta = delta, range = range)
     camera = step.camera
     isMoved = true
-    return step.consumed
+    return step
   }
 
   /**

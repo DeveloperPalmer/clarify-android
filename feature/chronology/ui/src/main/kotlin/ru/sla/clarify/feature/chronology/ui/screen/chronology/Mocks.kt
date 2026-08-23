@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
 import androidx.compose.runtime.Immutable
 import ru.sla.clarify.feature.chronology.ui.components.node.DEFAULT_MY_SHARE
+import ru.sla.clarify.feature.chronology.ui.entity.EpisodeContent
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
@@ -201,10 +202,10 @@ internal fun mockNodes(): List<MockNode> {
 @Immutable
 internal data class MockNode(
   val node: GraphNode,
-  val time: String,
-  val count: Int,
-  val snippet: String,
-  val myShare: Float = DEFAULT_MY_SHARE,
-  val unreadCount: Long = 0,
-  val dim: Boolean = false
-)
+  override val time: String,
+  override val count: Int,
+  override val snippet: String,
+  override val myShare: Float = DEFAULT_MY_SHARE,
+  override val unreadCount: Long = 0,
+  override val dim: Boolean = false
+) : EpisodeContent

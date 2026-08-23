@@ -187,11 +187,12 @@ class GraphPlacementTest {
   }
 
   @Test
-  fun `the first centre is the first plate, not the leftmost`() {
-    val placement = placementOf(lanes = listOf(0, 0), gaps = listOf(12f, 40f))
+  fun `plate centres follow the model order`() {
+    val placement = placementOf(lanes = listOf(0, 1), gaps = listOf(12f, 40f))
 
-    assertEquals(12f + NODE_WIDTH / 2f, placement.firstCentre.x)
-    assertEquals(LANE_Y, placement.firstCentre.y, "центр плашки по вертикали — это её дорожка")
+    assertEquals(12f + NODE_WIDTH / 2f, placement.centres[0].x, "порядок центров — порядок модели")
+    assertEquals(LANE_Y, placement.centres[0].y, "центр плашки по вертикали — это её дорожка")
+    assertEquals(2 * LANE_Y, placement.centres[1].y)
   }
 
   private fun placementOf(lanes: List<Int>, gaps: List<Float>): GraphPlacement {

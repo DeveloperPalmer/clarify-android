@@ -82,12 +82,11 @@ class GraphCanvasTelemetry {
    * секунду совершенно законно, и красная строка на нём была бы ложной тревогой. У затухания же
    * отказной кадр может быть только один на бросок — следующим действием идёт остановка.
    *
-   * @param delta запрошенное приращение
-   * @param consumed то, что камера из него взяла
+   * @param rejected отвергла ли камера этот кадр целиком, см. `GraphPanStep.isRejected`
    */
-  internal fun onFlingStep(delta: Offset, consumed: Offset) {
+  internal fun onFlingStep(rejected: Boolean) {
     flingSteps++
-    if (consumed == Offset.Zero && delta != Offset.Zero) {
+    if (rejected) {
       flingStalls++
     }
   }
