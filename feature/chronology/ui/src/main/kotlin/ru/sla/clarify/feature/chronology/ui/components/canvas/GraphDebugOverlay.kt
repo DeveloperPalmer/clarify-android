@@ -2,13 +2,11 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
@@ -37,6 +35,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
 import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
 import ru.sla.clarify.feature.chronology.ui.mapper.toFactRows
 import ru.sla.clarify.feature.chronology.ui.mapper.toPhaseRows
+import ru.sla.clarify.uikit.component.AppPager
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.HSpacer
@@ -130,12 +129,8 @@ internal fun GraphDebugOverlay(
     )
   }
   val pagerState = rememberPagerState(pageCount = { 2 })
-  HorizontalPager(
+  AppPager(
     state = pagerState,
-    pageSpacing = 8.dp,
-    // Край соседней страницы обязан выглядывать: иначе о второй странице неоткуда узнать — панель
-    // без полосы прокрутки и без единого намёка, что её можно листать.
-    contentPadding = PaddingValues(end = PEEK_WIDTH),
     modifier = modifier.onGloballyPositioned { onBoundsChanged(it.boundsInParent()) }
   ) { page ->
     GraphDebugPage(
@@ -248,9 +243,6 @@ private const val TICK_MILLIS = 500L
 private const val VISIBLE_ROWS = 11
 
 private val PANEL_PADDING = 12.dp
-
-// Сколько соседней страницы видно с текущей: ровно чтобы прочитывалось как «дальше есть ещё».
-private val PEEK_WIDTH = 28.dp
 private val PHASE_COLUMN_WIDTH = 148.dp
 private val PHASE_LABEL_WIDTH = 68.dp
 private val FACT_LABEL_WIDTH = 60.dp
