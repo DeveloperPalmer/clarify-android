@@ -1,7 +1,9 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.DecayAnimationSpec
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDecay
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -15,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
@@ -22,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
@@ -98,7 +102,12 @@ internal class GraphCanvasState {
   private var marks by mutableStateOf(emptyList<GraphLaneMark>())
 
   // Обычное поле, не снапшот: за «идёт ли затухание» никто не рисует, а панель снимает по таймеру.
-  private var flingJob: Job? = null
+  //
+  // Job один на всё, что двигает камеру без пальца, — и на затухание, и на перелёт по кнопке. Свой
+  // job у каждого означал бы, что каждую точку, где палец отбирает камеру — касание, протяжка,
+  // пинч, скраб мини-карты, — придётся дублировать; одну из них забыли бы, и перелёт продолжал бы
+  // ехать под пальцем.
+  private var motionJob: Job? = null
 
   /** Счётчики проходов Compose по полотну: обычные поля, снимаются по таймеру. */
   val telemetry = GraphCanvasTelemetry()
@@ -212,7 +221,7 @@ internal class GraphCanvasState {
    * @return часть [delta], которую камера отработала; меньше запрошенного — значит упёрлись
    */
   fun pan(delta: Offset): Offset {
-    stopFling()
+    stopMotion()
     val step = applyPan(delta, cameraRangeOf(placement, viewport, cameraScale))
     telemetry.onPan(delta)
     return step.consumed
@@ -263,7 +272,7 @@ internal class GraphCanvasState {
    * @return новый масштаб, признак упора и сдвиг, получившийся под ним
    */
   fun zoom(focus: Offset, change: Float): GraphZoomStep {
-    stopFling()
+    stopMotion()
     val previous = cameraScale
     val updated = scaleStepOf(
       scale = previous,
@@ -315,7 +324,7 @@ internal class GraphCanvasState {
    * @param decay кривая затухания, см. `AppMotion.flingDecay`
    */
   fun fling(scope: CoroutineScope, velocity: Velocity, decay: DecayAnimationSpec<Float>) {
-    stopFling()
+    stopMotion()
     // Записывается до отбраковки: «жест не отдал скорости» и «скорости не хватило на бросок» — разные
     // неисправности, а по картинке они выглядят одинаково.
     telemetry.onRelease(velocity)
@@ -325,13 +334,43 @@ internal class GraphCanvasState {
     if (direction.magnitude.isNaN() || direction.magnitude <= 1f) {
       return
     }
-    flingJob = scope.launch { runFling(direction, decay) }
+    motionJob = scope.launch { runFling(direction, decay) }
   }
 
-  /** Обрывает инерцию: новое касание отбирает камеру у анимации. */
-  fun stopFling() {
-    flingJob?.cancel()
-    flingJob = null
+  /**
+   * Уводит камеру к [anchor] перелётом.
+   *
+   * Перелёт **всегда анимирован**, телепорта нет: камера, прыгнувшая через всю историю, не
+   * оставляет зрителю ничего, из чего понять, куда он попал (§11.1 брифа).
+   *
+   * Вместе с камерой возвращается к единице и масштаб — но только если было приближено, см.
+   * [flightScaleOf]. Обе величины идут по одной кривой и заканчиваются одновременно: разъехавшись,
+   * они дали бы прилёт в нужное место с чужим масштабом, а потом отдельный доводочный рывок.
+   *
+   * В отличие от инерции, системный множитель длительности анимаций здесь действует. Инерция — это
+   * физика жеста, и она обязана вести себя одинаково при любом значении «Animator duration scale»;
+   * перелёт по кнопке — обычный переход, и пользователь, отключивший анимации, вправе получить его
+   * мгновенным.
+   *
+   * Спека приходит снаружи по той же причине, что и у инерции: она берётся из темы, о которой
+   * держатель не знает, а тест подменяет её на ту, что не тянет за собой Android-фреймворк.
+   *
+   * @param scope scope, переживающий композицию кнопки
+   * @param spec кривая перелёта, см. `AppMotion.largeTween`
+   * @param anchor куда лететь
+   */
+  fun flyTo(scope: CoroutineScope, spec: AnimationSpec<Float>, anchor: GraphAnchor) {
+    stopMotion()
+    if (placement.isEmpty) {
+      return
+    }
+    motionJob = scope.launch { runFlight(spec, anchor) }
+  }
+
+  /** Обрывает движение камеры: новое касание отбирает её и у затухания, и у перелёта. */
+  fun stopMotion() {
+    motionJob?.cancel()
+    motionJob = null
   }
 
   private suspend fun runFling(direction: FlingDirection, decay: DecayAnimationSpec<Float>) {
@@ -354,6 +393,61 @@ internal class GraphCanvasState {
             cancelAnimation()
           }
         }
+    }
+  }
+
+  /**
+   * Ведёт камеру к якорю по кривой [spec].
+   *
+   * Анимируется **доля пути**, а не сама камера, ровно по той же причине, что и у затухания: камеру
+   * пере-зажимает раскладка, и анимация, владеющая ею напрямую, разъехалась бы с этим на первом же
+   * входящем сообщении. Цель и диапазон перечитываются каждый кадр — пришло сообщение, границы
+   * поехали, и перелёт доводит камеру туда, где якорь оказался **сейчас**, а не туда, где он был на
+   * старте.
+   *
+   * Шаг кладётся через [applyPan], а не записью камеры: оттуда берутся кламп на записи и параллакс
+   * фона на потреблённое. Фон обязан лететь вместе с графом, иначе узор во время перелёта стоит.
+   */
+  private suspend fun runFlight(spec: AnimationSpec<Float>, anchor: GraphAnchor) {
+    val startScale = cameraScale
+    val targetScale = flightScaleOf(startScale)
+    val start = cameraAt(cameraRangeOf(placement, viewport, startScale))
+    animate(initialValue = 0f, targetValue = 1f, animationSpec = spec) { fraction, _ ->
+      // Масштаб ложится первым, ровно как в пинче: он меняет и границы камеры, и то, куда попадёт
+      // якорь, — а цель перелёта обязана считаться под масштаб **этого** кадра, иначе последний
+      // кадр придёт с промахом на разницу масштабов.
+      cameraScale = startScale + (targetScale - startScale) * fraction
+      val range = cameraRangeOf(placement, viewport, cameraScale)
+      val target = cameraAimedAt(
+        point = anchorPointOf(anchor),
+        viewport = viewport,
+        range = range,
+        scale = cameraScale
+      )
+      // Шаг считается от того, где камера стоит **фактически**, а не от хранимого поля: пока её не
+      // двигали, поле лежит в нуле, а показывается покой — и перелёт с нетронутой камеры уехал бы
+      // на величину покоя первым же кадром.
+      val step = applyPan(lerp(start, target, fraction) - cameraAt(range), range)
+      // Тем же счётчиком, что и затухание: панель заведена ловить движение без пальца и зависание,
+      // а не различать, чем именно оно вызвано. Понадобится различать — счётчик заводится дёшево.
+      telemetry.onFlingStep(step.isRejected)
+    }
+  }
+
+  /**
+   * Точка полотна, к которой ведёт якорь.
+   *
+   * Крайние плашки берутся первой и последней по списку, а не поиском минимума: `leftOffsetsOf`
+   * накапливает смещения по порядку модели, поэтому координата X монотонна по индексу **по
+   * построению раскладки**, а не по свойствам данных. Перебор здесь дал бы тот же ответ дороже.
+   *
+   * @param anchor куда лететь
+   * @return центр плашки в координатах полотна
+   */
+  private fun anchorPointOf(anchor: GraphAnchor): Offset {
+    return when (anchor) {
+      GraphAnchor.Start -> placement.centres.first()
+      GraphAnchor.Front -> placement.centres.last()
     }
   }
 

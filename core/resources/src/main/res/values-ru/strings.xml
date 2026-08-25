@@ -182,4 +182,6 @@
     <string name="chronology_open">Хронология</string>
     <string name="chronology_placeholder">Хронология</string>
     <string name="chronology_minimap">Мини-карта переписки</string>
+    <string name="chronology_camera_start">К началу переписки</string>
+    <string name="chronology_camera_front">К текущему моменту</string>
 </resources>

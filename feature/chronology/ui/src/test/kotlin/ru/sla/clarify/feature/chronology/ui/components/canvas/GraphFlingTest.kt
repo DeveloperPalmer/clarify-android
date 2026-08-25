@@ -78,7 +78,7 @@ class GraphFlingTest {
     runCurrent()
 
     assertEquals(afterTouch, state.offset.value, "палец отбирает камеру у анимации")
-    state.stopFling()
+    state.stopMotion()
   }
 
   @Test
@@ -100,7 +100,7 @@ class GraphFlingTest {
     runCurrent()
 
     assertEquals(afterScrub, state.offset.value, "скраб отбирает камеру у затухания")
-    state.stopFling()
+    state.stopMotion()
   }
 
   @Test

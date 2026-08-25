@@ -192,4 +192,6 @@
     <string name="chronology_open">Chronology</string>
     <string name="chronology_placeholder">Chronology</string>
     <string name="chronology_minimap">Conversation minimap</string>
+    <string name="chronology_camera_start">To the start of the conversation</string>
+    <string name="chronology_camera_front">To the present moment</string>
 </resources>

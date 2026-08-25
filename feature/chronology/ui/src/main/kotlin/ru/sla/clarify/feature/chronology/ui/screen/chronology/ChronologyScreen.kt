@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -19,11 +20,13 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
+import ru.sla.clarify.feature.chronology.ui.components.canvas.CameraButtons
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphCanvas
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphDebugOverlay
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphMinimap
 import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberGraphCanvasState
 import ru.sla.clarify.feature.chronology.ui.components.node.EpisodeNode
+import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
@@ -47,6 +50,10 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
       val minimapLabel = remember(episodeById, canvasState) {
         derivedStateOf { canvasState.centralNode.value?.let { episodeById[it]?.time } }
       }
+      // Перелёт доигрывает после того, как кнопка могла уйти с экрана вместе с панелью, поэтому
+      // scope берётся у экрана, а не у неё. Кривая — из темы: 400 мс, затухание без разгона.
+      val flightScope = rememberCoroutineScope()
+      val flightSpec = AppTheme.motion.largeTween<Float>()
       Box(modifier = Modifier.fillMaxSize()) {
         GraphCanvas(
           modifier = Modifier.fillMaxSize(),
@@ -80,6 +87,14 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                   onBoundsChanged = onBoundsChanged
                 )
               }
+              CameraButtons(
+                // Кнопки стоят в той же колонке, что панель и мини-карта, поэтому отступ «над
+                // мини-картой» из §11.1 получается сам и не зависит от её высоты числом.
+                modifier = Modifier.align(Alignment.End),
+                onStart = { canvasState.flyTo(flightScope, flightSpec, GraphAnchor.Start) },
+                onFront = { canvasState.flyTo(flightScope, flightSpec, GraphAnchor.Front) },
+                onBoundsChanged = onBoundsChanged
+              )
               GraphMinimap(
                 span = canvasState.viewportSpan,
                 marks = canvasState.laneMarks,

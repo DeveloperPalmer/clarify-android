@@ -111,7 +111,7 @@ internal fun GraphCanvas(
             val inRoot = position + currentCanvasOrigin
             overlayZones.values.any { zone -> zone.contains(inRoot) }
           },
-          onTouch = { currentState.stopFling() },
+          onTouch = { currentState.stopMotion() },
           onTransform = { focus, pan, zoom ->
             // Масштаб ложится первым: он меняет и границы камеры, и то, куда попадёт та же точка
             // экрана, — а сдвиг центроида поверх этого уже обычный шаг протяжки. Два клампа за

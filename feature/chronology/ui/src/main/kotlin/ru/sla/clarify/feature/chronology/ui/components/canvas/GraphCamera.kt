@@ -194,12 +194,43 @@ internal fun cameraRestOf(
   if (placement.isEmpty) {
     return Offset.Zero
   }
-  val first = placement.centres.first() * scale
-  val centred = Offset(
-    x = viewport.width / 2f - first.x,
-    y = viewport.height / 2f - first.y
+  return cameraAimedAt(
+    point = placement.centres.first(),
+    viewport = viewport,
+    range = range,
+    scale = scale
   )
-  return range.clamp(centred)
+}
+
+/**
+ * Камера, при которой [point] полотна оказывается в центре экрана.
+ *
+ * Одно определение наведения на всех: по нему стоит камера в покое, к нему же приводит перелёт по
+ * кнопке. Второе определение того же движения разъехалось бы с первым при первой правке клампа —
+ * и разъехалось бы молча, потому что оба выглядят как «поставить точку в середину».
+ *
+ * Наведение зажимается диапазоном: у короткой истории центр экрана недостижим, и камера встаёт
+ * настолько близко к нему, насколько содержимое позволяет.
+ *
+ * @param point точка полотна в его собственных координатах
+ * @param viewport размер видимой области
+ * @param range где камере разрешено быть
+ * @param scale масштаб содержимого
+ * @return положение камеры, зажатое диапазоном
+ */
+internal fun cameraAimedAt(
+  point: Offset,
+  viewport: IntSize,
+  range: GraphCameraRange,
+  scale: Float
+): Offset {
+  val scaled = point * scale
+  return range.clamp(
+    Offset(
+      x = viewport.width / 2f - scaled.x,
+      y = viewport.height / 2f - scaled.y
+    )
+  )
 }
 
 /**
@@ -226,6 +257,21 @@ internal fun panStepOf(camera: Offset, delta: Offset, range: GraphCameraRange): 
     camera = moved,
     consumed = moved - camera
   )
+}
+
+/**
+ * Масштаб, к которому приводит перелёт по кнопке камеры.
+ *
+ * Возвращает к единице только **сверху вниз**. Приблизившийся видел кусок истории вблизи, и перелёт
+ * через всю переписку на таком масштабе высаживает его в такой же кусок, только другой, — сбрасывать
+ * зум тут и значит «показать, куда прилетели». Отдалившийся, наоборот, смотрит обзорно намеренно, и
+ * приближать его насильно нельзя: он не просил менять масштаб, он просил сменить место.
+ *
+ * @param scale масштаб на момент нажатия
+ * @return единица, если было приближено; тот же масштаб в остальных случаях
+ */
+internal fun flightScaleOf(scale: Float): Float {
+  return if (scale > 1f) 1f else scale
 }
 
 /**
