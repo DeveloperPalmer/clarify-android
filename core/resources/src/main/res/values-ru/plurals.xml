@@ -18,4 +18,10 @@
         <item quantity="many">%d сообщений</item>
         <item quantity="other">%d сообщения</item>
     </plurals>
+    <plurals name="chronology_branch_status_abandoned">
+        <item quantity="one">Нет сообщений %d день</item>
+        <item quantity="few">Нет сообщений %d дня</item>
+        <item quantity="many">Нет сообщений %d дней</item>
+        <item quantity="other">Нет сообщений %d дня</item>
+    </plurals>
 </resources>

@@ -19,18 +19,12 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.component.UnreadCountBadge
@@ -67,7 +61,7 @@ internal fun EpisodeNode(
       .graphicsLayer { alpha = if (dim) 0.6f else 1f }
       // Гало рисуется за пределами плашки и намеренно не влияет на раскладку: иначе непрочитанный
       // узел был бы шире прочитанного и сдвигал бы соседей по дорожке.
-      .drawBehind { if (unread) drawUnreadHalo(accentColor) }
+      .drawBehind { if (unread) drawUnreadHalo(accentColor, 16.dp) }
       .width(200.dp)
       .defaultMinSize(minHeight = 72.dp)
       .surface(
@@ -159,21 +153,7 @@ private fun RepliesShareBar(
   }
 }
 
-private fun DrawScope.drawUnreadHalo(color: Color) {
-  val spread = HALO_WIDTH.toPx()
-  drawRoundRect(
-    color = color.copy(alpha = 0.16f),
-    topLeft = Offset(-spread, -spread),
-    size = Size(size.width + spread * 2, size.height + spread * 2),
-    // Скругление плашки плюс ширина гало: иначе кольцо срезало бы углы карточки.
-    cornerRadius = CornerRadius((16.dp + HALO_WIDTH).toPx())
-  )
-}
-
 internal const val DEFAULT_MY_SHARE = 0.5f
-
-/** Насколько гало выступает за плашку. Читается и при отрисовке, и в отступе превью. */
-private val HALO_WIDTH: Dp = 6.dp
 
 @Preview
 @Composable
@@ -200,7 +180,7 @@ private fun EpisodeNodePreviewDark(
 @Composable
 private fun EpisodeNodePreviewContent(episode: EpisodeNodePreview) {
   EpisodeNode(
-    modifier = Modifier.padding(HALO_WIDTH),
+    modifier = Modifier.padding(UNREAD_HALO_WIDTH),
     time = episode.time,
     count = episode.count,
     snippet = episode.snippet,
