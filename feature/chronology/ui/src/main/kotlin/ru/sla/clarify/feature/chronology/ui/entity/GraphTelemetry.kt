@@ -17,7 +17,8 @@ import androidx.compose.runtime.Immutable
  * @param layerUpdates пересчёты свойств слоя камеры
  * @param edgeDraws перерисовки связей
  * @param backdropDraws перерисовки фона
- * @param panEvents события жеста, дошедшие до камеры
+ * @param panEvents события протяжки, дошедшие до камеры
+ * @param zoomEvents события пинча, дошедшие до камеры
  * @param flingSteps кадры затухания, дошедшие до камеры
  * @param flingStalls кадры затухания, на которых камера не взяла ничего
  */
@@ -32,11 +33,12 @@ data class GraphTelemetry(
   val edgeDraws: Int,
   val backdropDraws: Int,
   val panEvents: Int,
+  val zoomEvents: Int,
   val flingSteps: Int,
   val flingStalls: Int
 ) {
 
   companion object {
-    val Empty = GraphTelemetry(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    val Empty = GraphTelemetry(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   }
 }

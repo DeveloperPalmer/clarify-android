@@ -15,6 +15,9 @@ import androidx.compose.ui.unit.IntOffset
  * @param bounds объединение прямоугольников узлов: единственный источник истины о протяжённости
  * @param edges связи между соседними узлами дорожек
  * @param centreSpanX отрезок центров плашек по X, парный к [bounds] по краям
+ * @param centreSpanY отрезок центров плашек по Y, парный к [centreSpanX]: камера наводится на центры
+ *   по обеим осям, и вторая ось не может обойтись перебором [centres] — диапазон спрашивают на
+ *   каждом кадре жеста, а проход по всем узлам на кадр здесь и избегают
  * @param centres центры плашек, в порядке модели: куда наводиться, решает камера, а не раскладка
  */
 @Immutable
@@ -23,6 +26,7 @@ data class GraphPlacement(
   val bounds: Rect,
   val edges: List<GraphEdge>,
   val centreSpanX: ClosedFloatingPointRange<Float>,
+  val centreSpanY: ClosedFloatingPointRange<Float>,
   val centres: List<Offset>
 ) {
 
@@ -38,6 +42,7 @@ data class GraphPlacement(
       bounds = Rect.Zero,
       edges = emptyList(),
       centreSpanX = 0f..0f,
+      centreSpanY = 0f..0f,
       centres = emptyList()
     )
   }

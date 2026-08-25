@@ -28,6 +28,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
+import ru.sla.clarify.feature.chronology.ui.entity.GraphZoomStep
 import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
 /**
@@ -76,6 +77,15 @@ internal class GraphCanvasState {
   // на покадровые изменения.
   private var isMoved by mutableStateOf(false)
 
+  // Масштаб держится отдельным числом, а не парой с камерой, и это не экономия строк. Сдвиг
+  // зажимается диапазоном содержимого, масштаб — своими пределами, и порядок между ними
+  // существенен; один тип на обе величины приглашает «зажать камеру» одним вызовом и не заметить,
+  // что половина осталась незажатой.
+  private var cameraScale by mutableStateOf(1f)
+
+  // Камера фона: живёт своей жизнью, границ не знает вовсе — узор бесконечен, зажимать его нечем.
+  private var backdrop by mutableStateOf(Offset.Zero)
+
   private var viewport by mutableStateOf(IntSize.Zero)
   private var placement by mutableStateOf(GraphPlacement.Empty)
 
@@ -98,6 +108,31 @@ internal class GraphCanvasState {
     if (isMoved) camera else restingCamera()
   }
 
+  /**
+   * Масштаб содержимого: `экран = полотно · scale + камера`.
+   *
+   * Отдаётся наружу отдельным [State] не ради полноты API: уровень детализации выводится из
+   * масштаба порогами с гистерезисом, и выводить его обязан тот, кто рисует, — прочитанное здесь
+   * значение подписало бы на покадровые изменения зума весь экран.
+   */
+  val scale: State<Float> = derivedStateOf { cameraScale }
+
+  /**
+   * Сдвиг фона: своя камера, отстающая от графа на [BACKDROP_PARALLAX].
+   *
+   * Отдельная величина, а не камера графа, умноженная на коэффициент. Умножение верно, пока масштаб
+   * единичный, и разваливается на первом же пинче: камера графа при зуме уезжает на
+   * `(focus − camera) · (1 − zoom)`, и фон, привязанный к ней множителем, пролетает треть этого
+   * пути — вдали от начала истории это тысячи пикселей за жест.
+   *
+   * Двигается на **потреблённое**, а не на запрошенное: у стенки граф стоит, и фон обязан стоять
+   * вместе с ним, иначе на упоре узор продолжает ползти под неподвижными плашками.
+   */
+  val backdropOffset: State<Offset> = derivedStateOf { backdrop }
+
+  /** Масштаб фона, см. [backdropScaleOf]. */
+  val backdropScale: State<Float> = derivedStateOf { backdropScaleOf(cameraScale) }
+
   /** Связи между соседними узлами каждой дорожки, в координатах полотна. */
   val edges: State<List<GraphEdge>> = derivedStateOf { placement.edges }
 
@@ -108,6 +143,7 @@ internal class GraphCanvasState {
       viewportHeight = viewport.height,
       contentBounds = placement.bounds,
       camera = offset.value,
+      scale = cameraScale,
       isCameraMoved = isMoved,
       centreSpanX = placement.centreSpanX,
       nodeCount = graphNodes.size,
@@ -126,9 +162,63 @@ internal class GraphCanvasState {
    */
   fun pan(delta: Offset): Offset {
     stopFling()
-    val step = applyPan(delta, cameraRangeOf(placement, viewport))
+    val step = applyPan(delta, cameraRangeOf(placement, viewport, cameraScale))
     telemetry.onPan(delta)
     return step.consumed
+  }
+
+  /**
+   * Меняет масштаб, удерживая точку под [focus] на месте.
+   *
+   * Порядок внутри — не деталь реализации, а само решение. Сначала зажимается масштаб, потом под
+   * зажатый пересчитывается камера, и только потом камера зажимается диапазоном **нового**
+   * масштаба. Посчитав камеру под запрошенный масштаб, полотно уезжало бы из-под пальцев каждый
+   * раз, когда зум упирается в границу.
+   *
+   * Пределы приходят литералом, а не константой: значение читается ровно здесь, а рядом с числом
+   * видно, к чему оно применено.
+   *
+   * @param focus точка экрана, которую жест держит на месте
+   * @param change множитель масштаба, пришедший от жеста
+   * @return новый масштаб, признак упора и сдвиг, получившийся под ним
+   */
+  fun zoom(focus: Offset, change: Float): GraphZoomStep {
+    stopFling()
+    val previous = cameraScale
+    val updated = scaleStepOf(
+      scale = previous,
+      change = change,
+      // §11.2 брифа: 0.4× … 2.5×.
+      range = 0.4f..2.5f
+    )
+    val zoomed = zoomedCameraOf(
+      camera = cameraAt(cameraRangeOf(placement, viewport, previous)),
+      focus = focus,
+      from = previous,
+      to = updated
+    )
+    // Фон масштабируется вокруг того же фокуса, но своим масштабом: так его точка под пальцами
+    // остаётся под пальцами, а глубина сохраняется — узор укрупняется втрое медленнее графа.
+    backdrop = zoomedCameraOf(
+      camera = backdrop,
+      focus = focus,
+      from = backdropScaleOf(previous),
+      to = backdropScaleOf(updated)
+    )
+    cameraScale = updated
+    val step = panStepOf(
+      camera = zoomed,
+      delta = Offset.Zero,
+      range = cameraRangeOf(placement, viewport, updated)
+    )
+    camera = step.camera
+    isMoved = true
+    telemetry.onZoom()
+    return GraphZoomStep(
+      requestedScale = previous * change,
+      scale = updated,
+      camera = step.camera
+    )
   }
 
   /**
@@ -146,6 +236,9 @@ internal class GraphCanvasState {
    */
   fun fling(scope: CoroutineScope, velocity: Velocity, decay: DecayAnimationSpec<Float>) {
     stopFling()
+    // Записывается до отбраковки: «жест не отдал скорости» и «скорости не хватило на бросок» — разные
+    // неисправности, а по картинке они выглядят одинаково.
+    telemetry.onRelease(velocity)
     val direction = FlingDirection(velocity)
     // Барьер платформенный и он не про UX: кривая берёт логарифм скорости и ниже единицы отдаёт
     // NaN. Слабый бросок гасить не нужно — она сама делает его невидимым, 137 dp/s пролетают 3 px.
@@ -171,7 +264,9 @@ internal class GraphCanvasState {
           // Диапазон перечитывается каждый кадр, а не снимается на старте: пришло сообщение,
           // раскладка сузила границы — затухание узнает об этом сразу, а не доиграет мимо них.
           // Один раз за кадр: шаг и признак упора обязаны судить по одним и тем же границам.
-          val range = cameraRangeOf(placement, viewport)
+          // Масштаб читается тут же каждый кадр по той же причине, что и диапазон: пинч оборвал бы
+          // затухание касанием, но раскладка меняет границы и без пальца на экране.
+          val range = cameraRangeOf(placement, viewport, cameraScale)
           val delta = direction.offsetOf(value - travelled)
           travelled = value
           telemetry.onFlingStep(applyPan(delta, range).isRejected)
@@ -183,15 +278,37 @@ internal class GraphCanvasState {
   }
 
   private fun restingCamera(): Offset {
-    return cameraRestOf(placement, viewport, cameraRangeOf(placement, viewport))
+    return cameraRestOf(
+      placement = placement,
+      viewport = viewport,
+      range = cameraRangeOf(placement, viewport, cameraScale),
+      scale = cameraScale
+    )
+  }
+
+  /**
+   * Откуда стартует движение камеры.
+   *
+   * Первое движение стартует от того места, где камера стояла в покое, а не от нуля: иначе полотно
+   * прыгнуло бы к началу координат под первым же пальцем. Определение одно на протяжку и на пинч —
+   * второе разъехалось бы с этим при первой правке покоя.
+   *
+   * @param range где камере разрешено быть при текущем масштабе
+   * @return сдвиг, от которого считается шаг
+   */
+  private fun cameraAt(range: GraphCameraRange): Offset {
+    return if (isMoved) {
+      camera
+    } else {
+      cameraRestOf(placement = placement, viewport = viewport, range = range, scale = cameraScale)
+    }
   }
 
   private fun applyPan(delta: Offset, range: GraphCameraRange): GraphPanStep {
-    // Первое движение стартует от того места, где камера стояла в покое, а не от нуля: иначе
-    // полотно прыгнуло бы к началу координат под первым же пальцем.
-    val from = if (isMoved) camera else cameraRestOf(placement, viewport, range)
-    val step = panStepOf(camera = from, delta = delta, range = range)
+    val step = panStepOf(camera = cameraAt(range), delta = delta, range = range)
     camera = step.camera
+    // Фон двигает и жест, и затухание — оба приходят сюда, и второго места для этого правила нет.
+    backdrop += step.consumed * BACKDROP_PARALLAX
     isMoved = true
     return step
   }
@@ -245,13 +362,15 @@ internal class GraphCanvasState {
     // Диапазон считается от аргументов, а не от полей выше, по той же причине, по которой узлы
     // приходят параметром: измерение не должно читать состояние, которое само же и пишет.
     //
-    // Камеру читаем без подписки, и это не оптимизация, а условие работоспособности. Обычное чтение
-    // здесь подписало бы **измерение** на камеру — а её пишет каждый кадр жеста и затухания, то есть
-    // полотно пере-измерялось бы всю дорогу вместо того, чтобы двигать слой. Панель показывала это
-    // как measure и placement, тикающие вдвое чаще кадров.
+    // Камеру и масштаб читаем без подписки, и это не оптимизация, а условие работоспособности.
+    // Обычное чтение здесь подписало бы **измерение** на камеру — а её пишет каждый кадр жеста и
+    // затухания, то есть полотно пере-измерялось бы всю дорогу вместо того, чтобы двигать слой.
+    // Панель показывала это как measure и placement, тикающие вдвое чаще кадров. С масштабом ровно
+    // так же: его пишет каждый кадр пинча.
     Snapshot.withoutReadObservation {
       if (isMoved) {
-        val clamped = panStepOf(camera, Offset.Zero, cameraRangeOf(result, viewportSize)).camera
+        val range = cameraRangeOf(result, viewportSize, cameraScale)
+        val clamped = panStepOf(camera, Offset.Zero, range).camera
         if (clamped != camera) {
           camera = clamped
         }

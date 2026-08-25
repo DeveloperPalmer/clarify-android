@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Velocity
 
 /**
  * Худший такт за смену: пиковые скорости фаз и полотно в тот момент.
@@ -16,11 +17,13 @@ import androidx.compose.ui.geometry.Offset
  * @param totals накопленные счётчики на момент пика
  * @param info камера и раскладка на момент пика
  * @param lastPan последнее приращение жеста на момент пика
+ * @param lastFling скорость последнего отпускания на момент пика
  */
 @Immutable
 data class GraphDebugSnapshot(
   val rates: GraphTelemetry,
   val totals: GraphTelemetry,
   val info: GraphDebugInfo,
-  val lastPan: Offset
+  val lastPan: Offset,
+  val lastFling: Velocity
 )

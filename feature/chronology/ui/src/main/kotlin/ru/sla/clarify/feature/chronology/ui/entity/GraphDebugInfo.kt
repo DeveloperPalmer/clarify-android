@@ -14,6 +14,7 @@ import androidx.compose.ui.geometry.Rect
  * @param viewportHeight высота видимой области
  * @param contentBounds границы содержимого в координатах полотна
  * @param camera сдвиг содержимого после клампа
+ * @param scale масштаб содержимого: `экран = полотно · scale + камера`
  * @param isCameraMoved двигали ли камеру хоть раз
  * @param centreSpanX отрезок центров плашек, по которому ходит камера
  * @param nodeCount число узлов в модели
@@ -25,6 +26,7 @@ data class GraphDebugInfo(
   val viewportHeight: Int,
   val contentBounds: Rect,
   val camera: Offset,
+  val scale: Float,
   val isCameraMoved: Boolean,
   val centreSpanX: ClosedFloatingPointRange<Float>,
   val nodeCount: Int,

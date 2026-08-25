@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Velocity
 import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
 
 /**
@@ -27,11 +28,22 @@ class GraphCanvasTelemetry {
   private var edgeDraws = 0
   private var backdropDraws = 0
   private var panEvents = 0
+  private var zoomEvents = 0
   private var flingSteps = 0
   private var flingStalls = 0
 
   /** Последнее приращение жеста. Затухание сюда не пишет: иначе строка вырождается в «0, 0». */
   var lastPan: Offset = Offset.Zero
+    private set
+
+  /**
+   * Скорость последнего отпускания — та, с которой бросок ушёл в затухание.
+   *
+   * Пишется до того, как бросок отбракуют по слабости: «инерции нет» и «инерция не долетела» — разные
+   * неисправности, и различает их только это число. Нулевая скорость при живом жесте означает, что
+   * трекер остался без данных, а не что бросок был вялым.
+   */
+  var lastFling: Velocity = Velocity.Zero
     private set
 
   internal fun onCanvasComposition() {
@@ -72,6 +84,27 @@ class GraphCanvasTelemetry {
   }
 
   /**
+   * Кадр пинча.
+   *
+   * Считается отдельно от кадров протяжки, хотя обе фазы двигают одну камеру: без разделения
+   * «пользователь тащит граф» и «пользователь его масштабирует» на панели неотличимы, а главную
+   * проверку зума — что измерение при нём стоит — тогда не на чем построить. Отпечаток исправного
+   * пинча: `zoom` и `layer` идут покадрово, `measure` и `placement` стоят.
+   */
+  internal fun onZoom() {
+    zoomEvents++
+  }
+
+  /**
+   * Отпускание: с какой скоростью жест отдал камеру инерции.
+   *
+   * @param velocity скорость в пикселях в секунду
+   */
+  internal fun onRelease(velocity: Velocity) {
+    lastFling = velocity
+  }
+
+  /**
    * Кадр затухания.
    *
    * Кадры жеста сюда не попадают, и это не мелочь учёта: без разделения панель не отличит «идёт
@@ -107,6 +140,7 @@ class GraphCanvasTelemetry {
       edgeDraws = edgeDraws,
       backdropDraws = backdropDraws,
       panEvents = panEvents,
+      zoomEvents = zoomEvents,
       flingSteps = flingSteps,
       flingStalls = flingStalls
     )
@@ -142,6 +176,7 @@ internal fun ratesOf(
     edgeDraws = rate(previous.edgeDraws, current.edgeDraws),
     backdropDraws = rate(previous.backdropDraws, current.backdropDraws),
     panEvents = rate(previous.panEvents, current.panEvents),
+    zoomEvents = rate(previous.zoomEvents, current.zoomEvents),
     flingSteps = rate(previous.flingSteps, current.flingSteps),
     flingStalls = rate(previous.flingStalls, current.flingStalls)
   )
@@ -169,6 +204,7 @@ internal fun peaksOf(peaks: GraphTelemetry, rates: GraphTelemetry): GraphTelemet
     edgeDraws = maxOf(peaks.edgeDraws, rates.edgeDraws),
     backdropDraws = maxOf(peaks.backdropDraws, rates.backdropDraws),
     panEvents = maxOf(peaks.panEvents, rates.panEvents),
+    zoomEvents = maxOf(peaks.zoomEvents, rates.zoomEvents),
     flingSteps = maxOf(peaks.flingSteps, rates.flingSteps),
     flingStalls = maxOf(peaks.flingStalls, rates.flingStalls)
   )

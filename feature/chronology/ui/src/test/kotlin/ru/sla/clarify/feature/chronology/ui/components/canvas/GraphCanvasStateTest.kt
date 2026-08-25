@@ -51,13 +51,19 @@ class GraphCanvasStateTest {
     state.place(count = 3)
     state.pan(Offset(x = -4000f, y = 0f))
 
-    // Ветка исчезла: узлов стало меньше, диапазон сузился до одной точки.
+    // Ветка исчезла: узлов стало меньше, диапазон сузился.
     val narrowed = state.place(count = 1)
 
+    val range = cameraRangeOf(narrowed, VIEWPORT, scale = 1f)
     assertEquals(
-      restOf(narrowed),
+      range.clamp(state.offset.value),
       state.offset.value,
       "камера обязана сойтись с новым диапазоном в том же кадре, а не уехать телепортом позже"
+    )
+    assertEquals(
+      100f,
+      state.pan(Offset(x = 100f, y = 0f)).x,
+      "и следующий жест обязан двигать картинку сразу, а не выбирать накопленный банк"
     )
   }
 
@@ -107,6 +113,127 @@ class GraphCanvasStateTest {
     )
   }
 
+  @Test
+  fun `a pinch keeps the focused point under the fingers`() {
+    val state = GraphCanvasState()
+    state.place(count = 6)
+    // Камеру уводят с покоя намеренно: в покое она стоит у самой границы диапазона, и кламп там
+    // отобрал бы у пинча ровно то, что проверяет этот тест.
+    state.pan(Offset(x = -500f, y = 0f))
+    val focus = Offset(x = 400f, y = 300f)
+    val before = state.offset.value
+    // Точка полотна, оказавшаяся под пальцами до пинча: масштаб ещё единичный.
+    val point = focus - before
+
+    state.zoom(focus = focus, change = 1.8f)
+
+    val after = point * state.scale.value + state.offset.value
+    assertEquals(focus.x, after.x, 0.5f, "пинч обязан приближать к пальцам, а не к углу экрана")
+    assertEquals(focus.y, after.y, 0.5f)
+  }
+
+  @Test
+  fun `a pinch out re-clamps the camera in the same step`() {
+    val state = GraphCanvasState()
+    state.place(count = 6)
+    state.pan(Offset(x = -4000f, y = 0f))
+
+    val step = state.zoom(focus = Offset(x = 500f, y = 300f), change = 0.5f)
+
+    assertEquals(
+      step.camera,
+      state.offset.value,
+      "камера обязана сойтись с диапазоном нового масштаба в том же шаге, а не всплыть телепортом"
+    )
+    assertTrue(
+      state.offset.value.x >= -4000f,
+      "уменьшив содержимое, полотно не может оставить камеру там, где её больше нет"
+    )
+  }
+
+  @Test
+  fun `the scale cannot leave the brief's range`() {
+    val state = GraphCanvasState()
+    state.place(count = 6)
+    val focus = Offset(x = 500f, y = 300f)
+
+    state.zoom(focus = focus, change = 100f)
+    val zoomedIn = state.zoom(focus = focus, change = 2f)
+
+    assertEquals(2.5f, zoomedIn.scale)
+    assertTrue(zoomedIn.isRejected, "упор в предел — это свойство шага, а не догадка вызывающего")
+
+    state.zoom(focus = focus, change = 0.001f)
+    assertEquals(0.4f, state.scale.value)
+  }
+
+  @Test
+  fun `the backdrop lags behind the camera`() {
+    val state = GraphCanvasState()
+    state.place(count = 6)
+
+    state.pan(Offset(x = -500f, y = 0f))
+
+    assertEquals(
+      -150f,
+      state.backdropOffset.value.x,
+      "фон отстаёт на треть — это и есть та глубина, ради которой он нарисован"
+    )
+  }
+
+  @Test
+  fun `a wall stops the backdrop together with the graph`() {
+    val state = GraphCanvasState()
+    state.place(count = 6)
+    state.pan(Offset(x = -9000f, y = 0f))
+    val atTheWall = state.backdropOffset.value
+
+    state.pan(Offset(x = -500f, y = 0f))
+
+    assertEquals(
+      atTheWall,
+      state.backdropOffset.value,
+      "у стенки граф стоит, и узор обязан стоять вместе с ним, а не ползти под плашками"
+    )
+  }
+
+  @Test
+  fun `a pinch keeps the backdrop point under the fingers too`() {
+    val state = GraphCanvasState()
+    state.place(count = 6)
+    state.pan(Offset(x = -500f, y = 0f))
+    val focus = Offset(x = 400f, y = 300f)
+    val point = focus - state.backdropOffset.value
+
+    state.zoom(focus = focus, change = 1.8f)
+
+    val after = point * state.backdropScale.value + state.backdropOffset.value
+    assertEquals(focus.x, after.x, 0.5f, "фон обязан зумиться вокруг пальцев, а не улетать за камерой")
+    assertEquals(focus.y, after.y, 0.5f)
+  }
+
+  @Test
+  fun `a layout pass does not subscribe to the scale either`() {
+    val state = GraphCanvasState()
+    state.place(count = 3)
+    state.pan(Offset(x = -100f, y = 0f))
+
+    val readWhileMeasuring = mutableSetOf<Any>()
+    Snapshot.observe(readObserver = { readWhileMeasuring += it }) {
+      state.place(count = 3)
+    }
+    val writtenByPinch = mutableSetOf<Any>()
+    Snapshot.observe(writeObserver = { writtenByPinch += it }) {
+      state.zoom(focus = Offset(x = 500f, y = 300f), change = 1.1f)
+    }
+
+    assertTrue(
+      readWhileMeasuring.intersect(writtenByPinch).isEmpty(),
+      "масштаб пишется каждый кадр пинча ровно так же, как камера, и подписанное на него " +
+        "измерение перемеряет граф всю дорогу вместо того, чтобы двигать слой"
+    )
+  }
+
   /**
    * Где камера обязана стоять в покое при этой раскладке.
    *
@@ -114,7 +241,7 @@ class GraphCanvasStateTest {
    * @return положение покоя
    */
   private fun restOf(placement: GraphPlacement): Offset {
-    return cameraRestOf(placement, VIEWPORT, cameraRangeOf(placement, VIEWPORT))
+    return cameraRestOf(placement, VIEWPORT, cameraRangeOf(placement, VIEWPORT, scale = 1f), scale = 1f)
   }
 
   /**

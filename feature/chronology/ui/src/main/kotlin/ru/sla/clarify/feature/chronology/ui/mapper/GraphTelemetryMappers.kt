@@ -7,7 +7,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
  * Счётчики фаз Compose в строки отладочной панели.
  *
  * Пределы разные, потому что фазы разные по назначению: измерение, размещение и рекомпозиция полотна
- * в покое обязаны стоять, а слой камеры, связи, фон, панель и жест идут покадрово.
+ * в покое обязаны стоять, а слой камеры, связи, фон, панель и обе половины жеста идут покадрово.
  *
  * @param rates те же счётчики в единицах в секунду
  * @return строки левой колонки панели
@@ -23,6 +23,7 @@ internal fun GraphTelemetry.toPhaseRows(rates: GraphTelemetry): List<GraphDebugR
     phaseRow("edges", edgeDraws, rates.edgeDraws, FRAME_LIMIT),
     phaseRow("backdrop", backdropDraws, rates.backdropDraws, FRAME_LIMIT),
     phaseRow("pan", panEvents, rates.panEvents, FRAME_LIMIT),
+    phaseRow("zoom", zoomEvents, rates.zoomEvents, FRAME_LIMIT),
     phaseRow("fling", flingSteps, rates.flingSteps, FRAME_LIMIT),
     // Предел здесь как у фаз покоя, а не как у покадровых: у затухания отказной кадр может быть
     // только один на бросок, потому что следом идёт остановка. Устойчивый поток означает, что

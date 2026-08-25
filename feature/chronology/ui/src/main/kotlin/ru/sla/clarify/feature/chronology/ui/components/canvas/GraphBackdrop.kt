@@ -15,8 +15,9 @@ import kotlin.math.sqrt
 /**
  * Фон полотна: ромбовидный паттерн.
  *
- * Паттерн двигается медленнее графа ([PARALLAX]) — это даёт ощущение глубины и опору взгляду при
- * панорамировании.
+ * Паттерн двигается и укрупняется медленнее графа — это даёт ощущение глубины и опору взгляду при
+ * панорамировании. Своей камеры фон здесь не считает: она живёт в состоянии рядом с камерой графа,
+ * потому что правильное смещение при зуме из камеры графа не выводится, см. `BACKDROP_PARALLAX`.
  *
  * Дорожки на фоне не рисуются. Дорожка — это приём раскладки, а не сведение для читающего: где
  * проходит ветка, видно по самим узлам и связям между ними, а лишняя горизонтальная сетка спорила
@@ -42,8 +43,8 @@ internal fun GraphBackdrop(
     state.telemetry.onBackdropDraw()
     drawDiamondPattern(
       color = patternColor,
-      offset = state.offset.value * PARALLAX,
-      spacing = PATTERN_SPACING.toPx()
+      offset = state.backdropOffset.value,
+      spacing = PATTERN_SPACING.toPx() * state.backdropScale.value
     )
   }
 }
@@ -55,7 +56,7 @@ internal fun GraphBackdrop(
  * на `(dx, dy)` меняет `c` на `dx - dy` и `dx + dy` соответственно — отсюда две разные фазы.
  *
  * @param color цвет линий паттерна
- * @param offset сдвиг паттерна: камера, уже умноженная на параллакс
+ * @param offset сдвиг паттерна: собственная камера фона
  * @param spacing перпендикулярное расстояние между соседними диагоналями
  */
 private fun DrawScope.drawDiamondPattern(
@@ -141,7 +142,6 @@ private fun phase(value: Float, step: Float): Float {
   return value - step * floor(value / step)
 }
 
-private const val PARALLAX = 0.3f
 private const val PATTERN_ALPHA = 0.04f
 private val PATTERN_SPACING: Dp = 120.dp
 private val LINE_WIDTH: Dp = 1.dp

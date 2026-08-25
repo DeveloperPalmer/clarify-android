@@ -44,8 +44,9 @@ class GraphCanvasTelemetryTest {
       edgeDraws = 7,
       backdropDraws = 8,
       panEvents = 9,
-      flingSteps = 10,
-      flingStalls = 11
+      zoomEvents = 10,
+      flingSteps = 11,
+      flingStalls = 12
     )
 
     val rates = ratesOf(GraphTelemetry.Empty, current, elapsedMillis = 1000L)
@@ -65,8 +66,9 @@ class GraphCanvasTelemetryTest {
       edgeDraws = 7,
       backdropDraws = 8,
       panEvents = 9,
-      flingSteps = 10,
-      flingStalls = 11
+      zoomEvents = 10,
+      flingSteps = 11,
+      flingStalls = 12
     )
 
     val peaks = peaksOf(GraphTelemetry.Empty, loud)

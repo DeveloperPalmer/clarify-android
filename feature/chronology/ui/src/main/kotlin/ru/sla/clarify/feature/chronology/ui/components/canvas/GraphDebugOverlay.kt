@@ -86,7 +86,8 @@ internal fun GraphDebugOverlay(
         rates = GraphTelemetry.Empty,
         totals = GraphTelemetry.Empty,
         info = state.debugInfo.value,
-        lastPan = telemetry.lastPan
+        lastPan = telemetry.lastPan,
+        lastFling = telemetry.lastFling
       )
     )
   }
@@ -110,7 +111,8 @@ internal fun GraphDebugOverlay(
           rates = updatedPeaks,
           totals = current,
           info = state.debugInfo.value,
-          lastPan = telemetry.lastPan
+          lastPan = telemetry.lastPan,
+          lastFling = telemetry.lastFling
         )
       }
       previous = current
@@ -123,6 +125,7 @@ internal fun GraphDebugOverlay(
   val facts = remember(info, totals) {
     info.toFactRows(
       lastPan = telemetry.lastPan,
+      lastFling = telemetry.lastFling,
       tickMillis = TICK_MILLIS
     )
   }
@@ -132,6 +135,7 @@ internal fun GraphDebugOverlay(
   val peakFacts = remember(peak) {
     peak.info.toFactRows(
       lastPan = peak.lastPan,
+      lastFling = peak.lastFling,
       tickMillis = TICK_MILLIS
     )
   }
@@ -247,7 +251,7 @@ private fun GraphDebugColumn(
 }
 
 private const val TICK_MILLIS = 500L
-private const val VISIBLE_ROWS = 11
+private const val VISIBLE_ROWS = 12
 
 private val PANEL_PADDING = 12.dp
 private val PHASE_COLUMN_WIDTH = 148.dp

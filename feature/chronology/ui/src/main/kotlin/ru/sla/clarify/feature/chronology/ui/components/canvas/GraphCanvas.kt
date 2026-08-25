@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -21,14 +20,12 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.util.VelocityTracker
-import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
@@ -39,9 +36,13 @@ import ru.sla.clarify.uikit.theme.AppTheme
  * Полотно хронологии: фон, узлы графа и связи между ними, по которому можно панорамировать.
  *
  * Композабл здесь ничего не считает — только композирует, принимает жест и рисует. Где узлы стоят,
- * считает [graphPlacementOf]; камеру и результат раскладки держит [GraphCanvasState].
+ * считает [graphPlacementOf]; камеру и результат раскладки держит [GraphCanvasState]; события
+ * пальцев разбирает [detectCameraGestures].
  *
- * Зума и переключения уровней детализации пока нет.
+ * Масштаб — свойство камеры, а не раскладки: он применяется слоем и потому не стоит ни измерения,
+ * ни рекомпозиции. Переключения уровней детализации по порогам масштаба пока нет — узлы на всех
+ * масштабах рисуются одни и те же, и на нижней границе диапазона текст становится нечитаемым по
+ * построению.
  *
  * @param state камера полотна и результат его последней раскладки
  * @param modifier модификатор корня полотна
@@ -90,42 +91,23 @@ internal fun GraphCanvas(
     modifier = modifier
       .clipToBounds()
       .pointerInput(Unit) {
-        // Трекер живёт со всем обработчиком: ключ `Unit` держит его между жестами, а сбрасывается
-        // он на каждом касании. Скорость foundation не считает — она отдаёт только up-событие.
-        val tracker = VelocityTracker()
-        // Решение принимается один раз, на касании, и держится весь жест: палец, ушедший с панели
-        // на полотно, не должен посреди движения начать таскать камеру.
-        var startedOnPanel = false
-        detectDragGestures(
-          orientationLock = null,
-          onDragStart = { down, _, _ ->
-            startedOnPanel = currentPanelBounds.contains(down.position)
-            if (startedOnPanel) return@detectDragGestures
-            currentState.stopFling()
-            tracker.resetTracking()
-            tracker.addPointerInputChange(down)
+        detectCameraGestures(
+          isBlocked = { position -> currentPanelBounds.contains(position) },
+          onTouch = { currentState.stopFling() },
+          onTransform = { focus, pan, zoom ->
+            // Масштаб ложится первым: он меняет и границы камеры, и то, куда попадёт та же точка
+            // экрана, — а сдвиг центроида поверх этого уже обычный шаг протяжки. Два клампа за
+            // событие вместо одного здесь ничего не стоят: незажатый сдвиг никуда не копится,
+            // потому что камера хранится уже зажатой.
+            if (zoom != 1f) {
+              currentState.zoom(focus = focus, change = zoom)
+            }
+            if (pan != Offset.Zero) {
+              currentState.pan(pan)
+            }
           },
-          onDragEnd = { up ->
-            if (startedOnPanel) return@detectDragGestures
-            tracker.addPointerInputChange(up)
-            // Кламп по осям, как у платформы: у трекера полиномиальная подгонка, и дрожание перед
-            // отпусканием умеет отдать десятки тысяч px/s, а пролёт растёт как v^1.736.
-            val maximum = viewConfiguration.maximumFlingVelocity
-            currentState.fling(
-              scope = flingScope,
-              velocity = tracker.calculateVelocity(Velocity(maximum, maximum)),
-              decay = currentDecay
-            )
-          },
-          onDrag = { change, dragAmount ->
-            if (startedOnPanel) return@detectDragGestures
-            // `change.consume()` здесь не нужен: перегрузка с `orientationLock` консьюмит сама —
-            // и на пересечении слопа, и на каждом последующем событии.
-            tracker.addPointerInputChange(change)
-            currentState.pan(dragAmount)
-          },
-          onDragCancel = {
-            tracker.resetTracking()
+          onRelease = { velocity ->
+            currentState.fling(scope = flingScope, velocity = velocity, decay = currentDecay)
           }
         )
       }
@@ -174,14 +156,28 @@ private fun GraphNodesLayer(
     modifier = modifier
       .fillMaxSize()
       .graphicsLayer {
-        // Камера читается здесь, а не в композиции: кадр панорамирования обновляет только
-        // свойства слоя — ни рекомпозиции, ни повторного измерения, ни новых модификаторов.
+        // Камера и масштаб читаются здесь, а не в композиции: кадр панорамирования и кадр пинча
+        // обновляют только свойства слоя — ни рекомпозиции, ни повторного измерения, ни новых
+        // модификаторов. Узлы при этом не перевёрстываются: масштаб применяется к готовому списку
+        // команд рисования, поэтому текст перерисовывается в конечном размере и остаётся резким.
         telemetry.onLayerUpdate()
+        // Начало координат — угол вьюпорта, а не его центр, и это не оформление: только так
+        // выполняется `экран = полотно · scale + камера`, из которого выведены и диапазон камеры,
+        // и удержание точки под пальцами. С центром пришлось бы вносить размер вьюпорта в обе
+        // формулы дважды.
+        transformOrigin = TransformOrigin(0f, 0f)
+        val scale = state.scale.value
+        scaleX = scale
+        scaleY = scale
         val camera = state.offset.value
         translationX = camera.x
         translationY = camera.y
       }
       .drawBehind {
+        // Связи рисуются внутри того же слоя, поэтому масштабируются вместе с плашками: на 0.4×
+        // линия истончается до 0.8 dp, на 2.5× толстеет до пяти. Одно правило на весь слой проще
+        // двух; если тонкая линия потеряется на устройстве, обратный ход — поделить толщину на
+        // масштаб прямо здесь.
         telemetry.onEdgeDraw()
         state.edges.value.fastForEach { edge ->
           drawLine(
