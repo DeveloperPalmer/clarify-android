@@ -199,4 +199,5 @@
     <string name="chronology_branch_status_ready">Ready to merge</string>
     <string name="chronology_branch_status_merged">Closed</string>
     <string name="chronology_origin_caption">Conversation start</string>
+    <string name="chronology_front_caption">Now</string>
 </resources>
