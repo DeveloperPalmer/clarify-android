@@ -234,6 +234,51 @@ class GraphCanvasStateTest {
     )
   }
 
+  @Test
+  fun `a scrub puts the asked fraction under the centre of the screen`() {
+    val state = GraphCanvasState()
+    state.place(count = 12)
+
+    state.scrubTo(fraction = 0.5f)
+
+    assertEquals(
+      0.5f,
+      state.viewportSpan.value.position,
+      1e-3f,
+      "полоса и камера обязаны сходиться: у мини-карты это единственная связь с графом"
+    )
+  }
+
+  @Test
+  fun `a scrub to either end leaves the camera against its wall`() {
+    val state = GraphCanvasState()
+    val placement = state.place(count = 12)
+    val range = cameraRangeOf(placement, VIEWPORT, scale = 1f)
+
+    state.scrubTo(fraction = 1f)
+    val atEnd = state.offset.value.x
+    state.scrubTo(fraction = 0f)
+
+    assertEquals(range.x.start, atEnd, "конец полосы — это упор камеры, а не «почти упор»")
+    assertEquals(range.x.endInclusive, state.offset.value.x, "и начало полосы тоже")
+  }
+
+  @Test
+  fun `a scrub leaves the vertical camera alone`() {
+    val state = GraphCanvasState()
+    state.place(count = 12)
+    state.pan(Offset(x = 0f, y = -40f))
+    val height = state.offset.value.y
+
+    state.scrubTo(fraction = 0.8f)
+
+    assertEquals(
+      height,
+      state.offset.value.y,
+      "мини-карта водит по времени: вертикаль остаётся там, где её оставил палец"
+    )
+  }
+
   /**
    * Где камера обязана стоять в покое при этой раскладке.
    *

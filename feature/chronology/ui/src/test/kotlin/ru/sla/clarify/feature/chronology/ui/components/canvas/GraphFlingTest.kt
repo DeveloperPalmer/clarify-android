@@ -82,6 +82,28 @@ class GraphFlingTest {
   }
 
   @Test
+  fun `a scrub cancels the running fling too`() = runTest {
+    val state = laidOut()
+    val clock = BroadcastFrameClock()
+    state.fling(this + clock, Velocity(x = -1200f, y = -700f), exponentialDecay())
+    runCurrent()
+    clock.sendFrame(FRAME_NANOS)
+    runCurrent()
+
+    // Палец, положенный на мини-карту, до полотна не доходит вовсе: жест, начатый в зоне
+    // инструмента, отбрасывается ещё в детекторе. Обрывать инерцию поэтому обязан сам скраб — и
+    // обрывает он её тем, что идёт через `pan`, а не собственной записью камеры.
+    state.scrubTo(fraction = 0.5f)
+    runCurrent()
+    val afterScrub = state.offset.value
+    clock.sendFrame(2 * FRAME_NANOS)
+    runCurrent()
+
+    assertEquals(afterScrub, state.offset.value, "скраб отбирает камеру у затухания")
+    state.stopFling()
+  }
+
+  @Test
   fun `a slow release does not fling at all`() = runTest {
     val state = laidOut()
     val before = state.offset.value

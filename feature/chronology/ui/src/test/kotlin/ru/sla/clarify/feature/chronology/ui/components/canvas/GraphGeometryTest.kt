@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -77,5 +78,25 @@ class GraphGeometryTest {
       lefts[1] - (lefts[0] + widths[0]),
       "зазор отделяет плашки, а не центры: иначе широкая плашка накрыла бы соседнюю"
     )
+  }
+
+  @Test
+  fun `the nearest node is chosen by distance, not by order in the list`() {
+    val centres = listOf(
+      Offset(x = 0f, y = 0f),
+      Offset(x = 1000f, y = 0f),
+      Offset(x = 400f, y = 100f)
+    )
+
+    assertEquals(
+      2,
+      nearestCentreIndexOf(centres, x = 380f),
+      "узлы упорядочены временем, а не осью, и ближайший к точке может стоять последним"
+    )
+  }
+
+  @Test
+  fun `an empty graph has no nearest node`() {
+    assertEquals(-1, nearestCentreIndexOf(emptyList(), x = 100f))
   }
 }

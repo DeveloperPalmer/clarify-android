@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -24,6 +25,8 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.util.fastForEach
@@ -46,9 +49,10 @@ import ru.sla.clarify.uikit.theme.AppTheme
  *
  * @param state камера полотна и результат его последней раскладки
  * @param modifier модификатор корня полотна
- * @param overlay что нарисовать поверх полотна: панель, линейка, что угодно. Слот получает
- *   обработчик, которым содержимое объявляет занятую им зону, — жест, начатый в этой зоне, до
- *   камеры не доходит. Полотно при этом не знает, что именно там лежит
+ * @param overlay что нарисовать поверх полотна: панель, мини-карта, что угодно. Слот получает
+ *   обработчик, которым содержимое объявляет занятую им зону под своим ключом, — жест, начатый в
+ *   любой из объявленных зон, до камеры не доходит. Зона объявляется в координатах корня, а пустой
+ *   прямоугольник её снимает. Полотно при этом не знает, что именно там лежит
  * @param node содержимое узла с данным `id`; обязано выпускать ровно один элемент раскладки —
  *   полотно ставит плашки по одной на узел и считает их по позиции, а не по идентификатору
  */
@@ -57,7 +61,7 @@ internal fun GraphCanvas(
   state: GraphCanvasState,
   modifier: Modifier = Modifier,
   node: @Composable (id: GraphNode.Id) -> Unit,
-  overlay: @Composable BoxScope.(onBoundsChanged: (Rect) -> Unit) -> Unit = { }
+  overlay: @Composable BoxScope.(onBoundsChanged: (key: Any, bounds: Rect) -> Unit) -> Unit = { }
 ) {
   val telemetry = state.telemetry
   // Жест не пересоздаётся при смене состояния: ключ `Unit` держит обработчик живым, а свежий
@@ -69,16 +73,26 @@ internal fun GraphCanvas(
   val currentDecay by rememberUpdatedState(AppTheme.motion.flingDecay<Float>())
   // Затухание доигрывает после того, как корутина жеста уже отменена, поэтому scope нужен свой.
   val flingScope = rememberCoroutineScope()
-  // Зона, занятая тем, что лежит поверх полотна, в координатах этого же Box: полотно ловит жест на
-  // всём вьюпорте и по ней отличает палец, положенный на инструмент, от пальца на графе. Зону
-  // объявляет и снимает само содержимое слота — полотно её не вычисляет и о её природе не знает.
+  // Зоны, занятые тем, что лежит поверх полотна: полотно ловит жест на всём вьюпорте и по ним
+  // отличает палец, положенный на инструмент, от пальца на графе. Каждую зону объявляет и снимает
+  // само содержимое слота — полотно их не вычисляет и о их природе не знает.
+  //
+  // Зон несколько, а не одна: у нижнего края живут и мини-карта, и отладочная панель над ней.
+  // Объединять их в один прямоугольник нельзя — объединение захватывает полосу графа между
+  // инструментами и **работает случайно**: пока они смежны, ложь незаметна, а первый же отступ
+  // между ними отдаёт графу жесты, которых тот брать не должен.
   //
   // Поглощать жесты внутри панели нельзя, хотя это выглядело бы проще: `clickable` потребляет лишь
   // нажатие с отпусканием, а камеру двигает протяжка, и полотно принимает даже потреблённое
   // нажатие. Потреблять же сами движения — значит убить листание панели: детекторы жестов
   // проверяют потребление ещё и в Final-проходе, и вложенный пейджер отменяется.
-  var panelBounds by remember { mutableStateOf(Rect.Zero) }
-  val currentPanelBounds by rememberUpdatedState(panelBounds)
+  val overlayZones = remember { mutableStateMapOf<Any, Rect>() }
+  // Зоны приходят в координатах корня, а касание — в координатах этого Box. Пока инструмент был
+  // один и лежал прямым ребёнком полотна, обе системы совпадали, и `boundsInParent` работал; стоило
+  // положить инструменты в общую колонку, как зона уехала бы на её смещение — молча, без единого
+  // упавшего теста. Поэтому системе координат здесь одно определение на обе стороны.
+  var canvasOrigin by remember { mutableStateOf(Offset.Zero) }
+  val currentCanvasOrigin by rememberUpdatedState(canvasOrigin)
 
   SideEffect { telemetry.onCanvasComposition() }
   // Узлы снимаются один раз и уходят и в содержимое, и в измерение. Читать их в measure заново
@@ -90,9 +104,13 @@ internal fun GraphCanvas(
     // и панорамирование не работало бы там, где его нет.
     modifier = modifier
       .clipToBounds()
+      .onGloballyPositioned { canvasOrigin = it.boundsInRoot().topLeft }
       .pointerInput(Unit) {
         detectCameraGestures(
-          isBlocked = { position -> currentPanelBounds.contains(position) },
+          isBlocked = { position ->
+            val inRoot = position + currentCanvasOrigin
+            overlayZones.values.any { zone -> zone.contains(inRoot) }
+          },
           onTouch = { currentState.stopFling() },
           onTransform = { focus, pan, zoom ->
             // Масштаб ложится первым: он меняет и границы камеры, и то, куда попадёт та же точка
@@ -121,7 +139,11 @@ internal fun GraphCanvas(
       nodes = nodes,
       node = node
     )
-    overlay { bounds -> panelBounds = bounds }
+    overlay { key, bounds ->
+      // Пустой прямоугольник — это и есть «зоны больше нет»: инструмент, уходящий с экрана, обязан
+      // снять её за собой, иначе полотно продолжит обходить стороной пустое место.
+      if (bounds.isEmpty) overlayZones.remove(key) else overlayZones[key] = bounds
+    }
   }
 }
 

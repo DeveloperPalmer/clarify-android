@@ -25,9 +25,11 @@ import kotlinx.coroutines.withContext
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
+import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 import ru.sla.clarify.feature.chronology.ui.entity.GraphZoomStep
 import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
@@ -89,6 +91,12 @@ internal class GraphCanvasState {
   private var viewport by mutableStateOf(IntSize.Zero)
   private var placement by mutableStateOf(GraphPlacement.Empty)
 
+  // Засечки считаются там же, где раскладка, и по тем же узлам. Выводить их из `graphNodes` и
+  // `placement` по требованию нельзя: узлы подменяются из `SideEffect`, раскладка приходит из
+  // измерения, и на кадре подмены длины этих списков расходятся — а засечке нужен номер дорожки из
+  // одного списка и координата из другого.
+  private var marks by mutableStateOf(emptyList<GraphLaneMark>())
+
   // Обычное поле, не снапшот: за «идёт ли затухание» никто не рисует, а панель снимает по таймеру.
   private var flingJob: Job? = null
 
@@ -136,6 +144,49 @@ internal class GraphCanvasState {
   /** Связи между соседними узлами каждой дорожки, в координатах полотна. */
   val edges: State<List<GraphEdge>> = derivedStateOf { placement.edges }
 
+  /**
+   * Какая доля содержимого по времени видна сейчас.
+   *
+   * Величина о камере, а не о том, кто её показывает: держатель не знает ни про мини-карту, ни про
+   * полосу, на которой это рисуется, — ровно как не знает про отладочную панель.
+   *
+   * Читать в фазе рисования: пересчитывается на каждом кадре движения.
+   */
+  val viewportSpan: State<GraphViewportSpan> = derivedStateOf {
+    viewportSpanOf(
+      camera = offset.value,
+      scale = cameraScale,
+      centreSpan = placement.centreSpanX,
+      viewport = viewport
+    )
+  }
+
+  /**
+   * Начала дорожек в долях содержимого.
+   *
+   * Меняются только с раскладкой, поэтому чтение в фазе рисования не стоит ничего.
+   */
+  val laneMarks: State<List<GraphLaneMark>> = derivedStateOf { marks }
+
+  /**
+   * Узел, ближайший к центру экрана по времени: то, чем подписывается пузырь мини-карты.
+   *
+   * Отдаётся идентификатором, а не индексом: индекс — деталь раскладки, и снаружи по нему ничего не
+   * найти. `derivedStateOf` тут не украшение — он гасит покадровые изменения камеры до редких смен
+   * узла, поэтому подпись рекомпонуется в разы реже, чем движется картинка.
+   *
+   * Список узлов и раскладка расходятся не более чем на кадр — узлы подменяются из `SideEffect`, а
+   * раскладка считается при измерении, — поэтому индекс берётся безопасно: на этом кадре подпись
+   * пузыря либо отстанет на один узел, либо не покажется вовсе, и оба исхода дешевле падения.
+   */
+  val centralNode: State<GraphNode.Id?> = derivedStateOf {
+    val index = nearestCentreIndexOf(
+      centres = placement.centres,
+      x = centreXOf(camera = offset.value, scale = cameraScale, viewport = viewport)
+    )
+    graphNodes.getOrNull(index)?.id
+  }
+
   /** Снимок камеры и последней раскладки для отладочной панели. */
   val debugInfo: State<GraphDebugInfo> = derivedStateOf {
     GraphDebugInfo(
@@ -165,6 +216,35 @@ internal class GraphCanvasState {
     val step = applyPan(delta, cameraRangeOf(placement, viewport, cameraScale))
     telemetry.onPan(delta)
     return step.consumed
+  }
+
+  /**
+   * Уводит камеру в [fraction] её хода по времени.
+   *
+   * Скраб мини-карты идёт через [pan], а не собственной записью камеры, и это не экономия строк.
+   * Оттуда даром достаются четыре вещи, каждая из которых стоила отдельной итерации: обрыв инерции
+   * касанием, кламп на записи, параллакс фона на **потреблённое** и признак «камеру трогали».
+   * Второй путь записи камеры разошёлся бы с этим при первой правке любой из них.
+   *
+   * Вертикаль скраб не трогает: полоса высотой 48 dp на четырнадцать дорожек даёт 3.4 dp на
+   * дорожку — различить их там нечем, и рамка, честная по обеим осям, была бы высотой в три
+   * пикселя. За вертикаль отвечает панорамирование, где она и работает.
+   *
+   * @param fraction доля хода камеры по времени, от нуля до единицы
+   */
+  fun scrubTo(fraction: Float) {
+    if (placement.isEmpty) {
+      return
+    }
+    val range = cameraRangeOf(placement, viewport, cameraScale)
+    val target = scrubbedCameraXOf(
+      position = fraction,
+      scale = cameraScale,
+      centreSpan = placement.centreSpanX,
+      viewport = viewport,
+      range = range
+    )
+    pan(Offset(x = target - cameraAt(range).x, y = 0f))
   }
 
   /**
@@ -358,6 +438,7 @@ internal class GraphCanvasState {
     }
     viewport = viewportSize
     placement = result
+    marks = laneMarksOf(lanes = lanes, centres = result.centres, centreSpan = result.centreSpanX)
     // Диапазон только что изменился, и хранимая камера обязана сойтись с ним в этом же кадре.
     // Диапазон считается от аргументов, а не от полей выше, по той же причине, по которой узлы
     // приходят параметром: измерение не должно читать состояние, которое само же и пишет.

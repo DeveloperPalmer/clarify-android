@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -76,6 +77,31 @@ internal fun leftOffsetsOf(gaps: List<Float>, widths: List<Float>): List<Float> 
     left += widths[index]
     result
   }
+}
+
+/**
+ * Индекс плашки, ближайшей к [x] по времени.
+ *
+ * Перебором, а не двоичным поиском: [centres] упорядочены по времени, а не по оси, и совпадение
+ * этих порядков — то самое допущение, из-за которого агрегаты раскладки считаются через `min` и
+ * `max`. Двадцать два узла демо-набора стоят ничего; когда появится виртуализация и узлов станут
+ * тысячи, обратный ход — держать рядом отсортированный массив координат и искать по нему.
+ *
+ * @param centres центры плашек в координатах полотна
+ * @param x координата полотна по оси времени
+ * @return индекс ближайшей плашки; `-1`, когда плашек нет
+ */
+internal fun nearestCentreIndexOf(centres: List<Offset>, x: Float): Int {
+  var nearest = -1
+  var distance = Float.MAX_VALUE
+  centres.forEachIndexed { index, centre ->
+    val candidate = abs(centre.x - x)
+    if (candidate < distance) {
+      distance = candidate
+      nearest = index
+    }
+  }
+  return nearest
 }
 
 /**

@@ -191,4 +191,5 @@
     <!-- Chronology screen -->
     <string name="chronology_open">Chronology</string>
     <string name="chronology_placeholder">Chronology</string>
+    <string name="chronology_minimap">Conversation minimap</string>
 </resources>

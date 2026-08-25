@@ -1,6 +1,8 @@
 package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -8,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -17,6 +21,7 @@ import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphCanvas
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphDebugOverlay
+import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphMinimap
 import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberGraphCanvasState
 import ru.sla.clarify.feature.chronology.ui.components.node.EpisodeNode
 import ru.sla.clarify.uikit.component.icon.IconAction
@@ -35,6 +40,13 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
     scaffoldState.contentLoadState = state.contentLoadState
     ScreenScaffold(state = scaffoldState) {
       val canvasState = rememberGraphCanvasState(nodes = state.nodes)
+      // Подпись пузыря мини-карты. Собирается здесь, потому что дату знает экран, а какой узел под
+      // центром — полотно; отдаётся `State`, чтобы прочитал её лист, а не тело экрана: чтение
+      // прямо тут пересобирало бы лямбды полотна при каждой смене узла под камерой.
+      val episodeById = state.episodeById
+      val minimapLabel = remember(episodeById, canvasState) {
+        derivedStateOf { canvasState.centralNode.value?.let { episodeById[it]?.time } }
+      }
       Box(modifier = Modifier.fillMaxSize()) {
         GraphCanvas(
           modifier = Modifier.fillMaxSize(),
@@ -51,14 +63,28 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
             )
           },
           overlay = { onBoundsChanged ->
-            if (state.debugOverlayAvailable && state.debugOverlayVisible) {
-              GraphDebugOverlay(
-                modifier = Modifier
-                  .align(Alignment.BottomCenter)
-                  .navigationBarsPadding()
-                  .fillMaxWidth()
-                  .padding(12.dp),
-                state = canvasState,
+            // Инструменты стоят колонкой у нижнего края, мини-карта снизу: колонка растёт вверх,
+            // поэтому появление панели не двигает мини-карту, а §11.1 требует, чтобы полоса стояла
+            // на месте всегда.
+            Column(
+              modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .fillMaxWidth()
+                .padding(12.dp),
+              verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+              if (state.debugOverlayAvailable && state.debugOverlayVisible) {
+                GraphDebugOverlay(
+                  state = canvasState,
+                  onBoundsChanged = onBoundsChanged
+                )
+              }
+              GraphMinimap(
+                span = canvasState.viewportSpan,
+                marks = canvasState.laneMarks,
+                label = minimapLabel,
+                onScrub = { fraction -> canvasState.scrubTo(fraction) },
                 onBoundsChanged = onBoundsChanged
               )
             }

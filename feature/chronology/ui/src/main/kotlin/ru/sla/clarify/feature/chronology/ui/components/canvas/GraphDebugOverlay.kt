@@ -23,7 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,7 +66,7 @@ import ru.sla.clarify.uikit.theme.VSpacer
 @Composable
 internal fun GraphDebugOverlay(
   state: GraphCanvasState,
-  onBoundsChanged: (Rect) -> Unit,
+  onBoundsChanged: (key: Any, bounds: Rect) -> Unit,
   modifier: Modifier = Modifier
 ) {
   val telemetry = state.telemetry
@@ -74,7 +74,7 @@ internal fun GraphDebugOverlay(
 
   val currentOnBoundsChanged by rememberUpdatedState(onBoundsChanged)
   DisposableEffect(Unit) {
-    onDispose { currentOnBoundsChanged(Rect.Zero) }
+    onDispose { currentOnBoundsChanged(ZONE_KEY, Rect.Zero) }
   }
 
   val info by state.debugInfo
@@ -142,7 +142,7 @@ internal fun GraphDebugOverlay(
   val pagerState = rememberPagerState(pageCount = { 2 })
   AppPager(
     state = pagerState,
-    modifier = modifier.onGloballyPositioned { onBoundsChanged(it.boundsInParent()) }
+    modifier = modifier.onGloballyPositioned { onBoundsChanged(ZONE_KEY, it.boundsInRoot()) }
   ) { page ->
     GraphDebugPage(
       title = if (page == 0) "GRAPH DEBUG" else "GRAPH PEAKS",
@@ -249,6 +249,10 @@ private fun GraphDebugColumn(
     }
   }
 }
+
+// Ключ зоны жеста: важно только то, что он один на панель и не совпадает с чужим. Читается дважды —
+// при объявлении зоны и при её снятии.
+private val ZONE_KEY = Any()
 
 private const val TICK_MILLIS = 500L
 private const val VISIBLE_ROWS = 12
