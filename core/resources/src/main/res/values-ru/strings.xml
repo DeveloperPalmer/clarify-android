@@ -188,4 +188,5 @@
     <string name="chronology_branch_status_waiting">Ждёт одобрения</string>
     <string name="chronology_branch_status_ready">Готова к слиянию</string>
     <string name="chronology_branch_status_merged">Закрыта</string>
+    <string name="chronology_origin_caption">Начало переписки</string>
 </resources>

@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
  * не должно, иначе непрочитанный узел оказался бы шире прочитанного и сдвигал бы соседей по дорожке.
  *
  * @param color цвет свечения, обычно акцент
- * @param cornerRadius скругление самой плашки: у эпизода и ветки `round16`, у истока будет `round24`
+ * @param cornerRadius скругление самой плашки: у эпизода и ветки `round16`, у узла покрупнее — своё
  */
 internal fun DrawScope.drawUnreadHalo(color: Color, cornerRadius: Dp) {
   val spread = UNREAD_HALO_WIDTH.toPx()
