@@ -54,16 +54,6 @@ class MocksTest {
   }
 
   @Test
-  fun `an abandoned branch hands its lane over to a later one`() {
-    assertEquals(
-      demoLanes()[GraphBranch.Id("logo")],
-      demoLanes()[GraphBranch.Id("pricing")],
-      "дорожку освобождает не только слияние: брошенная тема отдаёт её тоже, иначе три брошенных " +
-        "темы держали бы три дорожки до конца истории — §6.8"
-    )
-  }
-
-  @Test
   fun `a branch without a fork anchor gets a lane of its own`() {
     val branches = mockGraph().branches
     val lanes = demoLanes()
@@ -141,7 +131,7 @@ class MocksTest {
   }
 
   @Test
-  fun `the demo set lays out on seven lanes with three of them reused`() {
+  fun `the demo set lays out on seven lanes with two of them reused`() {
     assertEquals(
       mapOf(
         GraphBranch.Id("trunk") to 0,
@@ -151,19 +141,16 @@ class MocksTest {
         // Дорожка +1 освободилась слиянием terms и досталась budget.
         GraphBranch.Id("budget") to 1,
         GraphBranch.Id("photos") to -2,
-        // logo уходит, пока photos ещё держит −2, поэтому встаёт за неё. Её вертикаль от магистрали
-        // до третьей дорожки пересекает две чужие горизонтали — budget и design.
-        GraphBranch.Id("logo") to 3,
         // Дорожка −2 освободилась слиянием photos.
         GraphBranch.Id("release") to -2,
-        // Дорожка +3 освободилась **заброшенностью** logo, а не слиянием: второй способ отдать
-        // дорожку, и в наборе он есть ровно здесь.
+        // Свободных дорожек ближе к магистрали не осталось: pricing уходит от той же развилки, что
+        // release, и её вертикаль пересекает две чужие горизонтали — budget и design.
         GraphBranch.Id("pricing") to 3,
         GraphBranch.Id("stickers") to -3
       ),
       demoLanes(),
-      "раскладка демо-набора: девять веток на шести дорожках плюс магистраль, " +
-        "и три дорожки из шести переиспользованы"
+      "раскладка демо-набора: восемь веток на шести дорожках плюс магистраль, " +
+        "и две дорожки из шести переиспользованы"
     )
   }
 
@@ -185,18 +172,15 @@ class MocksTest {
   }
 
   @Test
-  fun `an abandoned branch has no tail`() {
-    val abandoned = mockGraph().branches.single { it.status == GraphBranchStatus.Abandoned }
+  fun `every unmerged branch of the set ends in a tail`() {
+    val unmerged = mockGraph().branches.count { it.mergedAt == null }
     val tails = demoEdges().filter { it.role == GraphEdgeRole.Tail }
 
-    assertTrue(
-      tails.isNotEmpty(),
-      "хвост есть у всего, что не слито и не брошено: без него в наборе не проверено растворение"
-    )
-    assertTrue(
-      tails.none { it.status == GraphBranchStatus.Abandoned },
-      "линия брошенной темы обрывается сразу за последним узлом: тянуть её через всю историю " +
-        "значило бы утверждать, что тема жива — §6.8. Ветка ${abandoned.id.value}"
+    assertEquals(
+      unmerged,
+      tails.size,
+      "хвост есть у всего, что не слито, — §6.8: тема не закрыта, сколько бы она ни молчала. " +
+        "Исключением была брошенная тема, и вместе с ней исключение отменено"
     )
   }
 
@@ -221,7 +205,6 @@ class MocksTest {
     val branches = mockGraph().branches
 
     assertTrue(branches.any { it.mergedAt != null }, "слитая ветка")
-    assertTrue(branches.any { it.status == GraphBranchStatus.Abandoned }, "заброшенная ветка")
     assertTrue(
       branches.any { it.status == GraphBranchStatus.Alive },
       "живая ветка: у неё хвост тянется до правого края содержимого"

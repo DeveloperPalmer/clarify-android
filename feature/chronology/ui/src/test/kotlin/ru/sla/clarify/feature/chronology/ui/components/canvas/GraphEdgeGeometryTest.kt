@@ -129,26 +129,7 @@ class GraphEdgeGeometryTest {
   }
 
   @Test
-  fun `an abandoned branch has no tail`() {
-    val edges = edgesOf(
-      nodes = listOf(episode("1", "topic")),
-      positions = listOf(IntOffset(0, 0)),
-      sizes = listOf(SIZE),
-      laneYs = listOf(104f),
-      branches = listOf(
-        branch("topic", forkedFrom = null, mergedAt = null, status = GraphBranchStatus.Abandoned)
-      ),
-      contentRight = 900f
-    )
-
-    assertTrue(
-      edges.none { it.role == GraphEdgeRole.Tail },
-      "тянуть линию брошенной темы через всю историю значило бы утверждать, что тема жива"
-    )
-  }
-
-  @Test
-  fun `a merged branch has no tail either`() {
+  fun `a merged branch has no tail`() {
     val edges = edgesOf(
       nodes = listOf(episode("1", "topic"), point("merge", GraphNodeRole.Merge)),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0)),

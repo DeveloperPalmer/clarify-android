@@ -184,7 +184,7 @@
     <string name="chronology_minimap">Мини-карта переписки</string>
     <string name="chronology_camera_start">К началу переписки</string>
     <string name="chronology_camera_front">К текущему моменту</string>
-    <string name="chronology_branch_status_active">Обсуждается</string>
+    <string name="chronology_branch_status_alive">Обсуждается</string>
     <string name="chronology_branch_status_waiting">Ждёт одобрения</string>
     <string name="chronology_branch_status_ready">Готова к слиянию</string>
     <string name="chronology_branch_status_merged">Закрыта</string>

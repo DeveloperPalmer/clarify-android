@@ -98,30 +98,6 @@ class GraphBranchGeometryTest {
   }
 
   @Test
-  fun `an abandoned branch releases its lane after its last node`() {
-    val abandoned = branch(
-      id = "a",
-      forkedFrom = "n2",
-      mergedAt = null,
-      status = GraphBranchStatus.Abandoned
-    )
-    val later = branch(id = "b", forkedFrom = "n9", mergedAt = null)
-    val occupancy = branchOccupancyOf(
-      branches = listOf(abandoned, later),
-      nodeBranches = branchesOf("a" to 3..5, "b" to 10..14),
-      indexById = indexById()
-    )
-
-    val lanes = laneAssignmentOf(occupancy, order = listOf(abandoned.id, later.id))
-
-    assertEquals(
-      lanes[abandoned.id],
-      lanes[later.id],
-      "брошенная тема мертва и дорожку отдаёт: иначе три брошенных темы держали бы три дорожки навсегда"
-    )
-  }
-
-  @Test
   fun `an open merge request keeps the lane until the end of the history`() {
     val waiting = branch(id = "a", forkedFrom = "n2", mergedAt = null)
     val later = branch(id = "b", forkedFrom = "n9", mergedAt = null)

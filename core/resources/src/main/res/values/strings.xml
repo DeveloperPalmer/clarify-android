@@ -194,7 +194,7 @@
     <string name="chronology_minimap">Conversation minimap</string>
     <string name="chronology_camera_start">To the start of the conversation</string>
     <string name="chronology_camera_front">To the present moment</string>
-    <string name="chronology_branch_status_active">In discussion</string>
+    <string name="chronology_branch_status_alive">In discussion</string>
     <string name="chronology_branch_status_waiting">Awaiting approval</string>
     <string name="chronology_branch_status_ready">Ready to merge</string>
     <string name="chronology_branch_status_merged">Closed</string>

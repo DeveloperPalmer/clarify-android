@@ -474,11 +474,10 @@ private fun Path.addHorizontalWithHops(
   lineTo(to.x, to.y)
 }
 
-/** Прозрачность линии по состоянию ветки: §7 гасит слитую до 60 %, §6.8 брошенную до 40 %. */
+/** Прозрачность линии по состоянию ветки: §7 гасит слитую до 60 %, остальные идут в полную силу. */
 private fun GraphBranchStatus.toEdgeAlpha(): Float {
   return when (this) {
     GraphBranchStatus.Merged -> 0.6f
-    GraphBranchStatus.Abandoned -> 0.4f
     GraphBranchStatus.Alive, GraphBranchStatus.Waiting, GraphBranchStatus.Ready -> 1f
   }
 }
@@ -500,7 +499,7 @@ private fun GraphBranchStatus.toPathEffect(dash: PathEffect, runningDash: PathEf
   return when (this) {
     GraphBranchStatus.Waiting -> dash
     GraphBranchStatus.Ready -> runningDash ?: dash
-    GraphBranchStatus.Alive, GraphBranchStatus.Merged, GraphBranchStatus.Abandoned -> null
+    GraphBranchStatus.Alive, GraphBranchStatus.Merged -> null
   }
 }
 

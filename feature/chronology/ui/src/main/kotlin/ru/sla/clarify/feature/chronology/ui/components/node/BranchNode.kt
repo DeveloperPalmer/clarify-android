@@ -24,7 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import ru.sla.clarify.feature.chronology.ui.entity.BranchNodeStatus
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconResId
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconTint
@@ -45,9 +45,9 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * Ширина фиксирована, растёт только высота: узлы стоят цепочкой на дорожке, и разъезжающаяся ширина
  * сдвигала бы соседей.
  *
- * Закрытая и брошенная ветки узел не приглушают. По §6.8 и §12 гаснет **линия** — до 60 % и до 40 %
- * соответственно, — а плашка остаётся в полную силу: узел это вход в ветку, и закрытая тема
- * открывается так же, как живая. Бейдж непрочитанного у закрытой ветки тоже остаётся.
+ * Закрытая ветка узел не приглушает. По §12 гаснет **линия** — до 60 %, — а плашка остаётся в полную
+ * силу: узел это вход в ветку, и закрытая тема открывается так же, как живая. Бейдж непрочитанного у
+ * закрытой ветки тоже остаётся.
  *
  * @param name имя ветки; длинное обрезается эллипсисом в одну строку
  * @param laneColor цвет идентичности дорожки: какая это ветка, а не что с ней происходит (§7).
@@ -61,7 +61,7 @@ internal fun BranchNode(
   name: String,
   laneColor: Color,
   modifier: Modifier = Modifier,
-  status: BranchNodeStatus = BranchNodeStatus.Active,
+  status: GraphBranchStatus = GraphBranchStatus.Alive,
   unreadCount: Long = 0
 ) {
   val accentColor = AppTheme.colors.contentAccentPrimary
@@ -176,7 +176,7 @@ private fun BranchNodePreviewContent(branch: BranchNodePreview) {
 private data class BranchNodePreview(
   val name: String,
   val lane: Int,
-  val status: BranchNodeStatus = BranchNodeStatus.Active,
+  val status: GraphBranchStatus = GraphBranchStatus.Alive,
   val unreadCount: Long = 0
 )
 
@@ -198,28 +198,23 @@ private class BranchNodePreviewProvider : PreviewParameterProvider<BranchNodePre
     BranchNodePreview(
       name = "Дизайн онбординга",
       lane = 2,
-      status = BranchNodeStatus.Waiting,
+      status = GraphBranchStatus.Waiting,
       unreadCount = 2
     ),
     BranchNodePreview(
       name = "Сроки по релизу",
       lane = 3,
-      status = BranchNodeStatus.Ready
+      status = GraphBranchStatus.Ready
     ),
     BranchNodePreview(
       name = "Сроки по релизу",
       lane = 3,
-      status = BranchNodeStatus.Merged
-    ),
-    BranchNodePreview(
-      name = "Стикеры",
-      lane = 4,
-      status = BranchNodeStatus.Abandoned(silentDays = 34)
+      status = GraphBranchStatus.Merged
     ),
     BranchNodePreview(
       name = "Очень длинное имя ветки, которое обязано обрезаться эллипсисом",
       lane = 5,
-      status = BranchNodeStatus.Merged,
+      status = GraphBranchStatus.Merged,
       unreadCount = 128
     )
   )
