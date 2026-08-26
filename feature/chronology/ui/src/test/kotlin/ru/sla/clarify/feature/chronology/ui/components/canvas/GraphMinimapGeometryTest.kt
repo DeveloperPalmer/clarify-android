@@ -396,7 +396,6 @@ class GraphMinimapGeometryTest {
     return GraphPlacement(
       nodes = listOf(IntOffset.Zero),
       bounds = Rect(left = -100f, top = 0f, right = 10_100f, bottom = 400f),
-      edges = emptyList(),
       centreSpanX = LONG_HISTORY,
       centreSpanY = 200f..200f,
       centres = listOf(Offset(x = 0f, y = 200f))

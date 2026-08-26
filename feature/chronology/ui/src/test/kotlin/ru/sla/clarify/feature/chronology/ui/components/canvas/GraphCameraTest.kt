@@ -457,7 +457,6 @@ class GraphCameraTest {
     return GraphPlacement(
       nodes = listOf(IntOffset.Zero),
       bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 100f),
-      edges = emptyList(),
       centreSpanX = 60f..900f,
       centreSpanY = 50f..50f,
       centres = listOf(Offset(x = 60f, y = 50f))

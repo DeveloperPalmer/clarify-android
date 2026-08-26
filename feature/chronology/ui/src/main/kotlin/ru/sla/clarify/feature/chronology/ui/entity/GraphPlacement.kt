@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.IntOffset
  *
  * @param nodes левые верхние углы узлов, в порядке модели
  * @param bounds объединение прямоугольников узлов: единственный источник истины о протяжённости
- * @param edges связи между соседними узлами дорожек
  * @param centreSpanX отрезок центров плашек по X, парный к [bounds] по краям
  * @param centreSpanY отрезок центров плашек по Y, парный к [centreSpanX]: камера наводится на центры
  *   по обеим осям, и вторая ось не может обойтись перебором [centres] — диапазон спрашивают на
@@ -24,7 +23,6 @@ import androidx.compose.ui.unit.IntOffset
 data class GraphPlacement(
   val nodes: List<IntOffset>,
   val bounds: Rect,
-  val edges: List<GraphEdge>,
   val centreSpanX: ClosedFloatingPointRange<Float>,
   val centreSpanY: ClosedFloatingPointRange<Float>,
   val centres: List<Offset>
@@ -40,7 +38,6 @@ data class GraphPlacement(
     val Empty = GraphPlacement(
       nodes = emptyList(),
       bounds = Rect.Zero,
-      edges = emptyList(),
       centreSpanX = 0f..0f,
       centreSpanY = 0f..0f,
       centres = emptyList()

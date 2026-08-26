@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 
@@ -49,56 +48,6 @@ class GraphPlacementTest {
   }
 
   @Test
-  fun `an edge is as long as the pause that made it`() {
-    val placement = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 70f))
-
-    assertEquals(1, placement.edges.size)
-    assertEquals(70f, placement.edges[0].endX - placement.edges[0].startX)
-  }
-
-  @Test
-  fun `the last node of a lane has no trailing edge`() {
-    val placement = placementOf(lanes = listOf(0, 0, 0), gaps = listOf(0f, 40f, 40f))
-
-    assertEquals(2, placement.edges.size, "три узла дают ровно две связи, а не три")
-  }
-
-  @Test
-  fun `nodes of different lanes are never connected`() {
-    val placement = placementOf(lanes = listOf(0, 1), gaps = listOf(0f, 40f))
-
-    assertTrue(placement.edges.isEmpty(), "связь только внутри дорожки")
-  }
-
-  @Test
-  fun `a lane reconnects across a node of another lane`() {
-    val placement = placementOf(lanes = listOf(0, 1, 0), gaps = listOf(0f, 40f, 40f))
-
-    assertEquals(1, placement.edges.size, "магистраль продолжается через узел ветки")
-  }
-
-  @Test
-  fun `an edge sits on the lane, not on a plate`() {
-    val tall = IntSize(NODE_WIDTH, 41)
-    val short = IntSize(NODE_WIDTH, 28)
-
-    val placement = graphPlacementOf(
-      branchIds = branchesOf(listOf(0, 0)),
-      lanes = listOf(0, 0),
-      gaps = listOf(0f, 40f),
-      laneYs = listOf(LANE_Y, LANE_Y),
-      sizes = listOf(tall, short),
-      margins = GraphCanvasMargins.Zero
-    )
-
-    assertEquals(
-      LANE_Y,
-      placement.edges[0].y,
-      "y ребра берётся у дорожки: у плашек разной высоты центры расходятся на пиксель"
-    )
-  }
-
-  @Test
   fun `bounds wrap every plate`() {
     val placement = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 40f))
 
@@ -109,7 +58,6 @@ class GraphPlacementTest {
   @Test
   fun `an empty graph places nothing`() {
     val placement = graphPlacementOf(
-      branchIds = emptyList(),
       lanes = emptyList(),
       gaps = emptyList(),
       laneYs = emptyList(),
@@ -129,7 +77,6 @@ class GraphPlacementTest {
   fun `a model out of step with the measured sizes is refused, not indexed past the end`() {
     val grown = assertThrows(IllegalStateException::class.java) {
       graphPlacementOf(
-        branchIds = branchesOf(listOf(0, 0, 0)),
         lanes = listOf(0, 0, 0),
         gaps = listOf(0f, 40f, 40f),
         laneYs = listOf(LANE_Y, LANE_Y, LANE_Y),
@@ -144,7 +91,6 @@ class GraphPlacementTest {
 
     assertThrows(IllegalStateException::class.java) {
       graphPlacementOf(
-        branchIds = branchesOf(listOf(0)),
         lanes = listOf(0),
         gaps = listOf(0f),
         laneYs = listOf(LANE_Y),
@@ -162,7 +108,6 @@ class GraphPlacementTest {
   fun `an empty model with measured nodes is refused too`() {
     assertThrows(IllegalStateException::class.java) {
       graphPlacementOf(
-        branchIds = emptyList(),
         lanes = emptyList(),
         gaps = emptyList(),
         laneYs = emptyList(),
@@ -177,7 +122,6 @@ class GraphPlacementTest {
     val bare = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 40f))
 
     val padded = graphPlacementOf(
-      branchIds = branchesOf(listOf(0, 0)),
       lanes = listOf(0, 0),
       gaps = listOf(0f, 40f),
       laneYs = listOf(LANE_Y, LANE_Y),
@@ -199,7 +143,6 @@ class GraphPlacementTest {
     val bare = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 40f))
 
     val padded = graphPlacementOf(
-      branchIds = branchesOf(listOf(0, 0)),
       lanes = listOf(0, 0),
       gaps = listOf(0f, 40f),
       laneYs = listOf(LANE_Y, LANE_Y),
@@ -228,7 +171,6 @@ class GraphPlacementTest {
 
   private fun placementOf(lanes: List<Int>, gaps: List<Float>): GraphPlacement {
     return graphPlacementOf(
-      branchIds = branchesOf(lanes),
       lanes = lanes,
       gaps = gaps,
       laneYs = lanes.map { LANE_Y + it * LANE_Y },
@@ -241,11 +183,3 @@ class GraphPlacementTest {
 private const val NODE_WIDTH = 120
 private const val NODE_HEIGHT = 28
 private const val LANE_Y = 200f
-
-/**
- * По ветке на дорожку: рёбра теперь связывают узлы одной ветки, а раскладке довольно того, что
- * ветки различимы между собой.
- */
-private fun branchesOf(lanes: List<Int>): List<GraphBranch.Id> {
-  return lanes.map { lane -> GraphBranch.Id("b$lane") }
-}

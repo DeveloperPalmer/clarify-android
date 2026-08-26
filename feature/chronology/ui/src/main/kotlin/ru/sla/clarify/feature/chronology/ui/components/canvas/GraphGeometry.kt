@@ -6,9 +6,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -120,7 +118,6 @@ internal fun nearestCentreIndexOf(centres: List<Offset>, x: Float): Int {
  * не «невозможное состояние», а ровно тот дефект, который здесь и ловится. Индекс за границей
  * списка сообщил бы о нём в терминах реализации, а не в терминах нарушенного контракта.
  *
- * @param branchIds ветка каждого узла
  * @param lanes номер дорожки каждого узла
  * @param gaps зазор перед каждым узлом, в пикселях
  * @param laneYs смещение дорожки каждого узла по Y, в пикселях
@@ -129,7 +126,6 @@ internal fun nearestCentreIndexOf(centres: List<Offset>, x: Float): Int {
  * @return раскладка, пустая при отсутствии узлов
  */
 internal fun graphPlacementOf(
-  branchIds: List<GraphBranch.Id>,
   lanes: List<Int>,
   gaps: List<Float>,
   laneYs: List<Float>,
@@ -162,7 +158,6 @@ internal fun graphPlacementOf(
     // выводится из bounds, и раздутый прямоугольник сам даёт зазор у каждой границы. Иначе крайняя
     // плашка упирается в кромку экрана, будто история обрезана.
     bounds = boundsOf(nodes, sizes).expandedBy(margins),
-    edges = edgesOf(branchIds, laneYs, nodes, sizes),
     // Минимум и максимум, а не первый с последним: агрегат не должен зависеть от того, что порядок
     // узлов совпадает с порядком по оси. По Y это уже не педантизм, а необходимость — порядок узлов
     // задан временем, и с порядком дорожек не совпадает вовсе.
@@ -236,47 +231,5 @@ private fun boundsOf(nodes: List<IntOffset>, sizes: List<IntSize>): Rect {
   return Rect(left, top, right, bottom)
 }
 
-/**
- * Отрезки связей: между соседними по времени узлами одной дорожки.
- *
- * Ребро существует только там, где есть что связывать, поэтому после последнего узла дорожки его
- * нет и линия не уходит в пустоту. Отрезок живёт строго в зазоре между плашками: узел бывает
- * полупрозрачным, и линия под ним просвечивала бы.
- *
- * Y берётся у дорожки, а не у плашки: плашки центрируются на дорожке с округлением, и у соседей
- * разной высоты центры расходились на пиксель — ребро не дотягивалось до одного из них.
- *
- * Дорожка сейчас отождествляется с ветвью. Когда появится переиспользование дорожки после слияния,
- * группировать придётся по идентификатору ветви, иначе две несвязанные ветви получат ложное ребро.
- *
- * @param branchIds ветка каждого узла
- * @param lanes номер дорожки каждого узла
- * @param laneYs смещение дорожки каждого узла по Y
- * @param nodes левые верхние углы узлов
- * @param sizes размеры узлов
- * @return отрезки в координатах полотна
- */
-private fun edgesOf(
-  branchIds: List<GraphBranch.Id>,
-  laneYs: List<Float>,
-  nodes: List<IntOffset>,
-  sizes: List<IntSize>
-): List<GraphEdge> {
-  val previousByBranch = HashMap<GraphBranch.Id, Int>()
-  val edges = mutableListOf<GraphEdge>()
-  nodes.indices.forEach { index ->
-    val previous = previousByBranch.put(branchIds[index], index)
-    if (previous != null) {
-      val startX = (nodes[previous].x + sizes[previous].width).toFloat()
-      val endX = nodes[index].x.toFloat()
-      if (endX > startX) {
-        edges += GraphEdge(startX = startX, endX = endX, y = laneYs[index])
-      }
-    }
-  }
-  return edges
-}
-
 internal val CANVAS_PADDING: Dp = 64.dp
 private val LANE_STEP: Dp = 104.dp
-internal val EDGE_WIDTH: Dp = 2.dp

@@ -21,21 +21,36 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
+import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
+import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
+import ru.sla.clarify.uikit.theme.AppColors
 import ru.sla.clarify.uikit.theme.AppTheme
+import kotlin.math.abs
 
 /**
  * Полотно хронологии: фон, узлы графа и связи между ними, по которому можно панорамировать.
@@ -185,7 +200,21 @@ private fun GraphNodesLayer(
   node: @Composable (node: GraphNode, accent: GraphNodeAccent) -> Unit
 ) {
   val telemetry = state.telemetry
-  val edgeColor = AppTheme.colors.contentTertiary
+  val colors = AppTheme.colors
+  // Путь один на все рёбра и чистится `rewind()`, а не создаётся заново: он держит выделенную
+  // память между вызовами, и сотня рёбер иначе рождала бы сотню нативных объектов на каждый проход.
+  val edgePath = remember { Path() }
+  val density = LocalDensity.current
+  // Эффект пунктира кэшируется, потому что `AndroidPathEffect` не имеет `equals`: `Stroke` сравнивает
+  // его по ссылке, и новый экземпляр на каждом кадре означал бы новый нативный `DashPathEffect` и
+  // вызов `Paint.setPathEffect` на каждое ребро. Ключ — плотность: спека, замороженная от старого
+  // экрана, уже однажды стоила фиче дефекта.
+  val dashEffect = remember(density) {
+    with(density) { PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())) }
+  }
+  val cornerRadius = with(density) { 8.dp.toPx() }
+  val hopRadius = with(density) { 6.dp.toPx() }
+  val fadeLength = with(density) { 40.dp.toPx() }
   val statusBar = WindowInsets.statusBars
   val navigationBar = WindowInsets.navigationBars
   Layout(
@@ -211,16 +240,19 @@ private fun GraphNodesLayer(
       }
       .drawBehind {
         // Связи рисуются внутри того же слоя, поэтому масштабируются вместе с плашками: на 0.4×
-        // линия истончается до 0.8 dp, на 2.5× толстеет до пяти. Одно правило на весь слой проще
-        // двух; если тонкая линия потеряется на устройстве, обратный ход — поделить толщину на
-        // масштаб прямо здесь.
+        // линия истончается до 0.8 dp, на 2.5× толстеет до пяти, а штрих пунктира растягивается
+        // вместе с ней. Одно правило на весь слой проще двух; если тонкая линия потеряется на
+        // устройстве, обратный ход — поделить толщину на масштаб прямо здесь.
         telemetry.onEdgeDraw()
         state.edges.value.fastForEach { edge ->
-          drawLine(
-            color = edgeColor,
-            start = Offset(edge.startX, edge.y),
-            end = Offset(edge.endX, edge.y),
-            strokeWidth = EDGE_WIDTH.toPx()
+          drawGraphEdge(
+            edge = edge,
+            path = edgePath,
+            colors = colors,
+            dashEffect = dashEffect,
+            cornerRadius = cornerRadius,
+            hopRadius = hopRadius,
+            fadeLength = fadeLength
           )
         }
       },
@@ -250,4 +282,170 @@ private fun GraphNodesLayer(
       placeables.fastForEachIndexed { index, placeable -> placeable.place(placement.nodes[index]) }
     }
   }
+}
+
+/**
+ * Рисует одно ребро: собирает путь по точкам излома и кладёт на него штрих.
+ *
+ * `Path` приходит снаружи и чистится `rewind()`: он переиспользуется между рёбрами, иначе каждый
+ * проход слоя рождал бы по нативному объекту на ребро.
+ *
+ * Углы скругляются вручную квадратичной Безье, а не `PathEffect.cornerPathEffect`, и это решение с
+ * причиной. Эффект скругляет **все** вершины контура, включая полученные из дуги мостика, — то есть
+ * портит ровно тот приём, ради которого мостик заведён; вдобавок он молча ужимает радиус до
+ * половины сегмента, чего в его документации нет. Отклонение параболы от настоящей дуги при радиусе
+ * 8 dp — 0.49 dp, и увидеть его нельзя.
+ *
+ * @param edge ребро в координатах полотна
+ * @param path переиспользуемый путь
+ * @param colors палитра активной темы
+ * @param dashEffect кэшированный пунктир
+ * @param cornerRadius радиус скругления углов
+ * @param hopRadius радиус мостика над чужой вертикалью
+ * @param fadeLength длина растворения хвоста
+ */
+@Suppress("LongParameterList")
+private fun DrawScope.drawGraphEdge(
+  edge: GraphEdge,
+  path: Path,
+  colors: AppColors,
+  dashEffect: PathEffect,
+  cornerRadius: Float,
+  hopRadius: Float,
+  fadeLength: Float
+) {
+  path.rewind()
+  path.addGraphRoute(edge, cornerRadius, hopRadius)
+  val color = edge.colorIndex.toBranchColor(colors)
+  val width = when (edge.role) {
+    GraphEdgeRole.Trunk -> 2.dp.toPx()
+    // Слой ответов §7 рисуется 1 dp, но его здесь нет: он живёт только внутри раскрытого эпизода.
+    GraphEdgeRole.Branch, GraphEdgeRole.Fork, GraphEdgeRole.Merge, GraphEdgeRole.Tail -> 1.5.dp.toPx()
+  }
+  val style = Stroke(
+    width = width,
+    // Кап тупой, а не круглый, хотя прототип берёт круглый: тот добавляет по половине толщины с
+    // каждой стороны штриха, и пробел 4 dp читается как 2.5 dp, а на 0.4× пунктир сливается в
+    // сплошную линию. Штрих — единственное, что отличает «живёт» от «MR открыт» помимо иконки.
+    cap = StrokeCap.Butt,
+    join = StrokeJoin.Round,
+    pathEffect = if (edge.status.isDashed()) dashEffect else null
+  )
+  if (edge.role == GraphEdgeRole.Tail) {
+    // Хвост растворяется у своего конца: линия не обрывается стеной, а «продолжается в будущее».
+    val end = edge.points.last()
+    drawPath(
+      path = path,
+      brush = Brush.horizontalGradient(
+        colorStops = arrayOf(
+          0f to color.copy(alpha = edge.status.toEdgeAlpha()),
+          1f to color.copy(alpha = 0f)
+        ),
+        startX = maxOf(edge.points.first().x, end.x - fadeLength),
+        endX = end.x
+      ),
+      style = style
+    )
+  } else {
+    drawPath(path = path, color = color, alpha = edge.status.toEdgeAlpha(), style = style)
+  }
+}
+
+/**
+ * Достраивает путь по точкам излома ребра: прямые, скруглённые углы и мостики.
+ *
+ * @param edge ребро в координатах полотна
+ * @param cornerRadius радиус скругления углов
+ * @param hopRadius радиус мостика
+ */
+private fun Path.addGraphRoute(edge: GraphEdge, cornerRadius: Float, hopRadius: Float) {
+  val points = edge.points
+  moveTo(points.first().x, points.first().y)
+  points.indices.drop(1).forEach { index ->
+    val target = points[index]
+    val previous = points[index - 1]
+    val isLast = index == points.lastIndex
+    // Угол срезается на радиус с обеих сторон: до угла ведёт прямая, сам угол — контрольная точка
+    // квадратичной Безье, ровно как в прототипе.
+    val corner = if (isLast) 0f else minOf(cornerRadius, distanceTo(target, points[index + 1]) / 2f)
+    val approach = shortenedTowards(previous, target, corner)
+    if (previous.y == target.y) {
+      addHorizontalWithHops(previous, approach, edge.hops, hopRadius)
+    } else {
+      lineTo(approach.x, approach.y)
+    }
+    if (!isLast) {
+      val departure = shortenedTowards(points[index + 1], target, corner)
+      quadraticTo(target.x, target.y, departure.x, departure.y)
+    }
+  }
+}
+
+/**
+ * Ведёт горизонтальный участок, поднимая полукруглый мостик над каждой чужой вертикалью.
+ *
+ * Мостик — ровно полуокружность: хорда 12 dp при радиусе 6 равна двум радиусам, поэтому дуга
+ * поднимается на 6 dp и возвращается на линию. Дуга идёт вверх независимо от направления линии —
+ * так же, как в схемах метро и в git-графах, откуда приём и взят.
+ */
+private fun Path.addHorizontalWithHops(
+  from: Offset,
+  to: Offset,
+  hops: List<Float>,
+  hopRadius: Float
+) {
+  val forward = to.x >= from.x
+  val inside = hops.filter { hop ->
+    if (forward) {
+      hop > from.x + hopRadius && hop < to.x - hopRadius
+    } else {
+      hop < from.x - hopRadius && hop > to.x + hopRadius
+    }
+  }
+  val ordered = if (forward) inside.sorted() else inside.sortedDescending()
+  ordered.forEach { hop ->
+    val entry = if (forward) hop - hopRadius else hop + hopRadius
+    val exit = if (forward) hop + hopRadius else hop - hopRadius
+    lineTo(entry, from.y)
+    arcTo(
+      rect = Rect(
+        left = hop - hopRadius,
+        top = from.y - hopRadius,
+        right = hop + hopRadius,
+        bottom = from.y + hopRadius
+      ),
+      startAngleDegrees = if (forward) 180f else 0f,
+      sweepAngleDegrees = if (forward) 180f else -180f,
+      forceMoveTo = false
+    )
+    lineTo(exit, from.y)
+  }
+  lineTo(to.x, to.y)
+}
+
+/** Прозрачность линии по состоянию ветки: §7 гасит слитую до 60 %, §6.8 брошенную до 40 %. */
+private fun GraphBranchStatus.toEdgeAlpha(): Float {
+  return when (this) {
+    GraphBranchStatus.Merged -> 0.6f
+    GraphBranchStatus.Abandoned -> 0.4f
+    GraphBranchStatus.Alive, GraphBranchStatus.Waiting, GraphBranchStatus.Ready -> 1f
+  }
+}
+
+/** Пунктиром идёт замороженная ветка: merge request открыт или уже одобрен (§7). */
+private fun GraphBranchStatus.isDashed(): Boolean {
+  return this == GraphBranchStatus.Waiting || this == GraphBranchStatus.Ready
+}
+
+/** Точка на отрезке `from → to`, отступающая от `to` на `distance`. */
+private fun shortenedTowards(from: Offset, to: Offset, distance: Float): Offset {
+  return when {
+    from.x == to.x -> Offset(to.x, to.y + distance * if (from.y > to.y) 1f else -1f)
+    else -> Offset(to.x + distance * if (from.x > to.x) 1f else -1f, to.y)
+  }
+}
+
+/** Длина отрезка между соседними точками ортогональной ломаной. */
+private fun distanceTo(from: Offset, to: Offset): Float {
+  return abs(to.x - from.x) + abs(to.y - from.y)
 }

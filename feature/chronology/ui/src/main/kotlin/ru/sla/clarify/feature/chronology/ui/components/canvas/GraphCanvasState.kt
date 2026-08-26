@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -80,6 +81,8 @@ internal class GraphCanvasState {
   private var graphNodes by mutableStateOf(emptyList<GraphNode>())
 
   private var graphBranches by mutableStateOf(emptyList<GraphBranch>())
+
+  private var graphEdges by mutableStateOf(emptyList<GraphEdge>())
 
   // Камера хранится уже зажатой. Незажатый сдвиг заводился ради оттяжки за край и затухания —
   // обоим он оказался не нужен: оттяжка держит своё состояние сама, а затуханию нужен признак
@@ -161,8 +164,8 @@ internal class GraphCanvasState {
   /** Масштаб фона, см. [backdropScaleOf]. */
   val backdropScale: State<Float> = derivedStateOf { backdropScaleOf(cameraScale) }
 
-  /** Связи между соседними узлами каждой ветки, в координатах полотна. */
-  val edges: State<List<GraphEdge>> = derivedStateOf { placement.edges }
+  /** Рёбра графа в координатах полотна: горизонтали дорожек, уходы, возвраты и хвосты. */
+  val edges: State<List<GraphEdge>> = derivedStateOf { graphEdges }
 
   /**
    * Какая доля содержимого по времени видна сейчас.
@@ -218,7 +221,7 @@ internal class GraphCanvasState {
       isCameraMoved = isMoved,
       centreSpanX = placement.centreSpanX,
       nodeCount = graphNodes.size,
-      edgeCount = placement.edges.size
+      edgeCount = graphEdges.size
     )
   }
 
@@ -537,7 +540,6 @@ internal class GraphCanvasState {
     val geometry = GraphGeometry(topLaneOf(lanes))
     val result = with(density) {
       graphPlacementOf(
-        branchIds = branchIds,
         lanes = lanes,
         gaps = nodes.map { it.gap.toStepWidth().toPx() },
         laneYs = lanes.map { geometry.laneYOf(it).toPx() },
@@ -551,6 +553,22 @@ internal class GraphCanvasState {
     }
     viewport = viewportSize
     placement = result
+    graphEdges = with(density) {
+      graphEdgesOf(
+        nodes = nodes,
+        branches = branches,
+        laneYs = lanes.map { geometry.laneYOf(it).toPx() },
+        positions = result.nodes,
+        sizes = nodeSizes,
+        // Хвост идёт до правого края содержимого, а не до края видимой области, как просит §6.8:
+        // вьюпорта раскладка не знает и знать не должна. Поля полотна из `bounds` вычтены — они
+        // отступ, а не история.
+        contentRight = result.bounds.right - CANVAS_PADDING.toPx(),
+        // Мостик, прижатый к концу отрезка, съедается скруглением угла: между ними должно
+        // остаться место и на радиус 8 dp, и на полухорду мостика 6 dp.
+        hopClearance = 16.dp.toPx()
+      )
+    }
     marks = laneMarksOf(
       branchIds = branchIds,
       lanes = lanes,
