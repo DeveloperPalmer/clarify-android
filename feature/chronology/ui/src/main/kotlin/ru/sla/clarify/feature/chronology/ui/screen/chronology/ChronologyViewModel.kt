@@ -18,13 +18,15 @@ class ChronologyViewModel @Inject constructor(
   private val featureConfigsManager: FeatureConfigsManager
 ) : ViewModel<ViewState, ViewIntents>() {
 
-  private val episodes = mockNodes()
+  // Узлы и ветки берутся одним набором, а не двумя вызовами: они описывают один граф, и собранное
+  // из разных наборов состояние дало бы раскраску дорожек по чужим индексам — молча.
+  private val graph = mockGraph()
 
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState(
-      nodes = episodes.map { it.node },
-      graphBranches = mockBranches(),
-      episodeById = episodes.associateBy { it.node.id }
+      nodes = graph.graphNodes,
+      graphBranches = graph.branches,
+      episodeById = graph.episodeById
     ) to null
 
     onEach(intent(ViewIntents::navigateBack)) {
