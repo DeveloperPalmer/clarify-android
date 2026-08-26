@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,7 +14,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.preview.PreviewColumn
@@ -37,15 +40,26 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * Высоту над точкой слияния — 34 dp по §12 — задаёт раскладка, а не чип: где стоит узел, дело
  * полотна.
  *
+ * **Ширина ограничена, и слово при нужде обрезается.** Чип втрое шире своего узла: паддинги, иконка
+ * и слово дают около 87 dp против 24 dp точки слияния, а при двухсотпроцентном шрифте — под 137 dp.
+ * В накопительную ось X эта ширина не входит, поэтому чип свисает по обе стороны от точки и на
+ * наименьшем зазоре 40 dp достаёт до соседней плашки. Обрезка эллипсисом — то же решение, что у
+ * имени ветки в [BranchNode], и по той же причине: расти вширь узлу на дорожке нельзя.
+ *
  * @param modifier модификатор чипа
+ * @param maxWidth наибольшая ширина чипа: слово за ней обрезается эллипсисом
  */
 @Composable
-internal fun MergedRequestNode(modifier: Modifier = Modifier) {
+internal fun MergedRequestNode(
+  modifier: Modifier = Modifier,
+  maxWidth: Dp = 120.dp
+) {
   Row(
     modifier = modifier
       // Скругление 12 при высоте 24 и есть капсула: других форм в системе нет, и заводить их ради
       // одного чипа не потребовалось.
       .defaultMinSize(minHeight = 24.dp)
+      .widthIn(max = maxWidth)
       .background(AppTheme.colors.successSecondary, AppTheme.shapes.round12)
       .padding(horizontal = 10.dp),
     verticalAlignment = Alignment.CenterVertically,
@@ -62,7 +76,9 @@ internal fun MergedRequestNode(modifier: Modifier = Modifier) {
       // и второй ресурс с тем же словом разошёлся бы с первым на первой же правке формулировки.
       text = stringResource(R.string.chronology_branch_status_merged),
       style = AppTheme.typography.label3Bold,
-      color = AppTheme.colors.contentAccentDark
+      color = AppTheme.colors.contentAccentDark,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
     )
   }
 }
@@ -71,7 +87,7 @@ internal fun MergedRequestNode(modifier: Modifier = Modifier) {
 @Composable
 private fun MergedRequestNodePreviewLight() {
   PreviewColumn(colorTheme = ColorTheme.Light) {
-    MergedRequestNode()
+    MergedRequestNodePreviewContent()
   }
 }
 
@@ -79,6 +95,18 @@ private fun MergedRequestNodePreviewLight() {
 @Composable
 private fun MergedRequestNodePreviewDark() {
   PreviewColumn(colorTheme = ColorTheme.Dark) {
-    MergedRequestNode()
+    MergedRequestNodePreviewContent()
   }
+}
+
+/**
+ * Оба кадра: чип по своей ширине и чип, упёршийся в предел.
+ *
+ * Второй нужен затем, что обрезка проверяется только на нём: при двухсотпроцентном шрифте (§14
+ * брифа) слово перерастает бюджет, и увидеть это можно, лишь поставив узкий кадр рядом с обычным.
+ */
+@Composable
+private fun MergedRequestNodePreviewContent() {
+  MergedRequestNode()
+  MergedRequestNode(maxWidth = 60.dp)
 }

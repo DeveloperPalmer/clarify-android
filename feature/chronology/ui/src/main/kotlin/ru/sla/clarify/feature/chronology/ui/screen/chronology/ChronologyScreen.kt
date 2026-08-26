@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
@@ -29,6 +30,7 @@ import ru.sla.clarify.feature.chronology.ui.components.node.EpisodeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.ForkNode
 import ru.sla.clarify.feature.chronology.ui.components.node.FrontNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergeNode
+import ru.sla.clarify.feature.chronology.ui.components.node.MergedRequestNode
 import ru.sla.clarify.feature.chronology.ui.entity.ForkDirection
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
@@ -88,7 +90,19 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                 laneColor = accent.colorIndex.toBranchColor(AppTheme.colors),
                 direction = if (accent.lane < 0) ForkDirection.Up else ForkDirection.Down
               )
-              GraphNodeRole.Merge -> MergeNode()
+              // Чип «Закрыта» висит с той стороны магистрали, откуда ветка **не** возвращается.
+              // Иначе вертикаль возврата прошла бы сквозь него: она стоит на том же X, что и точка
+              // слияния, а чип в накопительную ось не входит и перекрыть её не может ничем.
+              // Смещается `offset`, места в раскладке не занимая, — то же правило, что у шеврона
+              // ветвления и у гало непрочитанного.
+              GraphNodeRole.Merge -> Box(contentAlignment = Alignment.Center) {
+                MergeNode()
+                MergedRequestNode(
+                  modifier = Modifier.offset(
+                    y = if (accent.lane < 0) 34.dp else (-34).dp
+                  )
+                )
+              }
               GraphNodeRole.Front -> FrontNode()
             }
           },
