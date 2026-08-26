@@ -8,7 +8,11 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.InfiniteRepeatableSpec
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -29,6 +33,14 @@ class AppMotion {
   val smallMillis = 150
   val mediumMillis = 250
   val largeMillis = 400
+
+  /**
+   * Период бесконечного равномерного повтора: бегущий пунктир, марширующая линия.
+   *
+   * Стоит вне ряда `100 / 150 / 250 / 400` потому, что это не длительность перехода: переход тем
+   * лучше, чем короче, а бег, уложенный в четверть секунды, читается не движением, а дрожью.
+   */
+  val loopMillis = 900
 
   @Composable
   fun <S> mediumTransitionSpec(): AnimatedContentTransitionScope<S>.() -> ContentTransform {
@@ -76,6 +88,25 @@ class AppMotion {
     return tween(
       easing = AppTheme.motion.decelerate,
       durationMillis = AppTheme.motion.largeMillis
+    )
+  }
+
+  /**
+   * Бесконечный равномерный цикл: значение идёт от начала к концу за [loopMillis] и начинает заново.
+   *
+   * Кривая линейная, а не `emphasized`, и это не упущение: у повтора нет ни начала, ни конца, а
+   * любое ускорение с торможением превращает шов между итерациями в рывок на ровном месте.
+   *
+   * @return спека повтора; куда именно движется значение, решает точка использования
+   */
+  @Composable
+  fun <T> loopTween(): InfiniteRepeatableSpec<T> {
+    return infiniteRepeatable(
+      animation = tween(
+        easing = LinearEasing,
+        durationMillis = AppTheme.motion.loopMillis
+      ),
+      repeatMode = RepeatMode.Restart
     )
   }
 
