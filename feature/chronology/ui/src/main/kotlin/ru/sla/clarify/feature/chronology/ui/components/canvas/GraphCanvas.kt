@@ -1,5 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -8,6 +10,8 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
@@ -38,6 +42,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
@@ -205,13 +210,22 @@ private fun GraphNodesLayer(
   // память между вызовами, и сотня рёбер иначе рождала бы сотню нативных объектов на каждый проход.
   val edgePath = remember { Path() }
   val density = LocalDensity.current
-  // Эффект пунктира кэшируется, потому что `AndroidPathEffect` не имеет `equals`: `Stroke` сравнивает
-  // его по ссылке, и новый экземпляр на каждом кадре означал бы новый нативный `DashPathEffect` и
-  // вызов `Paint.setPathEffect` на каждое ребро. Ключ — плотность: спека, замороженная от старого
-  // экрана, уже однажды стоила фиче дефекта.
-  val dashEffect = remember(density) {
-    with(density) { PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())) }
+  // Ключ — плотность: спека, замороженная от старого экрана, уже однажды стоила фиче дефекта.
+  val dashIntervals = remember(density) {
+    with(density) { floatArrayOf(6.dp.toPx(), 4.dp.toPx()) }
   }
+  // Неподвижный пунктир кэшируется, потому что `AndroidPathEffect` не имеет `equals`: `Stroke`
+  // сравнивает его по ссылке, и новый экземпляр на каждом кадре означал бы новый нативный
+  // `DashPathEffect` и вызов `Paint.setPathEffect` на каждое ребро.
+  val dashEffect = remember(dashIntervals) { PathEffect.dashPathEffect(dashIntervals) }
+  // Бежит пунктир только у веток, готовых к слиянию (§7), а таких на графе может не быть вовсе.
+  // Фаза заводится ровно тогда, когда есть чему бежать: бесконечная анимация запрашивает кадр,
+  // пока жива, а её чтение в рисовании перерисовывает слой связей каждый кадр — на графе без
+  // готовых веток это был бы вечный кадр ни для чего.
+  val hasRunningEdge = remember(state) {
+    derivedStateOf { state.edges.value.fastAny { it.status == GraphBranchStatus.Ready } }
+  }
+  val dashPhase = rememberDashPhase(period = dashIntervals.sum(), isRunning = hasRunningEdge.value)
   val cornerRadius = with(density) { 8.dp.toPx() }
   val hopRadius = with(density) { 6.dp.toPx() }
   val fadeLength = with(density) { 40.dp.toPx() }
@@ -244,12 +258,18 @@ private fun GraphNodesLayer(
         // вместе с ней. Одно правило на весь слой проще двух; если тонкая линия потеряется на
         // устройстве, обратный ход — поделить толщину на масштаб прямо здесь.
         telemetry.onEdgeDraw()
+        // Фаза одна на все рёбра, поэтому и нативный объект на кадр создаётся один, а не по одному
+        // на ребро. Кэшировать его, как неподвижный, нельзя: в фазе и состоит весь бег.
+        val runningDashEffect = dashPhase?.let { phase ->
+          PathEffect.dashPathEffect(dashIntervals, phase.value)
+        }
         state.edges.value.fastForEach { edge ->
           drawGraphEdge(
             edge = edge,
             path = edgePath,
             colors = colors,
             dashEffect = dashEffect,
+            runningDashEffect = runningDashEffect,
             cornerRadius = cornerRadius,
             hopRadius = hopRadius,
             fadeLength = fadeLength
@@ -285,6 +305,34 @@ private fun GraphNodesLayer(
 }
 
 /**
+ * Фаза бегущего пунктира — сдвиг узора вдоль линии, в пикселях полотна.
+ *
+ * Фаза идёт **вниз**, от нуля к минус периоду, и это не описка: фаза сдвигает узор назад по пути,
+ * поэтому вперёд — от развилки к слиянию — пунктир бежит при убывающей. На стыке итераций значение
+ * прыгает с минус периода в ноль, но узор периодичен, и прыжок этот невидим по построению.
+ *
+ * Бег живёт в координатах полотна, а не экрана: слой масштабируется целиком, поэтому на 2.5× вместе
+ * со штрихом растягивается и скорость. Это то же правило, по которому там же толстеет сама линия.
+ *
+ * @param period длина одного повтора узора: штрих плюс пробел, в пикселях
+ * @param isRunning есть ли на графе ветка, готовая к слиянию
+ * @return фаза или `null`, если бежать нечему
+ */
+@Composable
+private fun rememberDashPhase(period: Float, isRunning: Boolean): State<Float>? {
+  if (!isRunning) {
+    return null
+  }
+  val transition = rememberInfiniteTransition(label = "dash")
+  return transition.animateFloat(
+    label = "phase",
+    initialValue = 0f,
+    targetValue = -period,
+    animationSpec = AppTheme.motion.loopTween()
+  )
+}
+
+/**
  * Рисует одно ребро: собирает путь по точкам излома и кладёт на него штрих.
  *
  * `Path` приходит снаружи и чистится `rewind()`: он переиспользуется между рёбрами, иначе каждый
@@ -299,7 +347,9 @@ private fun GraphNodesLayer(
  * @param edge ребро в координатах полотна
  * @param path переиспользуемый путь
  * @param colors палитра активной темы
- * @param dashEffect кэшированный пунктир
+ * @param dashEffect кэшированный неподвижный пунктир
+ * @param runningDashEffect тот же пунктир, сдвинутый на фазу этого кадра; `null`, если готовых к
+ *   слиянию веток на графе нет
  * @param cornerRadius радиус скругления углов
  * @param hopRadius радиус мостика над чужой вертикалью
  * @param fadeLength длина растворения хвоста
@@ -310,6 +360,7 @@ private fun DrawScope.drawGraphEdge(
   path: Path,
   colors: AppColors,
   dashEffect: PathEffect,
+  runningDashEffect: PathEffect?,
   cornerRadius: Float,
   hopRadius: Float,
   fadeLength: Float
@@ -329,7 +380,7 @@ private fun DrawScope.drawGraphEdge(
     // сплошную линию. Штрих — единственное, что отличает «живёт» от «MR открыт» помимо иконки.
     cap = StrokeCap.Butt,
     join = StrokeJoin.Round,
-    pathEffect = if (edge.status.isDashed()) dashEffect else null
+    pathEffect = edge.status.toPathEffect(dashEffect, runningDashEffect)
   )
   if (edge.role == GraphEdgeRole.Tail) {
     // Хвост растворяется у своего конца: линия не обрывается стеной, а «продолжается в будущее».
@@ -432,9 +483,25 @@ private fun GraphBranchStatus.toEdgeAlpha(): Float {
   }
 }
 
-/** Пунктиром идёт замороженная ветка: merge request открыт или уже одобрен (§7). */
-private fun GraphBranchStatus.isDashed(): Boolean {
-  return this == GraphBranchStatus.Waiting || this == GraphBranchStatus.Ready
+/**
+ * Штрих по состоянию ветки: §7 даёт замороженной пунктир, а готовой к слиянию — тот же пунктир, но
+ * бегущий.
+ *
+ * Узор у обоих один, и это не экономия: «MR открыт» и «одобрен обоими» — соседние состояния одной
+ * заморозки, и разный узор объявил бы их разными по природе. Движение же читается как «дело
+ * доведено до конца и ждёт только нажатия».
+ *
+ * @param dash неподвижный пунктир
+ * @param runningDash пунктир, сдвинутый на фазу кадра; `null` означает, что готовых веток на графе
+ *   нет и фазу никто не считает
+ * @return эффект штриха или `null` у сплошной линии
+ */
+private fun GraphBranchStatus.toPathEffect(dash: PathEffect, runningDash: PathEffect?): PathEffect? {
+  return when (this) {
+    GraphBranchStatus.Waiting -> dash
+    GraphBranchStatus.Ready -> runningDash ?: dash
+    GraphBranchStatus.Alive, GraphBranchStatus.Merged, GraphBranchStatus.Abandoned -> null
+  }
 }
 
 /** Точка на отрезке `from → to`, отступающая от `to` на `distance`. */
