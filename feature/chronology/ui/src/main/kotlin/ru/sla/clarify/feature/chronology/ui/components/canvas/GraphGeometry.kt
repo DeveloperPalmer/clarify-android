@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
@@ -119,6 +120,7 @@ internal fun nearestCentreIndexOf(centres: List<Offset>, x: Float): Int {
  * не «невозможное состояние», а ровно тот дефект, который здесь и ловится. Индекс за границей
  * списка сообщил бы о нём в терминах реализации, а не в терминах нарушенного контракта.
  *
+ * @param branchIds ветка каждого узла
  * @param lanes номер дорожки каждого узла
  * @param gaps зазор перед каждым узлом, в пикселях
  * @param laneYs смещение дорожки каждого узла по Y, в пикселях
@@ -127,6 +129,7 @@ internal fun nearestCentreIndexOf(centres: List<Offset>, x: Float): Int {
  * @return раскладка, пустая при отсутствии узлов
  */
 internal fun graphPlacementOf(
+  branchIds: List<GraphBranch.Id>,
   lanes: List<Int>,
   gaps: List<Float>,
   laneYs: List<Float>,
@@ -159,7 +162,7 @@ internal fun graphPlacementOf(
     // выводится из bounds, и раздутый прямоугольник сам даёт зазор у каждой границы. Иначе крайняя
     // плашка упирается в кромку экрана, будто история обрезана.
     bounds = boundsOf(nodes, sizes).expandedBy(margins),
-    edges = edgesOf(lanes, laneYs, nodes, sizes),
+    edges = edgesOf(branchIds, laneYs, nodes, sizes),
     // Минимум и максимум, а не первый с последним: агрегат не должен зависеть от того, что порядок
     // узлов совпадает с порядком по оси. По Y это уже не педантизм, а необходимость — порядок узлов
     // задан временем, и с порядком дорожек не совпадает вовсе.
@@ -246,6 +249,7 @@ private fun boundsOf(nodes: List<IntOffset>, sizes: List<IntSize>): Rect {
  * Дорожка сейчас отождествляется с ветвью. Когда появится переиспользование дорожки после слияния,
  * группировать придётся по идентификатору ветви, иначе две несвязанные ветви получат ложное ребро.
  *
+ * @param branchIds ветка каждого узла
  * @param lanes номер дорожки каждого узла
  * @param laneYs смещение дорожки каждого узла по Y
  * @param nodes левые верхние углы узлов
@@ -253,15 +257,15 @@ private fun boundsOf(nodes: List<IntOffset>, sizes: List<IntSize>): Rect {
  * @return отрезки в координатах полотна
  */
 private fun edgesOf(
-  lanes: List<Int>,
+  branchIds: List<GraphBranch.Id>,
   laneYs: List<Float>,
   nodes: List<IntOffset>,
   sizes: List<IntSize>
 ): List<GraphEdge> {
-  val previousByLane = HashMap<Int, Int>()
+  val previousByBranch = HashMap<GraphBranch.Id, Int>()
   val edges = mutableListOf<GraphEdge>()
   nodes.indices.forEach { index ->
-    val previous = previousByLane.put(lanes[index], index)
+    val previous = previousByBranch.put(branchIds[index], index)
     if (previous != null) {
       val startX = (nodes[previous].x + sizes[previous].width).toFloat()
       val endX = nodes[index].x.toFloat()

@@ -21,7 +21,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.feature.chronology.ui.entity.ForkDirection
-import ru.sla.clarify.feature.chronology.ui.mapper.toLaneColor
+import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -118,7 +118,7 @@ private fun ForkNodePreviewContent(fork: ForkNodePreview) {
     modifier = Modifier.padding(vertical = 32.dp),
     // Через настоящий маппер, а не через свой цвет: кадр заодно проверяет, что соседние дорожки
     // получают разные оттенки.
-    laneColor = fork.lane.toLaneColor(AppTheme.colors),
+    laneColor = fork.lane.toBranchColor(AppTheme.colors),
     direction = fork.direction
   )
 }

@@ -25,10 +25,10 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.BranchNodeStatus
+import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconResId
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconTint
 import ru.sla.clarify.feature.chronology.ui.mapper.toLabel
-import ru.sla.clarify.feature.chronology.ui.mapper.toLaneColor
 import ru.sla.clarify.uikit.component.UnreadCountBadge
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.preview.PreviewColumn
@@ -166,7 +166,7 @@ private fun BranchNodePreviewContent(branch: BranchNodePreview) {
     name = branch.name,
     // Через настоящий маппер, а не через свой цвет: кадр заодно проверяет, что соседние дорожки
     // действительно получают разные оттенки.
-    laneColor = branch.lane.toLaneColor(AppTheme.colors),
+    laneColor = branch.lane.toBranchColor(AppTheme.colors),
     status = branch.status,
     unreadCount = branch.unreadCount
   )

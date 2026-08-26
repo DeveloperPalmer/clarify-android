@@ -26,6 +26,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
@@ -44,13 +45,17 @@ import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
  * сбрасывало бы камеру в исходную позицию и отменяло бы жест под пальцем.
  *
  * @param nodes узлы в хронологическом порядке
+ * @param branches ветки графа, кроме магистрали, в порядке ветвления
  * @return состояние, живущее до выхода с экрана
  */
 @Composable
-internal fun rememberGraphCanvasState(nodes: List<GraphNode>): GraphCanvasState {
+internal fun rememberGraphCanvasState(
+  nodes: List<GraphNode>,
+  branches: List<GraphBranch>
+): GraphCanvasState {
   val state = remember { GraphCanvasState() }
   // SideEffect, а не запись в теле: отброшенная композиция не должна была подменять узлы.
-  SideEffect { state.setNodes(nodes) }
+  SideEffect { state.setNodes(nodes, branches) }
   return state
 }
 
@@ -73,6 +78,8 @@ internal fun rememberGraphCanvasState(nodes: List<GraphNode>): GraphCanvasState 
 internal class GraphCanvasState {
 
   private var graphNodes by mutableStateOf(emptyList<GraphNode>())
+
+  private var graphBranches by mutableStateOf(emptyList<GraphBranch>())
 
   // Камера хранится уже зажатой. Незажатый сдвиг заводился ради оттяжки за край и затухания —
   // обоим он оказался не нужен: оттяжка держит своё состояние сама, а затуханию нужен признак
@@ -116,6 +123,10 @@ internal class GraphCanvasState {
   val nodes: List<GraphNode>
     get() = graphNodes
 
+  /** Ветки графа, кроме магистрали, в порядке ветвления. */
+  val branches: List<GraphBranch>
+    get() = graphBranches
+
   /**
    * Сдвиг содержимого относительно экрана, уже ограниченный содержимым.
    *
@@ -150,7 +161,7 @@ internal class GraphCanvasState {
   /** Масштаб фона, см. [backdropScaleOf]. */
   val backdropScale: State<Float> = derivedStateOf { backdropScaleOf(cameraScale) }
 
-  /** Связи между соседними узлами каждой дорожки, в координатах полотна. */
+  /** Связи между соседними узлами каждой ветки, в координатах полотна. */
   val edges: State<List<GraphEdge>> = derivedStateOf { placement.edges }
 
   /**
@@ -500,6 +511,7 @@ internal class GraphCanvasState {
    * меряет ровно тот набор, который само же и скомпоновало.
    *
    * @param nodes узлы, из которых построено содержимое этой композиции
+   * @param branches ветки той же композиции: из них считаются дорожки
    * @param viewportSize размер видимой области
    * @param nodeSizes измеренные размеры узлов, в порядке [nodes]
    * @param density плотность экрана для перевода координат полотна в пиксели
@@ -509,16 +521,23 @@ internal class GraphCanvasState {
    */
   fun layout(
     nodes: List<GraphNode>,
+    branches: List<GraphBranch>,
     viewportSize: IntSize,
     nodeSizes: List<IntSize>,
     density: Density,
     statusBar: Float,
     navigationBar: Float
   ): GraphPlacement {
-    val lanes = nodes.map { it.lane }
+    // Дорожки считаются здесь, из параметров, а не читаются готовыми из состояния: узлы и ветки
+    // подменяются из `SideEffect`, то есть между композицией и измерением того же кадра, и раскраска
+    // по снапшот-полю разошлась бы с measurable'ами от старой композиции.
+    val branchIds = nodes.map { it.branchId }
+    val lanes = graphLanesOf(nodes, branches)
+    val colorIndexes = graphAccentsOf(nodes, branches).map { it.colorIndex }
     val geometry = GraphGeometry(topLaneOf(lanes))
     val result = with(density) {
       graphPlacementOf(
+        branchIds = branchIds,
         lanes = lanes,
         gaps = nodes.map { it.gap.toStepWidth().toPx() },
         laneYs = lanes.map { geometry.laneYOf(it).toPx() },
@@ -532,7 +551,13 @@ internal class GraphCanvasState {
     }
     viewport = viewportSize
     placement = result
-    marks = laneMarksOf(lanes = lanes, centres = result.centres, centreSpan = result.centreSpanX)
+    marks = laneMarksOf(
+      branchIds = branchIds,
+      lanes = lanes,
+      colorIndexes = colorIndexes,
+      centres = result.centres,
+      centreSpan = result.centreSpanX
+    )
     // Диапазон только что изменился, и хранимая камера обязана сойтись с ним в этом же кадре.
     // Диапазон считается от аргументов, а не от полей выше, по той же причине, по которой узлы
     // приходят параметром: измерение не должно читать состояние, которое само же и пишет.
@@ -556,12 +581,19 @@ internal class GraphCanvasState {
   }
 
   /**
-   * Подменяет набор узлов.
+   * Подменяет набор узлов и веток.
+   *
+   * Оба списка подменяются вместе и никогда порознь: занятость дорожек выводится из индексов узлов
+   * по идентификаторам развилки и слияния, и список веток, разъехавшийся с узлами хотя бы на кадр,
+   * дал бы раскраску по чужим индексам — **молча**, потому что `check` в раскладке сверяет длины
+   * поузловых списков, а они остались бы равными.
    *
    * @param nodes узлы в хронологическом порядке
+   * @param branches ветки графа, кроме магистрали, в порядке ветвления
    */
-  fun setNodes(nodes: List<GraphNode>) {
+  fun setNodes(nodes: List<GraphNode>, branches: List<GraphBranch>) {
     graphNodes = nodes
+    graphBranches = branches
   }
 }
 

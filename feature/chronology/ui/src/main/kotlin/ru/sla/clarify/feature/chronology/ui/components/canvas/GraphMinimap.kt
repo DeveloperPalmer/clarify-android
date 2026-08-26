@@ -55,7 +55,7 @@ import androidx.compose.ui.util.fastForEach
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
-import ru.sla.clarify.feature.chronology.ui.mapper.toLaneColor
+import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppColors
@@ -257,7 +257,7 @@ private fun DrawScope.drawMinimap(
     // а знак читается без подписи и бесплатно.
     val end = if (mark.lane < 0) middle - MARK_HEIGHT.toPx() else middle + MARK_HEIGHT.toPx()
     drawLine(
-      color = mark.lane.toLaneColor(colors),
+      color = mark.colorIndex.toBranchColor(colors),
       start = Offset(x = x, y = middle),
       end = Offset(x = x, y = end),
       strokeWidth = 2.dp.toPx()
@@ -407,19 +407,19 @@ private class GraphMinimapPreviewProvider : PreviewParameterProvider<GraphMinima
     GraphMinimapPreview(
       span = GraphViewportSpan(position = 0.45f, width = 0.06f),
       marks = listOf(
-        GraphLaneMark(position = 0.08f, lane = -1),
-        GraphLaneMark(position = 0.21f, lane = 1),
-        GraphLaneMark(position = 0.33f, lane = -2),
-        GraphLaneMark(position = 0.55f, lane = 2),
-        GraphLaneMark(position = 0.71f, lane = -3),
-        GraphLaneMark(position = 0.88f, lane = 3)
+        GraphLaneMark(position = 0.08f, lane = -1, colorIndex = 1),
+        GraphLaneMark(position = 0.21f, lane = 1, colorIndex = 2),
+        GraphLaneMark(position = 0.33f, lane = -2, colorIndex = 3),
+        GraphLaneMark(position = 0.55f, lane = 2, colorIndex = 4),
+        GraphLaneMark(position = 0.71f, lane = -3, colorIndex = 5),
+        GraphLaneMark(position = 0.88f, lane = 3, colorIndex = 6)
       )
     ),
     GraphMinimapPreview(
       span = GraphViewportSpan(position = 0f, width = 0.16f),
       marks = listOf(
-        GraphLaneMark(position = 0.08f, lane = -1),
-        GraphLaneMark(position = 0.21f, lane = 1)
+        GraphLaneMark(position = 0.08f, lane = -1, colorIndex = 1),
+        GraphLaneMark(position = 0.21f, lane = 1, colorIndex = 2)
       )
     ),
     GraphMinimapPreview(

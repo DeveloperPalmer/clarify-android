@@ -23,6 +23,7 @@ class ChronologyViewModel @Inject constructor(
   override fun buildMachine(): Machine<ViewState> = machine {
     initial = ViewState(
       nodes = episodes.map { it.node },
+      graphBranches = mockBranches(),
       episodeById = episodes.associateBy { it.node.id }
     ) to null
 

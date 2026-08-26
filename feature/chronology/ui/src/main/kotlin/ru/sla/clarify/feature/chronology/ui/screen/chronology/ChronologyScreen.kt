@@ -26,7 +26,13 @@ import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphDebugOverlay
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphMinimap
 import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberGraphCanvasState
 import ru.sla.clarify.feature.chronology.ui.components.node.EpisodeNode
+import ru.sla.clarify.feature.chronology.ui.components.node.ForkNode
+import ru.sla.clarify.feature.chronology.ui.components.node.FrontNode
+import ru.sla.clarify.feature.chronology.ui.components.node.MergeNode
+import ru.sla.clarify.feature.chronology.ui.entity.ForkDirection
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
+import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
@@ -42,7 +48,10 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
     ScreenScaffold(state = scaffoldState) {
-      val canvasState = rememberGraphCanvasState(nodes = state.nodes)
+      val canvasState = rememberGraphCanvasState(
+        nodes = state.nodes,
+        branches = state.graphBranches
+      )
       // Подпись пузыря мини-карты. Собирается здесь, потому что дату знает экран, а какой узел под
       // центром — полотно; отдаётся `State`, чтобы прочитал её лист, а не тело экрана: чтение
       // прямо тут пересобирало бы лямбды полотна при каждой смене узла под камерой.
@@ -58,16 +67,30 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
         GraphCanvas(
           modifier = Modifier.fillMaxSize(),
           state = canvasState,
-          node = { id ->
-            val item = state.episodeById.getValue(id)
-            EpisodeNode(
-              time = item.time,
-              count = item.count,
-              snippet = item.snippet,
-              myShare = item.myShare,
-              unreadCount = item.unreadCount,
-              dim = item.dim
-            )
+          node = { graphNode, accent ->
+            // Род узла решает, что рисовать, и решает здесь, а не в полотне: полотну безразлично,
+            // плашка перед ним или круг, — оно ставит по одному элементу на узел.
+            when (graphNode.role) {
+              GraphNodeRole.Episode -> {
+                val item = state.episodeById.getValue(graphNode.id)
+                EpisodeNode(
+                  time = item.time,
+                  count = item.count,
+                  snippet = item.snippet,
+                  myShare = item.myShare,
+                  unreadCount = item.unreadCount,
+                  dim = item.dim
+                )
+              }
+              // Точка ветвления показывает **уходящую** ветку, поэтому и цвет, и направление берутся
+              // из акцента, а не из самого узла: сам он стоит на магистрали.
+              GraphNodeRole.Fork -> ForkNode(
+                laneColor = accent.colorIndex.toBranchColor(AppTheme.colors),
+                direction = if (accent.lane < 0) ForkDirection.Up else ForkDirection.Down
+              )
+              GraphNodeRole.Merge -> MergeNode()
+              GraphNodeRole.Front -> FrontNode()
+            }
           },
           overlay = { onBoundsChanged ->
             // Инструменты стоят колонкой у нижнего края, мини-карта снизу: колонка растёт вверх,

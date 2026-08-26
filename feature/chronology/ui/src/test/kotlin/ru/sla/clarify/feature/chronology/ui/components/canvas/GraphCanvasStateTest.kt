@@ -7,7 +7,9 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
@@ -297,10 +299,16 @@ class GraphCanvasStateTest {
    */
   private fun GraphCanvasState.place(count: Int): GraphPlacement {
     val nodes = List(count) { index ->
-      GraphNode(id = GraphNode.Id("n$index"), lane = 0, gap = TimeGap.Hour)
+      GraphNode(
+        id = GraphNode.Id("n$index"),
+        branchId = GraphBranch.Id("trunk"),
+        role = GraphNodeRole.Episode,
+        gap = TimeGap.Hour
+      )
     }
     return layout(
       nodes = nodes,
+      branches = emptyList(),
       viewportSize = VIEWPORT,
       nodeSizes = List(count) { IntSize(width = 120, height = 28) },
       density = Density(density = 1f),

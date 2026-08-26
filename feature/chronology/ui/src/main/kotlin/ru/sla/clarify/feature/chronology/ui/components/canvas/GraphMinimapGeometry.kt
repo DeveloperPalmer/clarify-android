@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
@@ -170,46 +171,53 @@ internal fun scrubbedCameraXOf(
 }
 
 /**
- * Засечки веток: где по времени начинается каждая дорожка, кроме магистрали.
+ * Засечки веток: где по времени начинается каждая ветка, кроме магистрали.
  *
- * Начало дорожки — **минимальная** координата её узлов, а не первый её узел в списке: список
- * упорядочен временем, а не дорожками, и опора на совпадение этих порядков — ровно тот вид
+ * Группировка идёт по **ветке**, а не по дорожке, и это не педантизм: дорожка освобождается после
+ * слияния и переиспользуется (§4.2 брифа), поэтому две несвязанные темы, вставшие на неё по
+ * очереди, дали бы **одну** засечку на позиции первой — и вторая тема исчезла бы с мини-карты, не
+ * уронив ни теста, ни компилятора.
+ *
+ * Начало ветки — **минимальная** координата её узлов, а не первый её узел в списке: список
+ * упорядочен временем, а не ветками, и опора на совпадение этих порядков — ровно тот вид
  * зависимости, которого раскладка избегает в `centreSpanX`.
  *
  * Результат упорядочен по позиции, потому что порядок обхода `HashMap` не определён, а список,
  * меняющий порядок при том же содержимом, заставлял бы `derivedStateOf` считать себя изменившимся
  * на каждой раскладке.
  *
- * @param lanes номер дорожки каждого узла
- * @param centres центры плашек в координатах полотна, в порядке [lanes]
+ * @param branchIds ветка каждого узла
+ * @param lanes номер дорожки каждого узла: задаёт направление засечки
+ * @param colorIndexes цвет идентичности каждого узла
+ * @param centres центры плашек в координатах полотна, в порядке [branchIds]
  * @param centreSpan отрезок центров крайних плашек
  * @return засечки в порядке возрастания позиции; пусто, когда веток нет или история вырождена
  */
 internal fun laneMarksOf(
+  branchIds: List<GraphBranch.Id>,
   lanes: List<Int>,
+  colorIndexes: List<Int>,
   centres: List<Offset>,
   centreSpan: ClosedFloatingPointRange<Float>
 ): List<GraphLaneMark> {
   val world = centreSpan.endInclusive - centreSpan.start
-  if (world <= 0f || lanes.isEmpty()) {
+  if (world <= 0f || branchIds.isEmpty()) {
     return emptyList()
   }
-  val startByLane = HashMap<Int, Float>()
-  lanes.forEachIndexed { index, lane ->
-    if (lane != 0) {
+  val startByBranch = HashMap<GraphBranch.Id, GraphLaneMark>()
+  branchIds.forEachIndexed { index, branchId ->
+    if (lanes[index] != 0) {
       val x = centres[index].x
-      val known = startByLane[lane]
-      if (known == null || x < known) {
-        startByLane[lane] = x
+      val position = ((x - centreSpan.start) / world).coerceIn(0f, 1f)
+      val known = startByBranch[branchId]
+      if (known == null || position < known.position) {
+        startByBranch[branchId] = GraphLaneMark(
+          position = position,
+          lane = lanes[index],
+          colorIndex = colorIndexes[index]
+        )
       }
     }
   }
-  return startByLane
-    .map { (lane, x) ->
-      GraphLaneMark(
-        position = ((x - centreSpan.start) / world).coerceIn(0f, 1f),
-        lane = lane
-      )
-    }
-    .sortedBy { it.position }
+  return startByBranch.values.sortedBy { it.position }
 }

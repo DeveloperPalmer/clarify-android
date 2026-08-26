@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
@@ -269,7 +270,9 @@ class GraphMinimapGeometryTest {
   @Test
   fun `a lane mark stands where the first node of its lane stands`() {
     val marks = laneMarksOf(
+      branchIds = branchIds("trunk", "a", "trunk", "b"),
       lanes = listOf(0, 1, 0, -1),
+      colorIndexes = listOf(0, 1, 0, 2),
       centres = listOf(
         Offset(x = 0f, y = 0f),
         Offset(x = 2000f, y = 100f),
@@ -280,7 +283,10 @@ class GraphMinimapGeometryTest {
     )
 
     assertEquals(
-      listOf(GraphLaneMark(position = 0.2f, lane = 1), GraphLaneMark(position = 0.5f, lane = -1)),
+      listOf(
+        GraphLaneMark(position = 0.2f, lane = 1, colorIndex = 1),
+        GraphLaneMark(position = 0.5f, lane = -1, colorIndex = 2)
+      ),
       marks
     )
   }
@@ -288,7 +294,9 @@ class GraphMinimapGeometryTest {
   @Test
   fun `the trunk has no lane mark of its own`() {
     val marks = laneMarksOf(
+      branchIds = branchIds("trunk", "trunk", "trunk"),
       lanes = listOf(0, 0, 0),
+      colorIndexes = listOf(0, 0, 0),
       centres = listOf(Offset(x = 0f, y = 0f), Offset(x = 200f, y = 0f), Offset(x = 300f, y = 0f)),
       centreSpan = LONG_HISTORY
     )
@@ -300,7 +308,9 @@ class GraphMinimapGeometryTest {
   fun `lane marks survive a graph whose nodes are not sorted by lane`() {
     // Узлы упорядочены временем, а не дорожками: второй узел ветки встретился раньше первого.
     val marks = laneMarksOf(
+      branchIds = branchIds("a", "trunk", "a"),
       lanes = listOf(1, 0, 1),
+      colorIndexes = listOf(1, 0, 1),
       centres = listOf(
         Offset(x = 5000f, y = 100f),
         Offset(x = 0f, y = 0f),
@@ -310,7 +320,7 @@ class GraphMinimapGeometryTest {
     )
 
     assertEquals(
-      listOf(GraphLaneMark(position = 0.3f, lane = 1)),
+      listOf(GraphLaneMark(position = 0.3f, lane = 1, colorIndex = 1)),
       marks,
       "начало ветки — самый левый её узел, а не первый в списке"
     )
@@ -319,7 +329,9 @@ class GraphMinimapGeometryTest {
   @Test
   fun `lane marks are ordered along the timeline`() {
     val marks = laneMarksOf(
+      branchIds = branchIds("a", "b", "c"),
       lanes = listOf(3, -1, 2),
+      colorIndexes = listOf(3, 1, 2),
       centres = listOf(
         Offset(x = 8000f, y = 300f),
         Offset(x = 1000f, y = -100f),
@@ -339,7 +351,9 @@ class GraphMinimapGeometryTest {
   @Test
   fun `a degenerate history has no lane marks`() {
     val marks = laneMarksOf(
+      branchIds = branchIds("a"),
       lanes = listOf(1),
+      colorIndexes = listOf(1),
       centres = listOf(Offset(x = 100f, y = 100f)),
       centreSpan = 0f..0f
     )
@@ -353,7 +367,9 @@ class GraphMinimapGeometryTest {
     val range = cameraRangeOf(placement, VIEWPORT, scale = 1f)
     // Ветка начинается ровно посередине истории.
     val mark = laneMarksOf(
+      branchIds = branchIds("a"),
       lanes = listOf(1),
+      colorIndexes = listOf(1),
       centres = listOf(Offset(x = 5000f, y = 100f)),
       centreSpan = placement.centreSpanX
     ).single()
@@ -390,3 +406,13 @@ class GraphMinimapGeometryTest {
 
 private val VIEWPORT = IntSize(width = 1000, height = 600)
 private val LONG_HISTORY = 0f..10_000f
+
+/**
+ * Ветка каждого узла по её имени.
+ *
+ * Засечки группируются по ветке, а не по дорожке: дорожка переиспользуется после слияния, и две
+ * темы, вставшие на неё по очереди, дали бы одну засечку вместо двух.
+ */
+private fun branchIds(vararg names: String): List<GraphBranch.Id> {
+  return names.map { GraphBranch.Id(it) }
+}

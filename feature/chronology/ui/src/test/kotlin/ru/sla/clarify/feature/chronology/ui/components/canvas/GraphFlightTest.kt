@@ -15,7 +15,10 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
@@ -189,6 +192,7 @@ class GraphFlightTest {
   private fun aimedAt(state: GraphCanvasState, anchor: GraphAnchor): Offset {
     val placement = state.layout(
       nodes = state.nodes,
+      branches = state.branches,
       viewportSize = VIEWPORT,
       nodeSizes = List(state.nodes.size) { NODE_SIZE },
       density = Density(density = 1f),
@@ -272,11 +276,19 @@ class GraphFlightTest {
   private fun laidOut(): GraphCanvasState {
     val state = GraphCanvasState()
     val nodes = List(12) { index ->
-      GraphNode(id = GraphNode.Id("n$index"), lane = index % 5, gap = TimeGap.Long)
+      GraphNode(
+        id = GraphNode.Id("n$index"),
+        // Пять веток вместо пяти дорожек: дорожку теперь назначает раскраска, и вертикальный
+        // диапазон камеры обязан появиться из данных, а не из литерала.
+        branchId = GraphBranch.Id("b${index % 5}"),
+        role = GraphNodeRole.Episode,
+        gap = TimeGap.Long
+      )
     }
-    state.setNodes(nodes)
+    state.setNodes(nodes, FIVE_BRANCHES)
     state.layout(
       nodes = nodes,
+      branches = FIVE_BRANCHES,
       viewportSize = VIEWPORT,
       nodeSizes = List(nodes.size) { NODE_SIZE },
       density = Density(density = 1f),
@@ -290,3 +302,14 @@ class GraphFlightTest {
 private const val FRAME_NANOS = 16_666_666L
 private val VIEWPORT = IntSize(width = 400, height = 200)
 private val NODE_SIZE = IntSize(width = 120, height = 28)
+
+/** Четыре живые ветки плюс магистраль: ровно то, из чего берётся вертикальный ход камеры. */
+private val FIVE_BRANCHES = (1..4).map { index ->
+  GraphBranch(
+    id = GraphBranch.Id("b$index"),
+    colorIndex = index,
+    forkedFrom = null,
+    mergedAt = null,
+    status = GraphBranchStatus.Alive
+  )
+}

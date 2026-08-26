@@ -32,7 +32,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
 import ru.sla.clarify.uikit.theme.AppTheme
 
 /**
@@ -53,14 +55,14 @@ import ru.sla.clarify.uikit.theme.AppTheme
  *   обработчик, которым содержимое объявляет занятую им зону под своим ключом, — жест, начатый в
  *   любой из объявленных зон, до камеры не доходит. Зона объявляется в координатах корня, а пустой
  *   прямоугольник её снимает. Полотно при этом не знает, что именно там лежит
- * @param node содержимое узла с данным `id`; обязано выпускать ровно один элемент раскладки —
- *   полотно ставит плашки по одной на узел и считает их по позиции, а не по идентификатору
+ * @param node содержимое узла; обязано выпускать ровно один элемент раскладки — полотно ставит
+ *   плашки по одной на узел и считает их по позиции, а не по идентификатору
  */
 @Composable
 internal fun GraphCanvas(
   state: GraphCanvasState,
   modifier: Modifier = Modifier,
-  node: @Composable (id: GraphNode.Id) -> Unit,
+  node: @Composable (node: GraphNode, accent: GraphNodeAccent) -> Unit,
   overlay: @Composable BoxScope.(onBoundsChanged: (key: Any, bounds: Rect) -> Unit) -> Unit = { }
 ) {
   val telemetry = state.telemetry
@@ -99,6 +101,12 @@ internal fun GraphCanvas(
   // нельзя: состояние подменяется из `SideEffect`, то есть уже после этой композиции, но ещё до
   // измерения того же кадра, — и измерение получило бы новый список к старым measurable'ам.
   val nodes = state.nodes
+  val branches = state.branches
+  // Дорожки считаются здесь, а не в измерении, и это не оптимизация. Точке ветвления нужен цвет и
+  // направление **уходящей** ветки, а рисуется она в композиции — то есть до того, как измерение
+  // что-либо посчитает. Один и тот же результат уходит и в содержимое, и в `layout`, поэтому
+  // разъехаться им нечем.
+  val accents = remember(nodes, branches) { graphAccentsOf(nodes, branches) }
   Box(
     // Жест висит на всём вьюпорте, а не на слое узлов: полотно не всегда достаёт до края экрана,
     // и панорамирование не работало бы там, где его нет.
@@ -137,6 +145,8 @@ internal fun GraphCanvas(
     GraphNodesLayer(
       state = state,
       nodes = nodes,
+      branches = branches,
+      accents = accents,
       node = node
     )
     overlay { key, bounds ->
@@ -160,15 +170,19 @@ internal fun GraphCanvas(
  * @param state камера полотна и результат его последней раскладки
  * @param nodes узлы, из которых строится содержимое; приходят параметром, а не читаются из [state],
  *   чтобы композиция и измерение одного кадра видели один и тот же список
+ * @param branches ветки того же кадра; из них считаются дорожки
+ * @param accents цвет и направление каждого узла, в порядке [nodes]
  * @param modifier модификатор слоя
- * @param node содержимое узла с данным `id`
+ * @param node содержимое узла
  */
 @Composable
 private fun GraphNodesLayer(
   state: GraphCanvasState,
   nodes: List<GraphNode>,
+  branches: List<GraphBranch>,
+  accents: List<GraphNodeAccent>,
   modifier: Modifier = Modifier,
-  node: @Composable (id: GraphNode.Id) -> Unit
+  node: @Composable (node: GraphNode, accent: GraphNodeAccent) -> Unit
 ) {
   val telemetry = state.telemetry
   val edgeColor = AppTheme.colors.contentTertiary
@@ -211,10 +225,10 @@ private fun GraphNodesLayer(
         }
       },
     content = {
-      nodes.fastForEach { graphNode ->
+      nodes.fastForEachIndexed { index, graphNode ->
         key(graphNode.id.value) {
           SideEffect { telemetry.onNodeComposition() }
-          node(graphNode.id)
+          node(graphNode, accents[index])
         }
       }
     }
@@ -223,6 +237,7 @@ private fun GraphNodesLayer(
     // стоять далеко за правым краем экрана.
     val placeables = measurables.fastMap { it.measure(Constraints()) }
     val placement = state.layout(
+      branches = branches,
       density = this,
       statusBar = statusBar.getTop(this).toFloat(),
       navigationBar = navigationBar.getBottom(this).toFloat(),
