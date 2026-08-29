@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.animation.core.Easing
 import androidx.compose.ui.util.fastAny
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
@@ -107,3 +108,34 @@ private fun spanFractionOf(elapsed: Float, from: Float, to: Float): Float {
 internal fun isDashRunning(edges: List<GraphEdge>, ceremonyPlaying: Boolean): Boolean {
   return ceremonyPlaying || edges.fastAny { it.status == GraphBranchStatus.Ready }
 }
+
+/**
+ * Играет ли церемония судьбу этого ребра.
+ *
+ * Спрашивается идентификатор, а не цвет: оттенков шесть, и по цвету в ответ попала бы каждая шестая
+ * ветка переписки заодно — см. KDoc [GraphEdge].
+ *
+ * @param edge проверяемое ребро
+ * @param ceremonyBranch ветка играющей церемонии; `null` — церемония не играет
+ * @return принадлежит ли ребро сливающейся ветке
+ */
+internal fun isCeremonyEdge(edge: GraphEdge, ceremonyBranch: GraphBranch.Id?): Boolean {
+  return ceremonyBranch != null && edge.branchId == ceremonyBranch
+}
+
+/**
+ * Прозрачность линии сливающейся ветки на кадре церемонии.
+ *
+ * Всю церемонию линия идёт в полную силу — иначе кадру 7 не из чего было бы гаснуть, — и ровно
+ * выдохом приходит к тем же 60 %, которыми `toEdgeAlpha` рисует ветку в покое. Числа обязаны
+ * сойтись: разойдись они, конец церемонии дёрнул бы линию скачком.
+ *
+ * @param frame кадр церемонии
+ * @return прозрачность линии, от `1` до `0.6`
+ */
+internal fun ceremonyEdgeAlphaOf(frame: MergeCeremonyFrame): Float {
+  return 1f - (1f - MERGED_EDGE_ALPHA) * frame.exhale
+}
+
+/** Прозрачность линии слитой ветки в покое: §7 гасит её до 60 %. */
+internal const val MERGED_EDGE_ALPHA = 0.6f

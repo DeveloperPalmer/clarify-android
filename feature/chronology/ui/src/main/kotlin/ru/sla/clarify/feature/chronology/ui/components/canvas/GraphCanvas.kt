@@ -28,12 +28,14 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
@@ -51,6 +53,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
+import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.uikit.theme.AppColors
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -223,6 +226,10 @@ private fun GraphNodesLayer(
   // Путь один на все рёбра и чистится `rewind()`, а не создаётся заново: он держит выделенную
   // память между вызовами, и сотня рёбер иначе рождала бы сотню нативных объектов на каждый проход.
   val edgePath = remember { Path() }
+  // Второй путь и мерка — только для кадра 4: маршрут возврата рисуется не целиком, а до отметки
+  // `reach`. Оба переиспользуются между кадрами по той же причине, что и сам `edgePath`.
+  val reachedPath = remember { Path() }
+  val pathMeasure = remember { PathMeasure() }
   val density = LocalDensity.current
   // Ключ — плотность: спека, замороженная от старого экрана, уже однажды стоила фиче дефекта.
   val dashIntervals = remember(density) {
@@ -243,6 +250,9 @@ private fun GraphNodesLayer(
   val cornerRadius = with(density) { 8.dp.toPx() }
   val hopRadius = with(density) { 6.dp.toPx() }
   val fadeLength = with(density) { 40.dp.toPx() }
+  // Кадр 6 расходится на 120 dp в каждую сторону — три ширины точки слияния. §12 говорит «короткая
+  // вспышка», числа не даёт; это число выбрано здесь и ждёт взгляда на устройстве.
+  val waveSpread = with(density) { 120.dp.toPx() }
   val statusBar = WindowInsets.statusBars
   val navigationBar = WindowInsets.navigationBars
   Layout(
@@ -274,10 +284,22 @@ private fun GraphNodesLayer(
         telemetry.onEdgeDraw()
         // Фаза одна на все рёбра, поэтому и нативный объект на кадр создаётся один, а не по одному
         // на ребро. Кэшировать его, как неподвижный, нельзя: в фазе и состоит весь бег.
+        val frame = ceremony.frame.value
+        val ceremonyBranch = ceremony.branch.value
+        val edges = state.edges.value
         val runningDashEffect = dashPhase?.let { phase ->
-          PathEffect.dashPathEffect(dashIntervals, phase.value)
+          // Разгон кадра 1 — это множитель на фазу: узор периодичен, и фаза, идущая втрое дальше за
+          // тот же цикл, и есть тот же бег втрое быстрее. Отдельной анимации разгону не нужно.
+          PathEffect.dashPathEffect(dashIntervals, phase.value * (frame?.dashSpeed ?: 1f))
         }
-        state.edges.value.fastForEach { edge ->
+        // Точку слияния берём у самого маршрута возврата: его последняя точка и лежит на магистрали.
+        // Спрашивать её у раскладки значило бы завести второй источник того же числа.
+        val mergePoint = frame?.let {
+          edges.firstOrNull { edge ->
+            edge.role == GraphEdgeRole.Merge && isCeremonyEdge(edge, ceremonyBranch)
+          }?.points?.last()
+        }
+        edges.fastForEach { edge ->
           drawGraphEdge(
             edge = edge,
             path = edgePath,
@@ -286,7 +308,22 @@ private fun GraphNodesLayer(
             runningDashEffect = runningDashEffect,
             cornerRadius = cornerRadius,
             hopRadius = hopRadius,
-            fadeLength = fadeLength
+            fadeLength = fadeLength,
+            frame = frame.takeIf { isCeremonyEdge(edge, ceremonyBranch) },
+            reachedPath = reachedPath,
+            pathMeasure = pathMeasure
+          )
+        }
+        if (frame != null && mergePoint != null) {
+          drawMergeWave(
+            edges = edges,
+            path = edgePath,
+            colors = colors,
+            frame = frame,
+            mergePoint = mergePoint,
+            cornerRadius = cornerRadius,
+            hopRadius = hopRadius,
+            spread = waveSpread
           )
         }
       },
@@ -367,8 +404,11 @@ private fun rememberDashPhase(period: Float, isRunning: Boolean): State<Float>? 
  * @param cornerRadius радиус скругления углов
  * @param hopRadius радиус мостика над чужой вертикалью
  * @param fadeLength длина растворения хвоста
+ * @param frame кадр церемонии, если её играет **это** ребро; `null` — ребро рисуется своим статусом
+ * @param reachedPath путь под обрезанный кадром 4 маршрут возврата
+ * @param pathMeasure мерка для той же обрезки
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "CyclomaticComplexMethod")
 private fun DrawScope.drawGraphEdge(
   edge: GraphEdge,
   path: Path,
@@ -377,16 +417,30 @@ private fun DrawScope.drawGraphEdge(
   runningDashEffect: PathEffect?,
   cornerRadius: Float,
   hopRadius: Float,
-  fadeLength: Float
+  fadeLength: Float,
+  frame: MergeCeremonyFrame? = null,
+  reachedPath: Path? = null,
+  pathMeasure: PathMeasure? = null
 ) {
+  // Кадр 4 рисует возврат по частям, и до его начала рисовать нечего вовсе.
+  if (frame != null && edge.role == GraphEdgeRole.Merge && frame.reach <= 0f) {
+    return
+  }
   path.rewind()
   path.addGraphRoute(edge, cornerRadius, hopRadius)
-  val color = edge.colorIndex.toBranchColor(colors)
+  val identity = edge.colorIndex.toBranchColor(colors)
+  // Кадр 1 уводит цвет в золото, кадр 7 возвращает его ветке: золото по §7 — событие, а не
+  // идентичность, и линия, оставшаяся золотой, соврала бы о том, чья она.
+  val color = frame?.let { lerp(identity, colors.contentGoldPrimary, it.gold) } ?: identity
   val width = when (edge.role) {
     GraphEdgeRole.Trunk -> 2.dp.toPx()
     // Слой ответов §7 рисуется 1 dp, но его здесь нет: он живёт только внутри раскрытого эпизода.
     GraphEdgeRole.Branch, GraphEdgeRole.Fork, GraphEdgeRole.Merge, GraphEdgeRole.Tail -> 1.5.dp.toPx()
   }
+  // На время церемонии ветка показывается готовой к слиянию: у слитой штрих сплошной, и кадру 1
+  // нечего было бы ускорять. Покой возвращает выдох, а не конец шкалы.
+  val status = if (frame != null) GraphBranchStatus.Ready else edge.status
+  val alpha = frame?.let { ceremonyEdgeAlphaOf(it) } ?: edge.status.toEdgeAlpha()
   val style = Stroke(
     width = width,
     // Кап тупой, а не круглый, хотя прототип берёт круглый: тот добавляет по половине толщины с
@@ -394,8 +448,17 @@ private fun DrawScope.drawGraphEdge(
     // сплошную линию. Штрих — единственное, что отличает «живёт» от «MR открыт» помимо иконки.
     cap = StrokeCap.Butt,
     join = StrokeJoin.Round,
-    pathEffect = edge.status.toPathEffect(dashEffect, runningDashEffect)
+    pathEffect = status.toPathEffect(dashEffect, runningDashEffect)
   )
+  if (frame != null && edge.role == GraphEdgeRole.Merge && reachedPath != null && pathMeasure != null) {
+    // Кадр 4: конец линии идёт по маршруту к кольцу. Отметка 0 у мерки лежит у последнего узла
+    // ветки, длина — на магистрали, поэтому отрезок `[0, длина · reach]` и есть пройденный путь.
+    pathMeasure.setPath(path, false)
+    reachedPath.rewind()
+    pathMeasure.getSegment(0f, pathMeasure.length * frame.reach, reachedPath, true)
+    drawPath(path = reachedPath, color = color, alpha = alpha, style = style)
+    return
+  }
   if (edge.role == GraphEdgeRole.Tail) {
     // Хвост растворяется у своего конца: линия не обрывается стеной, а «продолжается в будущее».
     val end = edge.points.last()
@@ -403,7 +466,7 @@ private fun DrawScope.drawGraphEdge(
       path = path,
       brush = Brush.horizontalGradient(
         colorStops = arrayOf(
-          0f to color.copy(alpha = edge.status.toEdgeAlpha()),
+          0f to color.copy(alpha = alpha),
           1f to color.copy(alpha = 0f)
         ),
         startX = maxOf(edge.points.first().x, end.x - fadeLength),
@@ -412,7 +475,62 @@ private fun DrawScope.drawGraphEdge(
       style = style
     )
   } else {
-    drawPath(path = path, color = color, alpha = edge.status.toEdgeAlpha(), style = style)
+    drawPath(path = path, color = color, alpha = alpha, style = style)
+  }
+}
+
+/**
+ * Кадр 6: короткая вспышка вдоль магистрали в обе стороны от точки слияния.
+ *
+ * Рисуется вторым проходом по тем же рёбрам магистрали, а не своей геометрией: у волны нет
+ * собственного маршрута — она бежит по линии, которая уже есть, и повторять её изгибы значило бы
+ * завести второй источник одной и той же ломаной.
+ *
+ * Расхождение и угасание идут из одной доли: волна тем шире, чем слабее. Так вспышка кончается
+ * растворением, а не обрывом.
+ *
+ * @param edges рёбра этого кадра
+ * @param path переиспользуемый путь
+ * @param colors палитра активной темы
+ * @param frame кадр церемонии
+ * @param mergePoint точка слияния на магистрали
+ * @param cornerRadius радиус скругления углов
+ * @param hopRadius радиус мостика
+ * @param spread наибольшее расхождение волны в каждую сторону
+ */
+@Suppress("LongParameterList")
+private fun DrawScope.drawMergeWave(
+  edges: List<GraphEdge>,
+  path: Path,
+  colors: AppColors,
+  frame: MergeCeremonyFrame,
+  mergePoint: Offset,
+  cornerRadius: Float,
+  hopRadius: Float,
+  spread: Float
+) {
+  if (frame.wave <= 0f || frame.wave >= 1f) {
+    return
+  }
+  val reach = spread * frame.wave
+  val style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Butt, join = StrokeJoin.Round)
+  val brush = Brush.horizontalGradient(
+    colorStops = arrayOf(
+      0f to colors.contentGoldPrimary.copy(alpha = 0f),
+      // 30 % в §12 — это альфа в начале кадра, и она гаснет вместе с расхождением.
+      0.5f to colors.contentGoldPrimary.copy(alpha = 0.3f * (1f - frame.wave)),
+      1f to colors.contentGoldPrimary.copy(alpha = 0f)
+    ),
+    startX = mergePoint.x - reach,
+    endX = mergePoint.x + reach
+  )
+  edges.fastForEach { edge ->
+    if (edge.role != GraphEdgeRole.Trunk) {
+      return@fastForEach
+    }
+    path.rewind()
+    path.addGraphRoute(edge, cornerRadius, hopRadius)
+    drawPath(path = path, brush = brush, style = style)
   }
 }
 
@@ -488,10 +606,15 @@ private fun Path.addHorizontalWithHops(
   lineTo(to.x, to.y)
 }
 
-/** Прозрачность линии по состоянию ветки: §7 гасит слитую до 60 %, остальные идут в полную силу. */
+/**
+ * Прозрачность линии по состоянию ветки: §7 гасит слитую до 60 %, остальные идут в полную силу.
+ *
+ * Число берётся из [MERGED_EDGE_ALPHA], а не пишется здесь: к нему же кадром 7 приходит выдох
+ * церемонии, и разойдись эти два места, конец церемонии дёрнул бы линию скачком.
+ */
 private fun GraphBranchStatus.toEdgeAlpha(): Float {
   return when (this) {
-    GraphBranchStatus.Merged -> 0.6f
+    GraphBranchStatus.Merged -> MERGED_EDGE_ALPHA
     GraphBranchStatus.Alive, GraphBranchStatus.Waiting, GraphBranchStatus.Ready -> 1f
   }
 }

@@ -143,6 +143,53 @@ class DashRunningTest {
   }
 }
 
+/**
+ * Сторожит две развилки, на которых церемония решает судьбу ребра.
+ *
+ * Обе — про стыки: по какому признаку ребро признаётся своим и как прозрачность конца церемонии
+ * сходится с прозрачностью покоя. Разойдись второе, линия дёрнулась бы скачком на последнем кадре.
+ */
+class CeremonyEdgeTest {
+
+  @Test
+  fun `an edge of the merging branch is the ceremony's own`() {
+    assertTrue(
+      isCeremonyEdge(edge(GraphBranchStatus.Merged), GraphBranch.Id("a")),
+      "ребро ветки «a» принадлежит церемонии ветки «a»"
+    )
+  }
+
+  @Test
+  fun `an edge of another branch is left alone even under the same shade`() {
+    assertFalse(
+      isCeremonyEdge(edge(GraphBranchStatus.Alive), GraphBranch.Id("b")),
+      "оттенок у веток может совпасть, идентификатор — нет"
+    )
+  }
+
+  @Test
+  fun `no ceremony claims no edge`() {
+    assertFalse(
+      isCeremonyEdge(edge(GraphBranchStatus.Alive), ceremonyBranch = null),
+      "пока церемония не играет, своих рёбер у неё нет"
+    )
+  }
+
+  @Test
+  fun `the ceremony hands the line over at exactly the alpha of rest`() {
+    assertEquals(
+      1f,
+      ceremonyEdgeAlphaOf(frameAt(1100f)),
+      "до выдоха линия идёт в полную силу, иначе кадру 7 не из чего гаснуть"
+    )
+    assertEquals(
+      MERGED_EDGE_ALPHA,
+      ceremonyEdgeAlphaOf(frameAt(MERGE_CEREMONY_MILLIS)),
+      "а кончает ровно там, где рисует покой: иначе конец церемонии дёрнул бы линию"
+    )
+  }
+}
+
 private fun edge(status: GraphBranchStatus): GraphEdge {
   return GraphEdge(
     points = listOf(Offset.Zero, Offset(100f, 0f)),
