@@ -395,6 +395,7 @@ class GraphMinimapGeometryTest {
   private fun longPlacement(): GraphPlacement {
     return GraphPlacement(
       nodes = listOf(IntOffset.Zero),
+      sizes = listOf(IntSize.Zero),
       bounds = Rect(left = -100f, top = 0f, right = 10_100f, bottom = 400f),
       centreSpanX = LONG_HISTORY,
       centreSpanY = 200f..200f,

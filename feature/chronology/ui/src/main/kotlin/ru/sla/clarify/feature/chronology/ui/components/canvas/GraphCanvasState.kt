@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
@@ -463,6 +464,38 @@ internal class GraphCanvasState {
       GraphAnchor.Start -> placement.centres.first()
       GraphAnchor.Front -> placement.centres.last()
     }
+  }
+
+  /**
+   * Где узел нарисован на экране прямо сейчас.
+   *
+   * Спрашивают отсюда, а не у самого узла: узел живёт внутри слоя камеры, и его собственные
+   * координаты в дереве Compose — не то, из чего можно построить общий элемент. Общий элемент берёт
+   * границы у lookahead-позиции, а та складывает только позиции размещения и преобразований слоя не
+   * видит вовсе; морф, поставленный на узел напрямую, стартовал бы из мировой координаты — на
+   * демо-графе это до двадцати экранов правее.
+   *
+   * Ответ — значение, а не [State]: его берут в момент тапа и замораживают. Живой [State] пришлось
+   * бы читать при измерении якоря, то есть подписать измерение на масштаб — ровно то, чего полотно
+   * избегает у себя.
+   *
+   * Список узлов и раскладка расходятся не более чем на кадр, поэтому индекс берётся безопасно:
+   * узел, которого в раскладке ещё нет, просто не найдётся.
+   *
+   * @param id узел, о котором спрашивают
+   * @return прямоугольник в координатах вьюпорта или `null`, если такого узла нет
+   */
+  fun nodeRectOf(id: GraphNode.Id): Rect? {
+    val index = graphNodes.indexOfFirst { it.id == id }
+    if (index < 0 || index > placement.nodes.lastIndex) {
+      return null
+    }
+    return nodeRectOf(
+      topLeft = placement.nodes[index],
+      size = placement.sizes[index],
+      camera = offset.value,
+      scale = cameraScale
+    )
   }
 
   private fun restingCamera(): Offset {

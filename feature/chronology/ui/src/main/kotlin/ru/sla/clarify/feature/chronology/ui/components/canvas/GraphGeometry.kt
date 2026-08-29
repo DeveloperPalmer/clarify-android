@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -154,6 +155,7 @@ internal fun graphPlacementOf(
   val centres = centresX.mapIndexed { index, centreX -> Offset(x = centreX, y = laneYs[index]) }
   return GraphPlacement(
     nodes = nodes,
+    sizes = sizes,
     // Поля входят в протяжённость полотна, а не добавляются камере отдельным слагаемым: диапазон
     // выводится из bounds, и раздутый прямоугольник сам даёт зазор у каждой границы. Иначе крайняя
     // плашка упирается в кромку экрана, будто история обрезана.
@@ -167,6 +169,29 @@ internal fun graphPlacementOf(
     centreSpanX = (centresX.min())..(centresX.max()),
     centreSpanY = (laneYs.min())..(laneYs.max()),
     centres = centres
+  )
+}
+
+/**
+ * Где узел нарисован на экране: его прямоугольник в координатах вьюпорта.
+ *
+ * Та же формула, на которой построена вся камера, — `экран = полотно · scale + камера`. Второй её
+ * записи в фиче нет и быть не должно: раскладка живёт в координатах полотна, а всё, что кладётся
+ * поверх слоя камеры — якорь морфа прежде всего, — обязано попадать в плашку пиксель в пиксель.
+ *
+ * Спрашивать у самого узла его `LayoutCoordinates` было бы короче, но тогда это перестало бы быть
+ * арифметикой: проверить «на 2.5× плашка вдвое с половиной больше» можно только здесь, без Compose.
+ *
+ * @param topLeft левый верхний угол узла в координатах полотна
+ * @param size измеренный размер узла
+ * @param camera сдвиг содержимого относительно экрана
+ * @param scale масштаб камеры
+ * @return прямоугольник узла в координатах вьюпорта, уже с учётом масштаба
+ */
+internal fun nodeRectOf(topLeft: IntOffset, size: IntSize, camera: Offset, scale: Float): Rect {
+  return Rect(
+    offset = Offset(x = topLeft.x * scale + camera.x, y = topLeft.y * scale + camera.y),
+    size = Size(width = size.width * scale, height = size.height * scale)
   )
 }
 

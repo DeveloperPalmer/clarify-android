@@ -456,6 +456,7 @@ class GraphCameraTest {
   private fun placement(): GraphPlacement {
     return GraphPlacement(
       nodes = listOf(IntOffset.Zero),
+      sizes = listOf(IntSize(width = 120, height = 100)),
       bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 100f),
       centreSpanX = 60f..900f,
       centreSpanY = 50f..50f,

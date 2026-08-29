@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
@@ -292,22 +293,72 @@ class GraphCanvasStateTest {
   }
 
   /**
+   * Прямоугольник узла — то, из чего растёт превью-карточка, и берётся он у держателя, а не у самого
+   * узла: узел живёт внутри слоя камеры, и общий элемент Compose этого слоя не видит.
+   */
+  @Test
+  fun `a node rect stands where the plate is drawn`() {
+    val state = GraphCanvasState()
+    val placement = state.fill(count = 3)
+
+    val rect = state.nodeRectOf(GraphNode.Id("n1"))
+
+    assertEquals(
+      placement.nodes[1].x + state.offset.value.x,
+      rect?.left,
+      "плашка нарисована там, куда её поставила раскладка, сдвинутая камерой"
+    )
+    assertEquals(120f, rect?.width, "ширина — измеренная, пока масштаб единичный")
+  }
+
+  @Test
+  fun `a node rect follows the camera`() {
+    val state = GraphCanvasState()
+    state.fill(count = 3)
+    val resting = state.nodeRectOf(GraphNode.Id("n1"))
+
+    state.pan(Offset(x = -100f, y = 0f))
+
+    assertEquals(
+      resting!!.left - 100f,
+      state.nodeRectOf(GraphNode.Id("n1"))?.left,
+      "карточка обязана вырасти из того места, где плашка лежит сейчас, а не из места её покоя"
+    )
+  }
+
+  @Test
+  fun `an unknown node has no rect`() {
+    val state = GraphCanvasState()
+    state.fill(count = 3)
+
+    assertNull(
+      state.nodeRectOf(GraphNode.Id("no-such-node")),
+      "узел, которого в раскладке ещё нет, обязан не находиться, а не индексироваться за конец"
+    )
+  }
+
+  /**
+   * Раскладка и список узлов подменяются порознь: первую пишет измерение, второй — `SideEffect`.
+   * Тесту нужны оба, иначе узел по идентификатору не найти.
+   *
+   * @param count сколько узлов положить на магистраль
+   * @return получившаяся раскладка
+   */
+  private fun GraphCanvasState.fill(count: Int): GraphPlacement {
+    val placement = place(count)
+    setNodes(nodes = trunkNodes(count), branches = emptyList())
+    return placement
+  }
+
+  /**
    * Раскладывает граф из [count] одинаковых узлов на одной дорожке.
    *
    * @param count сколько узлов в графе
    * @return раскладка, которую держатель только что запомнил
    */
   private fun GraphCanvasState.place(count: Int): GraphPlacement {
-    val nodes = List(count) { index ->
-      GraphNode(
-        id = GraphNode.Id("n$index"),
-        branchId = GraphBranch.Id("trunk"),
-        role = GraphNodeRole.Episode,
-        gap = TimeGap.Hour
-      )
-    }
     return layout(
-      nodes = nodes,
+      nodes = trunkNodes(count),
       branches = emptyList(),
       viewportSize = VIEWPORT,
       nodeSizes = List(count) { IntSize(width = 120, height = 28) },
@@ -319,3 +370,20 @@ class GraphCanvasStateTest {
 }
 
 private val VIEWPORT = IntSize(width = 1000, height = 600)
+
+/**
+ * Цепочка узлов на магистрали.
+ *
+ * @param count сколько узлов нужно
+ * @return узлы в хронологическом порядке
+ */
+private fun trunkNodes(count: Int): List<GraphNode> {
+  return List(count) { index ->
+    GraphNode(
+      id = GraphNode.Id("n$index"),
+      branchId = GraphBranch.Id("trunk"),
+      role = GraphNodeRole.Episode,
+      gap = TimeGap.Hour
+    )
+  }
+}

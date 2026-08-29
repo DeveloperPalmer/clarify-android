@@ -169,6 +169,25 @@ class GraphPlacementTest {
     assertEquals(2 * LANE_Y, placement.centres[1].y)
   }
 
+  /**
+   * Размер узла нужен не только границам полотна: из него строится прямоугольник плашки на экране,
+   * из которого растёт превью-карточка. Выводить его обратным счётом из центра нельзя — центр уже
+   * округлён.
+   */
+  @Test
+  fun `measured sizes come back in the model order`() {
+    val placement = graphPlacementOf(
+      lanes = listOf(0, 0),
+      gaps = listOf(0f, 40f),
+      laneYs = listOf(LANE_Y, LANE_Y),
+      sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT), IntSize(24, 24)),
+      margins = GraphCanvasMargins.Zero
+    )
+
+    assertEquals(IntSize(NODE_WIDTH, NODE_HEIGHT), placement.sizes[0])
+    assertEquals(IntSize(24, 24), placement.sizes[1], "точка и плашка меряются по-разному")
+  }
+
   private fun placementOf(lanes: List<Int>, gaps: List<Float>): GraphPlacement {
     return graphPlacementOf(
       lanes = lanes,

@@ -1,6 +1,9 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -98,5 +101,46 @@ class GraphGeometryTest {
   @Test
   fun `an empty graph has no nearest node`() {
     assertEquals(-1, nearestCentreIndexOf(emptyList(), x = 100f))
+  }
+
+  @Test
+  fun `a node rect is the canvas rect scaled and shifted by the camera`() {
+    val rect = nodeRectOf(
+      topLeft = IntOffset(x = 1000, y = 300),
+      size = IntSize(width = 200, height = 72),
+      camera = Offset(x = -800f, y = -100f),
+      scale = 1f
+    )
+
+    assertEquals(Rect(left = 200f, top = 200f, right = 400f, bottom = 272f), rect)
+  }
+
+  /**
+   * Морф стартует из **нарисованной** плашки, а не из её размера в раскладке: на верхней границе
+   * диапазона это разница между 200 × 72 и 500 × 180.
+   */
+  @Test
+  fun `a node rect grows with the scale`() {
+    val topLeft = IntOffset(x = 1000, y = 300)
+    val size = IntSize(width = 200, height = 72)
+
+    val plain = nodeRectOf(topLeft, size, camera = Offset.Zero, scale = 1f)
+    val zoomed = nodeRectOf(topLeft, size, camera = Offset.Zero, scale = 2.5f)
+
+    assertEquals(2.5f * plain.width, zoomed.width)
+    assertEquals(2.5f * plain.height, zoomed.height)
+    assertEquals(2.5f * plain.left, zoomed.left, "масштаб отсчитывается от угла вьюпорта")
+  }
+
+  @Test
+  fun `a node rect at the origin of an untouched camera is the plate itself`() {
+    val rect = nodeRectOf(
+      topLeft = IntOffset(x = 40, y = 12),
+      size = IntSize(width = 24, height = 24),
+      camera = Offset.Zero,
+      scale = 1f
+    )
+
+    assertEquals(Rect(left = 40f, top = 12f, right = 64f, bottom = 36f), rect)
   }
 }
