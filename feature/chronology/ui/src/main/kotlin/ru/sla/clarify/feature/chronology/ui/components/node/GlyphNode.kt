@@ -3,11 +3,13 @@ package ru.sla.clarify.feature.chronology.ui.components.node
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -33,20 +35,33 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * Цвет приходит параметром, потому что это идентичность ветки (§7 брифа): на магистрали глиф
  * нейтрален, на ветке несёт её цвет. Знать, на какой он дорожке, узлу неоткуда.
  *
+ * Непрочитанное глиф показывает **гало и только им**: бейдж со счётчиком входит в измерение узла, и
+ * коробка перестала бы быть четырнадцатью пикселями — а на обзоре именно из этого числа сложена вся
+ * арифметика раскладки. Гало же рисуется за узлом и места не занимает, поэтому §8 на уровне, где
+ * узлов больше всего, не отменяется.
+ *
  * @param color цвет обводки: идентичность дорожки, на которой стоит узел
  * @param contentDescription связная подпись для скринридера (§14): на первом уровне детализации от
  *   узла остаётся кружок, и подпись — единственное, чем он себя называет
  * @param modifier модификатор узла
+ * @param unreadCount счётчик непрочитанных; ноль — читать нечего. Отдельного флага нет намеренно:
+ *   два параметра, которые всегда двигаются вместе, — способ ошибиться
  */
 @Composable
 internal fun GlyphNode(
   color: Color,
   contentDescription: String,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  unreadCount: Long = 0
 ) {
+  val accentColor = AppTheme.colors.contentAccentPrimary
   Box(
     modifier = modifier
       .clearAndSetSemantics { this.contentDescription = contentDescription }
+      // Гало рисуется до того, как узлу задан размер, и в раскладке места не занимает — то же
+      // правило, что у плашки эпизода. Скругление равно половине глифа: у круга «скругление плашки»
+      // это его радиус, и меньшее значение срезало бы гало углами.
+      .drawBehind { if (unreadCount > 0) drawUnreadHalo(accentColor, 7.dp) }
       // 14 dp — размер из макета обзора. Он же задаёт и обводку: тоньше 2 dp кольцо на светлом
       // фоне пропадает, толще — заливка перестаёт читаться и глиф выглядит точкой.
       .size(14.dp)
@@ -62,7 +77,12 @@ private fun GlyphNodePreviewLight(
   glyph: GlyphNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Light) {
-    GlyphNode(color = glyph.lane.toPreviewColor(), contentDescription = "Эпизод")
+    GlyphNode(
+      modifier = Modifier.padding(UNREAD_HALO_WIDTH),
+      color = glyph.lane.toPreviewColor(),
+      contentDescription = "Эпизод",
+      unreadCount = glyph.unreadCount
+    )
   }
 }
 
@@ -73,25 +93,33 @@ private fun GlyphNodePreviewDark(
   glyph: GlyphNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Dark) {
-    GlyphNode(color = glyph.lane.toPreviewColor(), contentDescription = "Эпизод")
+    GlyphNode(
+      modifier = Modifier.padding(UNREAD_HALO_WIDTH),
+      color = glyph.lane.toPreviewColor(),
+      contentDescription = "Эпизод",
+      unreadCount = glyph.unreadCount
+    )
   }
 }
 
 @Immutable
-private data class GlyphNodePreview(val lane: Int)
+private data class GlyphNodePreview(val lane: Int, val unreadCount: Long = 0)
 
 /**
- * Кадры превью [GlyphNode]: магистраль и две ветки.
+ * Кадры превью [GlyphNode]: магистраль, две ветки и непрочитанное.
  *
  * Двух веток мало для палитры и достаточно для проверки: кадр существует, чтобы увидеть, что цвет
- * действительно параметризован, а не зашит в компонент.
+ * действительно параметризован, а не зашит в компонент. Последний кадр сторожит состояние, которое
+ * иначе существовало бы только в коде: непрочитанный глиф на полотне рассмотреть нечем — на обзоре
+ * он занимает четыре пикселя.
  */
 @Immutable
 private class GlyphNodePreviewProvider : PreviewParameterProvider<GlyphNodePreview> {
   override val values = sequenceOf(
     GlyphNodePreview(lane = 0),
     GlyphNodePreview(lane = 1),
-    GlyphNodePreview(lane = 2)
+    GlyphNodePreview(lane = 2),
+    GlyphNodePreview(lane = 1, unreadCount = 3)
   )
 }
 

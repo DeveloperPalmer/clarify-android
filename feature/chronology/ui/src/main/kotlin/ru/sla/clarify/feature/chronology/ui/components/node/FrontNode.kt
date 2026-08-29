@@ -39,11 +39,14 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * @param contentDescription связная подпись для скринридера (§14): подпись «сейчас» под точкой
  *   скрывается вместе с остальным содержимым, и произносится только эта фраза
  * @param modifier модификатор узла
+ * @param hasCaption рисовать ли подпись. На обзоре её нет: она задаёт ширину узла в раскладке, а
+ *   вырождается там в три с небольшим пункта
  */
 @Composable
 internal fun FrontNode(
   contentDescription: String,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  hasCaption: Boolean = true
 ) {
   val accentColor = AppTheme.colors.contentAccentPrimary
   Box(
@@ -64,16 +67,21 @@ internal fun FrontNode(
         .size(12.dp)
         .background(accentColor, CircleShape)
     )
-    Text(
-      // Подпись висит над точкой и в измерение по вертикали не входит: коробку по высоте задаёт
-      // строка, а точка обязана остаться в её центре.
-      modifier = Modifier.offset(y = (-18).dp),
-      // Капслок применяется здесь, а не в стиле: `overline` задаёт только метрики разряжённого
-      // начертания, а решение кричать принимает точка использования.
-      text = stringResource(R.string.chronology_front_caption).uppercase(),
-      style = AppTheme.typography.overline,
-      color = AppTheme.colors.contentTertiary
-    )
+    // Подпись задаёт коробку узла по ширине: точка 12 dp уже строки. На обзоре это сделало бы фронт
+    // самым широким узлом раскладки, ужатой вчетверо, а сама подпись вырождается там в три с
+    // небольшим пункта — поэтому её нет вовсе, а не просто не видно.
+    if (hasCaption) {
+      Text(
+        // Подпись висит над точкой и в измерение по вертикали не входит: коробку по высоте задаёт
+        // строка, а точка обязана остаться в её центре.
+        modifier = Modifier.offset(y = (-18).dp),
+        // Капслок применяется здесь, а не в стиле: `overline` задаёт только метрики разряжённого
+        // начертания, а решение кричать принимает точка использования.
+        text = stringResource(R.string.chronology_front_caption).uppercase(),
+        style = AppTheme.typography.overline,
+        color = AppTheme.colors.contentTertiary
+      )
+    }
   }
 }
 
@@ -86,6 +94,12 @@ private fun FrontNodePreviewLight() {
       modifier = Modifier.padding(vertical = 24.dp),
       contentDescription = "Сейчас"
     )
+    // Второй кадр — фронт на обзоре: без подписи от узла остаётся одна точка с гало.
+    FrontNode(
+      modifier = Modifier.padding(vertical = 24.dp),
+      contentDescription = "Сейчас",
+      hasCaption = false
+    )
   }
 }
 
@@ -96,6 +110,11 @@ private fun FrontNodePreviewDark() {
     FrontNode(
       modifier = Modifier.padding(vertical = 24.dp),
       contentDescription = "Сейчас"
+    )
+    FrontNode(
+      modifier = Modifier.padding(vertical = 24.dp),
+      contentDescription = "Сейчас",
+      hasCaption = false
     )
   }
 }
