@@ -75,6 +75,11 @@ import kotlin.math.abs
  *   обработчик, которым содержимое объявляет занятую им зону под своим ключом, — жест, начатый в
  *   любой из объявленных зон, до камеры не доходит. Зона объявляется в координатах корня, а пустой
  *   прямоугольник её снимает. Полотно при этом не знает, что именно там лежит
+ * @param blocked взято ли полотно целиком: пока `true`, жест не начинается вовсе. Та же зона, что
+ *   объявляет содержимое слота, только во весь вьюпорт и объявленная снаружи — потому что накрывший
+ *   полотно скрим обязан накрыть и шапку экрана, а значит внутри слота лежать не может. Читается в
+ *   момент касания, поэтому лямбда, а не значение: иначе полотно рекомпоновалось бы на каждое
+ *   открытие карточки
  * @param node содержимое узла; обязано выпускать ровно один элемент раскладки — полотно ставит
  *   плашки по одной на узел и считает их по позиции, а не по идентификатору
  */
@@ -82,6 +87,7 @@ import kotlin.math.abs
 internal fun GraphCanvas(
   state: GraphCanvasState,
   modifier: Modifier = Modifier,
+  blocked: () -> Boolean = { false },
   node: @Composable (node: GraphNode, accent: GraphNodeAccent) -> Unit,
   overlay: @Composable BoxScope.(onBoundsChanged: (key: Any, bounds: Rect) -> Unit) -> Unit = { }
 ) {
@@ -93,6 +99,9 @@ internal fun GraphCanvas(
   // Спека тоже обновляется через rememberUpdatedState: `pointerInput(Unit)` не пересоздаётся, и
   // смена плотности иначе заморозила бы внутри жеста кривую от старого экрана.
   val currentDecay by rememberUpdatedState(AppTheme.motion.flingDecay<Float>())
+  // По той же причине: обработчик жеста живёт дольше любой отдельной композиции, и захваченная им
+  // лямбда обязана обновляться, а не застывать той, что была при открытии экрана.
+  val currentBlocked by rememberUpdatedState(blocked)
   // Затухание доигрывает после того, как корутина жеста уже отменена, поэтому scope нужен свой.
   val flingScope = rememberCoroutineScope()
   // Зоны, занятые тем, что лежит поверх полотна: полотно ловит жест на всём вьюпорте и по ним
@@ -137,7 +146,7 @@ internal fun GraphCanvas(
         detectCameraGestures(
           isBlocked = { position ->
             val inRoot = position + currentCanvasOrigin
-            overlayZones.values.any { zone -> zone.contains(inRoot) }
+            currentBlocked() || overlayZones.values.any { zone -> zone.contains(inRoot) }
           },
           onTouch = { currentState.stopMotion() },
           onTransform = { focus, pan, zoom ->
