@@ -15,6 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -22,6 +26,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.MessageNodeState
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconResId
+import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -37,13 +42,23 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * Заливка `cardSecondary` у сообщения собеседника здесь допустима: узел лежит на полотне, а не на
  * карточке, — в отличие от узлов покрупнее, которым в светлой теме `cardSecondary` совпал бы с
  * фоном.
+ *
+ * @param text текст сообщения; длинное обрезается эллипсисом
+ * @param isMine моё сообщение или собеседника — от этого зависит заливка
+ * @param contentDescription связная подпись для скринридера (§14): собирается маппером, потому что
+ *   имя ветки узлу неоткуда взять
+ * @param modifier модификатор узла
+ * @param state отредактировано, с цитатой или отправляется
+ * @param onClick тап по узлу; `null` — узел не нажимается
  */
 @Composable
 internal fun MessageNode(
   text: String,
   isMine: Boolean,
+  contentDescription: String,
   modifier: Modifier = Modifier,
-  state: MessageNodeState = MessageNodeState.Normal
+  state: MessageNodeState = MessageNodeState.Normal,
+  onClick: (() -> Unit)? = null
 ) {
   val background = if (isMine) {
     AppTheme.colors.backgroundAccentPrimary
@@ -52,10 +67,22 @@ internal fun MessageNode(
   }
   Row(
     modifier = modifier
+      // Подпись накрывает и текст, и значок состояния: скринридеру нужна одна фраза, а не строка
+      // сообщения отдельно от иконки карандаша.
+      .clearAndSetSemantics {
+        this.contentDescription = contentDescription
+        if (onClick != null) role = Role.Button
+      }
       .graphicsLayer { alpha = if (state == MessageNodeState.Sending) 0.6f else 1f }
       .widthIn(max = 180.dp)
       .defaultMinSize(minHeight = 28.dp)
-      .background(background, AppTheme.shapes.round12)
+      // `surface`, а не `background`: тень при нулевой высоте ничего не рисует, зато клип и клик
+      // приходят готовыми и ровно теми же, что у остальных плашек.
+      .surface(
+        backgroundColor = background,
+        shape = AppTheme.shapes.round12,
+        onClick = onClick
+      )
       .padding(horizontal = 14.dp, vertical = 5.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -89,7 +116,9 @@ private fun MessageNodePreviewLight(
     MessageNode(
       text = message.text,
       isMine = message.isMine,
-      state = message.state
+      contentDescription = message.text,
+      state = message.state,
+      onClick = {}
     )
   }
 }
@@ -104,7 +133,9 @@ private fun MessageNodePreviewDark(
     MessageNode(
       text = message.text,
       isMine = message.isMine,
-      state = message.state
+      contentDescription = message.text,
+      state = message.state,
+      onClick = {}
     )
   }
 }

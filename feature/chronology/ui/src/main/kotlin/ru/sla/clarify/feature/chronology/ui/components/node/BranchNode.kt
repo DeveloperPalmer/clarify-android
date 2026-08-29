@@ -19,6 +19,10 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -52,22 +56,32 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * @param name имя ветки; длинное обрезается эллипсисом в одну строку
  * @param laneColor цвет идентичности дорожки: какая это ветка, а не что с ней происходит (§7).
  *   Приходит готовым цветом, потому что знать свою дорожку узлу неоткуда
+ * @param contentDescription связная подпись для скринридера (§14): собирается маппером, потому что
+ *   имя ветки узлу неоткуда взять
  * @param modifier модификатор узла
  * @param status что происходит с веткой — строка под именем
  * @param unreadCount непрочитанные в ветке; из него же выводится подсветка узла
+ * @param onClick тап по узлу; `null` — узел не нажимается
  */
 @Composable
 internal fun BranchNode(
   name: String,
   laneColor: Color,
+  contentDescription: String,
   modifier: Modifier = Modifier,
   status: GraphBranchStatus = GraphBranchStatus.Alive,
-  unreadCount: Long = 0
+  unreadCount: Long = 0,
+  onClick: (() -> Unit)? = null
 ) {
   val accentColor = AppTheme.colors.contentAccentPrimary
   val unread = unreadCount > 0
   Box(
     modifier = modifier
+      // Имя, статус и бейдж замолкают: скринридер читает одну фразу, собранную маппером.
+      .clearAndSetSemantics {
+        this.contentDescription = contentDescription
+        if (onClick != null) role = Role.Button
+      }
       // Гало рисуется за пределами плашки и намеренно не влияет на раскладку: иначе непрочитанный
       // узел был бы шире прочитанного и сдвигал бы соседей по дорожке.
       .drawBehind { if (unread) drawUnreadHalo(accentColor, 16.dp) }
@@ -77,7 +91,8 @@ internal fun BranchNode(
         backgroundColor = AppTheme.colors.cardPrimary,
         shape = AppTheme.shapes.round16,
         border = if (unread) BorderStroke(1.5.dp, accentColor) else null,
-        elevation = AppTheme.elevation.medium
+        elevation = AppTheme.elevation.medium,
+        onClick = onClick
       )
       // Полоса идентичности стоит после `surface` намеренно: клип формы обрезает её по левым
       // скруглениям плашки. Подними строку выше клипа — полоса вылезет за угол прямоугольником.
@@ -164,6 +179,8 @@ private fun BranchNodePreviewContent(branch: BranchNodePreview) {
   BranchNode(
     modifier = Modifier.padding(UNREAD_HALO_WIDTH),
     name = branch.name,
+    contentDescription = branch.name,
+    onClick = {},
     // Через настоящий маппер, а не через свой цвет: кадр заодно проверяет, что соседние дорожки
     // действительно получают разные оттенки.
     laneColor = branch.lane.toBranchColor(AppTheme.colors),

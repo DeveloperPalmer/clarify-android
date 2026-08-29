@@ -200,4 +200,8 @@
     <string name="chronology_branch_status_merged">Closed</string>
     <string name="chronology_origin_caption">Conversation start</string>
     <string name="chronology_front_caption">Now</string>
+    <string name="chronology_node_episode">Episode</string>
+    <string name="chronology_node_fork">Branch point</string>
+    <string name="chronology_node_merge">Merge point</string>
+    <string name="chronology_node_branch">branch “%1$s”</string>
 </resources>

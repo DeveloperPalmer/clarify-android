@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -32,15 +34,19 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * нейтрален, на ветке несёт её цвет. Знать, на какой он дорожке, узлу неоткуда.
  *
  * @param color цвет обводки: идентичность дорожки, на которой стоит узел
+ * @param contentDescription связная подпись для скринридера (§14): на первом уровне детализации от
+ *   узла остаётся кружок, и подпись — единственное, чем он себя называет
  * @param modifier модификатор узла
  */
 @Composable
 internal fun GlyphNode(
   color: Color,
+  contentDescription: String,
   modifier: Modifier = Modifier
 ) {
   Box(
     modifier = modifier
+      .clearAndSetSemantics { this.contentDescription = contentDescription }
       // 14 dp — размер из макета обзора. Он же задаёт и обводку: тоньше 2 dp кольцо на светлом
       // фоне пропадает, толще — заливка перестаёт читаться и глиф выглядит точкой.
       .size(14.dp)
@@ -56,7 +62,7 @@ private fun GlyphNodePreviewLight(
   glyph: GlyphNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Light) {
-    GlyphNode(color = glyph.lane.toPreviewColor())
+    GlyphNode(color = glyph.lane.toPreviewColor(), contentDescription = "Эпизод")
   }
 }
 
@@ -67,7 +73,7 @@ private fun GlyphNodePreviewDark(
   glyph: GlyphNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Dark) {
-    GlyphNode(color = glyph.lane.toPreviewColor())
+    GlyphNode(color = glyph.lane.toPreviewColor(), contentDescription = "Эпизод")
   }
 }
 

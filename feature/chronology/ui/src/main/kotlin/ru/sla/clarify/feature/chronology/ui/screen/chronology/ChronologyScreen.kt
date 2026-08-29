@@ -33,8 +33,11 @@ import ru.sla.clarify.feature.chronology.ui.components.node.MergeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergedRequestNode
 import ru.sla.clarify.feature.chronology.ui.entity.ForkDirection
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
+import ru.sla.clarify.feature.chronology.ui.mapper.toDescription
+import ru.sla.clarify.feature.chronology.ui.mapper.toNodeDescription
 import ru.sla.clarify.uikit.component.icon.IconAction
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
@@ -70,6 +73,12 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
           modifier = Modifier.fillMaxSize(),
           state = canvasState,
           node = { graphNode, accent ->
+            // Имя ветки в узел не приходит: узлу оно не нужно ни для чего, кроме подписи, а подпись
+            // собирается здесь — там, где имя вообще есть. У магистрали имени нет, и подпись про
+            // ветку тогда не произносится вовсе.
+            val branchName = state.branchNameById[graphNode.branchId]
+            val episode = state.episodeById[graphNode.id]
+            val description = graphNode.toDescription(episode = episode, branchName = branchName)
             // Род узла решает, что рисовать, и решает здесь, а не в полотне: полотну безразлично,
             // плашка перед ним или круг, — оно ставит по одному элементу на узел.
             when (graphNode.role) {
@@ -79,6 +88,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                   time = item.time,
                   count = item.count,
                   snippet = item.snippet,
+                  contentDescription = description,
                   myShare = item.myShare,
                   unreadCount = item.unreadCount,
                   dim = item.dim
@@ -88,6 +98,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
               // из акцента, а не из самого узла: сам он стоит на магистрали.
               GraphNodeRole.Fork -> ForkNode(
                 laneColor = accent.colorIndex.toBranchColor(AppTheme.colors),
+                contentDescription = description,
                 direction = if (accent.lane < 0) ForkDirection.Up else ForkDirection.Down
               )
               // Чип «Закрыта» висит с той стороны магистрали, откуда ветка **не** возвращается.
@@ -96,14 +107,17 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
               // Смещается `offset`, места в раскладке не занимая, — то же правило, что у шеврона
               // ветвления и у гало непрочитанного.
               GraphNodeRole.Merge -> Box(contentAlignment = Alignment.Center) {
-                MergeNode()
+                MergeNode(contentDescription = description)
                 MergedRequestNode(
+                  // Подпись у чипа своя: он говорит «эта тема закрыта», а точка под ним — «здесь
+                  // ветка вернулась в магистраль». Одной фразой на двоих это не сказать.
+                  contentDescription = GraphBranchStatus.Merged.toNodeDescription(branchName),
                   modifier = Modifier.offset(
                     y = if (accent.lane < 0) 34.dp else (-34).dp
                   )
                 )
               }
-              GraphNodeRole.Front -> FrontNode()
+              GraphNodeRole.Front -> FrontNode(contentDescription = description)
             }
           },
           overlay = { onBoundsChanged ->

@@ -45,6 +45,26 @@ internal fun GraphBranchStatus.toIconTint(colors: AppColors): Color {
 }
 
 /**
+ * Подпись чипа «Закрыта» для скринридера.
+ *
+ * Чип — отдельный элемент рядом с точкой слияния, а не её часть, поэтому и подпись у него своя: он
+ * говорит не «здесь ветка вернулась», а «эта тема закрыта». Собирается тем же порядком, что подписи
+ * узлов, — см. [nodeDescriptionOf].
+ *
+ * @param branchName имя закрытой ветки; `null`, если имени нет
+ * @return готовая к озвучиванию строка
+ */
+@Composable
+internal fun GraphBranchStatus.toNodeDescription(branchName: String?): String {
+  return nodeDescriptionOf(
+    listOf(
+      toLabel(),
+      branchName?.let { stringResource(R.string.chronology_node_branch, it) }
+    )
+  )
+}
+
+/**
  * Строка статуса словами.
  *
  * @return готовая к показу строка на языке устройства

@@ -26,7 +26,8 @@ class ChronologyViewModel @Inject constructor(
     initial = ViewState(
       nodes = graph.graphNodes,
       graphBranches = graph.branches,
-      episodeById = graph.episodeById
+      episodeById = graph.episodeById,
+      branchNameById = graph.branchNames
     ) to null
 
     onEach(intent(ViewIntents::navigateBack)) {

@@ -21,6 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -42,6 +46,18 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  *
  * Ширина фиксирована, растёт только высота: узлы стоят на дорожке, и разъезжающаяся ширина сдвигала
  * бы соседей по всей цепочке.
+ *
+ * @param time время начала эпизода, готовое к показу
+ * @param count сколько сообщений в кластере
+ * @param snippet последнее сообщение эпизода
+ * @param contentDescription связная подпись для скринридера (§14): собирается маппером, потому что
+ *   имя ветки узлу неоткуда взять. Три текста плашки при этом скрываются — иначе скринридер
+ *   прочитает и подпись, и их
+ * @param modifier модификатор узла
+ * @param myShare доля своих реплик в полоске соотношения
+ * @param unreadCount счётчик непрочитанных; ноль — читать нечего
+ * @param dim эпизод внутри слитой ветки
+ * @param onClick тап по узлу; `null` — узел не нажимается
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -49,15 +65,24 @@ internal fun EpisodeNode(
   time: String,
   count: Int,
   snippet: String,
+  contentDescription: String,
   modifier: Modifier = Modifier,
   myShare: Float = DEFAULT_MY_SHARE,
   unreadCount: Long = 0,
-  dim: Boolean = false
+  dim: Boolean = false,
+  onClick: (() -> Unit)? = null
 ) {
   val accentColor = AppTheme.colors.contentAccentPrimary
   val unread = unreadCount > 0
   Box(
     modifier = modifier
+      // Подпись ставится здесь, а не сливается с текстами внутри: `clearAndSetSemantics` чистит
+      // семантику потомков, но не своего же узла, — поэтому действие клика, объявленное `surface`
+      // ниже по цепочке, остаётся на месте, а время, счётчик и сниппет замолкают.
+      .clearAndSetSemantics {
+        this.contentDescription = contentDescription
+        if (onClick != null) role = Role.Button
+      }
       .graphicsLayer { alpha = if (dim) 0.6f else 1f }
       // Гало рисуется за пределами плашки и намеренно не влияет на раскладку: иначе непрочитанный
       // узел был бы шире прочитанного и сдвигал бы соседей по дорожке.
@@ -68,7 +93,8 @@ internal fun EpisodeNode(
         backgroundColor = AppTheme.colors.cardPrimary,
         shape = AppTheme.shapes.round16,
         border = if (unread) BorderStroke(1.5.dp, accentColor) else null,
-        elevation = AppTheme.elevation.small
+        elevation = AppTheme.elevation.small,
+        onClick = onClick
       )
   ) {
     Column(
@@ -181,6 +207,8 @@ private fun EpisodeNodePreviewDark(
 private fun EpisodeNodePreviewContent(episode: EpisodeNodePreview) {
   EpisodeNode(
     modifier = Modifier.padding(UNREAD_HALO_WIDTH),
+    contentDescription = episode.snippet,
+    onClick = {},
     time = episode.time,
     count = episode.count,
     snippet = episode.snippet,

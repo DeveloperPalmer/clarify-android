@@ -14,6 +14,7 @@ data class ViewState(
   val nodes: List<GraphNode> = emptyList(),
   val graphBranches: List<GraphBranch> = emptyList(),
   val episodeById: Map<GraphNode.Id, EpisodeContent> = emptyMap(),
+  val branchNameById: Map<GraphBranch.Id, String> = emptyMap(),
   val debugOverlayAvailable: Boolean = false,
   val debugOverlayVisible: Boolean = false
 )

@@ -14,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -46,16 +48,20 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * наименьшем зазоре 40 dp достаёт до соседней плашки. Обрезка эллипсисом — то же решение, что у
  * имени ветки в [BranchNode], и по той же причине: расти вширь узлу на дорожке нельзя.
  *
+ * @param contentDescription связная подпись для скринридера (§14): чип называет закрытую тему, а
+ *   не место на линии, поэтому подпись у него своя, отдельная от точки слияния
  * @param modifier модификатор чипа
  * @param maxWidth наибольшая ширина чипа: слово за ней обрезается эллипсисом
  */
 @Composable
 internal fun MergedRequestNode(
+  contentDescription: String,
   modifier: Modifier = Modifier,
   maxWidth: Dp = 120.dp
 ) {
   Row(
     modifier = modifier
+      .clearAndSetSemantics { this.contentDescription = contentDescription }
       // Скругление 12 при высоте 24 и есть капсула: других форм в системе нет, и заводить их ради
       // одного чипа не потребовалось.
       .defaultMinSize(minHeight = 24.dp)
@@ -107,6 +113,6 @@ private fun MergedRequestNodePreviewDark() {
  */
 @Composable
 private fun MergedRequestNodePreviewContent() {
-  MergedRequestNode()
-  MergedRequestNode(maxWidth = 60.dp)
+  MergedRequestNode(contentDescription = "Закрыта")
+  MergedRequestNode(contentDescription = "Закрыта", maxWidth = 60.dp)
 }

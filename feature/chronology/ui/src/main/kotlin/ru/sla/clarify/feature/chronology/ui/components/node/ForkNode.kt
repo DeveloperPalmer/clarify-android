@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -43,6 +45,8 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * Узел декоративен: §6.4 не даёт ему ни состояний, ни интерактива, а структуру скринридер читает из
  * подписи узла ветки.
  *
+ * @param contentDescription связная подпись для скринридера (§14). Тапа у узла нет, а подпись есть:
+ *   рёбра скринридер не читает вовсе, и о том, что здесь начинается ветка, сказать больше некому
  * @param laneColor цвет идентичности ветки, которая здесь начинается: обводка и иконка (§7).
  *   Приходит готовым цветом, потому что знать свою дорожку узлу неоткуда
  * @param modifier модификатор узла
@@ -51,12 +55,13 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 @Composable
 internal fun ForkNode(
   laneColor: Color,
+  contentDescription: String,
   modifier: Modifier = Modifier,
   direction: ForkDirection = ForkDirection.Up
 ) {
   val up = direction == ForkDirection.Up
   Box(
-    modifier = modifier,
+    modifier = modifier.clearAndSetSemantics { this.contentDescription = contentDescription },
     contentAlignment = Alignment.Center
   ) {
     Box(
@@ -119,6 +124,7 @@ private fun ForkNodePreviewContent(fork: ForkNodePreview) {
     // Через настоящий маппер, а не через свой цвет: кадр заодно проверяет, что соседние дорожки
     // получают разные оттенки.
     laneColor = fork.lane.toBranchColor(AppTheme.colors),
+    contentDescription = "Ответвление",
     direction = fork.direction
   )
 }

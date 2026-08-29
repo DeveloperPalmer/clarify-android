@@ -10,6 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -41,7 +45,9 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * @param myPhotoUrl моё фото или `null`
  * @param peerName имя собеседника
  * @param peerPhotoUrl фото собеседника или `null`
+ * @param contentDescription связная подпись для скринридера (§14)
  * @param modifier модификатор узла
+ * @param onClick тап по узлу; `null` — узел не нажимается
  */
 @Composable
 internal fun OriginNode(
@@ -51,15 +57,23 @@ internal fun OriginNode(
   myPhotoUrl: String?,
   peerName: String,
   peerPhotoUrl: String?,
-  modifier: Modifier = Modifier
+  contentDescription: String,
+  modifier: Modifier = Modifier,
+  onClick: (() -> Unit)? = null
 ) {
   Column(
     modifier = modifier
+      // Внутри карточки четыре текста и два аватара: без этого скринридер прочитает их подряд.
+      .clearAndSetSemantics {
+        this.contentDescription = contentDescription
+        if (onClick != null) role = Role.Button
+      }
       .width(280.dp)
       .surface(
         backgroundColor = AppTheme.colors.cardPrimary,
         shape = AppTheme.shapes.round24,
-        elevation = AppTheme.elevation.largest
+        elevation = AppTheme.elevation.largest,
+        onClick = onClick
       )
       .padding(20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -137,7 +151,9 @@ private fun OriginNodePreviewContent(origin: OriginNodePreview) {
     myName = "Вы",
     myPhotoUrl = null,
     peerName = "Анна Ковалёва",
-    peerPhotoUrl = null
+    peerPhotoUrl = null,
+    contentDescription = origin.text,
+    onClick = {}
   )
 }
 

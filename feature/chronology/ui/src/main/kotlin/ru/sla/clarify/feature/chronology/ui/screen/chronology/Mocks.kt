@@ -60,7 +60,11 @@ import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
  * @return демо-граф целиком: узлы в хронологическом порядке и ветки в порядке ветвления
  */
 internal fun mockGraph(): MockGraph {
-  return MockGraph(nodes = demoNodes(), branches = demoBranches())
+  return MockGraph(
+    nodes = demoNodes(),
+    branches = demoBranches(),
+    branchNames = demoBranchNames()
+  )
 }
 
 /**
@@ -176,7 +180,34 @@ internal fun mockLinearGraph(): MockGraph {
  * @return граф из магистрали и девяти живых веток
  */
 internal fun mockCrowdedGraph(): MockGraph {
-  return MockGraph(nodes = crowdedNodes(), branches = crowdedBranches())
+  val branches = crowdedBranches()
+  return MockGraph(
+    nodes = crowdedNodes(),
+    branches = branches,
+    // Имена здесь порядковые: набор заведён ради дорожек за потолком §4.2, а не ради слов.
+    branchNames = branches.mapIndexed { index, branch -> branch.id to "Тема ${index + 1}" }.toMap()
+  )
+}
+
+/**
+ * Имена веток демо-набора: то, чем ветка называется в подписи для скринридера и в узле ветки.
+ *
+ * Слова, а не идентификаторы: `terms` — это ключ, а вслух произносится тема. Длинное имя здесь одно,
+ * `stickers`, и стоит оно ради §15 п. 7 — обрезки эллипсисом.
+ *
+ * @return имя по идентификатору ветки
+ */
+private fun demoBranchNames(): Map<GraphBranch.Id, String> {
+  return mapOf(
+    GraphBranch.Id("terms") to "Сроки по релизу",
+    GraphBranch.Id("export") to "Экспорт истории",
+    GraphBranch.Id("design") to "Дизайн онбординга",
+    GraphBranch.Id("budget") to "Бюджет на Q3",
+    GraphBranch.Id("photos") to "Фотографии с оффсайта",
+    GraphBranch.Id("release") to "Релиз 2.4",
+    GraphBranch.Id("pricing") to "Цены на подписку",
+    GraphBranch.Id("stickers") to "Стикеры, которые мы так и не сделали, но обсуждаем"
+  )
 }
 
 /**
@@ -699,11 +730,15 @@ private fun point(id: String, gap: TimeGap, role: GraphNodeRole): MockNode {
  *
  * @param nodes узлы в хронологическом порядке
  * @param branches ветки, кроме магистрали, в порядке ветвления
+ * @param branchNames имя каждой ветки. Отдельной картой, а не полем [GraphBranch]: та — сущность
+ *   раскладки, и имя в ней было бы содержимым, попавшим не в свой слой. Магистрали в карте нет, и
+ *   это не пропуск: у неё нет темы, о которой можно сказать «ветка такая-то»
  */
 @Immutable
 internal data class MockGraph(
   val nodes: List<MockNode>,
-  val branches: List<GraphBranch>
+  val branches: List<GraphBranch>,
+  val branchNames: Map<GraphBranch.Id, String> = emptyMap()
 ) {
 
   /** Раскладочная часть узлов: то, что уходит на полотно. */

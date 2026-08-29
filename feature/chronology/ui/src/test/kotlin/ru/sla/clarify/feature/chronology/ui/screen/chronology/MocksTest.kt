@@ -329,6 +329,21 @@ class MocksTest {
     )
   }
 
+  /**
+   * Подпись узла для скринридера называет ветку, а имени у [GraphBranch] нет: оно живёт отдельной
+   * картой, и разъехаться с набором ей ничто не мешает.
+   */
+  @Test
+  fun `every branch of the set has a name`() {
+    val graph = mockGraph()
+
+    assertEquals(
+      graph.branches.map { it.id }.toSet(),
+      graph.branchNames.keys,
+      "ветка без имени озвучится скринридеру как безымянная, и заметить это можно только вслух"
+    )
+  }
+
   /** Дорожка каждой ветки демо-набора, включая магистраль. */
   private fun demoLanes(): Map<GraphBranch.Id, Int> {
     val nodes = mockGraph().graphNodes

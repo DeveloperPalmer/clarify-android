@@ -11,6 +11,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -34,17 +36,21 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * Пульсации у кольца ожидания здесь нет, как нет и удара по кадру 5 церемонии: и то, и другое —
  * части церемонии слияния, а она пока не реализована. Компонент рисует её кадры 3 и 5 статично.
  *
+ * @param contentDescription связная подпись для скринридера (§14). Тапа у узла нет, а подпись есть:
+ *   рёбра скринридер не читает, и о возврате ветки в магистраль сказать больше некому
  * @param modifier модификатор узла
  * @param state кольцо ожидания или залитая точка
  */
 @Composable
 internal fun MergeNode(
+  contentDescription: String,
   modifier: Modifier = Modifier,
   state: MergeNodeState = MergeNodeState.Done
 ) {
   val done = state == MergeNodeState.Done
   Box(
     modifier = modifier
+      .clearAndSetSemantics { this.contentDescription = contentDescription }
       .size(24.dp)
       .background(
         // Заливка непрозрачная в обоих состояниях: узел стоит **на** линии магистрали, и
@@ -81,7 +87,7 @@ private fun MergeNodePreviewLight(
   merge: MergeNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Light) {
-    MergeNode(state = merge.state)
+    MergeNode(state = merge.state, contentDescription = "Слияние")
   }
 }
 
@@ -92,7 +98,7 @@ private fun MergeNodePreviewDark(
   merge: MergeNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Dark) {
-    MergeNode(state = merge.state)
+    MergeNode(state = merge.state, contentDescription = "Слияние")
   }
 }
 
