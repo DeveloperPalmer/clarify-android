@@ -2,9 +2,15 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
+import androidx.compose.ui.geometry.Offset
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
+import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 
 /**
@@ -99,6 +105,53 @@ class MergeCeremonyTest {
       "а время за концом шкалы — уже покой после неё, а не доля больше единицы"
     )
   }
+}
+
+/**
+ * Сторожит предикат бегущего пунктира — второй его источник.
+ *
+ * Пока источник был один, статус ветки, переигрывание церемонии по чипу **слитой** ветки оставляло
+ * кадр 1 без пунктира, который он ускоряет. Отказ был молчаливым: ни падения, ни красного теста.
+ */
+class DashRunningTest {
+
+  @Test
+  fun `a graph with a branch ready to merge runs the dash`() {
+    assertTrue(
+      isDashRunning(listOf(edge(GraphBranchStatus.Ready)), ceremonyPlaying = false),
+      "бегущий пунктир §7 принадлежит готовой ветке, и она здесь есть"
+    )
+  }
+
+  @Test
+  fun `a graph with nothing ready and no ceremony leaves the dash alone`() {
+    assertFalse(
+      isDashRunning(
+        listOf(edge(GraphBranchStatus.Merged), edge(GraphBranchStatus.Alive)),
+        ceremonyPlaying = false
+      ),
+      "бесконечная анимация просит кадр, пока жива: без повода её быть не должно вовсе"
+    )
+  }
+
+  @Test
+  fun `a ceremony runs the dash even when no branch is ready`() {
+    assertTrue(
+      isDashRunning(listOf(edge(GraphBranchStatus.Merged)), ceremonyPlaying = true),
+      "переигрывают по чипу слитой ветки, и разгонять кадру 1 было бы нечего"
+    )
+  }
+}
+
+private fun edge(status: GraphBranchStatus): GraphEdge {
+  return GraphEdge(
+    points = listOf(Offset.Zero, Offset(100f, 0f)),
+    hops = emptyList(),
+    branchId = GraphBranch.Id("a"),
+    colorIndex = 1,
+    role = GraphEdgeRole.Branch,
+    status = status
+  )
 }
 
 /** Та же кривая, что `AppMotion.decelerate`: движение начинается на полной скорости и тормозит. */

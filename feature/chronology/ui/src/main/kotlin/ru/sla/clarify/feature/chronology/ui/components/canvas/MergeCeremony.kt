@@ -1,6 +1,9 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.animation.core.Easing
+import androidx.compose.ui.util.fastAny
+import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 
 /** Полная длина церемонии слияния, мс: семь кадров §12 на одной шкале. */
@@ -83,4 +86,24 @@ private fun ringPulseOf(elapsed: Float): Float {
 /** Доля отрезка шкалы, пройденная к моменту [elapsed]: `0` до начала отрезка, `1` после конца. */
 private fun spanFractionOf(elapsed: Float, from: Float, to: Float): Float {
   return ((elapsed - from) / (to - from)).coerceIn(0f, 1f)
+}
+
+/**
+ * Есть ли на графе чему бежать: только тогда заводится фаза пунктира.
+ *
+ * Предикат спрашивает про **два** источника, а не про один, и второй здесь не украшение. Бегущий
+ * пунктир §7 принадлежит ветке, готовой к слиянию, — но церемония переигрывается по чипу ветки уже
+ * **слитой**, у которой штрих сплошной, а альфа 60 %. Пока предикат смотрел только на статус, кадру 1
+ * нечего было ускорять, а кадру 7 — не из чего гаснуть: оба играли бы в пустоту, не уронив ни одного
+ * теста и не показав ни одной ошибки.
+ *
+ * Бесконечная анимация запрашивает кадр, пока жива, поэтому на графе, где бежать нечему, её быть не
+ * должно вовсе: иначе это вечный кадр ни для чего.
+ *
+ * @param edges рёбра этого кадра
+ * @param ceremonyPlaying играет ли церемония слияния
+ * @return нужна ли фаза бегущего пунктира
+ */
+internal fun isDashRunning(edges: List<GraphEdge>, ceremonyPlaying: Boolean): Boolean {
+  return ceremonyPlaying || edges.fastAny { it.status == GraphBranchStatus.Ready }
 }

@@ -42,7 +42,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
@@ -70,6 +69,8 @@ import kotlin.math.abs
  * построению.
  *
  * @param state камера полотна и результат его последней раскладки
+ * @param ceremony церемония слияния: полотно её не запускает, но рисует и учитывает в бегущем
+ *   пунктире — слитая ветка на время церемонии показывается так, будто снова готова к слиянию
  * @param modifier модификатор корня полотна
  * @param overlay что нарисовать поверх полотна: панель, мини-карта, что угодно. Слот получает
  *   обработчик, которым содержимое объявляет занятую им зону под своим ключом, — жест, начатый в
@@ -86,6 +87,7 @@ import kotlin.math.abs
 @Composable
 internal fun GraphCanvas(
   state: GraphCanvasState,
+  ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
   blocked: () -> Boolean = { false },
   node: @Composable (node: GraphNode, accent: GraphNodeAccent) -> Unit,
@@ -176,6 +178,7 @@ internal fun GraphCanvas(
       nodes = nodes,
       branches = branches,
       accents = accents,
+      ceremony = ceremony,
       node = node
     )
     overlay { key, bounds ->
@@ -201,6 +204,7 @@ internal fun GraphCanvas(
  *   чтобы композиция и измерение одного кадра видели один и тот же список
  * @param branches ветки того же кадра; из них считаются дорожки
  * @param accents цвет и направление каждого узла, в порядке [nodes]
+ * @param ceremony церемония слияния этого кадра
  * @param modifier модификатор слоя
  * @param node содержимое узла
  */
@@ -210,6 +214,7 @@ private fun GraphNodesLayer(
   nodes: List<GraphNode>,
   branches: List<GraphBranch>,
   accents: List<GraphNodeAccent>,
+  ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
   node: @Composable (node: GraphNode, accent: GraphNodeAccent) -> Unit
 ) {
@@ -231,8 +236,8 @@ private fun GraphNodesLayer(
   // Фаза заводится ровно тогда, когда есть чему бежать: бесконечная анимация запрашивает кадр,
   // пока жива, а её чтение в рисовании перерисовывает слой связей каждый кадр — на графе без
   // готовых веток это был бы вечный кадр ни для чего.
-  val hasRunningEdge = remember(state) {
-    derivedStateOf { state.edges.value.fastAny { it.status == GraphBranchStatus.Ready } }
+  val hasRunningEdge = remember(state, ceremony) {
+    derivedStateOf { isDashRunning(state.edges.value, ceremony.playing.value) }
   }
   val dashPhase = rememberDashPhase(period = dashIntervals.sum(), isRunning = hasRunningEdge.value)
   val cornerRadius = with(density) { 8.dp.toPx() }

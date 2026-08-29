@@ -30,6 +30,7 @@ import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphCanvas
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphDebugOverlay
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphMinimap
 import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberGraphCanvasState
+import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberMergeCeremonyState
 import ru.sla.clarify.feature.chronology.ui.components.node.EpisodeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.ForkNode
 import ru.sla.clarify.feature.chronology.ui.components.node.FrontNode
@@ -69,6 +70,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
         nodes = state.nodes,
         branches = state.graphBranches
       )
+      val ceremonyState = rememberMergeCeremonyState()
       // Подпись пузыря мини-карты. Собирается здесь, потому что дату знает экран, а какой узел под
       // центром — полотно; отдаётся `State`, чтобы прочитал её лист, а не тело экрана: чтение
       // прямо тут пересобирало бы лямбды полотна при каждой смене узла под камерой.
@@ -91,6 +93,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
         GraphCanvas(
           modifier = Modifier.fillMaxSize(),
           state = canvasState,
+          ceremony = ceremonyState,
           // Пока карточка открыта, полотно жестов не берёт вовсе: прямоугольник, из которого вырос
           // морф, заморожен, и уехавшая под скримом камера сделала бы обратный морф ложью.
           blocked = { state.selectedNode != null },
