@@ -16,16 +16,20 @@ import kotlin.math.roundToInt
  * Где на полотне лежат дорожки, если самая верхняя из занятых — [topLane].
  *
  * Только пространство: ни состояния, ни времени, ни плотности экрана, ни Compose. Конфигурация —
- * одно число, а не список узлов, именно поэтому обращение к дорожке стоит O(1): раньше здесь
+ * два числа, а не список узлов, именно поэтому обращение к дорожке стоит O(1): раньше здесь
  * пересчитывался диапазон дорожек на каждый вызов, и обход узлов выходил квадратичным.
  *
  * Координаты отсчитываются от левого верхнего угла полотна. Начало полотна — не начало экрана:
  * сдвиг под вьюпорт добавляет камера, и геометрия о нём не знает.
  *
+ * Шаг дорожки приходит параметром, а не берётся константой файла: он свойство уровня детализации —
+ * обзор ужимает раскладку вчетверо по обеим осям, см. `GraphLevel.toLaneStep`. Из-за этого же тип
+ * перестал быть `value class`: одно поле второго не вмещает.
+ *
  * @param topLane номер самой верхней занятой дорожки, см. [topLaneOf]
+ * @param laneStep расстояние между соседними дорожками на этом уровне детализации
  */
-@JvmInline
-internal value class GraphGeometry(private val topLane: Int) {
+internal class GraphGeometry(private val topLane: Int, private val laneStep: Dp) {
 
   /**
    * Смещение дорожки по Y, отсчитанное от верха полотна.
@@ -37,7 +41,7 @@ internal value class GraphGeometry(private val topLane: Int) {
    * @return смещение центра дорожки от верха полотна
    */
   fun laneYOf(lane: Int): Dp {
-    return LANE_STEP * (lane - topLane) + LANE_STEP / 2
+    return laneStep * (lane - topLane) + laneStep / 2
   }
 }
 
@@ -257,4 +261,3 @@ private fun boundsOf(nodes: List<IntOffset>, sizes: List<IntSize>): Rect {
 }
 
 internal val CANVAS_PADDING: Dp = 64.dp
-private val LANE_STEP: Dp = 104.dp

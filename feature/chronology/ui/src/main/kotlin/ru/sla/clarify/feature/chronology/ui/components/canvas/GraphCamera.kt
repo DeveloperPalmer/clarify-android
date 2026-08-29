@@ -3,6 +3,8 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 
@@ -224,13 +226,37 @@ internal fun cameraAimedAt(
   range: GraphCameraRange,
   scale: Float
 ): Offset {
-  val scaled = point * scale
-  return range.clamp(
-    Offset(
-      x = viewport.width / 2f - scaled.x,
-      y = viewport.height / 2f - scaled.y
-    )
+  return cameraPuttingPointAt(
+    point = point,
+    screen = Offset(x = viewport.width / 2f, y = viewport.height / 2f),
+    range = range,
+    scale = scale
   )
+}
+
+/**
+ * Камера, при которой [point] полотна оказывается в точке [screen] экрана.
+ *
+ * Общая форма наведения: [cameraAimedAt] — её частный случай, где экранная точка это середина. Второй
+ * записи того же правила в коде нет и быть не должно — обе выглядели бы как «поставить точку куда
+ * надо», а разъехались бы на первой правке клампа.
+ *
+ * Общей форме нашлось дело у смены уровня детализации: якорь перехода стоит под пальцами, а не под
+ * центром экрана, и середина там — чужое место.
+ *
+ * @param point точка полотна в его собственных координатах
+ * @param screen точка экрана, под которой она обязана оказаться
+ * @param range где камере разрешено быть
+ * @param scale масштаб содержимого
+ * @return положение камеры, зажатое диапазоном
+ */
+internal fun cameraPuttingPointAt(
+  point: Offset,
+  screen: Offset,
+  range: GraphCameraRange,
+  scale: Float
+): Offset {
+  return range.clamp(screen - point * scale)
 }
 
 /**
@@ -262,16 +288,27 @@ internal fun panStepOf(camera: Offset, delta: Offset, range: GraphCameraRange): 
 /**
  * Масштаб, к которому приводит перелёт по кнопке камеры.
  *
- * Возвращает к единице только **сверху вниз**. Приблизившийся видел кусок истории вблизи, и перелёт
- * через всю переписку на таком масштабе высаживает его в такой же кусок, только другой, — сбрасывать
- * зум тут и значит «показать, куда прилетели». Отдалившийся, наоборот, смотрит обзорно намеренно, и
- * приближать его насильно нельзя: он не просил менять масштаб, он просил сменить место.
+ * Возвращает к покою уровня только **сверху вниз**. Приблизившийся видел кусок истории вблизи, и
+ * перелёт через всю переписку на таком масштабе высаживает его в такой же кусок, только другой, —
+ * сбрасывать зум тут и значит «показать, куда прилетели». Отдалившийся, наоборот, смотрит обзорно
+ * намеренно, и приближать его насильно нельзя: он не просил менять масштаб, он просил сменить место.
+ *
+ * Покой у каждого уровня свой, и это не украшение сигнатуры. На эпизодах единица означает «плашка
+ * нарисована в свою величину», а на обзоре не означает ничего: там покой — это «видно всё», то есть
+ * нижний край полосы. Пока функция знала одну единицу на всех, перелёт с обзора сажал камеру в
+ * масштаб, которого пользователь не просил, — и делал это молча.
  *
  * @param scale масштаб на момент нажатия
- * @return единица, если было приближено; тот же масштаб в остальных случаях
+ * @param level уровень детализации
+ * @param band полоса масштаба этого уровня
+ * @return покой уровня, если было приближено; тот же масштаб в остальных случаях
  */
-internal fun flightScaleOf(scale: Float): Float {
-  return if (scale > 1f) 1f else scale
+internal fun flightScaleOf(scale: Float, level: GraphLevel, band: GraphLevelBand): Float {
+  val rest = when (level) {
+    GraphLevel.Episodes -> 1f
+    GraphLevel.Overview -> band.min
+  }
+  return if (scale > rest) rest else scale
 }
 
 /**

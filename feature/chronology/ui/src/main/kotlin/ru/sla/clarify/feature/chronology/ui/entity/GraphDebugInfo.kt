@@ -16,6 +16,8 @@ import androidx.compose.ui.geometry.Rect
  * @param camera сдвиг содержимого после клампа
  * @param scale масштаб содержимого: `экран = полотно · scale + камера`
  * @param isCameraMoved двигали ли камеру хоть раз
+ * @param level уровень детализации: он же объясняет, почему тот же масштаб показывает разное
+ * @param levelBand полоса масштаба этого уровня — за её краями уровень сменяется соседним
  * @param centreSpanX отрезок центров плашек, по которому ходит камера
  * @param nodeCount число узлов в модели
  * @param edgeCount число выведенных связей
@@ -28,6 +30,8 @@ data class GraphDebugInfo(
   val camera: Offset,
   val scale: Float,
   val isCameraMoved: Boolean,
+  val level: GraphLevel,
+  val levelBand: GraphLevelBand,
   val centreSpanX: ClosedFloatingPointRange<Float>,
   val nodeCount: Int,
   val edgeCount: Int

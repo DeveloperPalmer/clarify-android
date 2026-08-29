@@ -5,10 +5,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
@@ -155,7 +157,7 @@ class GraphCanvasStateTest {
   }
 
   @Test
-  fun `the scale cannot leave the brief's range`() {
+  fun `the scale cannot leave the band of its level`() {
     val state = GraphCanvasState()
     state.place(count = 6)
     val focus = Offset(x = 500f, y = 300f)
@@ -163,11 +165,20 @@ class GraphCanvasStateTest {
     state.zoom(focus = focus, change = 100f)
     val zoomedIn = state.zoom(focus = focus, change = 2f)
 
-    assertEquals(2.5f, zoomedIn.scale)
+    assertEquals(2.5f, zoomedIn.scale, "потолок §11.1 общий у обоих уровней: выше эпизодов уровня нет")
     assertTrue(zoomedIn.isRejected, "упор в предел — это свойство шага, а не догадка вызывающего")
 
+    // Вниз с уровня эпизодов масштаб не упирается, а уводит в обзор: это проверяют тесты перехода.
+    // Ниже обзора уровня нет, и вот там упор настоящий.
+    state.fitAll()
+    val overview = state.place(count = 6, level = state.level.value)
     state.zoom(focus = focus, change = 0.001f)
-    assertEquals(0.4f, state.scale.value)
+
+    assertEquals(
+      graphLevelBandOf(GraphLevel.Overview, fitScaleOf(overview.bounds, VIEWPORT)).min,
+      state.scale.value,
+      "ниже обзора уровня нет: там масштаб упирается в нижний край его полосы"
+    )
   }
 
   @Test
@@ -293,6 +304,113 @@ class GraphCanvasStateTest {
   }
 
   /**
+   * Смена уровня меняет раскладку скачком: зазоры ужимаются вчетверо, плашка вырождается в глиф.
+   * Единственное, что удерживает переход от телепорта, — якорь: узел под пальцами обязан остаться под
+   * пальцами, а охват — прежним.
+   */
+  @Test
+  fun `a level switch keeps the anchor node under the same screen point`() {
+    val state = GraphCanvasState()
+    val before = state.fill(count = 9)
+    state.pan(Offset(x = -800f, y = 0f))
+    val focus = Offset(x = 700f, y = 300f)
+    val anchor = nearestCentreIndexOf(
+      centres = before.centres,
+      x = (focus.x - state.offset.value.x) / state.scale.value
+    )
+
+    state.zoom(focus = focus, change = 0.3f)
+    state.fill(count = 9, level = state.level.value)
+
+    assertEquals(GraphLevel.Overview, state.level.value, "щипок ниже полосы уровня уводит в обзор")
+    val landed = state.nodeRectOf(GraphNode.Id("n$anchor"))
+    assertNotNull(landed, "якорный узел обязан найтись и на новом уровне: список узлов уровень не меняет")
+    assertEquals(
+      focus.x,
+      landed!!.center.x,
+      1f,
+      "узел под пальцами обязан остаться под пальцами: иначе переход читается телепортом"
+    )
+  }
+
+  @Test
+  fun `a level switch lands the scale inside the new band`() {
+    val state = GraphCanvasState()
+    state.fill(count = 9)
+    state.pan(Offset(x = -800f, y = 0f))
+
+    state.zoom(focus = Offset(x = 700f, y = 300f), change = 0.3f)
+    val placement = state.fill(count = 9, level = state.level.value)
+
+    val band = graphLevelBandOf(GraphLevel.Overview, fitScaleOf(placement.bounds, VIEWPORT))
+    assertTrue(
+      state.scale.value >= band.min && state.scale.value <= band.max,
+      "масштаб посадки обязан лежать в полосе нового уровня, а не в полосе покинутого"
+    )
+    assertTrue(
+      state.scale.value <= band.max * (1f - 0.08f) + 1e-4f,
+      "и держаться от её края: посадка на самом потолке возвращала бы обратно от дрожания пальца"
+    )
+  }
+
+  @Test
+  fun `a layout pass does not subscribe to the level either`() {
+    val state = GraphCanvasState()
+    state.fill(count = 3)
+
+    val readWhileMeasuring = mutableSetOf<Any>()
+    Snapshot.observe(readObserver = { readWhileMeasuring += it }) {
+      state.place(count = 3, level = GraphLevel.Overview)
+    }
+    val writtenByGesture = mutableSetOf<Any>()
+    Snapshot.observe(writeObserver = { writtenByGesture += it }) {
+      state.zoom(focus = Offset(x = 500f, y = 300f), change = 0.3f)
+    }
+
+    assertTrue(
+      readWhileMeasuring.intersect(writtenByGesture).isEmpty(),
+      "уровень приходит в измерение параметром: прочитав его состоянием, измерение взяло бы зазоры " +
+        "обзора к плашкам, которые композиция построила эпизодами"
+    )
+  }
+
+  @Test
+  fun `a second double tap returns the camera, the scale and the level`() {
+    val state = GraphCanvasState()
+    state.fill(count = 9)
+    state.pan(Offset(x = -300f, y = 0f))
+    val level = state.level.value
+    val scale = state.scale.value
+    val camera = state.offset.value
+
+    state.fitAll()
+    state.fill(count = 9, level = state.level.value)
+    assertEquals(GraphLevel.Overview, state.level.value, "двойной тап уводит в обзор и вписывает всё")
+
+    state.fitAll()
+    state.fill(count = 9, level = state.level.value)
+
+    assertEquals(level, state.level.value, "повторный тап возвращает уровень")
+    assertEquals(scale, state.scale.value, "и масштаб")
+    assertEquals(camera, state.offset.value, "и камеру — все три величины описывают одно положение")
+  }
+
+  @Test
+  fun `a switch on an empty graph changes nothing`() {
+    val state = GraphCanvasState()
+
+    state.zoom(focus = Offset(x = 500f, y = 300f), change = 0.1f)
+    state.fitAll()
+
+    assertEquals(
+      GraphLevel.Episodes,
+      state.level.value,
+      "уводить в обзор нечего: на пустом полотне ни якоря, ни охвата не существует"
+    )
+    assertEquals(0.4f, state.scale.value, "масштаб при этом обязан упереться в нижний край полосы")
+  }
+
+  /**
    * Прямоугольник узла — то, из чего растёт превью-карточка, и берётся он у держателя, а не у самого
    * узла: узел живёт внутри слоя камеры, и общий элемент Compose этого слоя не видит.
    */
@@ -342,10 +460,14 @@ class GraphCanvasStateTest {
    * Тесту нужны оба, иначе узел по идентификатору не найти.
    *
    * @param count сколько узлов положить на магистраль
+   * @param level уровень детализации, которым меряем
    * @return получившаяся раскладка
    */
-  private fun GraphCanvasState.fill(count: Int): GraphPlacement {
-    val placement = place(count)
+  private fun GraphCanvasState.fill(
+    count: Int,
+    level: GraphLevel = GraphLevel.Episodes
+  ): GraphPlacement {
+    val placement = place(count, level)
     setNodes(nodes = trunkNodes(count), branches = emptyList())
     return placement
   }
@@ -354,10 +476,15 @@ class GraphCanvasStateTest {
    * Раскладывает граф из [count] одинаковых узлов на одной дорожке.
    *
    * @param count сколько узлов в графе
+   * @param level уровень детализации, которым меряем
    * @return раскладка, которую держатель только что запомнил
    */
-  private fun GraphCanvasState.place(count: Int): GraphPlacement {
+  private fun GraphCanvasState.place(
+    count: Int,
+    level: GraphLevel = GraphLevel.Episodes
+  ): GraphPlacement {
     return layout(
+      level = level,
       nodes = trunkNodes(count),
       branches = emptyList(),
       viewportSize = VIEWPORT,

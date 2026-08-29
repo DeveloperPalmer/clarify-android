@@ -2,6 +2,8 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -20,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -39,6 +42,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
@@ -51,6 +55,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
@@ -67,9 +72,13 @@ import kotlin.math.abs
  * пальцев разбирает [detectCameraGestures].
  *
  * Масштаб — свойство камеры, а не раскладки: он применяется слоем и потому не стоит ни измерения,
- * ни рекомпозиции. Переключения уровней детализации по порогам масштаба пока нет — узлы на всех
- * масштабах рисуются одни и те же, и на нижней границе диапазона текст становится нечитаемым по
- * построению.
+ * ни рекомпозиции. **Уровень детализации** — свойство камеры тоже, но раскладку он меняет: на обзоре
+ * зазоры и дорожки вчетверо теснее, а плашка вырождается в глиф. Поэтому уровень снимается в
+ * композиции один раз и уходит и в содержимое узлов, и в измерение — тем же порядком, что и сам
+ * список узлов, и по той же причине.
+ *
+ * На кадре перехода раскладка **уже целевая**, а уходящее представление рисуется поверх неё, места
+ * не занимая, см. [GraphLevelCrossfade].
  *
  * @param state камера полотна и результат его последней раскладки
  * @param ceremony церемония слияния: полотно её не запускает, но рисует и учитывает в бегущем
@@ -84,8 +93,9 @@ import kotlin.math.abs
  *   полотно скрим обязан накрыть и шапку экрана, а значит внутри слота лежать не может. Читается в
  *   момент касания, поэтому лямбда, а не значение: иначе полотно рекомпоновалось бы на каждое
  *   открытие карточки
- * @param node содержимое узла; обязано выпускать ровно один элемент раскладки — полотно ставит
- *   плашки по одной на узел и считает их по позиции, а не по идентификатору
+ * @param node содержимое узла на заданном уровне детализации; обязано выпускать ровно один элемент
+ *   раскладки — полотно ставит плашки по одной на узел и считает их по позиции, а не по
+ *   идентификатору
  */
 @Composable
 internal fun GraphCanvas(
@@ -93,7 +103,7 @@ internal fun GraphCanvas(
   ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
   blocked: () -> Boolean = { false },
-  node: @Composable (node: GraphNode, accent: GraphNodeAccent) -> Unit,
+  node: @Composable (node: GraphNode, accent: GraphNodeAccent, level: GraphLevel) -> Unit,
   overlay: @Composable BoxScope.(onBoundsChanged: (key: Any, bounds: Rect) -> Unit) -> Unit = { }
 ) {
   val telemetry = state.telemetry
@@ -168,7 +178,11 @@ internal fun GraphCanvas(
           },
           onRelease = { velocity ->
             currentState.fling(scope = flingScope, velocity = velocity, decay = currentDecay)
-          }
+          },
+          // Двойной тап живёт только на фоне: тап по плашке жест полотна не досматривает вовсе —
+          // узел потребляет отпускание своим `clickable`, и детектор выходит на потреблённом
+          // событии, не запомнив его.
+          onDoubleTap = { currentState.fitAll() }
         )
       }
   ) {
@@ -209,7 +223,7 @@ internal fun GraphCanvas(
  * @param accents цвет и направление каждого узла, в порядке [nodes]
  * @param ceremony церемония слияния этого кадра
  * @param modifier модификатор слоя
- * @param node содержимое узла
+ * @param node содержимое узла на заданном уровне детализации
  */
 @Composable
 private fun GraphNodesLayer(
@@ -219,7 +233,7 @@ private fun GraphNodesLayer(
   accents: List<GraphNodeAccent>,
   ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
-  node: @Composable (node: GraphNode, accent: GraphNodeAccent) -> Unit
+  node: @Composable (node: GraphNode, accent: GraphNodeAccent, level: GraphLevel) -> Unit
 ) {
   val telemetry = state.telemetry
   val colors = AppTheme.colors
@@ -255,6 +269,22 @@ private fun GraphNodesLayer(
   val waveSpread = with(density) { 120.dp.toPx() }
   val statusBar = WindowInsets.statusBars
   val navigationBar = WindowInsets.navigationBars
+  // Уровень снимается один раз и уходит и в содержимое, и в измерение: прочитанный в measure заново,
+  // он пришёл бы к плашкам, построенным другим уровнем, — ровно та же ловушка, что и со списком
+  // узлов. Переход держит `Transition`: `currentState` — уходящий уровень, `targetState` — целевой,
+  // и своего держателя со своим scope переходу поэтому не нужно.
+  val transition = updateTransition(targetState = state.level.value, label = "lod")
+  val level = transition.targetState
+  val previousLevel = transition.currentState.takeIf { it != level }
+  // Под reduced motion кроссфейда нет вовсе: уровень подменяется мгновенно. Гаптику при этом зовёт
+  // экран — отклик это не движение, и глушить его вместе с анимацией нельзя (§14).
+  val fadeSpec = if (rememberReducedMotion()) snap<Float>() else AppTheme.motion.mediumTween()
+  val fade = transition.animateFloat(
+    transitionSpec = { fadeSpec },
+    label = "fade"
+  ) { frameLevel ->
+    if (frameLevel == level) 1f else 0f
+  }
   Layout(
     modifier = modifier
       .fillMaxSize()
@@ -331,7 +361,17 @@ private fun GraphNodesLayer(
       nodes.fastForEachIndexed { index, graphNode ->
         key(graphNode.id.value) {
           SideEffect { telemetry.onNodeComposition() }
-          node(graphNode, accents[index])
+          if (previousLevel == null) {
+            node(graphNode, accents[index], level)
+          } else {
+            GraphLevelCrossfade(
+              fade = fade,
+              exitScale = state.exitScale,
+              scale = state.scale,
+              incoming = { node(graphNode, accents[index], level) },
+              outgoing = { node(graphNode, accents[index], previousLevel) }
+            )
+          }
         }
       }
     }
@@ -340,6 +380,7 @@ private fun GraphNodesLayer(
     // стоять далеко за правым краем экрана.
     val placeables = measurables.fastMap { it.measure(Constraints()) }
     val placement = state.layout(
+      level = level,
       branches = branches,
       density = this,
       statusBar = statusBar.getTop(this).toFloat(),
@@ -351,6 +392,65 @@ private fun GraphNodesLayer(
     layout(constraints.maxWidth, constraints.maxHeight) {
       telemetry.onPlacement()
       placeables.fastForEachIndexed { index, placeable -> placeable.place(placement.nodes[index]) }
+    }
+  }
+}
+
+/**
+ * Кроссфейд представлений одного узла при смене уровня детализации (§5 брифа).
+ *
+ * Коробку задаёт **целевое** представление, поэтому раскладка на кадре перехода уже целевая: кадра,
+ * где зазоры одного уровня, а плашки другого, не существует вовсе. Уходящее представление рисуется
+ * поверх и места в раскладке не занимает — то же правило, по которому здесь живут гало
+ * непрочитанного, шеврон ветвления и чип слияния.
+ *
+ * Готовый `Crossfade` для этого не годится, и это проверено по его исходникам: он кладёт оба
+ * состояния в один `Box`, то есть коробка узла все 250 мс равна большему из двух — зазоры уже сжаты,
+ * а плашка ещё во всю ширину, и в конце анимации раскладка защёлкивается. Кроссфейд, заведённый
+ * скрыть скачок, сам бы его и создал.
+ *
+ * Встречный масштаб оставляет уходящему представлению тот размер, каким оно было на экране в момент
+ * перехода: слой камеры к этому кадру уже приземлился на новый масштаб, и плашка внутри него
+ * растянулась бы в несколько раз. Обе доли читаются в `graphicsLayer`, то есть в фазе слоя: чтение в
+ * композиции пересобирало бы узлы каждый кадр перехода.
+ *
+ * @param fade доля перехода: единица — целевое представление на месте
+ * @param exitScale масштаб, на котором полотно ушло с прошлого уровня
+ * @param scale масштаб прямо сейчас
+ * @param outgoing представление уходящего уровня
+ * @param incoming представление целевого уровня
+ */
+@Composable
+private fun GraphLevelCrossfade(
+  fade: State<Float>,
+  exitScale: State<Float>,
+  scale: State<Float>,
+  outgoing: @Composable () -> Unit,
+  incoming: @Composable () -> Unit
+) {
+  Box(contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.graphicsLayer { alpha = fade.value }) {
+      incoming()
+    }
+    Box(
+      modifier = Modifier
+        .layout { measurable, _ ->
+          // Ноль вместо размера: коробку узла задаёт целевое представление, а уходящее только
+          // рисуется. Родитель выравнивает нулевой размер по центру, поэтому смещение на половину
+          // ставит уходящее центром в центр целевого.
+          val placeable = measurable.measure(Constraints())
+          layout(width = 0, height = 0) {
+            placeable.place(x = -placeable.width / 2, y = -placeable.height / 2)
+          }
+        }
+        .graphicsLayer {
+          alpha = 1f - fade.value
+          val counter = counterScaleOf(from = exitScale.value, to = scale.value)
+          scaleX = counter
+          scaleY = counter
+        }
+    ) {
+      outgoing()
     }
   }
 }

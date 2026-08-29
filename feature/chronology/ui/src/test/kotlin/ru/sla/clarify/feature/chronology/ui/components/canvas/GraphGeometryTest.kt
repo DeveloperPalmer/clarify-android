@@ -8,6 +8,8 @@ import androidx.compose.ui.unit.dp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
+import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
 
 /**
  * Геометрия вынесена из композабла именно для того, чтобы её можно было проверить без Compose.
@@ -30,8 +32,8 @@ class GraphGeometryTest {
 
   @Test
   fun `trunk shifts down when lanes are occupied above it`() {
-    val alone = GraphGeometry(topLaneOf(listOf(0)))
-    val withLaneAbove = GraphGeometry(topLaneOf(listOf(-1, 0)))
+    val alone = GraphGeometry(topLaneOf(listOf(0)), GraphLevel.Episodes.toLaneStep())
+    val withLaneAbove = GraphGeometry(topLaneOf(listOf(-1, 0)), GraphLevel.Episodes.toLaneStep())
 
     assertTrue(
       withLaneAbove.laneYOf(0) > alone.laneYOf(0),
@@ -40,8 +42,21 @@ class GraphGeometryTest {
   }
 
   @Test
+  fun `lane offsets follow the step they are given`() {
+    val episodes = GraphGeometry(topLaneOf(listOf(-1, 0)), GraphLevel.Episodes.toLaneStep())
+    val overview = GraphGeometry(topLaneOf(listOf(-1, 0)), GraphLevel.Overview.toLaneStep())
+
+    assertEquals(
+      episodes.laneYOf(0) / 4,
+      overview.laneYOf(0),
+      "обзор ужимает вертикаль тем же числом, что и зазоры: раскладка уровня — одно правило, " +
+        "а не две независимые таблицы"
+    )
+  }
+
+  @Test
   fun `lane step is the same between any two neighbours`() {
-    val geometry = GraphGeometry(topLaneOf(listOf(-1, 0, 1)))
+    val geometry = GraphGeometry(topLaneOf(listOf(-1, 0, 1)), GraphLevel.Episodes.toLaneStep())
 
     assertEquals(
       geometry.laneYOf(0) - geometry.laneYOf(-1),
@@ -51,7 +66,7 @@ class GraphGeometryTest {
 
   @Test
   fun `topmost lane stays inside the canvas`() {
-    val geometry = GraphGeometry(topLaneOf(listOf(-2, 1)))
+    val geometry = GraphGeometry(topLaneOf(listOf(-2, 1)), GraphLevel.Episodes.toLaneStep())
 
     assertTrue(
       geometry.laneYOf(-2) > 0.dp,

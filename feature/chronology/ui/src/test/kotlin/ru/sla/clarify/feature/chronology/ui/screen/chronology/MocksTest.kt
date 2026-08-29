@@ -5,14 +5,23 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphGeometry
+import ru.sla.clarify.feature.chronology.ui.components.canvas.fitScaleOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphEdgesOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphLanesOf
+import ru.sla.clarify.feature.chronology.ui.components.canvas.graphLevelBandOf
+import ru.sla.clarify.feature.chronology.ui.components.canvas.graphPlacementOf
+import ru.sla.clarify.feature.chronology.ui.components.canvas.topLaneOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
+import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
+import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
 /**
  * Сторожит **сценарии**, ради которых демо-наборы и собраны, а не их содержимое.
@@ -358,6 +367,48 @@ class MocksTest {
       graph.branchNames.keys,
       "ветка без имени озвучится скринридеру как безымянная, и заметить это можно только вслух"
     )
+  }
+
+  /**
+   * Вся арифметика обзора посчитана на этом наборе, и держится она на его составе: двадцать четыре
+   * эпизода, восемь точек и фронт при зазорах, делённых на четыре, дают 1352 dp и «вписать всё» на
+   * 0.305×. Первая же добавленная ветка это число сдвинет, а увидеть сдвиг можно только на
+   * устройстве — на глаз обзор выглядит одинаково и при 0.3×, и при 0.15×, пока не вглядишься в глиф.
+   */
+  @Test
+  fun `the demo graph still fits the overview at its own floor`() {
+    val graph = mockGraph()
+    val nodes = graph.graphNodes
+    val lanes = graphLanesOf(nodes, graph.branches)
+    val geometry = GraphGeometry(topLaneOf(lanes), GraphLevel.Overview.toLaneStep())
+    val placement = graphPlacementOf(
+      lanes = lanes,
+      gaps = nodes.map { it.gap.toStepWidth(GraphLevel.Overview).value },
+      laneYs = lanes.map { geometry.laneYOf(it).value },
+      sizes = nodes.map { it.role.toOverviewSize() },
+      margins = GraphCanvasMargins(left = 64f, top = 64f, right = 64f, bottom = 64f)
+    )
+
+    val fit = fitScaleOf(placement.bounds, IntSize(width = 412, height = 892))
+
+    assertTrue(
+      fit > graphLevelBandOf(GraphLevel.Overview, fit).min - 1e-4f,
+      "нижний край обзора и есть вписанный граф: набор, переросший его, вписывается уже не целиком"
+    )
+    assertTrue(
+      fit > 0.2f,
+      "ниже 0.2× глиф 14 dp вырождается в три пикселя, и обзор перестаёт быть картой: " +
+        "набор обязан оставаться в этих пределах, иначе фичу смотрят на том, чего она не умеет"
+    )
+  }
+
+  /** Размер узла на обзоре: плашка вырождается в глиф, точки на линии остаются собой. */
+  private fun GraphNodeRole.toOverviewSize(): IntSize {
+    return when (this) {
+      GraphNodeRole.Episode -> IntSize(width = 14, height = 14)
+      GraphNodeRole.Fork, GraphNodeRole.Merge -> IntSize(width = 24, height = 24)
+      GraphNodeRole.Front -> IntSize(width = 12, height = 12)
+    }
   }
 
   /** Дорожка каждой ветки демо-набора, включая магистраль. */

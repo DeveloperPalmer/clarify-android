@@ -1,7 +1,9 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
@@ -15,10 +17,24 @@ class TimeGapMappersTest {
   fun `a longer pause never gives a smaller gap`() {
     val ordered = listOf(TimeGap.Minutes, TimeGap.Hour, TimeGap.Hours, TimeGap.Day, TimeGap.Long)
 
-    ordered.zipWithNext { shorter, longer ->
-      assertTrue(
-        longer.toStepWidth() > shorter.toStepWidth(),
-        "пауза $longer обязана давать зазор больше, чем $shorter"
+    GraphLevel.entries.forEach { level ->
+      ordered.zipWithNext { shorter, longer ->
+        assertTrue(
+          longer.toStepWidth(level) > shorter.toStepWidth(level),
+          "пауза $longer обязана давать зазор больше, чем $shorter, и на уровне $level тоже"
+        )
+      }
+    }
+  }
+
+  @Test
+  fun `overview gaps are a quarter of the episode ones`() {
+    TimeGap.entries.forEach { gap ->
+      assertEquals(
+        gap.toStepWidth(GraphLevel.Episodes) / 4,
+        gap.toStepWidth(GraphLevel.Overview),
+        "обзор — та же лестница, делённая на четыре: делённая сохраняет пропорции истории, " +
+          "а заведённая заново уводит засечки мини-карты вдвое сильнее"
       )
     }
   }

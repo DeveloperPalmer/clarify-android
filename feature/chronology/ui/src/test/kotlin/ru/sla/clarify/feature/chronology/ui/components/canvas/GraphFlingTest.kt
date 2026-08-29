@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
@@ -159,6 +160,7 @@ class GraphFlingTest {
       )
     }
     state.layout(
+      level = GraphLevel.Episodes,
       nodes = nodes,
       branches = FIVE_BRANCHES,
       viewportSize = IntSize(width = 400, height = 200),

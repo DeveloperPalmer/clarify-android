@@ -11,6 +11,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,15 +30,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraPose
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelSwitch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 import ru.sla.clarify.feature.chronology.ui.entity.GraphZoomStep
+import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
 import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
 /**
@@ -106,6 +112,27 @@ internal class GraphCanvasState {
   private var viewport by mutableStateOf(IntSize.Zero)
   private var placement by mutableStateOf(GraphPlacement.Empty)
 
+  // Уровень детализации — снапшотное: его читает композиция, чтобы выбрать представление узла.
+  // Измерение получает уровень **параметром**, ровно как узлы, и по той же причине: прочитав его
+  // здесь, оно померило бы зазоры одного уровня по measurable'ам, порождённым другим.
+  private var graphLevel by mutableStateOf(GraphLevel.Episodes)
+
+  // Масштаб, на котором полотно ушло с прошлого уровня. Снапшотное: из него в фазе рисования
+  // считается встречный масштаб уходящего представления, см. `counterScaleOf`.
+  private var levelExitScale by mutableFloatStateOf(1f)
+
+  // Заявка на посадку после смены уровня. Обычное поле, как `motionJob`: за ней никто не рисует —
+  // её кладёт жест и разбирает ближайшее измерение. Раньше разобрать нельзя: охват нового уровня
+  // выводится из его раскладки, а раскладку считает измерение.
+  private var pendingSwitch: GraphLevelSwitch? = null
+
+  // Заявка «вписать всё», отложенная по той же причине и ровно в тех случаях, когда вписывание
+  // меняет уровень: без смены уровня новой раскладки не будет, и заявке негде разрешиться.
+  private var pendingFit = false
+
+  // Куда возвращает повторный двойной тап; `null` — возвращаться некуда.
+  private var restorePose: GraphCameraPose? = null
+
   // Засечки считаются там же, где раскладка, и по тем же узлам. Выводить их из `graphNodes` и
   // `placement` по требованию нельзя: узлы подменяются из `SideEffect`, раскладка приходит из
   // измерения, и на кадре подмены длины этих списков расходятся — а засечке нужен номер дорожки из
@@ -143,11 +170,31 @@ internal class GraphCanvasState {
   /**
    * Масштаб содержимого: `экран = полотно · scale + камера`.
    *
-   * Отдаётся наружу отдельным [State] не ради полноты API: уровень детализации выводится из
-   * масштаба порогами с гистерезисом, и выводить его обязан тот, кто рисует, — прочитанное здесь
-   * значение подписало бы на покадровые изменения зума весь экран.
+   * Отдаётся наружу отдельным [State] не ради полноты API: значение, прочитанное в композиции,
+   * подписало бы на покадровые изменения зума весь экран, а `State` читается в фазе слоя.
+   *
+   * Прежде здесь стояло, что уровень детализации выводит из масштаба тот, кто рисует. С решением §5
+   * брифа — «уровень меняет **раскладку**, а не только вид узлов» — это перестало быть верным:
+   * зазоры считает измерение, и уровень, выведенный в отрисовке, пришёл бы к нему кадром позже.
+   * Уровень живёт в [level], меняется вместе с масштабом и попадает в измерение параметром.
    */
   val scale: State<Float> = derivedStateOf { cameraScale }
+
+  /**
+   * Уровень детализации (§5 брифа): он выбирает и представление узла, и зазоры раскладки.
+   *
+   * Меняется редко — только когда масштаб выходит за полосу уровня, — поэтому подписка композиции на
+   * него не стоит ничего: узлы всё равно обязаны перекомпоноваться, у них меняется представление.
+   */
+  val level: State<GraphLevel> = derivedStateOf { graphLevel }
+
+  /**
+   * Масштаб, на котором полотно ушло с прошлого уровня.
+   *
+   * Из него в фазе рисования считается встречный масштаб уходящего представления: слой камеры к
+   * моменту кроссфейда уже приземлился на новый масштаб, и плашка внутри него растянулась бы.
+   */
+  val exitScale: State<Float> = derivedStateOf { levelExitScale }
 
   /**
    * Сдвиг фона: своя камера, отстающая от графа на [BACKDROP_PARALLAX].
@@ -220,6 +267,8 @@ internal class GraphCanvasState {
       camera = offset.value,
       scale = cameraScale,
       isCameraMoved = isMoved,
+      level = graphLevel,
+      levelBand = levelBandOf(placement, viewport),
       centreSpanX = placement.centreSpanX,
       nodeCount = graphNodes.size,
       edgeCount = graphEdges.size
@@ -279,8 +328,9 @@ internal class GraphCanvasState {
    * масштаба. Посчитав камеру под запрошенный масштаб, полотно уезжало бы из-под пальцев каждый
    * раз, когда зум упирается в границу.
    *
-   * Пределы приходят литералом, а не константой: значение читается ровно здесь, а рядом с числом
-   * видно, к чему оно применено.
+   * Пределы — не литерал и не константа, а полоса **уровня**: масштаб, вышедший за неё, означает не
+   * упор, а переход на соседний уровень детализации (§5 брифа). Тогда ни масштаб, ни камера здесь не
+   * трогаются вовсе — их поставит ближайшее измерение, когда посчитает новую раскладку.
    *
    * @param focus точка экрана, которую жест держит на месте
    * @param change множитель масштаба, пришедший от жеста
@@ -288,12 +338,29 @@ internal class GraphCanvasState {
    */
   fun zoom(focus: Offset, change: Float): GraphZoomStep {
     stopMotion()
+    // Щипок — то же движение камеры, что и протяжка, и позу для возврата он снимает по той же
+    // причине, см. `applyPan`.
+    restorePose = null
     val previous = cameraScale
+    val band = levelBandOf(placement, viewport)
+    val requested = previous * change
+    val next = graphLevelSwitchOf(level = graphLevel, requestedScale = requested, band = band)
+    if (next != null && !placement.isEmpty) {
+      switchLevel(to = next, focus = focus)
+      telemetry.onZoom()
+      // Шаг отдаётся неотвергнутым, хотя запрошенного масштаба на этом уровне и не бывает: упора
+      // здесь нет — есть переход. `isRejected` заведён под тактильную отдачу на пределе зума (§11.3),
+      // и объявив переход упором, полотно позвало бы её вдобавок к отклику самого перехода.
+      return GraphZoomStep(
+        requestedScale = previous,
+        scale = previous,
+        camera = cameraAt(cameraRangeOf(placement, viewport, previous))
+      )
+    }
     val updated = scaleStepOf(
       scale = previous,
       change = change,
-      // §11.2 брифа: 0.4× … 2.5×.
-      range = 0.4f..2.5f
+      range = band.min..band.max
     )
     val zoomed = zoomedCameraOf(
       camera = cameraAt(cameraRangeOf(placement, viewport, previous)),
@@ -382,10 +449,159 @@ internal class GraphCanvasState {
     motionJob = scope.launch { runFlight(spec, anchor) }
   }
 
+  /**
+   * Двойной тап по фону: уйти в обзор и вписать всё, а повторным — вернуться туда, откуда ушли
+   * (§11.1 брифа).
+   *
+   * «Вписать всё» здесь означает «в масштаб уровня» дословно: нижний край полосы обзора и есть
+   * вписанный граф, пока переписка достаточно коротка, а на длинной вписывается ровно столько,
+   * сколько этот край позволяет.
+   *
+   * Когда уровень при этом меняется, вписывание откладывается до ближайшего измерения — раскладки
+   * обзора ещё не существует. Когда не меняется, откладывать нельзя вовсе: рекомпозиции не будет,
+   * измерения тоже, и заявке негде разрешиться.
+   */
+  fun fitAll() {
+    stopMotion()
+    if (placement.isEmpty) {
+      return
+    }
+    val pose = restorePose
+    if (pose != null) {
+      restore(pose)
+      return
+    }
+    // Поза снимается **до** вписывания и переживает только его само: любое движение камеры после
+    // этого её снимает, см. `applyPan`.
+    restorePose = GraphCameraPose(
+      level = graphLevel,
+      scale = cameraScale,
+      camera = camera,
+      isMoved = isMoved
+    )
+    pendingSwitch = null
+    levelExitScale = cameraScale
+    if (graphLevel == GraphLevel.Overview) {
+      applyFit(placement, viewport)
+    } else {
+      graphLevel = GraphLevel.Overview
+      pendingFit = true
+    }
+  }
+
   /** Обрывает движение камеры: новое касание отбирает её и у затухания, и у перелёта. */
   fun stopMotion() {
     motionJob?.cancel()
     motionJob = null
+  }
+
+  /**
+   * Полоса масштаба текущего уровня.
+   *
+   * Считается по месту, а не хранится: «вписать всё» выводится из границ содержимого, а они меняются
+   * с каждой раскладкой. Хранимая полоса была бы вторым источником того же числа и разошлась бы с
+   * первым на первом же входящем сообщении.
+   *
+   * @param placement раскладка, по которой считается вписывание
+   * @param viewport размер видимой области
+   * @return пределы, за которыми уровень сменяется соседним
+   */
+  private fun levelBandOf(placement: GraphPlacement, viewport: IntSize): GraphLevelBand {
+    return graphLevelBandOf(graphLevel, fitScaleOf(placement.bounds, viewport))
+  }
+
+  /**
+   * Уводит полотно на соседний уровень детализации.
+   *
+   * Масштаб и камера здесь **не** трогаются: охват нового уровня выводится из его раскладки, а её
+   * ещё нет. Кладётся заявка, которую разберёт ближайшее измерение, — а оно случится в этом же
+   * кадре, потому что уровень снапшотный и композиция узлов от него зависит.
+   *
+   * Якорем берётся узел под пальцами, а не под центром экрана: смотрят туда, где щиплют. Индекс
+   * узла валиден и на новом уровне — список узлов уровень не меняет.
+   *
+   * @param to уровень, на который уходим
+   * @param focus точка экрана, под которой жест держит содержимое
+   */
+  private fun switchLevel(to: GraphLevel, focus: Offset) {
+    val current = cameraAt(cameraRangeOf(placement, viewport, cameraScale))
+    val point = (focus - current) / cameraScale
+    pendingSwitch = GraphLevelSwitch(
+      anchorIndex = nearestCentreIndexOf(placement.centres, point.x),
+      anchorScreen = focus,
+      spanBefore = placement.centreSpanX.endInclusive - placement.centreSpanX.start,
+      scaleBefore = cameraScale
+    )
+    pendingFit = false
+    levelExitScale = cameraScale
+    graphLevel = to
+  }
+
+  /**
+   * Сажает камеру на новом уровне: тот же охват и тот же узел под тем же местом экрана.
+   *
+   * @param switch заявка, оставленная жестом
+   * @param placement раскладка нового уровня
+   * @param viewport размер видимой области
+   */
+  private fun land(switch: GraphLevelSwitch, placement: GraphPlacement, viewport: IntSize) {
+    val landing = levelLandingOf(
+      scaleBefore = switch.scaleBefore,
+      spanBefore = switch.spanBefore,
+      spanAfter = placement.centreSpanX.endInclusive - placement.centreSpanX.start,
+      band = levelBandOf(placement, viewport),
+      // Восемь процентов полосы — тот запас, который пинчу надо пройти осознанно, чтобы вернуться.
+      // Посадка ровно на порог, с которого только что ушли, и есть мигание уровня на границе.
+      margin = 0.08f
+    )
+    cameraScale = landing
+    val range = cameraRangeOf(placement, viewport, landing)
+    val anchor = placement.centres.getOrNull(switch.anchorIndex)
+    camera = if (anchor == null) {
+      range.clamp(camera)
+    } else {
+      cameraPuttingPointAt(point = anchor, screen = switch.anchorScreen, range = range, scale = landing)
+    }
+    isMoved = true
+  }
+
+  /**
+   * Вписывает содержимое целиком и наводит камеру на его середину.
+   *
+   * @param placement раскладка, по которой вписываем
+   * @param viewport размер видимой области
+   */
+  private fun applyFit(placement: GraphPlacement, viewport: IntSize) {
+    val fit = fitScaleOf(placement.bounds, viewport)
+    val band = graphLevelBandOf(graphLevel, fit)
+    val fitted = fit.coerceIn(band.min, band.max)
+    cameraScale = fitted
+    camera = cameraAimedAt(
+      point = placement.bounds.center,
+      viewport = viewport,
+      range = cameraRangeOf(placement, viewport, fitted),
+      scale = fitted
+    )
+    isMoved = true
+  }
+
+  /**
+   * Возвращает полотно в позу, снятую перед вписыванием.
+   *
+   * Камера восстанавливается вместе с уровнем и масштабом одним движением: она записана в пикселях
+   * экрана и верна ровно для той раскладки, при которой снималась.
+   *
+   * @param pose поза до вписывания
+   */
+  private fun restore(pose: GraphCameraPose) {
+    restorePose = null
+    pendingSwitch = null
+    pendingFit = false
+    levelExitScale = cameraScale
+    graphLevel = pose.level
+    cameraScale = pose.scale
+    camera = pose.camera
+    isMoved = pose.isMoved
   }
 
   private suspend fun runFling(direction: FlingDirection, decay: DecayAnimationSpec<Float>) {
@@ -425,7 +641,11 @@ internal class GraphCanvasState {
    */
   private suspend fun runFlight(spec: AnimationSpec<Float>, anchor: GraphAnchor) {
     val startScale = cameraScale
-    val targetScale = flightScaleOf(startScale)
+    val targetScale = flightScaleOf(
+      scale = startScale,
+      level = graphLevel,
+      band = levelBandOf(placement, viewport)
+    )
     val start = cameraAt(cameraRangeOf(placement, viewport, startScale))
     animate(initialValue = 0f, targetValue = 1f, animationSpec = spec) { fraction, _ ->
       // Масштаб ложится первым, ровно как в пинче: он меняет и границы камеры, и то, куда попадёт
@@ -526,6 +746,10 @@ internal class GraphCanvasState {
   }
 
   private fun applyPan(delta: Offset, range: GraphCameraRange): GraphPanStep {
+    // Камеру повели — возвращаться больше некуда: «повторный тап» из §11.1 это тап сразу следующий,
+    // а не когда-нибудь потом. Сохранённая поза, пережившая панорамирование, вернула бы к месту,
+    // которого пользователь уже не помнит.
+    restorePose = null
     val step = panStepOf(camera = cameraAt(range), delta = delta, range = range)
     camera = step.camera
     // Фон двигает и жест, и затухание — оба приходят сюда, и второго места для этого правила нет.
@@ -546,6 +770,11 @@ internal class GraphCanvasState {
    * композицией, — а это разные длины и индекс за границей списка. Передавая узлы снаружи, полотно
    * меряет ровно тот набор, который само же и скомпоновало.
    *
+   * Уровень детализации приходит параметром по той же причине, что и узлы: его меняет жест, то есть
+   * между композицией и измерением того же кадра. Прочитав уровень здесь, измерение взяло бы зазоры
+   * обзора к плашкам, которые композиция успела построить эпизодами.
+   *
+   * @param level уровень детализации той же композиции: он задаёт зазоры и шаг дорожки
    * @param nodes узлы, из которых построено содержимое этой композиции
    * @param branches ветки той же композиции: из них считаются дорожки
    * @param viewportSize размер видимой области
@@ -556,6 +785,7 @@ internal class GraphCanvasState {
    * @return раскладка графа
    */
   fun layout(
+    level: GraphLevel,
     nodes: List<GraphNode>,
     branches: List<GraphBranch>,
     viewportSize: IntSize,
@@ -570,11 +800,11 @@ internal class GraphCanvasState {
     val branchIds = nodes.map { it.branchId }
     val lanes = graphLanesOf(nodes, branches)
     val colorIndexes = graphAccentsOf(nodes, branches).map { it.colorIndex }
-    val geometry = GraphGeometry(topLaneOf(lanes))
+    val geometry = GraphGeometry(topLane = topLaneOf(lanes), laneStep = level.toLaneStep())
     val result = with(density) {
       graphPlacementOf(
         lanes = lanes,
-        gaps = nodes.map { it.gap.toStepWidth().toPx() },
+        gaps = nodes.map { it.gap.toStepWidth(level).toPx() },
         laneYs = lanes.map { geometry.laneYOf(it).toPx() },
         sizes = nodeSizes,
         margins = canvasMarginsOf(
@@ -618,12 +848,27 @@ internal class GraphCanvasState {
     // затухания, то есть полотно пере-измерялось бы всю дорогу вместо того, чтобы двигать слой.
     // Панель показывала это как measure и placement, тикающие вдвое чаще кадров. С масштабом ровно
     // так же: его пишет каждый кадр пинча.
+    //
+    // Здесь же разбираются заявки, оставленные жестом: посадка после смены уровня и вписывание.
+    // Раньше их разобрать нечем — обе выводятся из раскладки, которая только что посчиталась, — а
+    // позже уже поздно: кадр уйдёт на отрисовку со сжатой раскладкой в старом масштабе.
     Snapshot.withoutReadObservation {
-      if (isMoved) {
-        val range = cameraRangeOf(result, viewportSize, cameraScale)
-        val clamped = panStepOf(camera, Offset.Zero, range).camera
-        if (clamped != camera) {
-          camera = clamped
+      val switch = pendingSwitch
+      when {
+        switch != null -> {
+          pendingSwitch = null
+          land(switch, result, viewportSize)
+        }
+        pendingFit -> {
+          pendingFit = false
+          applyFit(result, viewportSize)
+        }
+        isMoved -> {
+          val range = cameraRangeOf(result, viewportSize, cameraScale)
+          val clamped = panStepOf(camera, Offset.Zero, range).camera
+          if (clamped != camera) {
+            camera = clamped
+          }
         }
       }
     }

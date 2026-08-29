@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Velocity
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import kotlin.math.roundToInt
 
 /**
@@ -37,6 +38,13 @@ internal fun GraphDebugInfo.toFactRows(
       value = "${(scale * PERCENT).roundToInt()} %",
       isAnomalous = !scale.isFinite() || scale <= 0f
     ),
+    // Уровень и его полоса стоят рядом с масштабом: без них «40 %» ничего не значит — тот же
+    // масштаб на обзоре показывает вшестеро больше истории, чем на эпизодах.
+    GraphDebugRow(
+      label = "lod",
+      value = "${level.toDebugLabel()} · ${(levelBand.min * PERCENT).roundToInt()} … " +
+        "${(levelBand.max * PERCENT).roundToInt()} %"
+    ),
     GraphDebugRow("bounds", lineOf(contentBounds)),
     GraphDebugRow(
       label = "span x",
@@ -57,6 +65,19 @@ internal fun GraphDebugInfo.toFactRows(
     ),
     GraphDebugRow("tick", "$tickMillis ms")
   )
+}
+
+/**
+ * Имя уровня для панели.
+ *
+ * По-английски, как и все остальные значения панели: она читается вперемешку с именами фаз, и
+ * русское слово среди них выглядело бы значением другого рода.
+ */
+private fun GraphLevel.toDebugLabel(): String {
+  return when (this) {
+    GraphLevel.Overview -> "overview"
+    GraphLevel.Episodes -> "episodes"
+  }
 }
 
 private fun lineOf(offset: Offset): String {

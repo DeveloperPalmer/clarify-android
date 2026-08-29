@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
@@ -24,6 +26,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.drop
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
@@ -37,12 +40,14 @@ import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberReducedMot
 import ru.sla.clarify.feature.chronology.ui.components.node.EpisodeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.ForkNode
 import ru.sla.clarify.feature.chronology.ui.components.node.FrontNode
+import ru.sla.clarify.feature.chronology.ui.components.node.GlyphNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergedRequestNode
 import ru.sla.clarify.feature.chronology.ui.components.preview.NodePreviewMorph
 import ru.sla.clarify.feature.chronology.ui.entity.ForkDirection
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeSelection
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
@@ -86,6 +91,15 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
       val ceremonyScope = rememberCoroutineScope()
       val haptics = LocalHapticFeedback.current
       val reducedMotion = rememberReducedMotion()
+      // Гаптика переключения уровня (§11.3): один отклик на переход. Снимается потоком, а не чтением
+      // уровня в теле экрана, — чтение подписало бы весь экран на переключение, а `drop(1)` убирает
+      // кадр подписки, иначе отклик приходил бы на открытие экрана. Под reduced motion отклик
+      // остаётся: он не движение, и глушить его вместе с анимацией нельзя.
+      LaunchedEffect(canvasState) {
+        snapshotFlow { canvasState.level.value }
+          .drop(1)
+          .collect { haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate) }
+      }
       // Подпись пузыря мини-карты. Собирается здесь, потому что дату знает экран, а какой узел под
       // центром — полотно; отдаётся `State`, чтобы прочитал её лист, а не тело экрана: чтение
       // прямо тут пересобирало бы лямбды полотна при каждой смене узла под камерой.
@@ -112,7 +126,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
           // Пока карточка открыта, полотно жестов не берёт вовсе: прямоугольник, из которого вырос
           // морф, заморожен, и уехавшая под скримом камера сделала бы обратный морф ложью.
           blocked = { state.selectedNode != null },
-          node = { graphNode, accent ->
+          node = { graphNode, accent, level ->
             // Имя ветки в узел не приходит: узлу оно не нужно ни для чего, кроме подписи, а подпись
             // собирается здесь — там, где имя вообще есть. У магистрали имени нет, и подпись про
             // ветку тогда не произносится вовсе.
@@ -122,42 +136,56 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
             // Род узла решает, что рисовать, и решает здесь, а не в полотне: полотну безразлично,
             // плашка перед ним или круг, — оно ставит по одному элементу на узел.
             when (graphNode.role) {
-              GraphNodeRole.Episode -> {
-                val item = state.episodeById.getValue(graphNode.id)
-                val preview = state.previewById[graphNode.id]
-                EpisodeNode(
-                  // Выбранная плашка гасится, а не убирается: поверхность обязана уехать в карточку,
-                  // а не размножиться копией, оставшейся лежать на полотне. Место в раскладке узел
-                  // при этом сохраняет — соседи по дорожке не должны шевельнуться.
-                  modifier = Modifier.graphicsLayer {
-                    alpha = if (graphNode.id == state.selectedNode?.id) 0f else 1f
-                  },
-                  time = item.time,
-                  count = item.count,
-                  snippet = item.snippet,
-                  contentDescription = description,
-                  myShare = item.myShare,
-                  unreadCount = item.unreadCount,
-                  dim = item.dim,
-                  // Узел без содержимого карточки не нажимается вовсе: кнопка, которой некуда
-                  // вести, хуже её отсутствия.
-                  onClick = preview?.let { content ->
-                    {
-                      // Прямоугольник снимается в момент тапа и дальше не пересчитывается: камера
-                      // под открытой карточкой стоит.
-                      canvasState.nodeRectOf(graphNode.id)?.let { bounds ->
-                        intents.selectNode(
-                          GraphNodeSelection(
-                            id = graphNode.id,
-                            preview = content,
-                            bounds = bounds,
-                            corner = episodeCorner * canvasState.scale.value
+              GraphNodeRole.Episode -> when (level) {
+                // На обзоре от плашки остаётся глиф: читать на этом уровне нечего, по глифам
+                // прослеживают форму разговора. Приглушение слитой ветки при этом остаётся —
+                // гаснет узел целиком, вместе с гало, ровно как гаснет плашка.
+                GraphLevel.Overview -> {
+                  val item = state.episodeById.getValue(graphNode.id)
+                  GlyphNode(
+                    modifier = Modifier.graphicsLayer { alpha = if (item.dim) 0.6f else 1f },
+                    color = accent.colorIndex.toBranchColor(AppTheme.colors),
+                    contentDescription = description,
+                    unreadCount = item.unreadCount
+                  )
+                }
+                GraphLevel.Episodes -> {
+                  val item = state.episodeById.getValue(graphNode.id)
+                  val preview = state.previewById[graphNode.id]
+                  EpisodeNode(
+                    // Выбранная плашка гасится, а не убирается: поверхность обязана уехать в карточку,
+                    // а не размножиться копией, оставшейся лежать на полотне. Место в раскладке узел
+                    // при этом сохраняет — соседи по дорожке не должны шевельнуться.
+                    modifier = Modifier.graphicsLayer {
+                      alpha = if (graphNode.id == state.selectedNode?.id) 0f else 1f
+                    },
+                    time = item.time,
+                    count = item.count,
+                    snippet = item.snippet,
+                    contentDescription = description,
+                    myShare = item.myShare,
+                    unreadCount = item.unreadCount,
+                    dim = item.dim,
+                    // Узел без содержимого карточки не нажимается вовсе: кнопка, которой некуда
+                    // вести, хуже её отсутствия.
+                    onClick = preview?.let { content ->
+                      {
+                        // Прямоугольник снимается в момент тапа и дальше не пересчитывается: камера
+                        // под открытой карточкой стоит.
+                        canvasState.nodeRectOf(graphNode.id)?.let { bounds ->
+                          intents.selectNode(
+                            GraphNodeSelection(
+                              id = graphNode.id,
+                              preview = content,
+                              bounds = bounds,
+                              corner = episodeCorner * canvasState.scale.value
+                            )
                           )
-                        )
+                        }
                       }
                     }
-                  }
-                )
+                  )
+                }
               }
               // Точка ветвления показывает **уходящую** ветку, поэтому и цвет, и направление берутся
               // из акцента, а не из самого узла: сам он стоит на магистрали.
@@ -182,31 +210,39 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                       ?.takeIf { ceremonyState.branch.value == mergedBranch }
                   }
                 )
-                MergedRequestNode(
-                  // Подпись у чипа своя: он говорит «эта тема закрыта», а точка под ним — «здесь
-                  // ветка вернулась в магистраль». Одной фразой на двоих это не сказать.
-                  contentDescription = GraphBranchStatus.Merged.toNodeDescription(branchName),
-                  modifier = Modifier.offset(
-                    y = if (accent.lane < 0) 34.dp else (-34).dp
-                  ),
-                  onClick = mergedBranch?.let { branchId ->
-                    {
-                      ceremonyState.play(
-                        scope = ceremonyScope,
-                        branchId = branchId,
-                        reduced = reducedMotion,
-                        // Первая тактильная отдача в проекте. `Confirm`, а не `LongPress`: удар
-                        // кадра 5 означает «дело доведено до конца», и это ровно семантика
-                        // константы, а не сила вибрации.
-                        onImpact = {
-                          haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                        }
-                      )
+                // На обзоре чипа нет: §5 не числит его в скелете смысла, а его 87 dp на посадке
+                // превращаются в две сотни пикселей экрана. Смещение ±34 dp при шаге дорожки 26 dp
+                // увело бы его вдобавок на чужую дорожку.
+                if (level == GraphLevel.Episodes) {
+                  MergedRequestNode(
+                    // Подпись у чипа своя: он говорит «эта тема закрыта», а точка под ним — «здесь
+                    // ветка вернулась в магистраль». Одной фразой на двоих это не сказать.
+                    contentDescription = GraphBranchStatus.Merged.toNodeDescription(branchName),
+                    modifier = Modifier.offset(
+                      y = if (accent.lane < 0) 34.dp else (-34).dp
+                    ),
+                    onClick = mergedBranch?.let { branchId ->
+                      {
+                        ceremonyState.play(
+                          scope = ceremonyScope,
+                          branchId = branchId,
+                          reduced = reducedMotion,
+                          // Первая тактильная отдача в проекте. `Confirm`, а не `LongPress`: удар
+                          // кадра 5 означает «дело доведено до конца», и это ровно семантика
+                          // константы, а не сила вибрации.
+                          onImpact = {
+                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                          }
+                        )
+                      }
                     }
-                  }
-                )
+                  )
+                }
               }
-              GraphNodeRole.Front -> FrontNode(contentDescription = description)
+              GraphNodeRole.Front -> FrontNode(
+                contentDescription = description,
+                hasCaption = level == GraphLevel.Episodes
+              )
             }
           },
           overlay = { onBoundsChanged ->

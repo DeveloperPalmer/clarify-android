@@ -9,10 +9,12 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.input.pointer.util.addPointerInputChange
+import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
@@ -44,22 +46,33 @@ import kotlin.math.abs
  * @param onTransform шаг жеста: точка, которую жест держит на месте, сдвиг центроида и множитель
  *   масштаба
  * @param onRelease скорость в момент отпускания, в пикселях в секунду
+ * @param onDoubleTap два тапа подряд по фону: «вписать всё» и возврат (§11.1 брифа)
  */
 internal suspend fun PointerInputScope.detectCameraGestures(
   isBlocked: (Offset) -> Boolean,
   onTouch: () -> Unit,
   onTransform: (focus: Offset, pan: Offset, zoom: Float) -> Unit,
-  onRelease: (Velocity) -> Unit
+  onRelease: (Velocity) -> Unit,
+  onDoubleTap: () -> Unit
 ) {
   val tracker = VelocityTracker()
+  // Отпускание предыдущего тапа: из него и следующего касания и складывается двойной тап. Живёт
+  // между итерациями, потому что тапов два, а жест каждый раз новый. Пороги платформенные — свои
+  // означали бы, что двойной тап здесь берётся не так, как во всех остальных приложениях устройства.
+  var previousUp: PointerInputChange? = null
   awaitEachGesture {
     val down = awaitFirstDown(requireUnconsumed = false)
     // Решение принимается один раз, на касании, и держится весь жест: палец, ушедший с панели на
     // полотно, не должен посреди движения начать таскать камеру. Выйти отсюда безопасно —
     // awaitEachGesture сам дождётся, пока все пальцы уйдут.
     if (isBlocked(down.position)) {
+      previousUp = null
       return@awaitEachGesture
     }
+    val isSecondTap = previousUp?.let { first -> down.followsTap(first, viewConfiguration) } == true
+    // Признак снят — само отпускание больше не нужно: третий тап подряд начинает счёт заново, иначе
+    // долгая дробь по фону вписывала бы граф через раз.
+    previousUp = null
     onTouch()
     tracker.resetTracking()
     // Через тот же путь, что и остальные точки: на событии нажатия трекер заводит свой накопитель
@@ -108,8 +121,39 @@ internal suspend fun PointerInputScope.detectCameraGestures(
       // отпусканием умеет отдать десятки тысяч px/s, а пролёт растёт как v^1.736.
       val maximum = viewConfiguration.maximumFlingVelocity
       onRelease(tracker.calculateVelocity(Velocity(maximum, maximum)))
+      return@awaitEachGesture
+    }
+    // Порога жест не прошёл — это тап. Вторым таким же он становится двойным, а первым остаётся
+    // ждать следующего касания. Жест, потреблённый узлом, сюда не доходит вовсе, поэтому двойной тап
+    // по плашке полотну не достаётся.
+    if (isSecondTap) {
+      onDoubleTap()
+    } else {
+      previousUp = event.changes.first()
     }
   }
+}
+
+/**
+ * Продолжает ли это касание предыдущий тап, то есть складывается ли с ним в двойной.
+ *
+ * Оба порога платформенные: [ViewConfiguration.doubleTapTimeoutMillis] задаёт, сколько ждать второго
+ * касания, [ViewConfiguration.doubleTapMinTimeMillis] отсекает дребезг, а [ViewConfiguration.touchSlop]
+ * — расстояние, на котором два тапа ещё считаются одним местом.
+ *
+ * @param first отпускание предыдущего тапа
+ * @param configuration пороги устройства
+ * @return `true`, когда касания складываются в двойной тап
+ */
+private fun PointerInputChange.followsTap(
+  first: PointerInputChange,
+  configuration: ViewConfiguration
+): Boolean {
+  val elapsed = uptimeMillis - first.uptimeMillis
+  if (elapsed < configuration.doubleTapMinTimeMillis || elapsed > configuration.doubleTapTimeoutMillis) {
+    return false
+  }
+  return (position - first.position).getDistance() <= configuration.touchSlop
 }
 
 /**

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
@@ -166,10 +167,30 @@ class GraphFlightTest {
 
   @Test
   fun `the default scale is only restored from above`() {
-    assertEquals(1f, flightScaleOf(2.5f))
-    assertEquals(1f, flightScaleOf(1.0001f))
-    assertEquals(1f, flightScaleOf(1f), "на самой единице сбрасывать нечего")
-    assertEquals(0.4f, flightScaleOf(0.4f))
+    val episodes = graphLevelBandOf(GraphLevel.Episodes, fitScale = 0.05f)
+
+    assertEquals(1f, flightScaleOf(2.5f, GraphLevel.Episodes, episodes))
+    assertEquals(1f, flightScaleOf(1.0001f, GraphLevel.Episodes, episodes))
+    assertEquals(1f, flightScaleOf(1f, GraphLevel.Episodes, episodes), "на самой единице сбрасывать нечего")
+    assertEquals(0.4f, flightScaleOf(0.4f, GraphLevel.Episodes, episodes))
+  }
+
+  @Test
+  fun `the overview returns to its own rest, not to the unit scale`() {
+    val overview = graphLevelBandOf(GraphLevel.Overview, fitScale = 0.305f)
+
+    assertEquals(
+      0.305f,
+      flightScaleOf(2.3f, GraphLevel.Overview, overview),
+      1e-4f,
+      "покой обзора — это «видно всё», а единица там не значит ничего"
+    )
+    assertEquals(
+      0.305f,
+      flightScaleOf(0.305f, GraphLevel.Overview, overview),
+      1e-4f,
+      "на самом покое сбрасывать нечего"
+    )
   }
 
   @Test
@@ -191,6 +212,7 @@ class GraphFlightTest {
    */
   private fun aimedAt(state: GraphCanvasState, anchor: GraphAnchor): Offset {
     val placement = state.layout(
+      level = GraphLevel.Episodes,
       nodes = state.nodes,
       branches = state.branches,
       viewportSize = VIEWPORT,
@@ -287,6 +309,7 @@ class GraphFlightTest {
     }
     state.setNodes(nodes, FIVE_BRANCHES)
     state.layout(
+      level = GraphLevel.Episodes,
       nodes = nodes,
       branches = FIVE_BRANCHES,
       viewportSize = VIEWPORT,
