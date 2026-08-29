@@ -19,7 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
@@ -71,6 +73,17 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
         branches = state.graphBranches
       )
       val ceremonyState = rememberMergeCeremonyState()
+      // Какая ветка вернулась в магистраль в этом узле. Точка слияния стоит **на магистрали**, то
+      // есть её собственный `branchId` — корневой, и спросить сливающуюся ветку у самого узла
+      // нельзя: связь идёт с другой стороны, от `mergedAt` ветки.
+      val mergedBranchByNode = remember(state.graphBranches) {
+        state.graphBranches.mapNotNull { branch ->
+          branch.mergedAt?.let { it to branch.id }
+        }.toMap()
+      }
+      // Церемония доигрывает после того, как композиция чипа уже могла уйти, поэтому scope свой.
+      val ceremonyScope = rememberCoroutineScope()
+      val haptics = LocalHapticFeedback.current
       // Подпись пузыря мини-карты. Собирается здесь, потому что дату знает экран, а какой узел под
       // центром — полотно; отдаётся `State`, чтобы прочитал её лист, а не тело экрана: чтение
       // прямо тут пересобирало бы лямбды полотна при каждой смене узла под камерой.
@@ -157,14 +170,38 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
               // Смещается `offset`, места в раскладке не занимая, — то же правило, что у шеврона
               // ветвления и у гало непрочитанного.
               GraphNodeRole.Merge -> Box(contentAlignment = Alignment.Center) {
-                MergeNode(contentDescription = description)
+                val mergedBranch = mergedBranchByNode[graphNode.id]
+                MergeNode(
+                  contentDescription = description,
+                  // Кадр читается лямбдой, то есть в фазе рисования: значение, взятое здесь,
+                  // рекомпоновало бы узел внутри раскладки полотна на каждом кадре церемонии.
+                  ceremony = {
+                    ceremonyState.frame.value
+                      ?.takeIf { ceremonyState.branch.value == mergedBranch }
+                  }
+                )
                 MergedRequestNode(
                   // Подпись у чипа своя: он говорит «эта тема закрыта», а точка под ним — «здесь
                   // ветка вернулась в магистраль». Одной фразой на двоих это не сказать.
                   contentDescription = GraphBranchStatus.Merged.toNodeDescription(branchName),
                   modifier = Modifier.offset(
                     y = if (accent.lane < 0) 34.dp else (-34).dp
-                  )
+                  ),
+                  onClick = mergedBranch?.let { branchId ->
+                    {
+                      ceremonyState.play(
+                        scope = ceremonyScope,
+                        branchId = branchId,
+                        reduced = false,
+                        // Первая тактильная отдача в проекте. `Confirm`, а не `LongPress`: удар
+                        // кадра 5 означает «дело доведено до конца», и это ровно семантика
+                        // константы, а не сила вибрации.
+                        onImpact = {
+                          haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                        }
+                      )
+                    }
+                  }
                 )
               }
               GraphNodeRole.Front -> FrontNode(contentDescription = description)

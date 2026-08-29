@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.chronology.ui.components.node
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -21,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -32,8 +32,10 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * а не в графе, и церемонию почти никто не видит. Чип остаётся над точкой навсегда и возвращает
  * пропущенное — тап по нему проиграет церемонию заново, сколько угодно раз.
  *
- * Тапа у чипа пока нет: церемония не реализована, и обработчик повис бы неподключённым — ровно то,
- * из-за чего отложен и тап по узлам графа.
+ * **Тап по чипу переигрывает церемонию** (§12), и в этом весь смысл чипа: кнопку финализации жмут на
+ * экране ветки, поэтому саму церемонию почти никто не видит вживую. Клик объявляется `surface` в той
+ * же цепочке модификаторов, что и `clearAndSetSemantics`: тот чистит семантику потомков, но не
+ * своего же узла, и действие уцелевает — тем же способом, каким тап живёт у плашки эпизода.
  *
  * Текст и иконка берут `contentAccentDark` в обеих темах, а не `contentPrimary`: заливка
  * `successSecondary` бледно-зелёная в светлой теме и насыщенно-зелёная в тёмной, и тёмное содержимое
@@ -52,12 +54,14 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  *   не место на линии, поэтому подпись у него своя, отдельная от точки слияния
  * @param modifier модификатор чипа
  * @param maxWidth наибольшая ширина чипа: слово за ней обрезается эллипсисом
+ * @param onClick тап по чипу — переигрывание церемонии; `null` — чип не нажимается
  */
 @Composable
 internal fun MergedRequestNode(
   contentDescription: String,
   modifier: Modifier = Modifier,
-  maxWidth: Dp = 120.dp
+  maxWidth: Dp = 120.dp,
+  onClick: (() -> Unit)? = null
 ) {
   Row(
     modifier = modifier
@@ -66,7 +70,11 @@ internal fun MergedRequestNode(
       // одного чипа не потребовалось.
       .defaultMinSize(minHeight = 24.dp)
       .widthIn(max = maxWidth)
-      .background(AppTheme.colors.successSecondary, AppTheme.shapes.round12)
+      .surface(
+        backgroundColor = AppTheme.colors.successSecondary,
+        shape = AppTheme.shapes.round12,
+        onClick = onClick
+      )
       .padding(horizontal = 10.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)

@@ -90,15 +90,24 @@ internal class MergeCeremonyState(private val decelerate: Easing) {
    * @param scope область, переживающая композицию узла, по которому нажали
    * @param branchId ветка, чью церемонию играем
    * @param reduced просит ли пользователь обойтись без движения
+   * @param onImpact удар кадра 5: зовётся ровно на границе 850 мс и ровно один раз за проигрывание.
+   *   Под [reduced] зовётся сразу — отклик это не движение, и глушить его вместе с анимацией значило
+   *   бы отнять у незрячего единственный сигнал, что слияние состоялось
    */
-  fun play(scope: CoroutineScope, branchId: GraphBranch.Id, reduced: Boolean) {
+  fun play(
+    scope: CoroutineScope,
+    branchId: GraphBranch.Id,
+    reduced: Boolean,
+    onImpact: () -> Unit
+  ) {
     stop()
     if (reduced) {
+      onImpact()
       return
     }
     playedBranch = branchId
     elapsed = 0f
-    job = scope.launch { run() }
+    job = scope.launch { run(onImpact) }
   }
 
   /** Обрывает церемонию и возвращает граф к покою. */
@@ -109,7 +118,8 @@ internal class MergeCeremonyState(private val decelerate: Easing) {
     elapsed = 0f
   }
 
-  private suspend fun run() {
+  private suspend fun run(onImpact: () -> Unit) {
+    var struck = false
     // Кривая шкалы линейна намеренно: свою кривую применяет каждый кадр внутри себя, и вторая,
     // наложенная на всю шкалу, растянула бы одни кадры за счёт других.
     Animatable(0f).animateTo(
@@ -120,6 +130,12 @@ internal class MergeCeremonyState(private val decelerate: Easing) {
       )
     ) {
       elapsed = value
+      // Ровно один раз за проигрывание: кадры анимации приходят чаще, чем раз в 850 мс, и без
+      // засова удар дребезжал бы каждым кадром до конца шкалы.
+      if (!struck && value >= LINE_PULL_END) {
+        struck = true
+        onImpact()
+      }
     }
     playedBranch = null
     elapsed = 0f

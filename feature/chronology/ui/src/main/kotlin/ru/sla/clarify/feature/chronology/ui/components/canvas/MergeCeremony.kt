@@ -19,8 +19,8 @@ private const val HELD_BEAT_END = 400f
 /** Кадр 3 — на магистрали проявляется пустое кольцо: «место готово, ждёт». */
 private const val RING_ARRIVAL_END = 550f
 
-/** Кадр 4 — линия возврата идёт к кольцу. */
-private const val LINE_PULL_END = 850f
+/** Кадр 4 — линия возврата идёт к кольцу. За его концом бьёт удар, и там же просыпается гаптика. */
+internal const val LINE_PULL_END = 850f
 
 /** Кадр 5 — удар: кольцо заливается, иконка растёт. */
 private const val IMPACT_END = 950f
