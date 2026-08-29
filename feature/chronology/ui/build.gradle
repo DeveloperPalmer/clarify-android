@@ -12,6 +12,8 @@ dependencies {
   implementation project(":uikit")
   implementation project(":feature:chronology:domain")
 
+  implementation libs.androidx.activity.compose // for BackHandler
+
   testImplementation libs.bundles.unittest
   testRuntimeOnly libs.junit.jupiter.engine
   testRuntimeOnly libs.junit.platform.launcher
