@@ -12,7 +12,6 @@ import ru.dimsuz.unicorn2.machine
 import ru.kode.remo.JobState
 import ru.kode.remo.QueueingStrategy
 import ru.kode.remo.errors
-import ru.kode.remo.successResults
 import ru.sla.clarify.core.domain.asLceState
 import ru.sla.clarify.core.domain.entity.EditedMessage
 import ru.sla.clarify.core.domain.entity.UserId
@@ -500,12 +499,6 @@ class BranchViewModel(
     onEach(branchModel.cancelMergeRequest.jobFlow.errors()) {
       action { _, _, _ ->
         showMergeError(R.string.branch_merge_cancel_failed)
-      }
-    }
-
-    onEach(branchModel.finalizeMergeRequest.jobFlow.successResults()) {
-      action { _, _, _ ->
-        showMergeError(R.string.branch_merge_finalize_failed)
       }
     }
 
