@@ -156,6 +156,63 @@ class GraphEdgeGeometryTest {
       "у магистрали своя толщина, и роль — единственное, что её задаёт"
     )
   }
+
+  @Test
+  fun `every edge of a branch carries that branch's id`() {
+    val edges = edgesOf(
+      nodes = listOf(episode("1", "trunk"), episode("2", "a"), episode("3", "a")),
+      positions = listOf(IntOffset(0, 0), IntOffset(340, 0), IntOffset(680, 0)),
+      sizes = listOf(SIZE, SIZE, SIZE),
+      laneYs = listOf(0f, 104f, 104f),
+      branches = listOf(branch("a", forkedFrom = "1", mergedAt = null))
+    )
+
+    assertEquals(
+      setOf(GraphBranch.Id("a")),
+      edges.map { it.branchId }.toSet(),
+      "и уход с магистрали, и горизонталь дорожки принадлежат самой ветке"
+    )
+  }
+
+  @Test
+  fun `two branches of one shade stay apart by id`() {
+    val edges = edgesOf(
+      nodes = listOf(episode("1", "a"), episode("2", "a"), episode("3", "b"), episode("4", "b")),
+      positions = listOf(IntOffset(0, 0), IntOffset(340, 0), IntOffset(680, 0), IntOffset(1020, 0)),
+      sizes = listOf(SIZE, SIZE, SIZE, SIZE),
+      laneYs = listOf(104f, 104f, 208f, 208f),
+      branches = listOf(
+        branch("a", forkedFrom = null, mergedAt = null),
+        branch("b", forkedFrom = null, mergedAt = null)
+      )
+    )
+
+    assertEquals(
+      1,
+      edges.map { it.colorIndex }.toSet().size,
+      "оттенок у обеих веток один: цвет повторяется каждые шесть ответвлений"
+    )
+    assertEquals(
+      2,
+      edges.map { it.branchId }.toSet().size,
+      "а идентификатор их различает — по цвету церемония позолотила бы обе линии"
+    )
+  }
+
+  @Test
+  fun `an edge of the trunk carries the root branch id`() {
+    val edges = edgesOf(
+      nodes = listOf(episode("1", "trunk"), episode("2", "trunk")),
+      positions = listOf(IntOffset(0, 0), IntOffset(340, 0)),
+      sizes = listOf(SIZE, SIZE)
+    )
+
+    assertEquals(
+      GraphBranch.Id("trunk"),
+      edges.single().branchId,
+      "у магистрали идентификатор корневой ветки, а не пустой"
+    )
+  }
 }
 
 /**

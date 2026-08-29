@@ -157,6 +157,7 @@ private fun horizontalEdgesOf(
         edges += GraphEdge(
           points = listOf(Offset(startX, laneYs[index]), Offset(endX, laneYs[index])),
           hops = emptyList(),
+          branchId = branchId,
           colorIndex = colorIndex,
           role = if (colorIndex == 0) GraphEdgeRole.Trunk else GraphEdgeRole.Branch,
           status = statusOf[branchId] ?: GraphBranchStatus.Alive
@@ -203,6 +204,7 @@ private fun forkAndMergeEdgesOf(
       edges += GraphEdge(
         points = listOf(Offset(x, trunkY), Offset(x, laneY), Offset(maxOf(firstLeft, x), laneY)),
         hops = emptyList(),
+        branchId = branch.id,
         colorIndex = branch.colorIndex,
         role = GraphEdgeRole.Fork,
         status = branch.status
@@ -217,6 +219,7 @@ private fun forkAndMergeEdgesOf(
       edges += GraphEdge(
         points = listOf(Offset(minOf(lastRight, x), laneY), Offset(x, laneY), Offset(x, trunkY)),
         hops = emptyList(),
+        branchId = branch.id,
         colorIndex = branch.colorIndex,
         role = GraphEdgeRole.Merge,
         status = branch.status
@@ -254,6 +257,7 @@ private fun tailEdgesOf(
         edges += GraphEdge(
           points = listOf(Offset(startX, laneYs[last]), Offset(contentRight, laneYs[last])),
           hops = emptyList(),
+          branchId = branch.id,
           colorIndex = branch.colorIndex,
           role = GraphEdgeRole.Tail,
           status = branch.status
