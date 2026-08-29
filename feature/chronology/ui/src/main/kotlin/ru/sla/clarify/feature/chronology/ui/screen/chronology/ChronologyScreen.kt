@@ -44,7 +44,6 @@ import ru.sla.clarify.feature.chronology.ui.components.node.GlyphNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergedRequestNode
 import ru.sla.clarify.feature.chronology.ui.components.preview.NodePreviewMorph
-import ru.sla.clarify.feature.chronology.ui.entity.ForkDirection
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
@@ -187,18 +186,18 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                   )
                 }
               }
-              // Точка ветвления показывает **уходящую** ветку, поэтому и цвет, и направление берутся
-              // из акцента, а не из самого узла: сам он стоит на магистрали.
+              // Точка ветвления показывает **уходящую** ветку, поэтому цвет берётся из акцента, а не
+              // из самого узла: сам он стоит на магистрали. Направления узел не показывает — его
+              // показывает ребро ухода, а время на графе всегда идёт слева направо.
               GraphNodeRole.Fork -> ForkNode(
                 laneColor = accent.colorIndex.toBranchColor(AppTheme.colors),
-                contentDescription = description,
-                direction = if (accent.lane < 0) ForkDirection.Up else ForkDirection.Down
+                contentDescription = description
               )
               // Чип «Закрыта» висит с той стороны магистрали, откуда ветка **не** возвращается.
               // Иначе вертикаль возврата прошла бы сквозь него: она стоит на том же X, что и точка
               // слияния, а чип в накопительную ось не входит и перекрыть её не может ничем.
-              // Смещается `offset`, места в раскладке не занимая, — то же правило, что у шеврона
-              // ветвления и у гало непрочитанного.
+              // Смещается `offset`, места в раскладке не занимая, — то же правило, что у подписи
+              // фронта и у гало непрочитанного.
               GraphNodeRole.Merge -> Box(contentAlignment = Alignment.Center) {
                 val mergedBranch = mergedBranchByNode[graphNode.id]
                 MergeNode(

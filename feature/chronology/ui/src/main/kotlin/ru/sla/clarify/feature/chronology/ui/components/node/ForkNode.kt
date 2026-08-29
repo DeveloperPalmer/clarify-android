@@ -3,8 +3,6 @@ package ru.sla.clarify.feature.chronology.ui.components.node
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -12,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -22,7 +19,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chronology.ui.entity.ForkDirection
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -38,9 +34,11 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * Заливка непрозрачная и берёт цвет полотна: узел стоит **на** линии магистрали и обязан её
  * прорезать, а не пропускать сквозь себя, — та же причина, по которой залит [GlyphNode].
  *
- * Шеврон-указатель в раскладке места не занимает: на дорожку узел ставится центром круга, и коробка,
- * подросшая на шеврон, увела бы центр с линии. Это то же правило, по которому не занимает места гало
- * непрочитанного.
+ * Указателя направления у узла нет вовсе, и заводить его заново незачем: время на этом графе идёт
+ * слева направо всегда, а куда ушла ветка — вверх или вниз — показывает её собственное ребро. Шеврон
+ * стоял здесь в 26 dp от центра круга — ровно столько же между дорожками на обзоре, — и ложился на
+ * соседнюю дорожку; вдобавок он был нейтрально-серым и читался отдельным маркером, а не частью
+ * линии, которая и так всё сказала.
  *
  * Узел декоративен: §6.4 не даёт ему ни состояний, ни интерактива, а структуру скринридер читает из
  * подписи узла ветки.
@@ -50,22 +48,18 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * @param laneColor цвет идентичности ветки, которая здесь начинается: обводка и иконка (§7).
  *   Приходит готовым цветом, потому что знать свою дорожку узлу неоткуда
  * @param modifier модификатор узла
- * @param direction куда уходит ветка; шеврон повёрнут и переставлен соответственно
  */
 @Composable
 internal fun ForkNode(
   laneColor: Color,
   contentDescription: String,
-  modifier: Modifier = Modifier,
-  direction: ForkDirection = ForkDirection.Up
+  modifier: Modifier = Modifier
 ) {
-  val up = direction == ForkDirection.Up
   Box(
     modifier = modifier.clearAndSetSemantics { this.contentDescription = contentDescription },
     contentAlignment = Alignment.Center
   ) {
     Box(
-      // Круг задаёт коробку узла целиком: шеврон ниже смещён `offset`, а он на измерение не влияет.
       modifier = Modifier
         .size(24.dp)
         .background(AppTheme.colors.backgroundPrimary, CircleShape)
@@ -79,18 +73,6 @@ internal fun ForkNode(
         contentDescription = null
       )
     }
-    Icon(
-      modifier = Modifier
-        .size(12.dp)
-        // 26 dp от центра узла: между кругом и шевроном остаётся 2 dp воздуха, и указатель читается
-        // как отдельный маркер, а не как часть обводки.
-        .offset(y = if (up) (-26).dp else 26.dp)
-        // Иконка нарисована смотрящей вниз, поэтому вверх она разворачивается, а не берётся второй.
-        .rotate(if (up) 180f else 0f),
-      painter = painterResource(R.drawable.ic_chevron_down_24),
-      tint = AppTheme.colors.contentQuaternary,
-      contentDescription = null
-    )
   }
 }
 
@@ -119,33 +101,28 @@ private fun ForkNodePreviewDark(
 @Composable
 private fun ForkNodePreviewContent(fork: ForkNodePreview) {
   ForkNode(
-    // Шеврон выходит за коробку узла на 32 dp, и без этого поля кадр обрезал бы ровно его.
-    modifier = Modifier.padding(vertical = 32.dp),
     // Через настоящий маппер, а не через свой цвет: кадр заодно проверяет, что соседние дорожки
     // получают разные оттенки.
     laneColor = fork.lane.toBranchColor(AppTheme.colors),
-    contentDescription = "Ответвление",
-    direction = fork.direction
+    contentDescription = "Ответвление"
   )
 }
 
 @Immutable
-private data class ForkNodePreview(
-  val lane: Int,
-  val direction: ForkDirection
-)
+private data class ForkNodePreview(val lane: Int)
 
 /**
- * Кадры превью [ForkNode]: оба направления и разные дорожки.
+ * Кадры превью [ForkNode]: разные дорожки.
  *
- * Направлений ровно два, и оба обязаны быть в кадре: разворот шеврона — единственное, что их
- * различает, и ошибка в знаке видна только рядом с правильным вариантом.
+ * Направления в кадрах больше нет — его показывает ребро ухода, которого в превью узла не
+ * существует. Оттенков три, потому что единственное, что здесь проверяется, — что цвет приходит
+ * параметром и берётся из палитры идентичности.
  */
 @Immutable
 private class ForkNodePreviewProvider : PreviewParameterProvider<ForkNodePreview> {
   override val values = sequenceOf(
-    ForkNodePreview(lane = 1, direction = ForkDirection.Up),
-    ForkNodePreview(lane = 2, direction = ForkDirection.Down),
-    ForkNodePreview(lane = 5, direction = ForkDirection.Up)
+    ForkNodePreview(lane = 1),
+    ForkNodePreview(lane = 2),
+    ForkNodePreview(lane = 5)
   )
 }
