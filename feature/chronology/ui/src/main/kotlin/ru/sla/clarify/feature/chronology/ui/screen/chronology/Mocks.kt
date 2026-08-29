@@ -7,6 +7,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
+import ru.sla.clarify.feature.chronology.ui.entity.NodePreview
 import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
@@ -331,7 +332,10 @@ private fun nodesOfMarchSix(): List<MockNode> {
       time = "6 мар, 09:40",
       count = 14,
       snippet = "Ок, давай по порядку",
-      myShare = 0.38f
+      myShare = 0.38f,
+      fullText = "Ок, давай по порядку. Сначала сроки, потом бюджет, дизайн в конце — иначе мы " +
+        "опять всё смешаем в одну кучу.",
+      exactTime = "6 марта, 09:58"
     ),
     fork(id = "fork-terms", gap = TimeGap.Minutes),
     episode(
@@ -342,7 +346,13 @@ private fun nodesOfMarchSix(): List<MockNode> {
       count = 8,
       snippet = "Сроки я вынес сюда",
       myShare = 0.62f,
-      dim = true
+      dim = true,
+      author = MY_NAME,
+      // Полный текст заведомо длиннее сниппета: карточка для того и открывается, а увидеть разницу
+      // можно, только если она есть хоть у одного узла набора.
+      fullText = "Сроки я вынес сюда, чтобы не мешать основному разговору. Давай тут и добьём: " +
+        "мне нужна от тебя одна дата — когда мы готовы показывать это наружу.",
+      exactTime = "6 марта, 10:07"
     ),
     episode(
       id = "terms-2",
@@ -428,7 +438,11 @@ private fun nodesOfMarchSeven(): List<MockNode> {
       time = "7 мар, 11:20",
       count = 18,
       snippet = "Скинул смету, посмотри цифры",
-      myShare = 0.55f
+      myShare = 0.55f,
+      author = MY_NAME,
+      fullText = "Скинул смету, посмотри цифры по третьему подрядчику — там на двадцать процентов " +
+        "выше остальных, и я не понимаю почему.",
+      exactTime = "7 марта, 12:41"
     ),
     episode(
       id = "export-2",
@@ -657,9 +671,28 @@ private fun crowdedNodes(): List<MockNode> {
 
 private const val TRUNK = "trunk"
 
+/** Кто говорит в демо-наборе, когда автор не задан явно. */
+private const val PEER_NAME = "Анна Ковалёва"
+
+/** Второй собеседник: им подписаны эпизоды, где доля своих реплик заведомо больше. */
+private const val MY_NAME = "Вы"
+
 /** Сколько веток живёт одновременно в [mockCrowdedGraph]: на две больше потолка §4.2. */
 private const val CROWDED_BRANCHES = 9
 
+/**
+ * Эпизод демо-набора вместе с содержимым его превью-карточки.
+ *
+ * Автор и полный текст по умолчанию выводятся из сниппета: карточка обязана быть у **каждого**
+ * эпизода, иначе тап по нему ничего не откроет, а перечислять их по одному в двадцати четырёх
+ * вызовах значило бы утопить в словах то, ради чего набор существует, — сценарии раскладки. Там, где
+ * важен именно длинный текст или моё авторство, оба параметра передаются явно.
+ *
+ * @param author имя автора последнего сообщения эпизода
+ * @param fullText полный текст последнего сообщения; по умолчанию совпадает со сниппетом
+ * @param exactTime точное время последнего сообщения; по умолчанию — время начала эпизода
+ */
+@Suppress("LongParameterList") // временный набор: уедет вместе с файлом
 private fun episode(
   id: String,
   branchId: String,
@@ -669,7 +702,10 @@ private fun episode(
   snippet: String,
   myShare: Float = DEFAULT_MY_SHARE,
   unreadCount: Long = 0,
-  dim: Boolean = false
+  dim: Boolean = false,
+  author: String = PEER_NAME,
+  fullText: String = snippet,
+  exactTime: String = time
 ): MockNode {
   return MockNode(
     node = GraphNode(
@@ -681,6 +717,11 @@ private fun episode(
     time = time,
     count = count,
     snippet = snippet,
+    preview = MockPreview(
+      authorName = author,
+      text = fullText,
+      time = exactTime
+    ),
     myShare = myShare,
     unreadCount = unreadCount,
     dim = dim
@@ -748,6 +789,10 @@ internal data class MockGraph(
   /** Содержимое плашек по идентификатору узла: то, что уходит в состояние экрана. */
   val episodeById: Map<GraphNode.Id, EpisodeContent>
     get() = nodes.associateBy { it.node.id }
+
+  /** Содержимое превью-карточек: только у тех узлов, которые есть что разворачивать. */
+  val previewById: Map<GraphNode.Id, NodePreview>
+    get() = nodes.mapNotNull { node -> node.preview?.let { node.node.id to it } }.toMap()
 }
 
 /**
@@ -760,6 +805,7 @@ internal data class MockGraph(
  * @param time время начала эпизода
  * @param count число сообщений в кластере
  * @param snippet последнее сообщение эпизода
+ * @param preview содержимое превью-карточки; `null` у точек на линии — им нечего разворачивать
  * @param myShare доля своих реплик
  * @param unreadCount счётчик непрочитанных
  * @param dim эпизод внутри слитой ветки
@@ -770,7 +816,28 @@ internal data class MockNode(
   override val time: String,
   override val count: Int,
   override val snippet: String,
+  val preview: MockPreview? = null,
   override val myShare: Float = DEFAULT_MY_SHARE,
   override val unreadCount: Long = 0,
   override val dim: Boolean = false
 ) : EpisodeContent
+
+/**
+ * Временное содержимое превью-карточки: то, что §11.2 разворачивает из плашки.
+ *
+ * Отдельным классом, а не полями [MockNode], потому что время здесь — **не** время начала эпизода:
+ * карточка показывает последнее сообщение кластера, и совпадение этих двух величин было бы
+ * случайным. Уедет вместе со всем файлом, когда граф начнёт собираться из домена.
+ *
+ * @param authorName имя автора
+ * @param authorPhotoUrl фото автора; в наборе его нет ни у кого — аватар рисует инициалы
+ * @param text полный текст сообщения
+ * @param time точное время сообщения
+ */
+@Immutable
+internal data class MockPreview(
+  override val authorName: String,
+  override val authorPhotoUrl: String? = null,
+  override val text: String,
+  override val time: String
+) : NodePreview

@@ -330,6 +330,22 @@ class MocksTest {
   }
 
   /**
+   * Тап по узлу без содержимого карточки не заводится вовсе, поэтому эпизод без превью — это узел,
+   * который молча перестал нажиматься. По коду этого не видно: и поле, и его чтение на месте.
+   */
+  @Test
+  fun `every episode of the set has a card to open`() {
+    val graph = mockGraph()
+    val episodes = graph.nodes.filter { it.node.role == GraphNodeRole.Episode }
+
+    assertEquals(
+      episodes.map { it.node.id }.toSet(),
+      graph.previewById.keys,
+      "эпизод без превью перестаёт нажиматься, и заметить это можно только тапнув по нему"
+    )
+  }
+
+  /**
    * Подпись узла для скринридера называет ветку, а имени у [GraphBranch] нет: оно живёт отдельной
    * картой, и разъехаться с набором ей ничто не мешает.
    */

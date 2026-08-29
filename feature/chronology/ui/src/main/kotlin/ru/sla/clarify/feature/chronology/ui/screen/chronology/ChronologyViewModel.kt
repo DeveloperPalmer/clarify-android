@@ -27,7 +27,8 @@ class ChronologyViewModel @Inject constructor(
       nodes = graph.graphNodes,
       graphBranches = graph.branches,
       episodeById = graph.episodeById,
-      branchNameById = graph.branchNames
+      branchNameById = graph.branchNames,
+      previewById = graph.previewById
     ) to null
 
     onEach(intent(ViewIntents::navigateBack)) {
@@ -36,11 +37,34 @@ class ChronologyViewModel @Inject constructor(
       }
     }
 
+    configureNodePreview()
+
     onEach(chronologyModel.branches) {
       transitionTo { state, branches -> state.copy(branches = branches) }
     }
 
     configureDebugOverlay()
+  }
+
+  /**
+   * Выбор узла: что открыто и откуда оно выросло.
+   *
+   * Прямоугольник плашки приходит сюда готовым, из экрана, и это осознанная цена: пиксели во
+   * `ViewState` выглядят чужеродно, но «какой узел выбран» и «откуда морфится карточка» — один факт,
+   * и разложенный по двум домам он разъехался бы молча.
+   */
+  private fun MachineDsl<ViewState>.configureNodePreview() {
+    onEach(intent(ViewIntents::selectNode)) {
+      transitionTo { state, selection ->
+        state.copy(selectedNode = selection)
+      }
+    }
+
+    onEach(intent(ViewIntents::closeNodePreview)) {
+      transitionTo { state, _ ->
+        state.copy(selectedNode = null)
+      }
+    }
   }
 
   private fun MachineDsl<ViewState>.configureDebugOverlay() {

@@ -1,5 +1,6 @@
 package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
@@ -31,14 +35,17 @@ import ru.sla.clarify.feature.chronology.ui.components.node.ForkNode
 import ru.sla.clarify.feature.chronology.ui.components.node.FrontNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergedRequestNode
+import ru.sla.clarify.feature.chronology.ui.components.preview.NodePreviewMorph
 import ru.sla.clarify.feature.chronology.ui.entity.ForkDirection
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeSelection
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.feature.chronology.ui.mapper.toDescription
 import ru.sla.clarify.feature.chronology.ui.mapper.toNodeDescription
 import ru.sla.clarify.uikit.component.icon.IconAction
+import ru.sla.clarify.uikit.component.scrim.ScrimEffect
 import ru.sla.clarify.uikit.component.topappbar.TopAppBarDefaults
 import ru.sla.clarify.uikit.scaffold.ScreenScaffold
 import ru.sla.clarify.uikit.scaffold.rememberScreenScaffoldState
@@ -52,6 +59,11 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
   ) { state, intents ->
     val scaffoldState = rememberScreenScaffoldState()
     scaffoldState.contentLoadState = state.contentLoadState
+    // Открыта карточка — закрывается она; иначе закрывается экран, и этим занимается уже хост флоу.
+    BackHandler(
+      enabled = state.selectedNode != null,
+      onBack = intents.closeNodePreview
+    )
     ScreenScaffold(state = scaffoldState) {
       val canvasState = rememberGraphCanvasState(
         nodes = state.nodes,
@@ -69,9 +81,19 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
       val flightScope = rememberCoroutineScope()
       val flightSpec = AppTheme.motion.largeTween<Float>()
       Box(modifier = Modifier.fillMaxSize()) {
+        // Скругление плашки берётся из того же токена, которым она нарисована, и умножается на
+        // масштаб: на 2.5× нарисованный радиус равен сорока, и морф, стартовавший с шестнадцати,
+        // начался бы с чужими углами.
+        val density = LocalDensity.current
+        val episodeCorner = with(density) {
+          AppTheme.shapes.round16.topStart.toPx(Size.Zero, this).toDp()
+        }
         GraphCanvas(
           modifier = Modifier.fillMaxSize(),
           state = canvasState,
+          // Пока карточка открыта, полотно жестов не берёт вовсе: прямоугольник, из которого вырос
+          // морф, заморожен, и уехавшая под скримом камера сделала бы обратный морф ложью.
+          blocked = { state.selectedNode != null },
           node = { graphNode, accent ->
             // Имя ветки в узел не приходит: узлу оно не нужно ни для чего, кроме подписи, а подпись
             // собирается здесь — там, где имя вообще есть. У магистрали имени нет, и подпись про
@@ -84,14 +106,39 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
             when (graphNode.role) {
               GraphNodeRole.Episode -> {
                 val item = state.episodeById.getValue(graphNode.id)
+                val preview = state.previewById[graphNode.id]
                 EpisodeNode(
+                  // Выбранная плашка гасится, а не убирается: поверхность обязана уехать в карточку,
+                  // а не размножиться копией, оставшейся лежать на полотне. Место в раскладке узел
+                  // при этом сохраняет — соседи по дорожке не должны шевельнуться.
+                  modifier = Modifier.graphicsLayer {
+                    alpha = if (graphNode.id == state.selectedNode?.id) 0f else 1f
+                  },
                   time = item.time,
                   count = item.count,
                   snippet = item.snippet,
                   contentDescription = description,
                   myShare = item.myShare,
                   unreadCount = item.unreadCount,
-                  dim = item.dim
+                  dim = item.dim,
+                  // Узел без содержимого карточки не нажимается вовсе: кнопка, которой некуда
+                  // вести, хуже её отсутствия.
+                  onClick = preview?.let { content ->
+                    {
+                      // Прямоугольник снимается в момент тапа и дальше не пересчитывается: камера
+                      // под открытой карточкой стоит.
+                      canvasState.nodeRectOf(graphNode.id)?.let { bounds ->
+                        intents.selectNode(
+                          GraphNodeSelection(
+                            id = graphNode.id,
+                            preview = content,
+                            bounds = bounds,
+                            corner = episodeCorner * canvasState.scale.value
+                          )
+                        )
+                      }
+                    }
+                  }
                 )
               }
               // Точка ветвления показывает **уходящую** ветку, поэтому и цвет, и направление берутся
@@ -163,6 +210,15 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
           onBack = intents.navigateBack,
           onToggleDebugOverlay = intents.toggleDebugOverlay
         )
+        // Скрим накрывает и шапку: иначе стрелка «назад» осталась бы живой и уводила бы с экрана
+        // вместо того, чтобы закрыть карточку.
+        ScrimEffect(
+          visible = state.selectedNode != null,
+          onFinish = intents.closeNodePreview
+        )
+        // Обе половины морфа стоят в том же Box, что и полотно: прямоугольник якоря считан в его
+        // системе координат, и любой другой родитель сдвинул бы его на своё смещение.
+        NodePreviewMorph(selection = state.selectedNode)
       }
     }
   }
