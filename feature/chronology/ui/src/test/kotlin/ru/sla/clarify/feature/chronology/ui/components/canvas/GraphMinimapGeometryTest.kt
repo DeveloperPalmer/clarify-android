@@ -7,7 +7,7 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.atlas.entity.Branch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
@@ -270,9 +270,9 @@ class GraphMinimapGeometryTest {
   @Test
   fun `a lane mark stands where the first node of its lane stands`() {
     val marks = laneMarksOf(
-      branchIds = branchIds("trunk", "a", "trunk", "b"),
+      branchIds = branchIds("baseline", "a", "baseline", "b"),
       lanes = listOf(0, 1, 0, -1),
-      colorIndexes = listOf(0, 1, 0, 2),
+      nodeColors = listOf(mockLaneColor(0), mockLaneColor(1), mockLaneColor(0), mockLaneColor(2)),
       centres = listOf(
         Offset(x = 0f, y = 0f),
         Offset(x = 2000f, y = 100f),
@@ -284,19 +284,19 @@ class GraphMinimapGeometryTest {
 
     assertEquals(
       listOf(
-        GraphLaneMark(position = 0.2f, lane = 1, colorIndex = 1),
-        GraphLaneMark(position = 0.5f, lane = -1, colorIndex = 2)
+        GraphLaneMark(position = 0.2f, lane = 1, color = mockLaneColor(1)),
+        GraphLaneMark(position = 0.5f, lane = -1, color = mockLaneColor(2))
       ),
       marks
     )
   }
 
   @Test
-  fun `the trunk has no lane mark of its own`() {
+  fun `the baseline has no lane mark of its own`() {
     val marks = laneMarksOf(
-      branchIds = branchIds("trunk", "trunk", "trunk"),
+      branchIds = branchIds("baseline", "baseline", "baseline"),
       lanes = listOf(0, 0, 0),
-      colorIndexes = listOf(0, 0, 0),
+      nodeColors = listOf(mockLaneColor(0), mockLaneColor(0), mockLaneColor(0)),
       centres = listOf(Offset(x = 0f, y = 0f), Offset(x = 200f, y = 0f), Offset(x = 300f, y = 0f)),
       centreSpan = LONG_HISTORY
     )
@@ -308,9 +308,9 @@ class GraphMinimapGeometryTest {
   fun `lane marks survive a graph whose nodes are not sorted by lane`() {
     // Узлы упорядочены временем, а не дорожками: второй узел ветки встретился раньше первого.
     val marks = laneMarksOf(
-      branchIds = branchIds("a", "trunk", "a"),
+      branchIds = branchIds("a", "baseline", "a"),
       lanes = listOf(1, 0, 1),
-      colorIndexes = listOf(1, 0, 1),
+      nodeColors = listOf(mockLaneColor(1), mockLaneColor(0), mockLaneColor(1)),
       centres = listOf(
         Offset(x = 5000f, y = 100f),
         Offset(x = 0f, y = 0f),
@@ -320,7 +320,7 @@ class GraphMinimapGeometryTest {
     )
 
     assertEquals(
-      listOf(GraphLaneMark(position = 0.3f, lane = 1, colorIndex = 1)),
+      listOf(GraphLaneMark(position = 0.3f, lane = 1, color = mockLaneColor(1))),
       marks,
       "начало ветки — самый левый её узел, а не первый в списке"
     )
@@ -331,7 +331,7 @@ class GraphMinimapGeometryTest {
     val marks = laneMarksOf(
       branchIds = branchIds("a", "b", "c"),
       lanes = listOf(3, -1, 2),
-      colorIndexes = listOf(3, 1, 2),
+      nodeColors = listOf(mockLaneColor(3), mockLaneColor(1), mockLaneColor(2)),
       centres = listOf(
         Offset(x = 8000f, y = 300f),
         Offset(x = 1000f, y = -100f),
@@ -353,7 +353,7 @@ class GraphMinimapGeometryTest {
     val marks = laneMarksOf(
       branchIds = branchIds("a"),
       lanes = listOf(1),
-      colorIndexes = listOf(1),
+      nodeColors = listOf(mockLaneColor(1)),
       centres = listOf(Offset(x = 100f, y = 100f)),
       centreSpan = 0f..0f
     )
@@ -369,7 +369,7 @@ class GraphMinimapGeometryTest {
     val mark = laneMarksOf(
       branchIds = branchIds("a"),
       lanes = listOf(1),
-      colorIndexes = listOf(1),
+      nodeColors = listOf(mockLaneColor(1)),
       centres = listOf(Offset(x = 5000f, y = 100f)),
       centreSpan = placement.centreSpanX
     ).single()
@@ -413,6 +413,6 @@ private val LONG_HISTORY = 0f..10_000f
  * Засечки группируются по ветке, а не по дорожке: дорожка переиспользуется после слияния, и две
  * темы, вставшие на неё по очереди, дали бы одну засечку вместо двух.
  */
-private fun branchIds(vararg names: String): List<GraphBranch.Id> {
-  return names.map { GraphBranch.Id(it) }
+private fun branchIds(vararg names: String): List<Branch.Id> {
+  return names.map { Branch.Id(it) }
 }

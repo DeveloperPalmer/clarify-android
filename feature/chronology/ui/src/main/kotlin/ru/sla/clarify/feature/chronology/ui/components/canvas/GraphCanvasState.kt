@@ -20,6 +20,7 @@ import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
@@ -28,8 +29,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraPose
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
@@ -39,11 +42,11 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelSwitch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 import ru.sla.clarify.feature.chronology.ui.entity.GraphZoomStep
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
 import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
@@ -53,18 +56,14 @@ import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
  * Новый набор узлов не пересоздаёт состояние, а подменяется в нём: иначе каждое входящее сообщение
  * сбрасывало бы камеру в исходную позицию и отменяло бы жест под пальцем.
  *
- * @param nodes узлы в хронологическом порядке
- * @param branches ветки графа, кроме магистрали, в порядке ветвления
+ * @param graph граф: порядок узлов и состав веток
  * @return состояние, живущее до выхода с экрана
  */
 @Composable
-internal fun rememberGraphCanvasState(
-  nodes: List<GraphNode>,
-  branches: List<GraphBranch>
-): GraphCanvasState {
+internal fun rememberGraphCanvasState(graph: Graph<Node>): GraphCanvasState {
   val state = remember { GraphCanvasState() }
-  // SideEffect, а не запись в теле: отброшенная композиция не должна была подменять узлы.
-  SideEffect { state.setNodes(nodes, branches) }
+  // SideEffect, а не запись в теле: отброшенная композиция не должна была подменять граф.
+  SideEffect { state.setGraph(graph) }
   return state
 }
 
@@ -86,9 +85,7 @@ internal fun rememberGraphCanvasState(
 @Stable
 internal class GraphCanvasState {
 
-  private var graphNodes by mutableStateOf(emptyList<GraphNode>())
-
-  private var graphBranches by mutableStateOf(emptyList<GraphBranch>())
+  private var currentGraph: Graph<Node> by mutableStateOf(Graph.Empty)
 
   private var graphEdges by mutableStateOf(emptyList<GraphEdge>())
 
@@ -148,7 +145,7 @@ internal class GraphCanvasState {
   // Куда возвращает повторный двойной тап; `null` — возвращаться некуда.
   private var restorePose: GraphCameraPose? = null
 
-  // Засечки считаются там же, где раскладка, и по тем же узлам. Выводить их из `graphNodes` и
+  // Засечки считаются там же, где раскладка, и по тем же узлам. Выводить их из `currentGraph` и
   // `placement` по требованию нельзя: узлы подменяются из `SideEffect`, раскладка приходит из
   // измерения, и на кадре подмены длины этих списков расходятся — а засечке нужен номер дорожки из
   // одного списка и координата из другого.
@@ -165,13 +162,9 @@ internal class GraphCanvasState {
   /** Счётчики проходов Compose по полотну: обычные поля, снимаются по таймеру. */
   val telemetry = GraphCanvasTelemetry()
 
-  /** Узлы графа в хронологическом порядке. */
-  val nodes: List<GraphNode>
-    get() = graphNodes
-
-  /** Ветки графа, кроме магистрали, в порядке ветвления. */
-  val branches: List<GraphBranch>
-    get() = graphBranches
+  /** Граф, который полотно сейчас показывает: порядок узлов и состав веток. */
+  val graph: Graph<Node>
+    get() = currentGraph
 
   /**
    * Сдвиг содержимого относительно экрана, уже ограниченный содержимым.
@@ -257,20 +250,21 @@ internal class GraphCanvasState {
   /**
    * Узел, ближайший к центру экрана по времени: то, чем подписывается пузырь мини-карты.
    *
-   * Отдаётся идентификатором, а не индексом: индекс — деталь раскладки, и снаружи по нему ничего не
-   * найти. `derivedStateOf` тут не украшение — он гасит покадровые изменения камеры до редких смен
-   * узла, поэтому подпись рекомпонуется в разы реже, чем движется картинка.
+   * Отдаётся самим узлом, а не индексом: индекс — деталь раскладки, и снаружи по нему ничего не
+   * найти, а искать узел по идентификатору вызывающему пришлось бы в том же списке, из которого он
+   * здесь и взят. `derivedStateOf` тут не украшение — он гасит покадровые изменения камеры до
+   * редких смен узла, поэтому подпись рекомпонуется в разы реже, чем движется картинка.
    *
    * Список узлов и раскладка расходятся не более чем на кадр — узлы подменяются из `SideEffect`, а
    * раскладка считается при измерении, — поэтому индекс берётся безопасно: на этом кадре подпись
    * пузыря либо отстанет на один узел, либо не покажется вовсе, и оба исхода дешевле падения.
    */
-  val centralNode: State<GraphNode.Id?> = derivedStateOf {
+  val centralNode: State<Node?> = derivedStateOf {
     val index = nearestCentreIndexOf(
       centres = placement.centres,
       x = centreXOf(camera = offset.value, scale = cameraScale, viewport = viewport)
     )
-    graphNodes.getOrNull(index)?.id
+    currentGraph.nodes.getOrNull(index)
   }
 
   /** Снимок камеры и последней раскладки для отладочной панели. */
@@ -285,7 +279,7 @@ internal class GraphCanvasState {
       level = graphLevel,
       levelBand = levelBandOf(placement, viewport),
       centreSpanX = placement.centreSpanX,
-      nodeCount = graphNodes.size,
+      nodeCount = currentGraph.nodes.size,
       edgeCount = graphEdges.size
     )
   }
@@ -735,8 +729,8 @@ internal class GraphCanvasState {
    * @param id узел, о котором спрашивают
    * @return прямоугольник в координатах вьюпорта или `null`, если такого узла нет
    */
-  fun nodeRectOf(id: GraphNode.Id): Rect? {
-    val index = graphNodes.indexOfFirst { it.id == id }
+  fun nodeRectOf(id: BasicNode.Id): Rect? {
+    val index = currentGraph.nodes.indexOfFirst { it.id == id }
     if (index < 0 || index > placement.nodes.lastIndex) {
       return null
     }
@@ -794,10 +788,10 @@ internal class GraphCanvasState {
    * Результат возвращается вызывающему, а не забирается потом отдельным запросом: фаза размещения
    * получает то же значение, что посчитала фаза измерения, и рассинхронизировать их нечем.
    *
-   * Узлы приходят параметром, а не берутся из [nodes], и это не украшение сигнатуры. [setNodes]
+   * Граф приходит параметром, а не берётся из [graph], и это не украшение сигнатуры. [setGraph]
    * вызывается из `SideEffect`, то есть между композицией и измерением того же кадра: прочитав
    * состояние здесь, измерение получило бы новый список узлов к measurable'ам, порождённым старой
-   * композицией, — а это разные длины и индекс за границей списка. Передавая узлы снаружи, полотно
+   * композицией, — а это разные длины и индекс за границей списка. Передавая граф снаружи, полотно
    * меряет ровно тот набор, который само же и скомпоновало.
    *
    * Уровень детализации приходит параметром по той же причине, что и узлы: его меняет жест, то есть
@@ -811,11 +805,11 @@ internal class GraphCanvasState {
    * проходы кадра смены уровня, где меняется раскладка, а дорожки те же самые.
    *
    * @param level уровень детализации той же композиции: он задаёт зазоры и шаг дорожки
-   * @param nodes узлы, из которых построено содержимое этой композиции
+   * @param graph граф, из которого построено содержимое этой композиции: из него же считаются рёбра
    * @param lanes дорожки и акценты той же композиции, см. [graphLanesOf]
-   * @param branches ветки той же композиции: из них считаются рёбра
+   * @param branchColors цвет каждой ветки графа: рёбра красятся здесь, а палитру измерение не читает
    * @param viewportSize размер видимой области
-   * @param nodeSizes измеренные размеры узлов, в порядке [nodes]
+   * @param nodeSizes измеренные размеры узлов, в порядке узлов графа
    * @param density плотность экрана для перевода координат полотна в пиксели
    * @param statusBar высота строки состояния в пикселях
    * @param navigationBar высота навигационной полосы в пикселях
@@ -823,19 +817,19 @@ internal class GraphCanvasState {
    */
   fun layout(
     level: GraphLevel,
-    nodes: List<GraphNode>,
+    graph: Graph<Node>,
     lanes: GraphLanes,
-    branches: List<GraphBranch>,
+    branchColors: Map<Branch.Id, Color>,
     viewportSize: IntSize,
     nodeSizes: List<IntSize>,
     density: Density,
     statusBar: Float,
     navigationBar: Float
   ): GraphPlacement {
-    // Дорожки берутся из параметров, а не читаются готовыми из состояния: узлы и ветки подменяются
-    // из `SideEffect`, то есть между композицией и измерением того же кадра, и раскраска по
+    // Дорожки берутся из параметров, а не читаются готовыми из состояния: граф подменяется из
+    // `SideEffect`, то есть между композицией и измерением того же кадра, и раскраска по
     // снапшот-полю разошлась бы с measurable'ами от старой композиции.
-    val branchIds = nodes.map { it.branchId }
+    val branchIds = graph.branchIds
     val nodeLanes = lanes.lanes
     val geometry = GraphGeometry(topLane = topLaneOf(nodeLanes), laneStep = level.toLaneStep())
     // Высоты дорожек считаются один раз на оба потребителя: раскладке и рёбрам нужны одни и те же
@@ -844,7 +838,7 @@ internal class GraphCanvasState {
     val result = with(density) {
       graphPlacementOf(
         lanes = nodeLanes,
-        gaps = nodes.map { it.gap.toStepWidth(level).toPx() },
+        gaps = graph.nodes.map { it.gap.toStepWidth(level).toPx() },
         laneYs = laneYs,
         sizes = nodeSizes,
         margins = canvasMarginsOf(
@@ -858,8 +852,8 @@ internal class GraphCanvasState {
     placement = result
     graphEdges = with(density) {
       graphEdgesOf(
-        nodes = nodes,
-        branches = branches,
+        graph = graph,
+        branchColors = branchColors,
         laneYs = laneYs,
         positions = result.nodes,
         sizes = nodeSizes,
@@ -875,7 +869,7 @@ internal class GraphCanvasState {
     marks = laneMarksOf(
       branchIds = branchIds,
       lanes = nodeLanes,
-      colorIndexes = lanes.accents.map { it.colorIndex },
+      nodeColors = lanes.accents.map { it.color },
       centres = result.centres,
       centreSpan = result.centreSpanX
     )
@@ -917,19 +911,17 @@ internal class GraphCanvasState {
   }
 
   /**
-   * Подменяет набор узлов и веток.
+   * Подменяет граф.
    *
-   * Оба списка подменяются вместе и никогда порознь: занятость дорожек выводится из индексов узлов
-   * по идентификаторам развилки и слияния, и список веток, разъехавшийся с узлами хотя бы на кадр,
-   * дал бы раскраску по чужим индексам — **молча**, потому что `check` в раскладке сверяет длины
-   * поузловых списков, а они остались бы равными.
+   * Одним значением, а не списками узлов и веток порознь: занятость дорожек выводится из индексов
+   * узлов по идентификаторам развилки и слияния, и список веток, разъехавшийся с узлами хотя бы на
+   * кадр, дал бы раскраску по чужим индексам — **молча**, потому что `check` в раскладке сверяет
+   * длины поузловых списков, а они остались бы равными.
    *
-   * @param nodes узлы в хронологическом порядке
-   * @param branches ветки графа, кроме магистрали, в порядке ветвления
+   * @param graph граф: порядок узлов и состав веток
    */
-  fun setNodes(nodes: List<GraphNode>, branches: List<GraphBranch>) {
-    graphNodes = nodes
-    graphBranches = branches
+  fun setGraph(graph: Graph<Node>) {
+    currentGraph = graph
   }
 }
 

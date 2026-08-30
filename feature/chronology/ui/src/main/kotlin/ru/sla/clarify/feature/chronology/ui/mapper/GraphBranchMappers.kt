@@ -1,6 +1,9 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
 import androidx.compose.ui.graphics.Color
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
 import ru.sla.clarify.uikit.theme.AppColors
 
 /**
@@ -32,4 +35,19 @@ internal fun Int.toBranchColor(colors: AppColors): Color {
     5 -> colors.graphLane5
     else -> colors.graphLane6
   }
+}
+
+/**
+ * Цвет каждой ветки графа, включая магистраль.
+ *
+ * Считается один раз на граф и палитру, а не на каждое ребро и каждый узел: цвет нужен раскладке в
+ * трёх местах — акценты узлов, рёбра, засечки мини-карты, — и палитру пришлось бы протаскивать во
+ * все три. Отсюда геометрия получает готовые цвета и о теме не знает вовсе: она спрашивает, каким
+ * цветом ветка, а не светлая сейчас тема или тёмная.
+ *
+ * @param colors палитра активной темы
+ * @return цвет по идентификатору ветки; магистраль в карте есть и красится нейтральным
+ */
+internal fun Graph<BasicNode>.toBranchColors(colors: AppColors): Map<Branch.Id, Color> {
+  return (listOf(baseline) + branches).associate { it.id to it.colorIndex.toBranchColor(colors) }
 }

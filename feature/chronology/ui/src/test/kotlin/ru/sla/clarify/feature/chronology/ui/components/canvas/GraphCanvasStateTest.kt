@@ -9,12 +9,13 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Держатель проверяется без Compose: `mutableStateOf` и `derivedStateOf` работают и вне композиции,
@@ -323,7 +324,7 @@ class GraphCanvasStateTest {
     state.fill(count = 9, level = state.level.value)
 
     assertEquals(GraphLevel.Overview, state.level.value, "щипок ниже полосы уровня уводит в обзор")
-    val landed = state.nodeRectOf(GraphNode.Id("n$anchor"))
+    val landed = state.nodeRectOf(BasicNode.Id("n$anchor"))
     assertNotNull(landed, "якорный узел обязан найтись и на новом уровне: список узлов уровень не меняет")
     assertEquals(
       focus.x,
@@ -454,7 +455,7 @@ class GraphCanvasStateTest {
     val state = GraphCanvasState()
     val placement = state.fill(count = 3)
 
-    val rect = state.nodeRectOf(GraphNode.Id("n1"))
+    val rect = state.nodeRectOf(BasicNode.Id("n1"))
 
     assertEquals(
       placement.nodes[1].x + state.offset.value.x,
@@ -468,13 +469,13 @@ class GraphCanvasStateTest {
   fun `a node rect follows the camera`() {
     val state = GraphCanvasState()
     state.fill(count = 3)
-    val resting = state.nodeRectOf(GraphNode.Id("n1"))
+    val resting = state.nodeRectOf(BasicNode.Id("n1"))
 
     state.pan(Offset(x = -100f, y = 0f))
 
     assertEquals(
       resting!!.left - 100f,
-      state.nodeRectOf(GraphNode.Id("n1"))?.left,
+      state.nodeRectOf(BasicNode.Id("n1"))?.left,
       "карточка обязана вырасти из того места, где плашка лежит сейчас, а не из места её покоя"
     )
   }
@@ -485,13 +486,13 @@ class GraphCanvasStateTest {
     state.fill(count = 3)
 
     assertNull(
-      state.nodeRectOf(GraphNode.Id("no-such-node")),
+      state.nodeRectOf(BasicNode.Id("no-such-node")),
       "узел, которого в раскладке ещё нет, обязан не находиться, а не индексироваться за конец"
     )
   }
 
   /**
-   * Раскладка и список узлов подменяются порознь: первую пишет измерение, второй — `SideEffect`.
+   * Раскладка и граф подменяются порознь: первую пишет измерение, второй — `SideEffect`.
    * Тесту нужны оба, иначе узел по идентификатору не найти.
    *
    * @param count сколько узлов положить на магистраль
@@ -503,7 +504,7 @@ class GraphCanvasStateTest {
     level: GraphLevel = GraphLevel.Episodes
   ): GraphPlacement {
     val placement = place(count, level)
-    setNodes(nodes = trunkNodes(count), branches = emptyList())
+    setGraph(baselineGraph(count))
     return placement
   }
 
@@ -518,12 +519,12 @@ class GraphCanvasStateTest {
     count: Int,
     level: GraphLevel = GraphLevel.Episodes
   ): GraphPlacement {
-    val nodes = trunkNodes(count)
+    val graph = baselineGraph(count)
     return layout(
       level = level,
-      nodes = nodes,
-      lanes = graphLanesOf(nodes, branches = emptyList()),
-      branches = emptyList(),
+      graph = graph,
+      lanes = graphLanesOf(graph, graph.mockBranchColors()),
+      branchColors = graph.mockBranchColors(),
       viewportSize = VIEWPORT,
       nodeSizes = List(count) { IntSize(width = 120, height = 28) },
       density = Density(density = 1f),
@@ -536,18 +537,34 @@ class GraphCanvasStateTest {
 private val VIEWPORT = IntSize(width = 1000, height = 600)
 
 /**
- * Цепочка узлов на магистрали.
+ * Граф из цепочки узлов на одной магистрали.
  *
  * @param count сколько узлов нужно
- * @return узлы в хронологическом порядке
+ * @return граф: узлы в хронологическом порядке, все — магистральные
  */
-private fun trunkNodes(count: Int): List<GraphNode> {
-  return List(count) { index ->
-    GraphNode(
-      id = GraphNode.Id("n$index"),
-      branchId = GraphBranch.Id("trunk"),
-      role = GraphNodeRole.Episode,
-      gap = TimeGap.Hour
+private fun baselineGraph(count: Int): Graph<Node> {
+  val nodes = List(count) { index ->
+    Node.Episode(
+      id = BasicNode.Id("n$index"),
+      gap = TimeGap.Hour,
+      time = "6 мар, 10:00",
+      count = 1,
+      snippet = "",
+      myShare = 0f,
+      unreadCount = 0,
+      dim = false
     )
   }
+  return Graph(
+    nodes = nodes,
+    baseline = Branch(
+      id = Branch.Id("baseline"),
+      nodeIds = nodes.map { it.id },
+      colorIndex = 0,
+      forkedFrom = null,
+      mergedAt = null,
+      status = Branch.Status.Alive
+    ),
+    branches = emptyList()
+  )
 }

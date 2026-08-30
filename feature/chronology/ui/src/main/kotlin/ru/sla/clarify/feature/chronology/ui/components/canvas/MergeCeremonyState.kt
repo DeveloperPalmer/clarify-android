@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.atlas.entity.Branch
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 import ru.sla.clarify.uikit.theme.AppTheme
 
@@ -55,7 +55,7 @@ internal class MergeCeremonyState(private val decelerate: Easing) {
   private var elapsed by mutableFloatStateOf(0f)
 
   /** Чья церемония идёт; `null` — не идёт ничья. */
-  private var playedBranch by mutableStateOf<GraphBranch.Id?>(null)
+  private var playedBranch by mutableStateOf<Branch.Id?>(null)
 
   /**
    * Ход церемонии.
@@ -66,7 +66,7 @@ internal class MergeCeremonyState(private val decelerate: Easing) {
   private var job: Job? = null
 
   /** Ветка, чья церемония играет прямо сейчас. */
-  val branch: State<GraphBranch.Id?> = derivedStateOf { playedBranch }
+  val branch: State<Branch.Id?> = derivedStateOf { playedBranch }
 
   /** Играет ли церемония вообще: из этого же выводится, есть ли на графе чему бежать. */
   val playing: State<Boolean> = derivedStateOf { playedBranch != null }
@@ -96,7 +96,7 @@ internal class MergeCeremonyState(private val decelerate: Easing) {
    */
   fun play(
     scope: CoroutineScope,
-    branchId: GraphBranch.Id,
+    branchId: Branch.Id,
     reduced: Boolean,
     onImpact: () -> Unit
   ) {

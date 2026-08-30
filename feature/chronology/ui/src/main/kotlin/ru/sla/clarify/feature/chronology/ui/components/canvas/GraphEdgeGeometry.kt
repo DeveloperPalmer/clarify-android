@@ -1,13 +1,14 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphVertical
 
 /**
@@ -22,8 +23,9 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphVertical
  * Порядок списка на выходе — это порядок отрисовки, то есть кто над кем лежит, и горбящиеся рёбра
  * поэтому уходят в его конец.
  *
- * @param nodes узлы в хронологическом порядке
- * @param branches ветки графа, кроме магистрали
+ * @param graph граф: порядок узлов и состав веток
+ * @param branchColors цвет каждой ветки графа, магистраль включая: ветки без цвета здесь быть не
+ *   может, и её отсутствие — рассинхронизация наборов, а не значение по умолчанию
  * @param laneYs смещение дорожки каждого узла по Y, в пикселях
  * @param positions левые верхние углы узлов
  * @param sizes измеренные размеры узлов
@@ -33,34 +35,31 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphVertical
  */
 @Suppress("LongParameterList")
 internal fun graphEdgesOf(
-  nodes: List<GraphNode>,
-  branches: List<GraphBranch>,
+  graph: Graph<BasicNode>,
+  branchColors: Map<Branch.Id, Color>,
   laneYs: List<Float>,
   positions: List<IntOffset>,
   sizes: List<IntSize>,
   contentRight: Float,
   hopClearance: Float
 ): List<GraphEdge> {
-  if (nodes.isEmpty()) {
+  if (graph.nodes.isEmpty()) {
     return emptyList()
   }
-  val indexById = nodes.withIndex().associate { (index, node) -> node.id to index }
-  val colorOf = branches.associate { it.id to it.colorIndex }
-  val statusOf = branches.associate { it.id to it.status }
+  val statusOf = graph.branches.associate { it.id to it.status }
   val verticals = mutableListOf<GraphVertical>()
   val edges = mutableListOf<GraphEdge>()
 
-  edges += horizontalEdgesOf(nodes, laneYs, positions, sizes, colorOf, statusOf)
+  edges += horizontalEdgesOf(graph, branchColors, laneYs, positions, sizes, statusOf)
   edges += forkAndMergeEdgesOf(
-    nodes = nodes,
-    branches = branches,
+    graph = graph,
+    branchColors = branchColors,
     laneYs = laneYs,
     positions = positions,
     sizes = sizes,
-    indexById = indexById,
     verticals = verticals
   )
-  edges += tailEdgesOf(nodes, branches, laneYs, positions, sizes, contentRight)
+  edges += tailEdgesOf(graph, branchColors, laneYs, positions, sizes, contentRight)
 
   // Мостики ставятся последним проходом: пока не построены все вертикали, пересекать нечего.
   return edges
@@ -146,30 +145,31 @@ internal fun hopsOf(
  * высоты центры расходились на пиксель.
  */
 private fun horizontalEdgesOf(
-  nodes: List<GraphNode>,
+  graph: Graph<BasicNode>,
+  branchColors: Map<Branch.Id, Color>,
   laneYs: List<Float>,
   positions: List<IntOffset>,
   sizes: List<IntSize>,
-  colorOf: Map<GraphBranch.Id, Int>,
-  statusOf: Map<GraphBranch.Id, GraphBranchStatus>
+  statusOf: Map<Branch.Id, Branch.Status>
 ): List<GraphEdge> {
-  val previousByBranch = HashMap<GraphBranch.Id, Int>()
+  val previousByBranch = HashMap<Branch.Id, Int>()
   val edges = mutableListOf<GraphEdge>()
-  nodes.indices.forEach { index ->
-    val branchId = nodes[index].branchId
+  graph.nodes.indices.forEach { index ->
+    val branchId = graph.branchIds[index]
     val previous = previousByBranch.put(branchId, index)
     if (previous != null) {
       val startX = (positions[previous].x + sizes[previous].width).toFloat()
       val endX = positions[index].x.toFloat()
       if (endX > startX) {
-        val colorIndex = colorOf[branchId] ?: 0
         edges += GraphEdge(
           points = listOf(Offset(startX, laneYs[index]), Offset(endX, laneYs[index])),
           hops = emptyList(),
           branchId = branchId,
-          colorIndex = colorIndex,
-          role = if (colorIndex == 0) GraphEdgeRole.Trunk else GraphEdgeRole.Branch,
-          status = statusOf[branchId] ?: GraphBranchStatus.Alive
+          color = branchColors.getValue(branchId),
+          // Магистраль опознаётся по тождеству ветки, а не по цвету: цвет повторяется каждые шесть
+          // ответвлений, и седьмая ветка, взявшая нейтральный оттенок, стала бы магистралью.
+          role = if (branchId == graph.baseline.id) GraphEdgeRole.Baseline else GraphEdgeRole.Branch,
+          status = statusOf[branchId] ?: Branch.Status.Alive
         )
       }
     }
@@ -192,29 +192,29 @@ private fun horizontalEdgesOf(
  */
 @Suppress("LongParameterList")
 private fun forkAndMergeEdgesOf(
-  nodes: List<GraphNode>,
-  branches: List<GraphBranch>,
+  graph: Graph<BasicNode>,
+  branchColors: Map<Branch.Id, Color>,
   laneYs: List<Float>,
   positions: List<IntOffset>,
   sizes: List<IntSize>,
-  indexById: Map<GraphNode.Id, Int>,
   verticals: MutableList<GraphVertical>
 ): List<GraphEdge> {
+  val indexById = graph.nodeIndexesById
   val edges = mutableListOf<GraphEdge>()
-  branches.forEach { branch ->
-    val own = nodes.indices.filter { nodes[it].branchId == branch.id }
+  graph.branches.forEach { branch ->
+    val own = branch.nodeIds.mapNotNull { indexById[it] }.sorted()
     val laneY = own.firstOrNull()?.let { laneYs[it] } ?: return@forEach
     val forkIndex = branch.forkedFrom?.let { indexById[it] }
     if (forkIndex != null) {
       val x = positions[forkIndex].x + sizes[forkIndex].width / 2f
-      val trunkY = laneYs[forkIndex]
+      val baselineY = laneYs[forkIndex]
       val firstLeft = positions[own.first()].x.toFloat()
-      verticals += GraphVertical(x = x, fromY = trunkY, toY = laneY)
+      verticals += GraphVertical(x = x, fromY = baselineY, toY = laneY)
       edges += GraphEdge(
-        points = listOf(Offset(x, trunkY), Offset(x, laneY), Offset(maxOf(firstLeft, x), laneY)),
+        points = listOf(Offset(x, baselineY), Offset(x, laneY), Offset(maxOf(firstLeft, x), laneY)),
         hops = emptyList(),
         branchId = branch.id,
-        colorIndex = branch.colorIndex,
+        color = branchColors.getValue(branch.id),
         role = GraphEdgeRole.Fork,
         status = branch.status
       )
@@ -222,14 +222,14 @@ private fun forkAndMergeEdgesOf(
     val mergeIndex = branch.mergedAt?.let { indexById[it] }
     if (mergeIndex != null) {
       val x = positions[mergeIndex].x + sizes[mergeIndex].width / 2f
-      val trunkY = laneYs[mergeIndex]
+      val baselineY = laneYs[mergeIndex]
       val lastRight = (positions[own.last()].x + sizes[own.last()].width).toFloat()
-      verticals += GraphVertical(x = x, fromY = laneY, toY = trunkY)
+      verticals += GraphVertical(x = x, fromY = laneY, toY = baselineY)
       edges += GraphEdge(
-        points = listOf(Offset(minOf(lastRight, x), laneY), Offset(x, laneY), Offset(x, trunkY)),
+        points = listOf(Offset(minOf(lastRight, x), laneY), Offset(x, laneY), Offset(x, baselineY)),
         hops = emptyList(),
         branchId = branch.id,
-        colorIndex = branch.colorIndex,
+        color = branchColors.getValue(branch.id),
         role = GraphEdgeRole.Merge,
         status = branch.status
       )
@@ -249,25 +249,24 @@ private fun forkAndMergeEdgesOf(
  * Длину растворения задаёт рисование: раскладке довольно того, где хвост начинается и где кончается.
  */
 private fun tailEdgesOf(
-  nodes: List<GraphNode>,
-  branches: List<GraphBranch>,
+  graph: Graph<BasicNode>,
+  branchColors: Map<Branch.Id, Color>,
   laneYs: List<Float>,
   positions: List<IntOffset>,
   sizes: List<IntSize>,
   contentRight: Float
 ): List<GraphEdge> {
   val edges = mutableListOf<GraphEdge>()
-  branches.forEach { branch ->
+  graph.branches.forEach { branch ->
     if (branch.mergedAt == null) {
-      val own = nodes.indices.filter { nodes[it].branchId == branch.id }
-      val last = own.lastOrNull() ?: return@forEach
+      val last = branch.nodeIds.mapNotNull { graph.nodeIndexesById[it] }.maxOrNull() ?: return@forEach
       val startX = (positions[last].x + sizes[last].width).toFloat()
       if (contentRight > startX) {
         edges += GraphEdge(
           points = listOf(Offset(startX, laneYs[last]), Offset(contentRight, laneYs[last])),
           hops = emptyList(),
           branchId = branch.id,
-          colorIndex = branch.colorIndex,
+          color = branchColors.getValue(branch.id),
           role = GraphEdgeRole.Tail,
           status = branch.status
         )

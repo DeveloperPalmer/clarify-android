@@ -5,9 +5,8 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
 
 /**
  * Сторожит то, из-за чего дорожка доставалась соседке под чужую линию возврата.
@@ -25,26 +24,26 @@ class GraphBranchGeometryTest {
   @Test
   fun `a branch occupies its lane from the fork until the merge`() {
     val occupancy = branchOccupancyOf(
-      branches = listOf(branch(id = "a", forkedFrom = "n2", mergedAt = "n12")),
-      nodeBranches = branchesOf("a" to 3..8),
-      indexById = indexById()
+      branches = listOf(branch(id = "a", forkedFrom = "n2", mergedAt = "n12", nodes = 3..8)),
+      indexById = indexById(),
+      lastIndex = LAST_INDEX
     )
 
     assertEquals(
       2..12,
-      occupancy[GraphBranch.Id("a")],
+      occupancy[Branch.Id("a")],
       "занятость идёт от развилки до слияния: между последним сообщением и слиянием лежит возврат"
     )
   }
 
   @Test
   fun `a branch merged before another begins shares its lane`() {
-    val merged = branch(id = "a", forkedFrom = "n2", mergedAt = "n8")
-    val later = branch(id = "b", forkedFrom = "n9", mergedAt = null)
+    val merged = branch(id = "a", forkedFrom = "n2", mergedAt = "n8", nodes = 3..7)
+    val later = branch(id = "b", forkedFrom = "n9", mergedAt = null, nodes = 10..14)
     val occupancy = branchOccupancyOf(
       branches = listOf(merged, later),
-      nodeBranches = branchesOf("a" to 3..7, "b" to 10..14),
-      indexById = indexById()
+      indexById = indexById(),
+      lastIndex = LAST_INDEX
     )
 
     val lanes = laneAssignmentOf(occupancy, order = listOf(merged.id, later.id))
@@ -60,12 +59,12 @@ class GraphBranchGeometryTest {
   fun `a branch whose merge lands after a neighbour began keeps its lane`() {
     // Ровно тот случай, на котором проектирование сломалось: последнее сообщение ветки `a` стоит на
     // восьмом узле, слияние — на двенадцатом, а ветка `b` уходит с магистрали между ними.
-    val early = branch(id = "a", forkedFrom = "n2", mergedAt = "n12")
-    val between = branch(id = "b", forkedFrom = "n9", mergedAt = null)
+    val early = branch(id = "a", forkedFrom = "n2", mergedAt = "n12", nodes = 3..8)
+    val between = branch(id = "b", forkedFrom = "n9", mergedAt = null, nodes = 10..14)
     val occupancy = branchOccupancyOf(
       branches = listOf(early, between),
-      nodeBranches = branchesOf("a" to 3..8, "b" to 10..14),
-      indexById = indexById()
+      indexById = indexById(),
+      lastIndex = LAST_INDEX
     )
 
     val lanes = laneAssignmentOf(occupancy, order = listOf(early.id, between.id))
@@ -79,13 +78,13 @@ class GraphBranchGeometryTest {
 
   @Test
   fun `branches alive at the same time never share a lane`() {
-    val first = branch(id = "a", forkedFrom = "n2", mergedAt = null)
-    val second = branch(id = "b", forkedFrom = "n4", mergedAt = null)
-    val third = branch(id = "c", forkedFrom = "n6", mergedAt = null)
+    val first = branch(id = "a", forkedFrom = "n2", mergedAt = null, nodes = 3..3)
+    val second = branch(id = "b", forkedFrom = "n4", mergedAt = null, nodes = 5..5)
+    val third = branch(id = "c", forkedFrom = "n6", mergedAt = null, nodes = 7..7)
     val occupancy = branchOccupancyOf(
       branches = listOf(first, second, third),
-      nodeBranches = branchesOf("a" to 3..3, "b" to 5..5, "c" to 7..7),
-      indexById = indexById()
+      indexById = indexById(),
+      lastIndex = LAST_INDEX
     )
 
     val lanes = laneAssignmentOf(occupancy, order = listOf(first.id, second.id, third.id))
@@ -99,12 +98,12 @@ class GraphBranchGeometryTest {
 
   @Test
   fun `an open merge request keeps the lane until the end of the history`() {
-    val waiting = branch(id = "a", forkedFrom = "n2", mergedAt = null)
-    val later = branch(id = "b", forkedFrom = "n9", mergedAt = null)
+    val waiting = branch(id = "a", forkedFrom = "n2", mergedAt = null, nodes = 3..5)
+    val later = branch(id = "b", forkedFrom = "n9", mergedAt = null, nodes = 10..14)
     val occupancy = branchOccupancyOf(
       branches = listOf(waiting, later),
-      nodeBranches = branchesOf("a" to 3..5, "b" to 10..14),
-      indexById = indexById()
+      indexById = indexById(),
+      lastIndex = LAST_INDEX
     )
 
     val lanes = laneAssignmentOf(occupancy, order = listOf(waiting.id, later.id))
@@ -118,11 +117,11 @@ class GraphBranchGeometryTest {
 
   @Test
   fun `a branch whose fork is missing starts at its first node`() {
-    val orphan = branch(id = "a", forkedFrom = "gone", mergedAt = null)
+    val orphan = branch(id = "a", forkedFrom = "gone", mergedAt = null, nodes = 6..9)
     val occupancy = branchOccupancyOf(
       branches = listOf(orphan),
-      nodeBranches = branchesOf("a" to 6..9),
-      indexById = indexById()
+      indexById = indexById(),
+      lastIndex = LAST_INDEX
     )
 
     assertEquals(
@@ -138,20 +137,24 @@ class GraphBranchGeometryTest {
 
     val occupancy = branchOccupancyOf(
       branches = listOf(empty),
-      nodeBranches = branchesOf(),
-      indexById = indexById()
+      indexById = indexById(),
+      lastIndex = LAST_INDEX
     )
 
     assertNull(occupancy[empty.id], "занимать дорожку нечем: ни развилки, ни узлов")
   }
 
   @Test
-  fun `lanes alternate below and above the trunk`() {
-    val branches = List(4) { index -> branch(id = "b$index", forkedFrom = "n2", mergedAt = null) }
+  fun `lanes alternate below and above the baseline`() {
+    // Узлы отданы первой ветке: у остальных занятость держится развилкой и концом истории — тем
+    // же отрезком, что у неё, а раскраска обязана развести все четыре.
+    val branches = List(4) { index ->
+      branch(id = "b$index", forkedFrom = "n2", mergedAt = null, nodes = (3..14).takeIf { index == 0 })
+    }
     val occupancy = branchOccupancyOf(
       branches = branches,
-      nodeBranches = branchesOf(*branches.map { it.id.value to 3..14 }.toTypedArray()),
-      indexById = indexById()
+      indexById = indexById(),
+      lastIndex = LAST_INDEX
     )
 
     val lanes = laneAssignmentOf(occupancy, order = branches.map { it.id })
@@ -164,7 +167,7 @@ class GraphBranchGeometryTest {
   }
 
   @Test
-  fun `the trunk always keeps lane zero`() {
+  fun `the baseline always keeps lane zero`() {
     val branch = branch(id = "a", forkedFrom = "n2", mergedAt = null)
     val lanes = laneAssignmentOf(
       occupancy = mapOf(branch.id to 2..14),
@@ -173,13 +176,13 @@ class GraphBranchGeometryTest {
 
     assertEquals(
       listOf(0, 1, 0),
-      nodeLanesOf(listOf(TRUNK, branch.id, TRUNK), lanes),
+      nodeLanesOf(listOf(BASELINE, branch.id, BASELINE), lanes),
       "магистраль в раскраске не участвует, иначе переписка без веток уехала бы на дорожку +1"
     )
   }
 
   @Test
-  fun `the sixth branch never takes the colour of the trunk`() {
+  fun `the sixth branch never takes the colour of the baseline`() {
     assertTrue(
       (1..12).all { order -> branchColorIndexOf(order) != 0 },
       "ноль оставлен магистрали: `order.mod(6)` красил бы шестую ветку нейтральным цветом ствола"
@@ -191,11 +194,13 @@ class GraphBranchGeometryTest {
 
   @Test
   fun `an eighth branch still gets a lane beyond the ceiling`() {
-    val branches = List(8) { index -> branch(id = "b$index", forkedFrom = "n2", mergedAt = null) }
+    val branches = List(8) { index ->
+      branch(id = "b$index", forkedFrom = "n2", mergedAt = null, nodes = (3..14).takeIf { index == 0 })
+    }
     val occupancy = branchOccupancyOf(
       branches = branches,
-      nodeBranches = branchesOf(*branches.map { it.id.value to 3..14 }.toTypedArray()),
-      indexById = indexById()
+      indexById = indexById(),
+      lastIndex = LAST_INDEX
     )
 
     val lanes = laneAssignmentOf(occupancy, order = branches.map { it.id })
@@ -205,35 +210,38 @@ class GraphBranchGeometryTest {
   }
 }
 
-private val TRUNK = GraphBranch.Id("trunk")
+private val BASELINE = Branch.Id("baseline")
 
+// Пятнадцать узлов на историю: индексы, а не координаты, — раскраска дорожек считается до фазы
+// измерения и о ширинах не знает.
+private const val LAST_INDEX = 14
+
+/**
+ * Ветка с её составом: узлы перечисляет она сама, отрезком индексов истории.
+ *
+ * @param nodes отрезок собственных узлов ветки; `null` — узлов у неё нет вовсе
+ */
 private fun branch(
   id: String,
   forkedFrom: String?,
   mergedAt: String?,
-  status: GraphBranchStatus = GraphBranchStatus.Alive
-): GraphBranch {
-  return GraphBranch(
-    id = GraphBranch.Id(id),
+  nodes: IntRange? = null,
+  status: Branch.Status = Branch.Status.Alive
+): Branch {
+  return Branch(
+    id = Branch.Id(id),
+    nodeIds = nodes.orEmpty().map { BasicNode.Id("n$it") },
     colorIndex = 1,
-    forkedFrom = forkedFrom?.let { GraphNode.Id(it) },
-    mergedAt = mergedAt?.let { GraphNode.Id(it) },
+    forkedFrom = forkedFrom?.let { BasicNode.Id(it) },
+    mergedAt = mergedAt?.let { BasicNode.Id(it) },
     status = status
   )
 }
 
-/**
- * Пятнадцать узлов магистрали, часть которых отдана веткам по указанным отрезкам индексов.
- *
- * Индексы, а не координаты: раскраска дорожек считается до фазы измерения и о ширинах не знает.
- */
-private fun branchesOf(vararg owned: Pair<String, IntRange>): List<GraphBranch.Id> {
-  return List(15) { index ->
-    val owner = owned.firstOrNull { index in it.second }
-    if (owner == null) TRUNK else GraphBranch.Id(owner.first)
-  }
+private fun IntRange?.orEmpty(): List<Int> {
+  return this?.toList().orEmpty()
 }
 
-private fun indexById(): Map<GraphNode.Id, Int> {
-  return List(15) { index -> GraphNode.Id("n$index") to index }.toMap()
+private fun indexById(): Map<BasicNode.Id, Int> {
+  return List(LAST_INDEX + 1) { index -> BasicNode.Id("n$index") to index }.toMap()
 }

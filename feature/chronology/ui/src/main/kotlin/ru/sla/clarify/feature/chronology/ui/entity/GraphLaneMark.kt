@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.entity
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.Color
 
 /**
  * Засечка ветки на мини-карте: где по времени начинается дорожка.
@@ -14,15 +15,15 @@ import androidx.compose.runtime.Immutable
  * рисовать засечку — вверх или вниз, — а цвет принадлежит ветке: дорожка переиспользуется после
  * слияния (§4.2), и две разные темы, вставшие на неё по очереди, обязаны отличаться. Пока цвет
  * выводился из номера дорожки, они получали один оттенок, и **компилятор об этом молчал** — обе
- * величины `Int`.
+ * величины были `Int`. Теперь не молчит: цвет типизирован цветом.
  *
  * @param position начало дорожки, долей содержимого от нуля до единицы
  * @param lane номер дорожки: задаёт только направление засечки от полосы
- * @param colorIndex цвет идентичности ветки, см. `Int.toBranchColor`
+ * @param color цвет идентичности ветки
  */
 @Immutable
 data class GraphLaneMark(
   val position: Float,
   val lane: Int,
-  val colorIndex: Int
+  val color: Color
 )

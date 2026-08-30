@@ -5,21 +5,21 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphGeometry
 import ru.sla.clarify.feature.chronology.ui.components.canvas.fitScaleOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphEdgesOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphLanesOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphLevelBandOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphPlacementOf
+import ru.sla.clarify.feature.chronology.ui.components.canvas.mockBranchColors
 import ru.sla.clarify.feature.chronology.ui.components.canvas.topLaneOf
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
 import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
@@ -39,7 +39,7 @@ class MocksTest {
   @Test
   fun `a branch forked between a neighbour's last node and its merge keeps its own lane`() {
     assertTrue(
-      demoLanes()[GraphBranch.Id("terms")] != demoLanes()[GraphBranch.Id("design")],
+      demoLanes()[Branch.Id("terms")] != demoLanes()[Branch.Id("design")],
       "ветка design уходит с магистрали до слияния terms, и делить дорожку им нельзя: " +
         "горизонталь возврата terms прошла бы сквозь плашки design"
     )
@@ -50,13 +50,13 @@ class MocksTest {
     val lanes = demoLanes()
 
     assertEquals(
-      lanes[GraphBranch.Id("terms")],
-      lanes[GraphBranch.Id("budget")],
+      lanes[Branch.Id("terms")],
+      lanes[Branch.Id("budget")],
       "terms слита раньше, чем budget ответвилась, и дорожка обязана переиспользоваться — §4.2"
     )
     assertEquals(
-      lanes[GraphBranch.Id("photos")],
-      lanes[GraphBranch.Id("release")],
+      lanes[Branch.Id("photos")],
+      lanes[Branch.Id("release")],
       "второе слияние обязано отдавать дорожку так же, как первое: одного примера в наборе мало, " +
         "потому что он не отличает правило от совпадения"
     )
@@ -104,7 +104,7 @@ class MocksTest {
   }
 
   @Test
-  fun `branches merge on both sides of the trunk`() {
+  fun `branches merge on both sides of the baseline`() {
     val lanes = demoLanes()
     val merged = mockGraph().branches.filter { it.mergedAt != null }.mapNotNull { lanes[it.id] }
 
@@ -117,11 +117,11 @@ class MocksTest {
 
   @Test
   fun `the set keeps a branch node standing later than the front`() {
-    val nodes = mockGraph().graphNodes
-    val frontIndex = nodes.indexOfFirst { it.role == GraphNodeRole.Front }
+    val graph = mockGraph().layout
+    val frontIndex = graph.nodes.indexOfFirst { it is Node.Front }
 
     assertTrue(
-      nodes.drop(frontIndex + 1).any { it.branchId != GraphBranch.Id("trunk") },
+      graph.nodes.drop(frontIndex + 1).any { graph.branchOf(it.id).id != Branch.Id("baseline") },
       "живая тема, идущая после того, как магистраль замолчала, — обычное состояние, " +
         "и хвост, привязанный к фронту, уходил бы на ней в отрицательную длину"
     )
@@ -143,19 +143,19 @@ class MocksTest {
   fun `the demo set lays out on seven lanes with two of them reused`() {
     assertEquals(
       mapOf(
-        GraphBranch.Id("trunk") to 0,
-        GraphBranch.Id("terms") to 1,
-        GraphBranch.Id("export") to -1,
-        GraphBranch.Id("design") to 2,
+        Branch.Id("baseline") to 0,
+        Branch.Id("terms") to 1,
+        Branch.Id("export") to -1,
+        Branch.Id("design") to 2,
         // Дорожка +1 освободилась слиянием terms и досталась budget.
-        GraphBranch.Id("budget") to 1,
-        GraphBranch.Id("photos") to -2,
+        Branch.Id("budget") to 1,
+        Branch.Id("photos") to -2,
         // Дорожка −2 освободилась слиянием photos.
-        GraphBranch.Id("release") to -2,
+        Branch.Id("release") to -2,
         // Свободных дорожек ближе к магистрали не осталось: pricing уходит от той же развилки, что
         // release, и её вертикаль пересекает две чужие горизонтали — budget и design.
-        GraphBranch.Id("pricing") to 3,
-        GraphBranch.Id("stickers") to -3
+        Branch.Id("pricing") to 3,
+        Branch.Id("stickers") to -3
       ),
       demoLanes(),
       "раскладка демо-набора: восемь веток на шести дорожках плюс магистраль, " +
@@ -215,15 +215,15 @@ class MocksTest {
 
     assertTrue(branches.any { it.mergedAt != null }, "слитая ветка")
     assertTrue(
-      branches.any { it.status == GraphBranchStatus.Alive },
+      branches.any { it.status == Branch.Status.Alive },
       "живая ветка: у неё хвост тянется до правого края содержимого"
     )
     assertTrue(
-      branches.any { it.status == GraphBranchStatus.Waiting },
+      branches.any { it.status == Branch.Status.Waiting },
       "ветка с открытым merge request: её линия пунктирная"
     )
     assertTrue(
-      branches.any { it.status == GraphBranchStatus.Ready },
+      branches.any { it.status == Branch.Status.Ready },
       "готова к слиянию: пунктир тот же, отличает его бег вдоль линии"
     )
   }
@@ -233,8 +233,8 @@ class MocksTest {
     val nodes = mockGraph().graphNodes
 
     assertEquals(
-      GraphNodeRole.entries.toSet(),
-      nodes.map { it.role }.toSet(),
+      setOf(Node.Episode::class, Node.Fork::class, Node.Merge::class, Node.Front::class),
+      nodes.map { it::class }.toSet(),
       "род узла решает, что рисовать, и каждый из четырёх обязан быть в наборе"
     )
     assertEquals(
@@ -247,7 +247,7 @@ class MocksTest {
 
   @Test
   fun `episode content covers what the card draws differently`() {
-    val episodes = mockGraph().nodes.filter { it.node.role == GraphNodeRole.Episode }
+    val episodes = mockGraph().graphNodes.filterIsInstance<Node.Episode>()
 
     assertTrue(episodes.any { it.dim }, "эпизод внутри слитой ветки рисуется приглушённым")
     assertTrue(
@@ -280,8 +280,8 @@ class MocksTest {
     assertTrue(graph.graphNodes.isEmpty(), "пустая переписка — это переписка без истории, §13")
     assertTrue(
       graphEdgesOf(
-        nodes = graph.graphNodes,
-        branches = graph.branches,
+        graph = graph.layout,
+        branchColors = graph.layout.mockBranchColors(),
         laneYs = emptyList(),
         positions = emptyList(),
         sizes = emptyList(),
@@ -293,30 +293,30 @@ class MocksTest {
   }
 
   @Test
-  fun `the single episode graph stays on the trunk`() {
+  fun `the single episode graph stays on the baseline`() {
     val graph = mockSingleEpisodeGraph()
 
     assertEquals(1, graph.graphNodes.size, "одно сообщение и есть весь граф — §15 п. 1")
     assertEquals(
       listOf(0),
-      graphLanesOf(graph.graphNodes, graph.branches).lanes,
+      graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes,
       "единственный узел стоит на магистрали: обе оси камеры вырождаются в точку, и упор обязан " +
         "считаться упором, а не ошибкой"
     )
   }
 
   @Test
-  fun `the linear graph keeps every node on the trunk`() {
+  fun `the linear graph keeps every node on the baseline`() {
     val graph = mockLinearGraph()
 
     assertTrue(graph.branches.isEmpty(), "переписка без веток — самый частый случай, §13")
     assertTrue(
-      graphLanesOf(graph.graphNodes, graph.branches).lanes.all { it == 0 },
+      graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes.all { it == 0 },
       "граф вырождается в прямую линию: дорожка у всех нулевая, и полотно обязано схлопнуться по " +
         "высоте, а не оставить место под пустые ряды"
     )
     assertTrue(
-      graph.graphNodes.any { it.role == GraphNodeRole.Front },
+      graph.graphNodes.any { it is Node.Front },
       "фронт рисуется на любом уровне и в любом состоянии — он часть скелета смысла, §5"
     )
   }
@@ -324,7 +324,7 @@ class MocksTest {
   @Test
   fun `the crowded graph takes a lane past the ceiling`() {
     val graph = mockCrowdedGraph()
-    val lanes = graphLanesOf(graph.graphNodes, graph.branches).lanes.filter { it != 0 }.distinct()
+    val lanes = graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes.filter { it != 0 }.distinct()
 
     assertEquals(
       graph.branches.size,
@@ -345,17 +345,17 @@ class MocksTest {
   @Test
   fun `every episode of the set has a card to open`() {
     val graph = mockGraph()
-    val episodes = graph.nodes.filter { it.node.role == GraphNodeRole.Episode }
+    val episodes = graph.graphNodes.filterIsInstance<Node.Episode>()
 
     assertEquals(
-      episodes.map { it.node.id }.toSet(),
+      episodes.map { it.id }.toSet(),
       graph.previewById.keys,
       "эпизод без превью перестаёт нажиматься, и заметить это можно только тапнув по нему"
     )
   }
 
   /**
-   * Подпись узла для скринридера называет ветку, а имени у [GraphBranch] нет: оно живёт отдельной
+   * Подпись узла для скринридера называет ветку, а имени у [Branch] нет: оно живёт отдельной
    * картой, и разъехаться с набором ей ничто не мешает.
    */
   @Test
@@ -379,13 +379,13 @@ class MocksTest {
   fun `the demo graph still fits the overview at its own floor`() {
     val graph = mockGraph()
     val nodes = graph.graphNodes
-    val lanes = graphLanesOf(nodes, graph.branches).lanes
+    val lanes = graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes
     val geometry = GraphGeometry(topLaneOf(lanes), GraphLevel.Overview.toLaneStep())
     val placement = graphPlacementOf(
       lanes = lanes,
       gaps = nodes.map { it.gap.toStepWidth(GraphLevel.Overview).value },
       laneYs = lanes.map { geometry.laneYOf(it).value },
-      sizes = nodes.map { it.role.toOverviewSize() },
+      sizes = nodes.map { it.toOverviewSize() },
       margins = GraphCanvasMargins(left = 64f, top = 64f, right = 64f, bottom = 64f)
     )
 
@@ -403,19 +403,18 @@ class MocksTest {
   }
 
   /** Размер узла на обзоре: плашка вырождается в глиф, точки на линии остаются собой. */
-  private fun GraphNodeRole.toOverviewSize(): IntSize {
+  private fun Node.toOverviewSize(): IntSize {
     return when (this) {
-      GraphNodeRole.Episode -> IntSize(width = 14, height = 14)
-      GraphNodeRole.Fork, GraphNodeRole.Merge -> IntSize(width = 24, height = 24)
-      GraphNodeRole.Front -> IntSize(width = 12, height = 12)
+      is Node.Episode -> IntSize(width = 14, height = 14)
+      is Node.Fork, is Node.Merge -> IntSize(width = 24, height = 24)
+      is Node.Front -> IntSize(width = 12, height = 12)
     }
   }
 
   /** Дорожка каждой ветки демо-набора, включая магистраль. */
-  private fun demoLanes(): Map<GraphBranch.Id, Int> {
-    val nodes = mockGraph().graphNodes
-    val lanes = graphLanesOf(nodes, mockGraph().branches).lanes
-    return nodes.map { it.branchId }.zip(lanes).toMap()
+  private fun demoLanes(): Map<Branch.Id, Int> {
+    val graph = mockGraph().layout
+    return graph.branchIds.zip(graphLanesOf(graph, graph.mockBranchColors()).lanes).toMap()
   }
 
   /**
@@ -427,10 +426,10 @@ class MocksTest {
   private fun demoEdges(): List<GraphEdge> {
     val graph = mockGraph()
     val nodes = graph.graphNodes
-    val lanes = graphLanesOf(nodes, graph.branches).lanes
+    val lanes = graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes
     return graphEdgesOf(
-      nodes = nodes,
-      branches = graph.branches,
+      graph = graph.layout,
+      branchColors = graph.layout.mockBranchColors(),
       laneYs = lanes.map { it * 104f },
       positions = nodes.indices.map { index -> IntOffset(x = index * 340, y = 0) },
       sizes = List(nodes.size) { IntSize(width = 200, height = 72) },

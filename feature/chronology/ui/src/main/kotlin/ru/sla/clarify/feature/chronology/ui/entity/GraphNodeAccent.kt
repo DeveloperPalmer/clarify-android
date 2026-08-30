@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.entity
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.Color
 
 /**
  * Чем узел окрашен и куда смотрит: то, что нужно нарисовать узел, но не нужно, чтобы его разложить.
@@ -16,10 +17,10 @@ import androidx.compose.runtime.Immutable
  *
  * @param lane дорожка, на которую смотрит узел: у плашки своя, у точки — дорожка её ветки. Знак
  *   говорит, с какой стороны магистрали живёт ветка
- * @param colorIndex цвет идентичности, см. `Int.toBranchColor`
+ * @param color цвет идентичности ветки, за которую узел говорит
  */
 @Immutable
 data class GraphNodeAccent(
   val lane: Int,
-  val colorIndex: Int
+  val color: Color
 )

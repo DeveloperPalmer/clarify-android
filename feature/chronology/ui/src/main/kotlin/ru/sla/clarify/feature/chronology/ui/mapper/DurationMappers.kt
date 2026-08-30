@@ -1,6 +1,6 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
+import ru.sla.atlas.entity.TimeGap
 import java.time.Duration
 
 /**

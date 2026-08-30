@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.atlas.entity.Branch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
@@ -118,7 +117,7 @@ class DashRunningTest {
   @Test
   fun `a graph with a branch ready to merge runs the dash`() {
     assertTrue(
-      isDashRunning(listOf(edge(GraphBranchStatus.Ready)), ceremonyPlaying = false),
+      isDashRunning(listOf(edge(Branch.Status.Ready)), ceremonyPlaying = false),
       "бегущий пунктир §7 принадлежит готовой ветке, и она здесь есть"
     )
   }
@@ -127,7 +126,7 @@ class DashRunningTest {
   fun `a graph with nothing ready and no ceremony leaves the dash alone`() {
     assertFalse(
       isDashRunning(
-        listOf(edge(GraphBranchStatus.Merged), edge(GraphBranchStatus.Alive)),
+        listOf(edge(Branch.Status.Merged), edge(Branch.Status.Alive)),
         ceremonyPlaying = false
       ),
       "бесконечная анимация просит кадр, пока жива: без повода её быть не должно вовсе"
@@ -137,7 +136,7 @@ class DashRunningTest {
   @Test
   fun `a ceremony runs the dash even when no branch is ready`() {
     assertTrue(
-      isDashRunning(listOf(edge(GraphBranchStatus.Merged)), ceremonyPlaying = true),
+      isDashRunning(listOf(edge(Branch.Status.Merged)), ceremonyPlaying = true),
       "переигрывают по чипу слитой ветки, и разгонять кадру 1 было бы нечего"
     )
   }
@@ -154,7 +153,7 @@ class CeremonyEdgeTest {
   @Test
   fun `an edge of the merging branch is the ceremony's own`() {
     assertTrue(
-      isCeremonyEdge(edge(GraphBranchStatus.Merged), GraphBranch.Id("a")),
+      isCeremonyEdge(edge(Branch.Status.Merged), Branch.Id("a")),
       "ребро ветки «a» принадлежит церемонии ветки «a»"
     )
   }
@@ -162,7 +161,7 @@ class CeremonyEdgeTest {
   @Test
   fun `an edge of another branch is left alone even under the same shade`() {
     assertFalse(
-      isCeremonyEdge(edge(GraphBranchStatus.Alive), GraphBranch.Id("b")),
+      isCeremonyEdge(edge(Branch.Status.Alive), Branch.Id("b")),
       "оттенок у веток может совпасть, идентификатор — нет"
     )
   }
@@ -170,7 +169,7 @@ class CeremonyEdgeTest {
   @Test
   fun `no ceremony claims no edge`() {
     assertFalse(
-      isCeremonyEdge(edge(GraphBranchStatus.Alive), ceremonyBranch = null),
+      isCeremonyEdge(edge(Branch.Status.Alive), ceremonyBranch = null),
       "пока церемония не играет, своих рёбер у неё нет"
     )
   }
@@ -190,12 +189,12 @@ class CeremonyEdgeTest {
   }
 }
 
-private fun edge(status: GraphBranchStatus): GraphEdge {
+private fun edge(status: Branch.Status): GraphEdge {
   return GraphEdge(
     points = listOf(Offset.Zero, Offset(100f, 0f)),
     hops = emptyList(),
-    branchId = GraphBranch.Id("a"),
-    colorIndex = 1,
+    branchId = Branch.Id("a"),
+    color = mockLaneColor(1),
     role = GraphEdgeRole.Branch,
     status = status
   )

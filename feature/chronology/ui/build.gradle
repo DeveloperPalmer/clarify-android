@@ -9,6 +9,8 @@ android {
 }
 
 dependencies {
+  // api — узлы и ветки полотна выходят наружу через ChronologyGraph и ViewState
+  api project(":lib:atlas")
   implementation project(":uikit")
   implementation project(":feature:chronology:domain")
 

@@ -1,5 +1,8 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.core.domain.date.DATE_TIME_FORMATTER_DAY_MONTH_TIME
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
@@ -7,17 +10,14 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
 import ru.sla.clarify.feature.chronology.ui.components.canvas.branchColorIndexOf
 import ru.sla.clarify.feature.chronology.ui.entity.ChronologyGraph
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEpisode
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeDraft
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodePreview
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import ru.sla.atlas.entity.Branch as GraphBranch
 
 /**
  * История беседы — в граф, который рисует полотно.
@@ -39,64 +39,82 @@ import java.time.ZoneId
  */
 internal fun ChronologyHistory.toChronologyGraph(): ChronologyGraph {
   val membersById = members.associateBy { it.id.value }
-  val trunkBranchId = GraphBranch.Id(trunk.id.value)
-  val trunkTimeByCommit = trunk.commits.associate { it.id to it.timestamp }
+  val baselineBranchId = GraphBranch.Id(baseline.id.value)
+  val baselineTimeByCommit = baseline.commits.associate { it.id to it.timestamp }
 
   val drafts = mutableListOf<GraphNodeDraft>()
   drafts += episodeDraftsOf(
-    branchId = trunkBranchId,
-    commits = trunk.commits,
-    unreadCount = trunk.unreadCount,
+    branchId = baselineBranchId,
+    commits = baseline.commits,
+    unreadCount = baseline.unreadCount,
     dim = false,
     membersById = membersById
   )
   // Фронт стоит на последнем событии магистрали, а не на «сейчас» по часам: §6.7 просит крайний
   // правый узел магистрали, а пустота между последним сообщением и текущей минутой — это не история.
-  trunk.commits.lastOrNull()?.let { last ->
+  baseline.commits.lastOrNull()?.let { last ->
     drafts += GraphNodeDraft(
-      id = GraphNode.Id("front"),
-      branchId = trunkBranchId,
-      role = GraphNodeRole.Front,
+      node = Node.Front(id = BasicNode.Id("front"), gap = UNSET_GAP),
+      branchId = baselineBranchId,
       at = last.timestamp
     )
   }
 
   val graphBranches = branches.mapIndexed { index, history ->
     val branch = history.branch
-    val status = branch.mergeRequest.toGraphBranchStatus()
+    val status = branch.mergeRequest.toBranchStatus()
     val fork = forkDraftOf(
       branch = branch,
-      trunk = trunk.id,
-      trunkBranchId = trunkBranchId,
-      trunkTimeByCommit = trunkTimeByCommit
+      baseline = baseline.id,
+      baselineBranchId = baselineBranchId,
+      baselineTimeByCommit = baselineTimeByCommit
     )
-    val merge = mergeDraftOf(branch = branch, trunkBranchId = trunkBranchId, status = status)
+    val merge = mergeDraftOf(branch = branch, baselineBranchId = baselineBranchId, status = status)
     drafts += listOfNotNull(fork, merge)
     drafts += episodeDraftsOf(
       branchId = GraphBranch.Id(branch.id.value),
       commits = history.commits,
       unreadCount = branch.unreadCount,
-      dim = status == GraphBranchStatus.Merged,
+      dim = status == GraphBranch.Status.Merged,
       membersById = membersById
     )
     GraphBranch(
       id = GraphBranch.Id(branch.id.value),
+      // Состав ветки заполняется ниже, когда узлы всех веток сведены в один список и отсортированы:
+      // порядок узлов — свойство графа, и до сортировки его нет ни у кого.
+      nodeIds = emptyList(),
       // Порядковый номер по времени ветвления, а не номер дорожки: дорожка переиспользуется после
       // слияния, и цвет, взятый из неё, означал бы «номер ряда», а не «какая это тема».
       colorIndex = branchColorIndexOf(index + 1),
-      forkedFrom = fork?.id,
-      mergedAt = merge?.id,
+      forkedFrom = fork?.node?.id,
+      mergedAt = merge?.node?.id,
       status = status
     )
   }
 
-  val ordered = drafts.sortedWith(compareBy({ it.at }, { it.role.toSortOrder() }))
+  val ordered = drafts.sortedWith(compareBy({ it.at }, { it.node.toSortOrder() }))
+  val nodes = ordered.toNodes()
+  val placed = ordered.zip(nodes)
+  val nodeIdsByBranch = placed.groupBy({ (draft, _) -> draft.branchId }, { (_, node) -> node.id })
   return ChronologyGraph(
-    nodes = ordered.toGraphNodes(),
-    branches = graphBranches,
+    layout = Graph(
+      nodes = nodes,
+      // Магистраль — такая же ветка, как остальные, и в графе она названа отдельно: её узлы иначе
+      // не принадлежали бы никому. Цвет нулевой, развилки и слияния у неё нет по определению.
+      baseline = GraphBranch(
+        id = baselineBranchId,
+        nodeIds = nodeIdsByBranch[baselineBranchId].orEmpty(),
+        colorIndex = 0,
+        forkedFrom = null,
+        mergedAt = null,
+        status = GraphBranch.Status.Alive
+      ),
+      branches = graphBranches.map { it.copy(nodeIds = nodeIdsByBranch[it.id].orEmpty()) }
+    ),
     branchNames = branches.associate { GraphBranch.Id(it.branch.id.value) to it.branch.name },
-    episodeById = ordered.mapNotNull { draft -> draft.episode?.let { draft.id to it } }.toMap(),
-    previewById = ordered.mapNotNull { draft -> draft.preview?.let { draft.id to it } }.toMap()
+    previewById = placed.mapNotNull { (draft, node) ->
+      draft.preview?.let { node.id to it }
+    }.toMap()
   )
 }
 
@@ -124,14 +142,12 @@ private fun episodeDraftsOf(
     val last = cluster.last()
     val author = membersById[last.senderId.value]
     GraphNodeDraft(
-      // Идентификатор первого сообщения кластера, а не порядковый номер: номер съезжает, стоит
-      // приехать сообщению в середину истории, и вместе с ним съезжает выбранный узел под открытой
-      // карточкой.
-      id = GraphNode.Id(first.id.value),
-      branchId = branchId,
-      role = GraphNodeRole.Episode,
-      at = first.timestamp,
-      episode = GraphEpisode(
+      node = Node.Episode(
+        // Идентификатор первого сообщения кластера, а не порядковый номер: номер съезжает, стоит
+        // приехать сообщению в середину истории, и вместе с ним съезжает выбранный узел под
+        // открытой карточкой.
+        id = BasicNode.Id(first.id.value),
+        gap = UNSET_GAP,
         time = first.timestamp.format(DATE_TIME_FORMATTER_DAY_MONTH_TIME),
         count = cluster.size,
         snippet = last.text,
@@ -139,6 +155,8 @@ private fun episodeDraftsOf(
         unreadCount = unreadShares[index],
         dim = dim
       ),
+      branchId = branchId,
+      at = first.timestamp,
       preview = GraphNodePreview(
         authorName = author?.displayName.orEmpty(),
         authorPhotoUrl = author?.photoUrl,
@@ -162,27 +180,26 @@ private fun episodeDraftsOf(
  * такая ветка всё равно — раз она создана, она существует (решение владельца, журнал, итерация 39).
  *
  * @param branch ветка, которая уходит
- * @param trunk идентификатор магистрали в домене
- * @param trunkBranchId магистраль глазами раскладки: сама точка стоит на ней
- * @param trunkTimeByCommit время сообщений магистрали по их идентификаторам
+ * @param baseline идентификатор магистрали в домене
+ * @param baselineBranchId магистраль глазами раскладки: сама точка стоит на ней
+ * @param baselineTimeByCommit время сообщений магистрали по их идентификаторам
  * @return узел-развилка или `null`, когда ставить его не на что
  */
 private fun forkDraftOf(
   branch: Branch,
-  trunk: Branch.Id,
-  trunkBranchId: GraphBranch.Id,
-  trunkTimeByCommit: Map<Commit.Id, LocalDateTime>
+  baseline: Branch.Id,
+  baselineBranchId: GraphBranch.Id,
+  baselineTimeByCommit: Map<Commit.Id, LocalDateTime>
 ): GraphNodeDraft? {
-  if (branch.parentBranchId != trunk) {
+  if (branch.parentBranchId != baseline) {
     return null
   }
-  val at = trunkTimeByCommit[branch.branchedFromCommitId]
+  val at = baselineTimeByCommit[branch.branchedFromCommitId]
     ?: branch.createdAt.takeIf { it > 0 }?.toBranchTime()
     ?: return null
   return GraphNodeDraft(
-    id = GraphNode.Id("fork-${branch.id.value}"),
-    branchId = trunkBranchId,
-    role = GraphNodeRole.Fork,
+    node = Node.Fork(id = BasicNode.Id("fork-${branch.id.value}"), gap = UNSET_GAP),
+    branchId = baselineBranchId,
     at = at
   )
 }
@@ -194,23 +211,22 @@ private fun forkDraftOf(
  * запрос рисуется пунктиром линии, а не узлом.
  *
  * @param branch ветка, которая вернулась
- * @param trunkBranchId магистраль глазами раскладки: точка стоит на ней, а не на дорожке ветки
+ * @param baselineBranchId магистраль глазами раскладки: точка стоит на ней, а не на дорожке ветки
  * @param status статус ветки, уже посчитанный вызывающим
  * @return узел-слияние или `null`, когда ветка не слита
  */
 private fun mergeDraftOf(
   branch: Branch,
-  trunkBranchId: GraphBranch.Id,
-  status: GraphBranchStatus
+  baselineBranchId: GraphBranch.Id,
+  status: GraphBranch.Status
 ): GraphNodeDraft? {
-  if (status != GraphBranchStatus.Merged) {
+  if (status != GraphBranch.Status.Merged) {
     return null
   }
   val at = branch.mergeRequest?.mergedAt?.takeIf { it > 0 }?.toBranchTime() ?: return null
   return GraphNodeDraft(
-    id = GraphNode.Id("merge-${branch.id.value}"),
-    branchId = trunkBranchId,
-    role = GraphNodeRole.Merge,
+    node = Node.Merge(id = BasicNode.Id("merge-${branch.id.value}"), gap = UNSET_GAP),
+    branchId = baselineBranchId,
     at = at
   )
 }
@@ -223,16 +239,30 @@ private fun mergeDraftOf(
  *
  * @return узлы в том же порядке, уже с паузами
  */
-private fun List<GraphNodeDraft>.toGraphNodes(): List<GraphNode> {
+private fun List<GraphNodeDraft>.toNodes(): List<Node> {
   return mapIndexed { index, draft ->
     val previous = getOrNull(index - 1)
-    GraphNode(
-      id = draft.id,
-      branchId = draft.branchId,
-      role = draft.role,
-      // Перед первым узлом паузы нет: отступ от края полотна дают поля, а не выдуманный зазор.
-      gap = Duration.between(previous?.at ?: draft.at, draft.at).toTimeGap()
-    )
+    // Перед первым узлом паузы нет: отступ от края полотна дают поля, а не выдуманный зазор.
+    draft.node.withGap(Duration.between(previous?.at ?: draft.at, draft.at).toTimeGap())
+  }
+}
+
+/**
+ * Тот же узел с проставленной паузой.
+ *
+ * Перечисление здесь неизбежно: пауза лежит в каждом роде узла своим полем, и общего `copy` у
+ * запечатанного типа нет. Зато оно полное — род, забытый в этом `when`, не компилируется, а
+ * забытый в заглушке просто уехал бы на экран с чужим зазором.
+ *
+ * @param gap пауза, посчитанная по соседу слева
+ * @return узел, готовый попасть в граф
+ */
+private fun Node.withGap(gap: TimeGap): Node {
+  return when (this) {
+    is Node.Episode -> copy(gap = gap)
+    is Node.Fork -> copy(gap = gap)
+    is Node.Merge -> copy(gap = gap)
+    is Node.Front -> copy(gap = gap)
   }
 }
 
@@ -303,12 +333,12 @@ private fun List<Int>.toUnreadShares(unreadCount: Long): List<Long> {
  *
  * @return ключ сортировки внутри одной секунды
  */
-private fun GraphNodeRole.toSortOrder(): Int {
+private fun Node.toSortOrder(): Int {
   return when (this) {
-    GraphNodeRole.Episode -> 0
-    GraphNodeRole.Fork -> 1
-    GraphNodeRole.Merge -> 2
-    GraphNodeRole.Front -> 3
+    is Node.Episode -> 0
+    is Node.Fork -> 1
+    is Node.Merge -> 2
+    is Node.Front -> 3
   }
 }
 
@@ -324,3 +354,12 @@ private fun GraphNodeRole.toSortOrder(): Int {
 private fun Long.toBranchTime(): LocalDateTime {
   return Instant.ofEpochSecond(this).atZone(ZoneId.systemDefault()).toLocalDateTime()
 }
+
+/**
+ * Пауза, которой ещё нет.
+ *
+ * Узел собирается до того, как выяснится, кто стоит от него слева, а пауза у него не необязательное
+ * поле, и быть им не должна: в графе узла без паузы не бывает. Значение здесь поэтому произвольное
+ * — важно не оно, а то, что `toNodes` меняет паузу **каждому** узлу и мимо неё в граф не пройти.
+ */
+private val UNSET_GAP = TimeGap.Minutes

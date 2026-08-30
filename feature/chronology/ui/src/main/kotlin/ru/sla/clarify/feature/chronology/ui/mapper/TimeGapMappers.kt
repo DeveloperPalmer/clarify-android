@@ -2,8 +2,8 @@ package ru.sla.clarify.feature.chronology.ui.mapper
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
  * Зазор, которым пауза отделяет плашку от предыдущей.

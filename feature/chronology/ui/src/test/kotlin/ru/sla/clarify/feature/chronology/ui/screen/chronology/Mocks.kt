@@ -1,14 +1,13 @@
 package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
 import androidx.compose.runtime.Immutable
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.components.node.DEFAULT_MY_SHARE
-import ru.sla.clarify.feature.chronology.ui.entity.EpisodeContent
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.entity.NodePreview
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
  * Демо-граф экрана: тридцать три узла и восемь веток, покрывающих всё, что полотно умеет рисовать
@@ -97,7 +96,7 @@ internal fun mockSingleEpisodeGraph(): MockGraph {
     nodes = listOf(
       episode(
         id = "only",
-        branchId = TRUNK,
+        branchId = BASELINE,
         gap = TimeGap.Hours,
         time = "сегодня, 10:04",
         count = 1,
@@ -124,7 +123,7 @@ internal fun mockLinearGraph(): MockGraph {
     nodes = listOf(
       episode(
         id = "line-1",
-        branchId = TRUNK,
+        branchId = BASELINE,
         gap = TimeGap.Hours,
         time = "4 мар, 12:10",
         count = 6,
@@ -133,7 +132,7 @@ internal fun mockLinearGraph(): MockGraph {
       ),
       episode(
         id = "line-2",
-        branchId = TRUNK,
+        branchId = BASELINE,
         gap = TimeGap.Hour,
         time = "4 мар, 12:40",
         count = 2,
@@ -142,7 +141,7 @@ internal fun mockLinearGraph(): MockGraph {
       ),
       episode(
         id = "line-3",
-        branchId = TRUNK,
+        branchId = BASELINE,
         gap = TimeGap.Day,
         time = "5 мар, 09:20",
         count = 11,
@@ -151,7 +150,7 @@ internal fun mockLinearGraph(): MockGraph {
       ),
       episode(
         id = "line-4",
-        branchId = TRUNK,
+        branchId = BASELINE,
         gap = TimeGap.Long,
         time = "9 мар, 18:05",
         count = 3,
@@ -198,16 +197,16 @@ internal fun mockCrowdedGraph(): MockGraph {
  *
  * @return имя по идентификатору ветки
  */
-private fun demoBranchNames(): Map<GraphBranch.Id, String> {
+private fun demoBranchNames(): Map<Branch.Id, String> {
   return mapOf(
-    GraphBranch.Id("terms") to "Сроки по релизу",
-    GraphBranch.Id("export") to "Экспорт истории",
-    GraphBranch.Id("design") to "Дизайн онбординга",
-    GraphBranch.Id("budget") to "Бюджет на Q3",
-    GraphBranch.Id("photos") to "Фотографии с оффсайта",
-    GraphBranch.Id("release") to "Релиз 2.4",
-    GraphBranch.Id("pricing") to "Цены на подписку",
-    GraphBranch.Id("stickers") to "Стикеры, которые мы так и не сделали, но обсуждаем"
+    Branch.Id("terms") to "Сроки по релизу",
+    Branch.Id("export") to "Экспорт истории",
+    Branch.Id("design") to "Дизайн онбординга",
+    Branch.Id("budget") to "Бюджет на Q3",
+    Branch.Id("photos") to "Фотографии с оффсайта",
+    Branch.Id("release") to "Релиз 2.4",
+    Branch.Id("pricing") to "Цены на подписку",
+    Branch.Id("stickers") to "Стикеры, которые мы так и не сделали, но обсуждаем"
   )
 }
 
@@ -221,70 +220,81 @@ private fun demoBranchNames(): Map<GraphBranch.Id, String> {
  *
  * @return восемь веток демо-графа
  */
-private fun demoBranches(): List<GraphBranch> {
+private fun demoBranches(): List<Branch> {
+  // Состав веток заполняется в [MockGraph.layout] — там же, где и в настоящей сборке: ветку узлу
+  // назначает сам узел набора, и переписывать одно и то же двумя списками значило бы завести вторую
+  // истину о принадлежности.
   return listOf(
-    GraphBranch(
-      id = GraphBranch.Id("terms"),
+    Branch(
+      id = Branch.Id("terms"),
+      nodeIds = emptyList(),
       colorIndex = 1,
-      forkedFrom = GraphNode.Id("fork-terms"),
-      mergedAt = GraphNode.Id("merge-terms"),
-      status = GraphBranchStatus.Merged
+      forkedFrom = BasicNode.Id("fork-terms"),
+      mergedAt = BasicNode.Id("merge-terms"),
+      status = Branch.Status.Merged
     ),
-    GraphBranch(
-      id = GraphBranch.Id("export"),
+    Branch(
+      id = Branch.Id("export"),
+      nodeIds = emptyList(),
       colorIndex = 2,
-      forkedFrom = GraphNode.Id("fork-export"),
+      forkedFrom = BasicNode.Id("fork-export"),
       mergedAt = null,
-      status = GraphBranchStatus.Alive
+      status = Branch.Status.Alive
     ),
-    GraphBranch(
-      id = GraphBranch.Id("design"),
+    Branch(
+      id = Branch.Id("design"),
+      nodeIds = emptyList(),
       colorIndex = 3,
-      forkedFrom = GraphNode.Id("fork-design"),
+      forkedFrom = BasicNode.Id("fork-design"),
       mergedAt = null,
-      status = GraphBranchStatus.Waiting
+      status = Branch.Status.Waiting
     ),
-    GraphBranch(
-      id = GraphBranch.Id("budget"),
+    Branch(
+      id = Branch.Id("budget"),
+      nodeIds = emptyList(),
       colorIndex = 4,
-      forkedFrom = GraphNode.Id("fork-budget"),
+      forkedFrom = BasicNode.Id("fork-budget"),
       mergedAt = null,
-      status = GraphBranchStatus.Ready
+      status = Branch.Status.Ready
     ),
-    GraphBranch(
-      id = GraphBranch.Id("photos"),
+    Branch(
+      id = Branch.Id("photos"),
+      nodeIds = emptyList(),
       colorIndex = 5,
-      forkedFrom = GraphNode.Id("fork-photos"),
-      mergedAt = GraphNode.Id("merge-photos"),
-      status = GraphBranchStatus.Merged
+      forkedFrom = BasicNode.Id("fork-photos"),
+      mergedAt = BasicNode.Id("merge-photos"),
+      status = Branch.Status.Merged
     ),
-    GraphBranch(
-      id = GraphBranch.Id("release"),
+    Branch(
+      id = Branch.Id("release"),
+      nodeIds = emptyList(),
       colorIndex = 6,
-      forkedFrom = GraphNode.Id("fork-release"),
+      forkedFrom = BasicNode.Id("fork-release"),
       mergedAt = null,
-      status = GraphBranchStatus.Alive
+      status = Branch.Status.Alive
     ),
     // Седьмая и восьмая берут оттенки по кругу: `1 + (order − 1) mod 6`. Ноль оставлен магистрали, и
     // наивный остаток отдал бы седьмой ветке именно его.
     //
     // Развилка та же, что у `release`: от одного коммита уходят две ветки. Акцент точки достаётся
     // первой из них, вторая получает собственную вертикаль своего цвета в другую сторону.
-    GraphBranch(
-      id = GraphBranch.Id("pricing"),
+    Branch(
+      id = Branch.Id("pricing"),
+      nodeIds = emptyList(),
       colorIndex = 1,
-      forkedFrom = GraphNode.Id("fork-release"),
+      forkedFrom = BasicNode.Id("fork-release"),
       mergedAt = null,
-      status = GraphBranchStatus.Alive
+      status = Branch.Status.Alive
     ),
     // Развилки нет вовсе: сообщение, от которого ветка ушла, удалено (§15 п. 10). Занятость дорожки
     // считается от первого собственного узла, ухода с магистрали не рисуется.
-    GraphBranch(
-      id = GraphBranch.Id("stickers"),
+    Branch(
+      id = Branch.Id("stickers"),
+      nodeIds = emptyList(),
       colorIndex = 2,
       forkedFrom = null,
       mergedAt = null,
-      status = GraphBranchStatus.Alive
+      status = Branch.Status.Alive
     )
   )
 }
@@ -327,7 +337,7 @@ private fun nodesOfMarchSix(): List<MockNode> {
   return listOf(
     episode(
       id = "t-1",
-      branchId = TRUNK,
+      branchId = BASELINE,
       gap = TimeGap.Hours,
       time = "6 мар, 09:40",
       count = 14,
@@ -366,7 +376,7 @@ private fun nodesOfMarchSix(): List<MockNode> {
     ),
     episode(
       id = "t-2",
-      branchId = TRUNK,
+      branchId = BASELINE,
       gap = TimeGap.Hours,
       time = "6 мар, 14:00",
       count = 6,
@@ -422,7 +432,7 @@ private fun nodesOfMarchSeven(): List<MockNode> {
   return listOf(
     episode(
       id = "t-3",
-      branchId = TRUNK,
+      branchId = BASELINE,
       gap = TimeGap.Day,
       time = "7 мар, 09:00",
       count = 6,
@@ -523,7 +533,7 @@ private fun nodesOfLaterDays(): List<MockNode> {
     ),
     episode(
       id = "t-4",
-      branchId = TRUNK,
+      branchId = BASELINE,
       gap = TimeGap.Hours,
       time = "8 мар, 10:30",
       count = 2,
@@ -570,7 +580,7 @@ private fun nodesOfLaterDays(): List<MockNode> {
     ),
     episode(
       id = "t-5",
-      branchId = TRUNK,
+      branchId = BASELINE,
       gap = TimeGap.Day,
       time = "10 мар, 09:00",
       count = 2,
@@ -591,7 +601,7 @@ private fun nodesOfLaterDays(): List<MockNode> {
     // фиксированной ширины узла и обязан упереться в неё эллипсисом, а не растянуть плашку.
     episode(
       id = "t-6",
-      branchId = TRUNK,
+      branchId = BASELINE,
       gap = TimeGap.Long,
       time = "сегодня, 09:15",
       count = 1,
@@ -621,14 +631,15 @@ private fun nodesOfLaterDays(): List<MockNode> {
  *
  * @return девять живых веток
  */
-private fun crowdedBranches(): List<GraphBranch> {
+private fun crowdedBranches(): List<Branch> {
   return (1..CROWDED_BRANCHES).map { order ->
-    GraphBranch(
-      id = GraphBranch.Id("crowd-$order"),
+    Branch(
+      id = Branch.Id("crowd-$order"),
+      nodeIds = emptyList(),
       colorIndex = 1 + (order - 1).mod(6),
-      forkedFrom = GraphNode.Id("crowd-fork-$order"),
+      forkedFrom = BasicNode.Id("crowd-fork-$order"),
       mergedAt = null,
-      status = GraphBranchStatus.Alive
+      status = Branch.Status.Alive
     )
   }
 }
@@ -645,7 +656,7 @@ private fun crowdedNodes(): List<MockNode> {
   val nodes = mutableListOf(
     episode(
       id = "crowd-start",
-      branchId = TRUNK,
+      branchId = BASELINE,
       gap = TimeGap.Hours,
       time = "1 мар, 08:00",
       count = 3,
@@ -669,7 +680,7 @@ private fun crowdedNodes(): List<MockNode> {
   return nodes
 }
 
-private const val TRUNK = "trunk"
+private const val BASELINE = "baseline"
 
 /** Кто говорит в демо-наборе, когда автор не задан явно. */
 private const val PEER_NAME = "Анна Ковалёва"
@@ -708,57 +719,48 @@ private fun episode(
   exactTime: String = time
 ): MockNode {
   return MockNode(
-    node = GraphNode(
-      id = GraphNode.Id(id),
-      branchId = GraphBranch.Id(branchId),
-      role = GraphNodeRole.Episode,
-      gap = gap
+    node = Node.Episode(
+      id = BasicNode.Id(id),
+      gap = gap,
+      time = time,
+      count = count,
+      snippet = snippet,
+      myShare = myShare,
+      unreadCount = unreadCount,
+      dim = dim
     ),
-    time = time,
-    count = count,
-    snippet = snippet,
+    branchId = Branch.Id(branchId),
     preview = MockPreview(
       authorName = author,
       text = fullText,
       time = exactTime
-    ),
-    myShare = myShare,
-    unreadCount = unreadCount,
-    dim = dim
+    )
   )
-}
-
-private fun fork(id: String, gap: TimeGap): MockNode {
-  return point(id = id, gap = gap, role = GraphNodeRole.Fork)
-}
-
-private fun merge(id: String, gap: TimeGap): MockNode {
-  return point(id = id, gap = gap, role = GraphNodeRole.Merge)
-}
-
-private fun front(id: String, gap: TimeGap): MockNode {
-  return point(id = id, gap = gap, role = GraphNodeRole.Front)
 }
 
 /**
  * Точка на магистрали: ветвление, слияние или фронт.
  *
- * Содержимое эпизода ей всё равно нужно, потому что `MockNode` реализует [EpisodeContent] целиком, —
- * но на экран оно не попадает: точка рисуется кругом, а не плашкой. Уйдёт вместе со всем файлом,
- * когда граф начнёт собираться из домена.
+ * Содержимого у неё нет вовсе — точка рисуется кругом, а не плашкой, — и с тех пор, как род узла
+ * стал его типом, писать пустые строки в поля эпизода больше не приходится.
+ *
+ * @param node сам узел; ветка у всех трёх одна — магистраль
+ * @return узел набора без превью: разворачивать точке нечего
  */
-private fun point(id: String, gap: TimeGap, role: GraphNodeRole): MockNode {
-  return MockNode(
-    node = GraphNode(
-      id = GraphNode.Id(id),
-      branchId = GraphBranch.Id(TRUNK),
-      role = role,
-      gap = gap
-    ),
-    time = "",
-    count = 0,
-    snippet = ""
-  )
+private fun point(node: Node): MockNode {
+  return MockNode(node = node, branchId = Branch.Id(BASELINE))
+}
+
+private fun fork(id: String, gap: TimeGap): MockNode {
+  return point(Node.Fork(id = BasicNode.Id(id), gap = gap))
+}
+
+private fun merge(id: String, gap: TimeGap): MockNode {
+  return point(Node.Merge(id = BasicNode.Id(id), gap = gap))
+}
+
+private fun front(id: String, gap: TimeGap): MockNode {
+  return point(Node.Front(id = BasicNode.Id(id), gap = gap))
 }
 
 /**
@@ -771,56 +773,66 @@ private fun point(id: String, gap: TimeGap, role: GraphNodeRole): MockNode {
  *
  * @param nodes узлы в хронологическом порядке
  * @param branches ветки, кроме магистрали, в порядке ветвления
- * @param branchNames имя каждой ветки. Отдельной картой, а не полем [GraphBranch]: та — сущность
+ * @param branchNames имя каждой ветки. Отдельной картой, а не полем [Branch]: та — сущность
  *   раскладки, и имя в ней было бы содержимым, попавшим не в свой слой. Магистрали в карте нет, и
  *   это не пропуск: у неё нет темы, о которой можно сказать «ветка такая-то»
  */
 @Immutable
 internal data class MockGraph(
   val nodes: List<MockNode>,
-  val branches: List<GraphBranch>,
-  val branchNames: Map<GraphBranch.Id, String> = emptyMap()
+  val branches: List<Branch>,
+  val branchNames: Map<Branch.Id, String> = emptyMap()
 ) {
 
   /** Раскладочная часть узлов: то, что уходит на полотно. */
-  val graphNodes: List<GraphNode>
+  val graphNodes: List<Node>
     get() = nodes.map { it.node }
 
-  /** Содержимое плашек по идентификатору узла: то, что уходит в состояние экрана. */
-  val episodeById: Map<GraphNode.Id, EpisodeContent>
-    get() = nodes.associateBy { it.node.id }
+  /**
+   * Граф целиком: узлы и ветки с уже заполненным составом.
+   *
+   * Состав собирается здесь, а не пишется в [demoBranches]: ветку узлу назначает сам узел набора, и
+   * второй список тех же принадлежностей разъехался бы с первым молча.
+   */
+  val layout: Graph<Node>
+    get() {
+      val nodeIdsByBranch = nodes.groupBy({ it.branchId }, { it.node.id })
+      return Graph(
+        nodes = graphNodes,
+        baseline = Branch(
+          id = Branch.Id(BASELINE),
+          nodeIds = nodeIdsByBranch[Branch.Id(BASELINE)].orEmpty(),
+          colorIndex = 0,
+          forkedFrom = null,
+          mergedAt = null,
+          status = Branch.Status.Alive
+        ),
+        branches = branches.map { it.copy(nodeIds = nodeIdsByBranch[it.id].orEmpty()) }
+      )
+    }
 
   /** Содержимое превью-карточек: только у тех узлов, которые есть что разворачивать. */
-  val previewById: Map<GraphNode.Id, NodePreview>
+  val previewById: Map<BasicNode.Id, NodePreview>
     get() = nodes.mapNotNull { node -> node.preview?.let { node.node.id to it } }.toMap()
 }
 
 /**
- * Временный узел демо-графа: раскладочная часть плюс то, что нарисовано внутри плашки.
+ * Узел демо-графа вместе с тем, чего сам узел не знает: своей веткой и своей карточкой.
  *
- * Существует ровно до появления сборки графа из веток и коммитов — тогда содержимое узла придёт из
- * домена, а не из литералов экрана.
+ * Ветка здесь потому, что узел её не знает по построению — состав принадлежит ветке, и набор
+ * собирает его в [MockGraph.layout] из этого поля. Превью — потому, что карточка не то, что рисует
+ * узел: её содержимое живёт отдельной картой и в графе не лежит.
  *
- * @param node раскладочная часть: ветка, род и пауза
- * @param time время начала эпизода
- * @param count число сообщений в кластере
- * @param snippet последнее сообщение эпизода
+ * @param node сам узел: род, пауза и всё, что нарисовано внутри плашки
+ * @param branchId ветка, которой узел принадлежит; у точек на магистрали — корневая
  * @param preview содержимое превью-карточки; `null` у точек на линии — им нечего разворачивать
- * @param myShare доля своих реплик
- * @param unreadCount счётчик непрочитанных
- * @param dim эпизод внутри слитой ветки
  */
 @Immutable
 internal data class MockNode(
-  val node: GraphNode,
-  override val time: String,
-  override val count: Int,
-  override val snippet: String,
-  val preview: MockPreview? = null,
-  override val myShare: Float = DEFAULT_MY_SHARE,
-  override val unreadCount: Long = 0,
-  override val dim: Boolean = false
-) : EpisodeContent
+  val node: Node,
+  val branchId: Branch.Id,
+  val preview: MockPreview? = null
+)
 
 /**
  * Временное содержимое превью-карточки: то, что §11.2 разворачивает из плашки.

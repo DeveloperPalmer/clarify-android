@@ -2,8 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.animation.core.Easing
 import androidx.compose.ui.util.fastAny
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.atlas.entity.Branch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 
@@ -106,7 +105,7 @@ private fun spanFractionOf(elapsed: Float, from: Float, to: Float): Float {
  * @return нужна ли фаза бегущего пунктира
  */
 internal fun isDashRunning(edges: List<GraphEdge>, ceremonyPlaying: Boolean): Boolean {
-  return ceremonyPlaying || edges.fastAny { it.status == GraphBranchStatus.Ready }
+  return ceremonyPlaying || edges.fastAny { it.status == Branch.Status.Ready }
 }
 
 /**
@@ -119,7 +118,7 @@ internal fun isDashRunning(edges: List<GraphEdge>, ceremonyPlaying: Boolean): Bo
  * @param ceremonyBranch ветка играющей церемонии; `null` — церемония не играет
  * @return принадлежит ли ребро сливающейся ветке
  */
-internal fun isCeremonyEdge(edge: GraphEdge, ceremonyBranch: GraphBranch.Id?): Boolean {
+internal fun isCeremonyEdge(edge: GraphEdge, ceremonyBranch: Branch.Id?): Boolean {
   return ceremonyBranch != null && edge.branchId == ceremonyBranch
 }
 

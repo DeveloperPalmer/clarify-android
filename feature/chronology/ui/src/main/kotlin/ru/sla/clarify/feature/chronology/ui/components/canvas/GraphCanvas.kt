@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.PathMeasure
@@ -51,16 +52,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
-import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
+import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColors
 import ru.sla.clarify.uikit.theme.AppColors
 import ru.sla.clarify.uikit.theme.AppTheme
 import kotlin.math.abs
@@ -104,7 +105,7 @@ internal fun GraphCanvas(
   ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
   blocked: () -> Boolean = { false },
-  node: @Composable (node: GraphNode, accent: GraphNodeAccent, level: GraphLevel) -> Unit,
+  node: @Composable (node: Node, accent: GraphNodeAccent, level: GraphLevel) -> Unit,
   overlay: @Composable BoxScope.(onBoundsChanged: (key: Any, bounds: Rect) -> Unit) -> Unit = { }
 ) {
   val telemetry = state.telemetry
@@ -145,13 +146,18 @@ internal fun GraphCanvas(
   // Узлы снимаются один раз и уходят и в содержимое, и в измерение. Читать их в measure заново
   // нельзя: состояние подменяется из `SideEffect`, то есть уже после этой композиции, но ещё до
   // измерения того же кадра, — и измерение получило бы новый список к старым measurable'ам.
-  val nodes = state.nodes
-  val branches = state.branches
+  val colors = AppTheme.colors
+  val graph = state.graph
+  val nodes = graph.nodes
   // Дорожки считаются здесь, а не в измерении, и это не оптимизация. Точке ветвления нужен цвет и
   // направление **уходящей** ветки, а рисуется она в композиции — то есть до того, как измерение
   // что-либо посчитает. Один и тот же результат уходит и в содержимое, и в `layout`, поэтому
   // разъехаться им нечем.
-  val lanes = remember(nodes, branches) { graphLanesOf(nodes, branches) }
+  // Цвета веток резолвятся здесь и один раз: дальше ни раскладка, ни рёбра, ни мини-карта темы не
+  // знают — они получают готовый цвет. Палитра стоит в ключе, потому что смена темы меняет цвета,
+  // не трогая граф.
+  val branchColors = remember(graph, colors) { graph.toBranchColors(colors) }
+  val lanes = remember(graph, branchColors) { graphLanesOf(graph, branchColors) }
   Box(
     // Жест висит на всём вьюпорте, а не на слое узлов: полотно не всегда достаёт до края экрана,
     // и панорамирование не работало бы там, где его нет.
@@ -193,9 +199,9 @@ internal fun GraphCanvas(
     )
     GraphNodesLayer(
       state = state,
-      nodes = nodes,
-      branches = branches,
+      graph = graph,
       lanes = lanes,
+      branchColors = branchColors,
       ceremony = ceremony,
       node = node
     )
@@ -218,9 +224,8 @@ internal fun GraphCanvas(
  * экрана и панорамирование не работало бы там, где узлов нет.
  *
  * @param state камера полотна и результат его последней раскладки
- * @param nodes узлы, из которых строится содержимое; приходят параметром, а не читаются из [state],
+ * @param graph граф, из которого строится содержимое; приходит параметром, а не читается из [state],
  *   чтобы композиция и измерение одного кадра видели один и тот же список
- * @param branches ветки того же кадра; из них считаются рёбра
  * @param lanes дорожки и акценты того же кадра, посчитанные один раз на оба потребителя
  * @param ceremony церемония слияния этого кадра
  * @param modifier модификатор слоя
@@ -229,12 +234,12 @@ internal fun GraphCanvas(
 @Composable
 private fun GraphNodesLayer(
   state: GraphCanvasState,
-  nodes: List<GraphNode>,
-  branches: List<GraphBranch>,
+  graph: Graph<Node>,
   lanes: GraphLanes,
+  branchColors: Map<Branch.Id, Color>,
   ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
-  node: @Composable (node: GraphNode, accent: GraphNodeAccent, level: GraphLevel) -> Unit
+  node: @Composable (node: Node, accent: GraphNodeAccent, level: GraphLevel) -> Unit
 ) {
   val telemetry = state.telemetry
   val colors = AppTheme.colors
@@ -383,7 +388,7 @@ private fun GraphNodesLayer(
         }
       },
     content = {
-      nodes.fastForEachIndexed { index, graphNode ->
+      graph.nodes.fastForEachIndexed { index, graphNode ->
         key(graphNode.id.value) {
           SideEffect { telemetry.onNodeComposition() }
           GraphLevelCrossfade(
@@ -403,12 +408,12 @@ private fun GraphNodesLayer(
     val placement = state.layout(
       level = level,
       lanes = lanes,
-      branches = branches,
+      branchColors = branchColors,
       density = this,
       statusBar = statusBar.getTop(this).toFloat(),
       navigationBar = navigationBar.getBottom(this).toFloat(),
       viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight),
-      nodes = nodes,
+      graph = graph,
       nodeSizes = placeables.fastMap { IntSize(it.width, it.height) }
     )
     layout(constraints.maxWidth, constraints.maxHeight) {
@@ -561,18 +566,18 @@ private fun DrawScope.drawGraphEdge(
   }
   path.rewind()
   path.addGraphRoute(edge, cornerRadius, hopRadius)
-  val identity = edge.colorIndex.toBranchColor(colors)
+  val identity = edge.color
   // Кадр 1 уводит цвет в золото, кадр 7 возвращает его ветке: золото по §7 — событие, а не
   // идентичность, и линия, оставшаяся золотой, соврала бы о том, чья она.
   val color = frame?.let { lerp(identity, colors.contentGoldPrimary, it.gold) } ?: identity
   val width = when (edge.role) {
-    GraphEdgeRole.Trunk -> 2.dp.toPx()
+    GraphEdgeRole.Baseline -> 2.dp.toPx()
     // Слой ответов §7 рисуется 1 dp, но его здесь нет: он живёт только внутри раскрытого эпизода.
     GraphEdgeRole.Branch, GraphEdgeRole.Fork, GraphEdgeRole.Merge, GraphEdgeRole.Tail -> 1.5.dp.toPx()
   }
   // На время церемонии ветка показывается готовой к слиянию: у слитой штрих сплошной, и кадру 1
   // нечего было бы ускорять. Покой возвращает выдох, а не конец шкалы.
-  val status = if (frame != null) GraphBranchStatus.Ready else edge.status
+  val status = if (frame != null) Branch.Status.Ready else edge.status
   val alpha = frame?.let { ceremonyEdgeAlphaOf(it) } ?: edge.status.toEdgeAlpha()
   val style = Stroke(
     width = width,
@@ -658,7 +663,7 @@ private fun DrawScope.drawMergeWave(
     endX = mergePoint.x + reach
   )
   edges.fastForEach { edge ->
-    if (edge.role != GraphEdgeRole.Trunk) {
+    if (edge.role != GraphEdgeRole.Baseline) {
       return@fastForEach
     }
     path.rewind()
@@ -745,10 +750,10 @@ private fun Path.addHorizontalWithHops(
  * Число берётся из [MERGED_EDGE_ALPHA], а не пишется здесь: к нему же кадром 7 приходит выдох
  * церемонии, и разойдись эти два места, конец церемонии дёрнул бы линию скачком.
  */
-private fun GraphBranchStatus.toEdgeAlpha(): Float {
+private fun Branch.Status.toEdgeAlpha(): Float {
   return when (this) {
-    GraphBranchStatus.Merged -> MERGED_EDGE_ALPHA
-    GraphBranchStatus.Alive, GraphBranchStatus.Waiting, GraphBranchStatus.Ready -> 1f
+    Branch.Status.Merged -> MERGED_EDGE_ALPHA
+    Branch.Status.Alive, Branch.Status.Waiting, Branch.Status.Ready -> 1f
   }
 }
 
@@ -765,11 +770,11 @@ private fun GraphBranchStatus.toEdgeAlpha(): Float {
  *   нет и фазу никто не считает
  * @return эффект штриха или `null` у сплошной линии
  */
-private fun GraphBranchStatus.toPathEffect(dash: PathEffect, runningDash: PathEffect?): PathEffect? {
+private fun Branch.Status.toPathEffect(dash: PathEffect, runningDash: PathEffect?): PathEffect? {
   return when (this) {
-    GraphBranchStatus.Waiting -> dash
-    GraphBranchStatus.Ready -> runningDash ?: dash
-    GraphBranchStatus.Alive, GraphBranchStatus.Merged -> null
+    Branch.Status.Waiting -> dash
+    Branch.Status.Ready -> runningDash ?: dash
+    Branch.Status.Alive, Branch.Status.Merged -> null
   }
 }
 

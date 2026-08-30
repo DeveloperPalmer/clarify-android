@@ -25,10 +25,10 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.data.mapper.mapToBranchCommit
 import ru.sla.clarify.feature.chronology.domain.ChronologyRepository
 import ru.sla.clarify.feature.chronology.domain.di.ChronologyScope
+import ru.sla.clarify.feature.chronology.domain.entity.BaselineHistory
 import ru.sla.clarify.feature.chronology.domain.entity.BranchHistory
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
 import ru.sla.clarify.feature.chronology.domain.entity.TargetParams
-import ru.sla.clarify.feature.chronology.domain.entity.TrunkHistory
 import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
@@ -79,7 +79,7 @@ class ChronologyRepositoryImpl @Inject constructor(
 
   override val history: Flow<ChronologyHistory> = flow {
     val conversationId = awaitConversationId()
-    val trunkId = Branch.Id(conversationId.value)
+    val baselineId = Branch.Id(conversationId.value)
 
     val branchesFlow = inMemoryDB.chatBranchQueries
       .selectByConversation(conversationId, ::mapToBranch)
@@ -99,19 +99,19 @@ class ChronologyRepositoryImpl @Inject constructor(
     //
     // Нулём вперёд, потому что `combine` ждёт первого значения от каждого потока: без этого граф
     // целиком стоял бы до первого снимка Firestore ради бейджа, которого может и не быть.
-    val trunkUnreadFlow = firestore.unreadCountLive(conversationId.value).onStart { emit(0L) }
+    val baselineUnreadFlow = firestore.unreadCountLive(conversationId.value).onStart { emit(0L) }
 
     combine(
       branchesFlow,
       commitsFlow,
       membersFlow,
-      trunkUnreadFlow
-    ) { branches, commitsByBranch, members, trunkUnreadCount ->
+      baselineUnreadFlow
+    ) { branches, commitsByBranch, members, baselineUnreadCount ->
       ChronologyHistory(
-        trunk = TrunkHistory(
-          id = trunkId,
-          commits = commitsByBranch[trunkId].orEmpty(),
-          unreadCount = trunkUnreadCount
+        baseline = BaselineHistory(
+          id = baselineId,
+          commits = commitsByBranch[baselineId].orEmpty(),
+          unreadCount = baselineUnreadCount
         ),
         branches = branches.map { branch ->
           BranchHistory(

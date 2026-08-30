@@ -1,7 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chronology.ui.entity.MessageNodeState
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Иконка, которой состояние сообщения показывает себя справа от текста.
@@ -11,12 +11,12 @@ import ru.sla.clarify.feature.chronology.ui.entity.MessageNodeState
  *
  * @return идентификатор рисунка или `null`, если состоянию нечего показывать
  */
-internal fun MessageNodeState.toIconResId(): Int? {
+internal fun Node.Episode.Status.toIconResId(): Int? {
   return when (this) {
-    MessageNodeState.Normal,
-    MessageNodeState.Sending -> null
-    MessageNodeState.Edited -> R.drawable.ic_pencil_24
+    Node.Episode.Status.Normal,
+    Node.Episode.Status.Sending -> null
+    Node.Episode.Status.Edited -> R.drawable.ic_pencil_24
     // Иконки кавычек в core/resources нет — временно берём «ответить». Заведена в список к дизайнеру.
-    MessageNodeState.Quoted -> R.drawable.ic_reply_24
+    Node.Episode.Status.Quoted -> R.drawable.ic_reply_24
   }
 }

@@ -24,14 +24,14 @@ import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
 class GraphGeometryTest {
 
   @Test
-  fun `top lane is never below the trunk`() {
+  fun `top lane is never below the baseline`() {
     assertEquals(0, topLaneOf(listOf(0, 1, 2)), "магистраль учитывается всегда")
     assertEquals(-2, topLaneOf(listOf(-2, -1, 0)))
     assertEquals(0, topLaneOf(emptyList()))
   }
 
   @Test
-  fun `trunk shifts down when lanes are occupied above it`() {
+  fun `baseline shifts down when lanes are occupied above it`() {
     val alone = GraphGeometry(topLaneOf(listOf(0)), GraphLevel.Episodes.toLaneStep())
     val withLaneAbove = GraphGeometry(topLaneOf(listOf(-1, 0)), GraphLevel.Episodes.toLaneStep())
 

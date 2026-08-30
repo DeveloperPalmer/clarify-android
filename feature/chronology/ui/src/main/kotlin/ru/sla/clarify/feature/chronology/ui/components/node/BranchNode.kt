@@ -28,7 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.atlas.entity.Branch
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconResId
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconTint
@@ -69,7 +69,7 @@ internal fun BranchNode(
   laneColor: Color,
   contentDescription: String,
   modifier: Modifier = Modifier,
-  status: GraphBranchStatus = GraphBranchStatus.Alive,
+  status: Branch.Status = Branch.Status.Alive,
   unreadCount: Long = 0,
   onClick: (() -> Unit)? = null
 ) {
@@ -193,7 +193,7 @@ private fun BranchNodePreviewContent(branch: BranchNodePreview) {
 private data class BranchNodePreview(
   val name: String,
   val lane: Int,
-  val status: GraphBranchStatus = GraphBranchStatus.Alive,
+  val status: Branch.Status = Branch.Status.Alive,
   val unreadCount: Long = 0
 )
 
@@ -215,23 +215,23 @@ private class BranchNodePreviewProvider : PreviewParameterProvider<BranchNodePre
     BranchNodePreview(
       name = "Дизайн онбординга",
       lane = 2,
-      status = GraphBranchStatus.Waiting,
+      status = Branch.Status.Waiting,
       unreadCount = 2
     ),
     BranchNodePreview(
       name = "Сроки по релизу",
       lane = 3,
-      status = GraphBranchStatus.Ready
+      status = Branch.Status.Ready
     ),
     BranchNodePreview(
       name = "Сроки по релизу",
       lane = 3,
-      status = GraphBranchStatus.Merged
+      status = Branch.Status.Merged
     ),
     BranchNodePreview(
       name = "Очень длинное имя ветки, которое обязано обрезаться эллипсисом",
       lane = 5,
-      status = GraphBranchStatus.Merged,
+      status = Branch.Status.Merged,
       unreadCount = 128
     )
   )

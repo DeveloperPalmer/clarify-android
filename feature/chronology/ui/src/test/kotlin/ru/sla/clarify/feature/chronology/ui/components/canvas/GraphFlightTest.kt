@@ -14,13 +14,13 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Перелёт камеры по кнопке: третий источник её движения после жеста и затухания.
@@ -213,11 +213,11 @@ class GraphFlightTest {
   private fun aimedAt(state: GraphCanvasState, anchor: GraphAnchor): Offset {
     val placement = state.layout(
       level = GraphLevel.Episodes,
-      nodes = state.nodes,
-      lanes = graphLanesOf(state.nodes, state.branches),
-      branches = state.branches,
+      graph = state.graph,
+      lanes = graphLanesOf(state.graph, state.graph.mockBranchColors()),
+      branchColors = state.graph.mockBranchColors(),
       viewportSize = VIEWPORT,
-      nodeSizes = List(state.nodes.size) { NODE_SIZE },
+      nodeSizes = List(state.graph.nodes.size) { NODE_SIZE },
       density = Density(density = 1f),
       statusBar = 0f,
       navigationBar = 0f
@@ -298,24 +298,15 @@ class GraphFlightTest {
    */
   private fun laidOut(): GraphCanvasState {
     val state = GraphCanvasState()
-    val nodes = List(12) { index ->
-      GraphNode(
-        id = GraphNode.Id("n$index"),
-        // Пять веток вместо пяти дорожек: дорожку теперь назначает раскраска, и вертикальный
-        // диапазон камеры обязан появиться из данных, а не из литерала.
-        branchId = GraphBranch.Id("b${index % 5}"),
-        role = GraphNodeRole.Episode,
-        gap = TimeGap.Long
-      )
-    }
-    state.setNodes(nodes, FIVE_BRANCHES)
+    val graph = fiveBranchGraph()
+    state.setGraph(graph)
     state.layout(
       level = GraphLevel.Episodes,
-      nodes = nodes,
-      lanes = graphLanesOf(nodes, FIVE_BRANCHES),
-      branches = FIVE_BRANCHES,
+      graph = graph,
+      lanes = graphLanesOf(graph, graph.mockBranchColors()),
+      branchColors = graph.mockBranchColors(),
       viewportSize = VIEWPORT,
-      nodeSizes = List(nodes.size) { NODE_SIZE },
+      nodeSizes = List(graph.nodes.size) { NODE_SIZE },
       density = Density(density = 1f),
       statusBar = 0f,
       navigationBar = 0f
@@ -328,13 +319,47 @@ private const val FRAME_NANOS = 16_666_666L
 private val VIEWPORT = IntSize(width = 400, height = 200)
 private val NODE_SIZE = IntSize(width = 120, height = 28)
 
-/** Четыре живые ветки плюс магистраль: ровно то, из чего берётся вертикальный ход камеры. */
-private val FIVE_BRANCHES = (1..4).map { index ->
-  GraphBranch(
-    id = GraphBranch.Id("b$index"),
-    colorIndex = index,
-    forkedFrom = null,
-    mergedAt = null,
-    status = GraphBranchStatus.Alive
+/**
+ * Граф на пять веток: узлы идут по кругу, магистраль — нулевая ветка.
+ *
+ * Пять веток вместо пяти дорожек: дорожку теперь назначает раскраска, и вертикальный диапазон
+ * камеры обязан появиться из данных, а не из литерала.
+ *
+ * @return граф из двенадцати узлов, разобранных ветками без остатка
+ */
+private fun fiveBranchGraph(): Graph<Node> {
+  val nodes = List(12) { index ->
+    Node.Episode(
+      id = BasicNode.Id("n$index"),
+      gap = TimeGap.Long,
+      time = "6 мар, 10:00",
+      count = 1,
+      snippet = "",
+      myShare = 0f,
+      unreadCount = 0,
+      dim = false
+    )
+  }
+  val nodeIdsByBranch = nodes.withIndex().groupBy({ it.index % 5 }, { it.value.id })
+  return Graph(
+    nodes = nodes,
+    baseline = Branch(
+      id = Branch.Id("b0"),
+      nodeIds = nodeIdsByBranch.getValue(0),
+      colorIndex = 0,
+      forkedFrom = null,
+      mergedAt = null,
+      status = Branch.Status.Alive
+    ),
+    branches = (1..4).map { index ->
+      Branch(
+        id = Branch.Id("b$index"),
+        nodeIds = nodeIdsByBranch.getValue(index),
+        colorIndex = index,
+        forkedFrom = null,
+        mergedAt = null,
+        status = Branch.Status.Alive
+      )
+    }
   )
 }

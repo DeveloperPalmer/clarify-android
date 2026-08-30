@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chronology.ui.entity
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Dp
+import ru.sla.atlas.entity.BasicNode
 
 /**
  * Выбранный узел: что показать в карточке и откуда она вырастает.
@@ -25,7 +26,7 @@ import androidx.compose.ui.unit.Dp
  */
 @Immutable
 data class GraphNodeSelection(
-  val id: GraphNode.Id,
+  val id: BasicNode.Id,
   val preview: NodePreview,
   val bounds: Rect,
   val corner: Dp

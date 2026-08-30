@@ -2,6 +2,8 @@ package ru.sla.clarify.feature.chronology.ui.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import ru.sla.atlas.entity.Branch
 
 /**
  * Ребро графа: ортогональная ломаная в координатах полотна.
@@ -20,7 +22,7 @@ import androidx.compose.ui.geometry.Offset
  * просвечивала бы. Исключение — точки на магистрали: они залиты непрозрачно именно затем, чтобы
  * прорезать линию, и маршрут ветки начинается от их центра.
  *
- * **Ветку опознаёт [branchId], а не [colorIndex].** Оттенков шесть, а счёт веток идёт за всю жизнь
+ * **Ветку опознаёт [branchId], а не [color].** Оттенков шесть, а счёт веток идёт за всю жизнь
  * переписки, поэтому цвет повторяется каждые шесть ответвлений: в основном демо-наборе `export` и
  * `stickers` носят второй оттенок **одновременно**, на разных дорожках и в разных концах графа. Всё,
  * что ищет рёбра одной ветки — сегодня церемония слияния (§12), — обязано спрашивать
@@ -29,7 +31,7 @@ import androidx.compose.ui.geometry.Offset
  * @param points точки излома в порядке следования линии
  * @param hops координаты X чужих вертикалей, над которыми этот маршрут ставит мостики (§18.1)
  * @param branchId чья это линия; у магистрали — идентификатор корневой ветки, а не `null`
- * @param colorIndex цвет идентичности ветки, см. `Int.toBranchColor`
+ * @param color цвет идентичности ветки
  * @param role чем ребро является: от этого зависит только толщина
  * @param status что с веткой происходит: от этого зависит только штрих и прозрачность
  */
@@ -37,8 +39,8 @@ import androidx.compose.ui.geometry.Offset
 data class GraphEdge(
   val points: List<Offset>,
   val hops: List<Float>,
-  val branchId: GraphBranch.Id,
-  val colorIndex: Int,
+  val branchId: Branch.Id,
+  val color: Color,
   val role: GraphEdgeRole,
-  val status: GraphBranchStatus
+  val status: Branch.Status
 )

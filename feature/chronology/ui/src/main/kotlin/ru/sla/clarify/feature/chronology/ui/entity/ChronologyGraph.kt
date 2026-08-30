@@ -1,29 +1,28 @@
 package ru.sla.clarify.feature.chronology.ui.entity
 
 import androidx.compose.runtime.Immutable
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
 
 /**
- * Граф беседы целиком: и раскладочная его часть, и то, что нарисовано внутри узлов.
+ * Граф беседы целиком: раскладка, имена веток и содержимое превью-карточек.
  *
- * Одной сущностью, а не пятью полями состояния, и не случайно: занятость дорожек выводится из
- * индексов узлов по идентификаторам развилки и слияния, поэтому список веток, разъехавшийся с
- * узлами хотя бы на кадр, дал бы раскраску по чужим индексам — **молча**. Порознь эти списки
- * подменить невозможно по построению.
+ * Одной сущностью, а не отдельными полями состояния: и то, и другое адресуется идентификаторами
+ * узлов, и карта, разъехавшаяся с графом хотя бы на кадр, дала бы карточку с чужим текстом —
+ * **молча**. Что порознь нельзя подменить сами узлы и ветки, стережёт уже [Graph].
  *
- * @param nodes узлы в хронологическом порядке
- * @param branches ветки, кроме магистрали, в порядке ветвления — в этом же порядке идёт жадная
- *   раскраска дорожек
- * @param branchNames имя каждой ветки. Отдельной картой, а не полем [GraphBranch]: та — сущность
+ * @param layout раскладка: порядок узлов и состав веток. Узел здесь свой, [Node], а не базовый:
+ *   всё, что плашка рисует, лежит внутри него
+ * @param branchNames имя каждой ветки. Отдельной картой, а не полем [Branch]: та — сущность
  *   раскладки, и имя в ней было бы содержимым, попавшим не в свой слой. Магистрали в карте нет, и
  *   это не пропуск: у неё нет темы, о которой можно сказать «ветка такая-то»
- * @param episodeById содержимое плашек по идентификатору узла; у точек на линии его нет
- * @param previewById содержимое превью-карточек; узел без него не нажимается вовсе
+ * @param previewById содержимое превью-карточек; узел без него не нажимается вовсе. В узел не
+ *   убрано намеренно: карточка — вторая поверхность, узел её не рисует и о ней не знает
  */
 @Immutable
 data class ChronologyGraph(
-  val nodes: List<GraphNode> = emptyList(),
-  val branches: List<GraphBranch> = emptyList(),
-  val branchNames: Map<GraphBranch.Id, String> = emptyMap(),
-  val episodeById: Map<GraphNode.Id, EpisodeContent> = emptyMap(),
-  val previewById: Map<GraphNode.Id, NodePreview> = emptyMap()
+  val layout: Graph<Node> = Graph.Empty,
+  val branchNames: Map<Branch.Id, String> = emptyMap(),
+  val previewById: Map<BasicNode.Id, NodePreview> = emptyMap()
 )

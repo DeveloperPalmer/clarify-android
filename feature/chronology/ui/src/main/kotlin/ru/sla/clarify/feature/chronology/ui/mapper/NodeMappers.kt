@@ -4,9 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chronology.ui.entity.EpisodeContent
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Связная подпись узла для скринридера — §14 брифа.
@@ -19,35 +17,32 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
  * Части перечисляются в порядке убывания важности: чем узел является, сколько в нём чего, когда это
  * было, где это лежит и что осталось непрочитанным.
  *
- * @param episode содержимое плашки эпизода; `null` у точек на линии
  * @param branchName имя ветки, которой принадлежит узел; `null` у магистрали
  * @return готовая к озвучиванию строка
  */
 @Composable
-internal fun GraphNode.toDescription(episode: EpisodeContent?, branchName: String?): String {
+internal fun Node.toDescription(branchName: String?): String {
   val branch = branchName?.let { stringResource(R.string.chronology_node_branch, it) }
-  return when (role) {
-    GraphNodeRole.Episode -> nodeDescriptionOf(
+  return when (this) {
+    is Node.Episode -> nodeDescriptionOf(
       listOf(
         stringResource(R.string.chronology_node_episode),
-        episode?.let {
-          pluralStringResource(R.plurals.chronology_episode_messages_count, it.count, it.count)
-        },
-        episode?.time,
+        pluralStringResource(R.plurals.chronology_episode_messages_count, count, count),
+        time,
         branch,
-        episode?.unreadCount?.takeIf { it > 0 }?.let { unread ->
+        unreadCount.takeIf { it > 0 }?.let { unread ->
           pluralStringResource(R.plurals.chronology_node_unread_count, unread.toInt(), unread.toInt())
         }
       )
     )
-    GraphNodeRole.Fork -> nodeDescriptionOf(
+    is Node.Fork -> nodeDescriptionOf(
       listOf(stringResource(R.string.chronology_node_fork), branch)
     )
-    GraphNodeRole.Merge -> nodeDescriptionOf(
+    is Node.Merge -> nodeDescriptionOf(
       listOf(stringResource(R.string.chronology_node_merge), branch)
     )
     // Фронт — единственный узел, у которого нет ни данных, ни ветки: он и есть «сейчас».
-    GraphNodeRole.Front -> stringResource(R.string.chronology_front_caption)
+    is Node.Front -> stringResource(R.string.chronology_front_caption)
   }
 }
 

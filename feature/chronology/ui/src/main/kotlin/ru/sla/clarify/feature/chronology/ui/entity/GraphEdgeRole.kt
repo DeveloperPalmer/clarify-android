@@ -13,7 +13,7 @@ import androidx.compose.runtime.Immutable
 enum class GraphEdgeRole {
 
   /** Магистраль: сплошная 2 dp, нейтральная — у корневой ветки идентичности нет. */
-  Trunk,
+  Baseline,
 
   /** Линия ветки по её дорожке: 1.5 dp цветом идентичности. */
   Branch,

@@ -257,7 +257,7 @@ private fun DrawScope.drawMinimap(
     // а знак читается без подписи и бесплатно.
     val end = if (mark.lane < 0) middle - MARK_HEIGHT.toPx() else middle + MARK_HEIGHT.toPx()
     drawLine(
-      color = mark.colorIndex.toBranchColor(colors),
+      color = mark.color,
       start = Offset(x = x, y = middle),
       end = Offset(x = x, y = end),
       strokeWidth = 2.dp.toPx()
@@ -360,10 +360,18 @@ private fun GraphMinimapPreviewDark(
 
 @Composable
 private fun GraphMinimapPreviewContent(minimap: GraphMinimapPreview) {
+  val colors = AppTheme.colors
+  val marks = minimap.marks.map { mark ->
+    GraphLaneMark(
+      position = mark.position,
+      lane = mark.lane,
+      color = mark.colorIndex.toBranchColor(colors)
+    )
+  }
   GraphMinimap(
     modifier = Modifier.padding(vertical = 12.dp),
     span = rememberUpdatedState(minimap.span),
-    marks = rememberUpdatedState(minimap.marks),
+    marks = rememberUpdatedState(marks),
     label = rememberUpdatedState(null),
     onScrub = { },
     onBoundsChanged = { _, _ -> }
@@ -389,7 +397,21 @@ private fun MinimapDateBubblePreviewDark() {
 @Immutable
 private data class GraphMinimapPreview(
   val span: GraphViewportSpan,
-  val marks: List<GraphLaneMark>
+  val marks: List<GraphMinimapPreviewMark>
+)
+
+/**
+ * Засечка кадра превью: то же, что [GraphLaneMark], но цветом ветки здесь ещё номер оттенка.
+ *
+ * Провайдер композицией не является, а цвет живёт в палитре — достать её он не может. Номер
+ * превращается в цвет в [GraphMinimapPreviewContent], то есть там же, где это делает настоящий
+ * вызывающий: на границе композиции.
+ */
+@Immutable
+private data class GraphMinimapPreviewMark(
+  val position: Float,
+  val lane: Int,
+  val colorIndex: Int
 )
 
 /**
@@ -407,19 +429,19 @@ private class GraphMinimapPreviewProvider : PreviewParameterProvider<GraphMinima
     GraphMinimapPreview(
       span = GraphViewportSpan(position = 0.45f, width = 0.06f),
       marks = listOf(
-        GraphLaneMark(position = 0.08f, lane = -1, colorIndex = 1),
-        GraphLaneMark(position = 0.21f, lane = 1, colorIndex = 2),
-        GraphLaneMark(position = 0.33f, lane = -2, colorIndex = 3),
-        GraphLaneMark(position = 0.55f, lane = 2, colorIndex = 4),
-        GraphLaneMark(position = 0.71f, lane = -3, colorIndex = 5),
-        GraphLaneMark(position = 0.88f, lane = 3, colorIndex = 6)
+        GraphMinimapPreviewMark(position = 0.08f, lane = -1, colorIndex = 1),
+        GraphMinimapPreviewMark(position = 0.21f, lane = 1, colorIndex = 2),
+        GraphMinimapPreviewMark(position = 0.33f, lane = -2, colorIndex = 3),
+        GraphMinimapPreviewMark(position = 0.55f, lane = 2, colorIndex = 4),
+        GraphMinimapPreviewMark(position = 0.71f, lane = -3, colorIndex = 5),
+        GraphMinimapPreviewMark(position = 0.88f, lane = 3, colorIndex = 6)
       )
     ),
     GraphMinimapPreview(
       span = GraphViewportSpan(position = 0f, width = 0.16f),
       marks = listOf(
-        GraphLaneMark(position = 0.08f, lane = -1, colorIndex = 1),
-        GraphLaneMark(position = 0.21f, lane = 1, colorIndex = 2)
+        GraphMinimapPreviewMark(position = 0.08f, lane = -1, colorIndex = 1),
+        GraphMinimapPreviewMark(position = 0.21f, lane = 1, colorIndex = 2)
       )
     ),
     GraphMinimapPreview(

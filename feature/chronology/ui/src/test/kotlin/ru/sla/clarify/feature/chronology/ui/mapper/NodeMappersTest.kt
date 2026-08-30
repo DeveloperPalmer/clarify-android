@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
  * в проекте нет. Зато сборка — обычная арифметика над строками, и ошибиться в ней можно ровно один
  * раз: оставить в подписи дырку от части, которой нет. Скринридер прочитает такую дырку вслух.
  */
-class GraphNodeMappersTest {
+class NodeMappersTest {
 
   @Test
   fun `parts are joined in the order they were given`() {

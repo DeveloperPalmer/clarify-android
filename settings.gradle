@@ -17,6 +17,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "Clarify"
 includeBuild("build-conventions")
+include ':lib:atlas'
 include ':lib:log:log'
 include ':lib:log:android'
 include ':lib:resource-refs:resource-refs'

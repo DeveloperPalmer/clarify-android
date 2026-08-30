@@ -1,10 +1,12 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import androidx.compose.ui.graphics.Color
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Отрезок индексов, на котором ветка держит свою дорожку.
@@ -32,26 +34,25 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
  * развилкой на третьем узле и первым сообщением на восьмом отдала бы промежуток соседке, и уже
  * горизонталь входа проехала бы по чужим плашкам.
  *
+ * Собственные узлы ветка перечисляет сама, поэтому отрезок берётся из её состава, а не собирается
+ * обратным проходом по узлам: узлы, перечисленные веткой, но выпавшие из набора (страница ещё не
+ * догружена), в отрезок не попадают — их индекса просто нет.
+ *
  * @param branches ветки графа, кроме магистрали
- * @param nodeBranches ветка каждого узла, в порядке узлов
  * @param indexById индекс узла по его идентификатору
+ * @param lastIndex индекс последнего узла графа: до него держит дорожку всё, что не слито
  * @return отрезок занятости для каждой ветки; ветка без единого узла и без найденной развилки
  *   в результат не попадает — занимать ей нечего
  */
 internal fun branchOccupancyOf(
-  branches: List<GraphBranch>,
-  nodeBranches: List<GraphBranch.Id>,
-  indexById: Map<GraphNode.Id, Int>
-): Map<GraphBranch.Id, IntRange> {
-  val ownNodes = HashMap<GraphBranch.Id, IntRange>()
-  nodeBranches.forEachIndexed { index, id ->
-    val known = ownNodes[id]
-    ownNodes[id] = if (known == null) index..index else known.first..index
-  }
-  val lastIndex = nodeBranches.lastIndex
-  val occupancy = HashMap<GraphBranch.Id, IntRange>()
+  branches: List<Branch>,
+  indexById: Map<BasicNode.Id, Int>,
+  lastIndex: Int
+): Map<Branch.Id, IntRange> {
+  val occupancy = HashMap<Branch.Id, IntRange>()
   branches.forEach { branch ->
-    val own = ownNodes[branch.id]
+    val ownIndexes = branch.nodeIds.mapNotNull { indexById[it] }
+    val own = if (ownIndexes.isEmpty()) null else ownIndexes.min()..ownIndexes.max()
     val fork = branch.forkedFrom?.let { indexById[it] }
     val start = fork ?: own?.first
     if (start != null) {
@@ -88,11 +89,11 @@ internal fun branchOccupancyOf(
  * @return номер дорожки для каждой ветки из [occupancy]
  */
 internal fun laneAssignmentOf(
-  occupancy: Map<GraphBranch.Id, IntRange>,
-  order: List<GraphBranch.Id>
-): Map<GraphBranch.Id, Int> {
+  occupancy: Map<Branch.Id, IntRange>,
+  order: List<Branch.Id>
+): Map<Branch.Id, Int> {
   val takenByLane = HashMap<Int, MutableList<IntRange>>()
-  val lanes = HashMap<GraphBranch.Id, Int>()
+  val lanes = HashMap<Branch.Id, Int>()
   order.forEach { id ->
     val span = occupancy[id]
     if (span != null) {
@@ -150,8 +151,8 @@ private fun IntRange.overlaps(other: IntRange): Boolean {
  * @return номер дорожки каждого узла, в порядке узлов
  */
 internal fun nodeLanesOf(
-  nodeBranches: List<GraphBranch.Id>,
-  lanes: Map<GraphBranch.Id, Int>
+  nodeBranches: List<Branch.Id>,
+  lanes: Map<Branch.Id, Int>
 ): List<Int> {
   return nodeBranches.map { lanes[it] ?: 0 }
 }
@@ -165,7 +166,7 @@ internal fun nodeLanesOf(
  * @param lanes номера дорожек веток
  * @return число различных дорожек, включая магистраль
  */
-internal fun laneCountOf(lanes: Map<GraphBranch.Id, Int>): Int {
+internal fun laneCountOf(lanes: Map<Branch.Id, Int>): Int {
   var below = 0
   var above = 0
   lanes.values.forEach { lane ->
@@ -186,33 +187,34 @@ internal fun laneCountOf(lanes: Map<GraphBranch.Id, Int>): Int {
  * несколько веток: тогда первая из них и задаёт акцент точке, а остальные получат свои собственные
  * точки ветвления — по одной на ветку.
  *
- * @param nodes узлы в хронологическом порядке
- * @param branches ветки графа, кроме магистрали
+ * @param graph граф целиком: акцент выводится из узла, его ветки и веток, что от него уходят
  * @param branchLanes номер дорожки каждой ветки, см. [laneAssignmentOf]
- * @param branchColors цвет идентичности каждой ветки
- * @return акцент каждого узла, в порядке [nodes]
+ * @param branchColors цвет каждой ветки графа, магистраль включая: ветки без цвета здесь быть не
+ *   может, и её отсутствие — рассинхронизация наборов, а не значение по умолчанию
+ * @return акцент каждого узла, в порядке узлов графа
  */
 internal fun nodeAccentsOf(
-  nodes: List<GraphNode>,
-  branches: List<GraphBranch>,
-  branchLanes: Map<GraphBranch.Id, Int>,
-  branchColors: Map<GraphBranch.Id, Int>
+  graph: Graph<Node>,
+  branchLanes: Map<Branch.Id, Int>,
+  branchColors: Map<Branch.Id, Color>
 ): List<GraphNodeAccent> {
-  val forkedAt = HashMap<GraphNode.Id, GraphBranch.Id>()
-  val mergedAt = HashMap<GraphNode.Id, GraphBranch.Id>()
-  branches.forEach { branch ->
+  val forkedAt = HashMap<BasicNode.Id, Branch.Id>()
+  val mergedAt = HashMap<BasicNode.Id, Branch.Id>()
+  graph.branches.forEach { branch ->
     branch.forkedFrom?.let { forkedAt.putIfAbsent(it, branch.id) }
     branch.mergedAt?.let { mergedAt.putIfAbsent(it, branch.id) }
   }
-  return nodes.map { node ->
-    val owner = when (node.role) {
-      GraphNodeRole.Fork -> forkedAt[node.id] ?: node.branchId
-      GraphNodeRole.Merge -> mergedAt[node.id] ?: node.branchId
-      GraphNodeRole.Episode, GraphNodeRole.Front -> node.branchId
+  return graph.nodes.mapIndexed { index, node ->
+    val own = graph.branchIds[index]
+    val owner = when (node) {
+      is Node.Fork -> forkedAt[node.id] ?: own
+      is Node.Merge -> mergedAt[node.id] ?: own
+      is Node.Episode,
+      is Node.Front -> own
     }
     GraphNodeAccent(
       lane = branchLanes[owner] ?: 0,
-      colorIndex = branchColors[owner] ?: 0
+      color = branchColors.getValue(owner)
     )
   }
 }
@@ -230,23 +232,24 @@ internal fun nodeAccentsOf(
  * порознь, и измерение платило за эту работу дважды за кадр — при смене уровня детализации, где
  * измерений на переход приходится несколько, это и было видно в счётчиках панели.
  *
- * @param nodes узлы в хронологическом порядке
- * @param branches ветки графа, кроме магистрали, в порядке ветвления
+ * @param graph граф: порядок узлов и состав веток
+ * @param branchColors цвет каждой ветки графа, см. `Graph.toBranchColors`
  * @return дорожки узлов и их акценты
  */
 internal fun graphLanesOf(
-  nodes: List<GraphNode>,
-  branches: List<GraphBranch>
+  graph: Graph<Node>,
+  branchColors: Map<Branch.Id, Color>
 ): GraphLanes {
-  val branchIds = nodes.map { it.branchId }
-  val indexById = nodes.withIndex().associate { (index, node) -> node.id to index }
   val branchLanes = laneAssignmentOf(
-    occupancy = branchOccupancyOf(branches, branchIds, indexById),
-    order = branches.map { it.id }
+    occupancy = branchOccupancyOf(
+      branches = graph.branches,
+      indexById = graph.nodeIndexesById,
+      lastIndex = graph.nodes.lastIndex
+    ),
+    order = graph.branches.map { it.id }
   )
-  val branchColors = branches.associate { it.id to it.colorIndex }
   return GraphLanes(
-    lanes = nodeLanesOf(branchIds, branchLanes),
-    accents = nodeAccentsOf(nodes, branches, branchLanes, branchColors)
+    lanes = nodeLanesOf(graph.branchIds, branchLanes),
+    accents = nodeAccentsOf(graph, branchLanes, branchColors)
   )
 }

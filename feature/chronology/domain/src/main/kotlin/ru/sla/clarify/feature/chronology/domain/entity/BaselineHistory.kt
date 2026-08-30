@@ -18,7 +18,7 @@ import ru.sla.clarify.entity.chat.Commit
  * @param unreadCount непрочитанное магистрали — счётчик беседы, тот же, что показывает чат
  */
 @Immutable
-data class TrunkHistory(
+data class BaselineHistory(
   val id: Branch.Id,
   val commits: List<Commit>,
   val unreadCount: Long

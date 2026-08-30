@@ -1,8 +1,9 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.atlas.entity.Branch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
@@ -188,15 +189,15 @@ internal fun scrubbedCameraXOf(
  *
  * @param branchIds ветка каждого узла
  * @param lanes номер дорожки каждого узла: задаёт направление засечки
- * @param colorIndexes цвет идентичности каждого узла
+ * @param nodeColors цвет идентичности каждого узла
  * @param centres центры плашек в координатах полотна, в порядке [branchIds]
  * @param centreSpan отрезок центров крайних плашек
  * @return засечки в порядке возрастания позиции; пусто, когда веток нет или история вырождена
  */
 internal fun laneMarksOf(
-  branchIds: List<GraphBranch.Id>,
+  branchIds: List<Branch.Id>,
   lanes: List<Int>,
-  colorIndexes: List<Int>,
+  nodeColors: List<Color>,
   centres: List<Offset>,
   centreSpan: ClosedFloatingPointRange<Float>
 ): List<GraphLaneMark> {
@@ -204,7 +205,7 @@ internal fun laneMarksOf(
   if (world <= 0f || branchIds.isEmpty()) {
     return emptyList()
   }
-  val startByBranch = HashMap<GraphBranch.Id, GraphLaneMark>()
+  val startByBranch = HashMap<Branch.Id, GraphLaneMark>()
   branchIds.forEachIndexed { index, branchId ->
     if (lanes[index] != 0) {
       val x = centres[index].x
@@ -214,7 +215,7 @@ internal fun laneMarksOf(
         startByBranch[branchId] = GraphLaneMark(
           position = position,
           lane = lanes[index],
-          colorIndex = colorIndexes[index]
+          color = nodeColors[index]
         )
       }
     }

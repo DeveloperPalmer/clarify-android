@@ -3,8 +3,8 @@ package ru.sla.clarify.feature.chronology.ui.mapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
 
 /**
  * Таблица зазоров задана вручную, а не формулой, поэтому её монотонность ничем не гарантирована —

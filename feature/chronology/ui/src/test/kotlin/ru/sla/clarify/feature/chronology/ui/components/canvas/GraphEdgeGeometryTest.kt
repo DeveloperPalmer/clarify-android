@@ -6,13 +6,13 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphVertical
-import ru.sla.clarify.feature.chronology.ui.entity.TimeGap
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Сторожит то, ради чего рёбра перестали быть тремя числами.
@@ -30,7 +30,7 @@ class GraphEdgeGeometryTest {
   @Test
   fun `an edge is as long as the pause that made it`() {
     val edges = edgesOf(
-      nodes = listOf(episode("1", "trunk"), episode("2", "trunk")),
+      nodes = listOf(episode("1"), episode("2")),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0)),
       sizes = listOf(SIZE, SIZE)
     )
@@ -43,7 +43,7 @@ class GraphEdgeGeometryTest {
   @Test
   fun `the last node of a branch has no trailing edge`() {
     val edges = edgesOf(
-      nodes = listOf(episode("1", "trunk"), episode("2", "trunk")),
+      nodes = listOf(episode("1"), episode("2")),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0)),
       sizes = listOf(SIZE, SIZE)
     )
@@ -55,15 +55,15 @@ class GraphEdgeGeometryTest {
   fun `two branches on one lane are never joined by an edge`() {
     // Обе ветки стоят на одной дорожке: первая слита, вторая заняла её место. Ребро между ними
     // означало бы связь двух несвязанных тем через всю историю.
-    val nodes = listOf(episode("1", "old"), episode("2", "new"))
+    val nodes = listOf(episode("1"), episode("2"))
     val edges = edgesOf(
       nodes = nodes,
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0)),
       sizes = listOf(SIZE, SIZE),
       laneYs = listOf(100f, 100f),
       branches = listOf(
-        branch("old", forkedFrom = null, mergedAt = null),
-        branch("new", forkedFrom = null, mergedAt = null)
+        branch("old", forkedFrom = null, mergedAt = null, nodes = listOf("1")),
+        branch("new", forkedFrom = null, mergedAt = null, nodes = listOf("2"))
       )
     )
 
@@ -74,13 +74,13 @@ class GraphEdgeGeometryTest {
   }
 
   @Test
-  fun `a fork route leaves the trunk at the fork centre`() {
+  fun `a fork route leaves the baseline at the fork centre`() {
     val edges = edgesOf(
-      nodes = listOf(point("fork", GraphNodeRole.Fork), episode("1", "topic")),
+      nodes = listOf(fork("fork"), episode("1")),
       positions = listOf(IntOffset(0, 0), IntOffset(200, 0)),
       sizes = listOf(IntSize(24, 24), SIZE),
       laneYs = listOf(0f, 104f),
-      branches = listOf(branch("topic", forkedFrom = "fork", mergedAt = null))
+      branches = listOf(branch("topic", forkedFrom = "fork", mergedAt = null, nodes = listOf("1")))
     )
 
     val fork = edges.single { it.role == GraphEdgeRole.Fork }
@@ -92,13 +92,13 @@ class GraphEdgeGeometryTest {
   }
 
   @Test
-  fun `a merge route returns to the trunk at the merge centre`() {
+  fun `a merge route returns to the baseline at the merge centre`() {
     val edges = edgesOf(
-      nodes = listOf(episode("1", "topic"), point("merge", GraphNodeRole.Merge)),
+      nodes = listOf(episode("1"), merge("merge")),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0)),
       sizes = listOf(SIZE, IntSize(24, 24)),
       laneYs = listOf(104f, 0f),
-      branches = listOf(branch("topic", forkedFrom = null, mergedAt = "merge"))
+      branches = listOf(branch("topic", forkedFrom = null, mergedAt = "merge", nodes = listOf("1")))
     )
 
     val merge = edges.single { it.role == GraphEdgeRole.Merge }
@@ -112,11 +112,11 @@ class GraphEdgeGeometryTest {
   @Test
   fun `a branch without a merge ends in a tail`() {
     val edges = edgesOf(
-      nodes = listOf(episode("1", "topic")),
+      nodes = listOf(episode("1")),
       positions = listOf(IntOffset(0, 0)),
       sizes = listOf(SIZE),
       laneYs = listOf(104f),
-      branches = listOf(branch("topic", forkedFrom = null, mergedAt = null)),
+      branches = listOf(branch("topic", forkedFrom = null, mergedAt = null, nodes = listOf("1"))),
       contentRight = 900f
     )
 
@@ -131,11 +131,11 @@ class GraphEdgeGeometryTest {
   @Test
   fun `a merged branch has no tail`() {
     val edges = edgesOf(
-      nodes = listOf(episode("1", "topic"), point("merge", GraphNodeRole.Merge)),
+      nodes = listOf(episode("1"), merge("merge")),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0)),
       sizes = listOf(SIZE, IntSize(24, 24)),
       laneYs = listOf(104f, 0f),
-      branches = listOf(branch("topic", forkedFrom = null, mergedAt = "merge")),
+      branches = listOf(branch("topic", forkedFrom = null, mergedAt = "merge", nodes = listOf("1"))),
       contentRight = 900f
     )
 
@@ -143,15 +143,15 @@ class GraphEdgeGeometryTest {
   }
 
   @Test
-  fun `edges of the trunk and of a branch differ in role`() {
+  fun `edges of the baseline and of a branch differ in role`() {
     val edges = edgesOf(
-      nodes = listOf(episode("1", "trunk"), episode("2", "trunk")),
+      nodes = listOf(episode("1"), episode("2")),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0)),
       sizes = listOf(SIZE, SIZE)
     )
 
     assertEquals(
-      GraphEdgeRole.Trunk,
+      GraphEdgeRole.Baseline,
       edges.single().role,
       "у магистрали своя толщина, и роль — единственное, что её задаёт"
     )
@@ -160,15 +160,15 @@ class GraphEdgeGeometryTest {
   @Test
   fun `every edge of a branch carries that branch's id`() {
     val edges = edgesOf(
-      nodes = listOf(episode("1", "trunk"), episode("2", "a"), episode("3", "a")),
+      nodes = listOf(episode("1"), episode("2"), episode("3")),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0), IntOffset(680, 0)),
       sizes = listOf(SIZE, SIZE, SIZE),
       laneYs = listOf(0f, 104f, 104f),
-      branches = listOf(branch("a", forkedFrom = "1", mergedAt = null))
+      branches = listOf(branch("a", forkedFrom = "1", mergedAt = null, nodes = listOf("2", "3")))
     )
 
     assertEquals(
-      setOf(GraphBranch.Id("a")),
+      setOf(Branch.Id("a")),
       edges.map { it.branchId }.toSet(),
       "и уход с магистрали, и горизонталь дорожки принадлежат самой ветке"
     )
@@ -177,19 +177,19 @@ class GraphEdgeGeometryTest {
   @Test
   fun `two branches of one shade stay apart by id`() {
     val edges = edgesOf(
-      nodes = listOf(episode("1", "a"), episode("2", "a"), episode("3", "b"), episode("4", "b")),
+      nodes = listOf(episode("1"), episode("2"), episode("3"), episode("4")),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0), IntOffset(680, 0), IntOffset(1020, 0)),
       sizes = listOf(SIZE, SIZE, SIZE, SIZE),
       laneYs = listOf(104f, 104f, 208f, 208f),
       branches = listOf(
-        branch("a", forkedFrom = null, mergedAt = null),
-        branch("b", forkedFrom = null, mergedAt = null)
+        branch("a", forkedFrom = null, mergedAt = null, nodes = listOf("1", "2")),
+        branch("b", forkedFrom = null, mergedAt = null, nodes = listOf("3", "4"))
       )
     )
 
     assertEquals(
       1,
-      edges.map { it.colorIndex }.toSet().size,
+      edges.map { it.color }.toSet().size,
       "оттенок у обеих веток один: цвет повторяется каждые шесть ответвлений"
     )
     assertEquals(
@@ -200,15 +200,15 @@ class GraphEdgeGeometryTest {
   }
 
   @Test
-  fun `an edge of the trunk carries the root branch id`() {
+  fun `an edge of the baseline carries the root branch id`() {
     val edges = edgesOf(
-      nodes = listOf(episode("1", "trunk"), episode("2", "trunk")),
+      nodes = listOf(episode("1"), episode("2")),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0)),
       sizes = listOf(SIZE, SIZE)
     )
 
     assertEquals(
-      GraphBranch.Id("trunk"),
+      Branch.Id("baseline"),
       edges.single().branchId,
       "у магистрали идентификатор корневой ветки, а не пустой"
     )
@@ -325,17 +325,17 @@ class GraphHopTest {
     // горизонталь `b`, и та горбится.
     val edges = edgesOf(
       nodes = listOf(
-        episode("1", "b"),
-        episode("2", "trunk"),
-        episode("3", "b"),
-        episode("4", "c")
+        episode("1"),
+        episode("2"),
+        episode("3"),
+        episode("4")
       ),
       positions = listOf(IntOffset(0, 0), IntOffset(340, 0), IntOffset(680, 0), IntOffset(1020, 0)),
       sizes = listOf(SIZE, SIZE, SIZE, SIZE),
       laneYs = listOf(104f, 0f, 104f, 208f),
       branches = listOf(
-        branch("b", forkedFrom = null, mergedAt = null),
-        branch("c", forkedFrom = "2", mergedAt = null)
+        branch("b", forkedFrom = null, mergedAt = null, nodes = listOf("1", "3")),
+        branch("c", forkedFrom = "2", mergedAt = null, nodes = listOf("4"))
       )
     )
 
@@ -352,51 +352,75 @@ class GraphHopTest {
 
 private val SIZE = IntSize(width = 200, height = 72)
 
-private fun episode(id: String, branchId: String): GraphNode {
-  return GraphNode(
-    id = GraphNode.Id(id),
-    branchId = GraphBranch.Id(branchId),
-    role = GraphNodeRole.Episode,
-    gap = TimeGap.Hour
+private fun episode(id: String): Node.Episode {
+  return Node.Episode(
+    id = BasicNode.Id(id),
+    gap = TimeGap.Hour,
+    time = "6 мар, 10:00",
+    count = 1,
+    snippet = "",
+    myShare = 0f,
+    unreadCount = 0,
+    dim = false
   )
 }
 
-private fun point(id: String, role: GraphNodeRole): GraphNode {
-  return GraphNode(
-    id = GraphNode.Id(id),
-    branchId = GraphBranch.Id("trunk"),
-    role = role,
-    gap = TimeGap.Hour
-  )
+private fun fork(id: String): Node.Fork {
+  return Node.Fork(id = BasicNode.Id(id), gap = TimeGap.Hour)
 }
 
+private fun merge(id: String): Node.Merge {
+  return Node.Merge(id = BasicNode.Id(id), gap = TimeGap.Hour)
+}
+
+/**
+ * Ветка с её составом: какие узлы истории ей принадлежат.
+ *
+ * @param nodes идентификаторы собственных узлов ветки; остальные достаются магистрали
+ */
 private fun branch(
   id: String,
   forkedFrom: String?,
   mergedAt: String?,
-  status: GraphBranchStatus = GraphBranchStatus.Alive
-): GraphBranch {
-  return GraphBranch(
-    id = GraphBranch.Id(id),
+  nodes: List<String> = emptyList(),
+  status: Branch.Status = Branch.Status.Alive
+): Branch {
+  return Branch(
+    id = Branch.Id(id),
+    nodeIds = nodes.map { BasicNode.Id(it) },
     colorIndex = 1,
-    forkedFrom = forkedFrom?.let { GraphNode.Id(it) },
-    mergedAt = mergedAt?.let { GraphNode.Id(it) },
+    forkedFrom = forkedFrom?.let { BasicNode.Id(it) },
+    mergedAt = mergedAt?.let { BasicNode.Id(it) },
     status = status
   )
 }
 
 @Suppress("LongParameterList")
 private fun edgesOf(
-  nodes: List<GraphNode>,
+  nodes: List<Node>,
   positions: List<IntOffset>,
   sizes: List<IntSize>,
   laneYs: List<Float> = List(nodes.size) { 0f },
-  branches: List<GraphBranch> = emptyList(),
+  branches: List<Branch> = emptyList(),
   contentRight: Float = 0f
 ): List<ru.sla.clarify.feature.chronology.ui.entity.GraphEdge> {
-  return graphEdgesOf(
+  val owned = branches.flatMap { it.nodeIds }.toSet()
+  val graph = Graph(
     nodes = nodes,
-    branches = branches,
+    // Всё, что ветки не разобрали, стоит на магистрали — как и в настоящем графе.
+    baseline = Branch(
+      id = Branch.Id("baseline"),
+      nodeIds = nodes.map { it.id }.filterNot { it in owned },
+      colorIndex = 0,
+      forkedFrom = null,
+      mergedAt = null,
+      status = Branch.Status.Alive
+    ),
+    branches = branches
+  )
+  return graphEdgesOf(
+    graph = graph,
+    branchColors = graph.mockBranchColors(),
     laneYs = laneYs,
     positions = positions,
     sizes = sizes,

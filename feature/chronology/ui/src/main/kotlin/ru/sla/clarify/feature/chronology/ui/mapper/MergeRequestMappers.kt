@@ -1,7 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
 import ru.sla.clarify.entity.chat.Branch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
+import ru.sla.atlas.entity.Branch as GraphBranch
 
 /**
  * Merge request ветки — в статус, которым она рисуется.
@@ -13,11 +13,11 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphBranchStatus
  *
  * @return состояние, из которого выводятся штрих линии и строка статуса
  */
-internal fun Branch.MergeRequest?.toGraphBranchStatus(): GraphBranchStatus {
+internal fun Branch.MergeRequest?.toBranchStatus(): GraphBranch.Status {
   return when (this?.status) {
-    null -> GraphBranchStatus.Alive
-    Branch.MergeRequest.Status.Open -> GraphBranchStatus.Waiting
-    Branch.MergeRequest.Status.ReadyToMerge -> GraphBranchStatus.Ready
-    Branch.MergeRequest.Status.Merged -> GraphBranchStatus.Merged
+    null -> GraphBranch.Status.Alive
+    Branch.MergeRequest.Status.Open -> GraphBranch.Status.Waiting
+    Branch.MergeRequest.Status.ReadyToMerge -> GraphBranch.Status.Ready
+    Branch.MergeRequest.Status.Merged -> GraphBranch.Status.Merged
   }
 }

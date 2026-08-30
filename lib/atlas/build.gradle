@@ -1,0 +1,17 @@
+plugins {
+  id 'android-library-convention'
+  id 'android-compose-convention'
+}
+
+android {
+  namespace "ru.sla.atlas"
+}
+
+dependencies {
+  api libs.bundles.android.core
+  api libs.bundles.android.ui
+
+  testImplementation libs.bundles.unittest
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.platform.launcher
+}
