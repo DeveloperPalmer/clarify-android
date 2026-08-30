@@ -11,11 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
@@ -27,7 +25,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.drop
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
 import ru.sla.clarify.core.ui.screen.rememberViewIntents
@@ -91,15 +88,6 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
       val ceremonyScope = rememberCoroutineScope()
       val haptics = LocalHapticFeedback.current
       val reducedMotion = rememberReducedMotion()
-      // Гаптика переключения уровня (§11.3): один отклик на переход. Снимается потоком, а не чтением
-      // уровня в теле экрана, — чтение подписало бы весь экран на переключение, а `drop(1)` убирает
-      // кадр подписки, иначе отклик приходил бы на открытие экрана. Под reduced motion отклик
-      // остаётся: он не движение, и глушить его вместе с анимацией нельзя.
-      LaunchedEffect(canvasState) {
-        snapshotFlow { canvasState.level.value }
-          .drop(1)
-          .collect { haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate) }
-      }
       // Подпись пузыря мини-карты. Собирается здесь, потому что дату знает экран, а какой узел под
       // центром — полотно; отдаётся `State`, чтобы прочитал её лист, а не тело экрана: чтение
       // прямо тут пересобирало бы лямбды полотна при каждой смене узла под камерой.
