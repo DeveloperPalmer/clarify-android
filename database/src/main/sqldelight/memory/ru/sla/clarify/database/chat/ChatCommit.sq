@@ -39,6 +39,23 @@ FROM ChatCommit
 WHERE conversationId = :conversationId AND branchId = :branchId
 ORDER BY createdAtNanos DESC, id DESC;
 
+selectByConversation:
+SELECT
+  id,
+  branchId,
+  senderId,
+  type,
+  text,
+  replyCommit,
+  invitedId,
+  createdAtNanos,
+  isSelf,
+  status,
+  editedAtNanos
+FROM ChatCommit
+WHERE conversationId = :conversationId AND createdAtNanos > 0
+ORDER BY createdAtNanos ASC, id ASC;
+
 selectOldestCursor:
 SELECT
   id,

@@ -6,6 +6,5 @@ plugins {
 dependencies {
   api project(":entity")
   api project(":core:domain")
-  api project(":feature:chat-direct-thread:domain")
   implementation libs.compose.runtime
 }

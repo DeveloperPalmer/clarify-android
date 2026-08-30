@@ -72,15 +72,15 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
     )
     ScreenScaffold(state = scaffoldState) {
       val canvasState = rememberGraphCanvasState(
-        nodes = state.nodes,
-        branches = state.graphBranches
+        nodes = state.graph.nodes,
+        branches = state.graph.branches
       )
       val ceremonyState = rememberMergeCeremonyState()
       // Какая ветка вернулась в магистраль в этом узле. Точка слияния стоит **на магистрали**, то
       // есть её собственный `branchId` — корневой, и спросить сливающуюся ветку у самого узла
       // нельзя: связь идёт с другой стороны, от `mergedAt` ветки.
-      val mergedBranchByNode = remember(state.graphBranches) {
-        state.graphBranches.mapNotNull { branch ->
+      val mergedBranchByNode = remember(state.graph.branches) {
+        state.graph.branches.mapNotNull { branch ->
           branch.mergedAt?.let { it to branch.id }
         }.toMap()
       }
@@ -91,7 +91,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
       // Подпись пузыря мини-карты. Собирается здесь, потому что дату знает экран, а какой узел под
       // центром — полотно; отдаётся `State`, чтобы прочитал её лист, а не тело экрана: чтение
       // прямо тут пересобирало бы лямбды полотна при каждой смене узла под камерой.
-      val episodeById = state.episodeById
+      val episodeById = state.graph.episodeById
       val minimapLabel = remember(episodeById, canvasState) {
         derivedStateOf { canvasState.centralNode.value?.let { episodeById[it]?.time } }
       }
@@ -118,8 +118,8 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
             // Имя ветки в узел не приходит: узлу оно не нужно ни для чего, кроме подписи, а подпись
             // собирается здесь — там, где имя вообще есть. У магистрали имени нет, и подпись про
             // ветку тогда не произносится вовсе.
-            val branchName = state.branchNameById[graphNode.branchId]
-            val episode = state.episodeById[graphNode.id]
+            val branchName = state.graph.branchNames[graphNode.branchId]
+            val episode = state.graph.episodeById[graphNode.id]
             val description = graphNode.toDescription(episode = episode, branchName = branchName)
             // Род узла решает, что рисовать, и решает здесь, а не в полотне: полотну безразлично,
             // плашка перед ним или круг, — оно ставит по одному элементу на узел.
@@ -129,7 +129,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                 // прослеживают форму разговора. Приглушение слитой ветки при этом остаётся —
                 // гаснет узел целиком, вместе с гало, ровно как гаснет плашка.
                 GraphLevel.Overview -> {
-                  val item = state.episodeById.getValue(graphNode.id)
+                  val item = state.graph.episodeById.getValue(graphNode.id)
                   GlyphNode(
                     modifier = Modifier.graphicsLayer { alpha = if (item.dim) 0.6f else 1f },
                     color = accent.colorIndex.toBranchColor(AppTheme.colors),
@@ -138,8 +138,8 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                   )
                 }
                 GraphLevel.Episodes -> {
-                  val item = state.episodeById.getValue(graphNode.id)
-                  val preview = state.previewById[graphNode.id]
+                  val item = state.graph.episodeById.getValue(graphNode.id)
+                  val preview = state.graph.previewById[graphNode.id]
                   EpisodeNode(
                     // Выбранная плашка гасится, а не убирается: поверхность обязана уехать в карточку,
                     // а не размножиться копией, оставшейся лежать на полотне. Место в раскладке узел

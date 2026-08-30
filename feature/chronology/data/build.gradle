@@ -8,5 +8,9 @@ android {
 }
 
 dependencies {
+  implementation project(":database")
+  implementation project(":mapper:data")
+  implementation project(":lib:google:firestore")
+  implementation project(":auth-session:data")
   implementation project(":feature:chronology:domain")
 }
