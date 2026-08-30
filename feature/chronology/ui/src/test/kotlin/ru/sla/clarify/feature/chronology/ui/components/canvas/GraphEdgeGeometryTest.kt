@@ -318,6 +318,36 @@ class GraphHopTest {
 
     assertTrue(hops.isEmpty(), "мостик нужен начиная с третьей одновременно живущей ветки")
   }
+
+  @Test
+  fun `an edge with a hop is drawn after the vertical it hops over`() {
+    // Три дорожки: магистраль, ветка `b` на средней и ветка `c` на внешней. Уход `c` пересекает
+    // горизонталь `b`, и та горбится.
+    val edges = edgesOf(
+      nodes = listOf(
+        episode("1", "b"),
+        episode("2", "trunk"),
+        episode("3", "b"),
+        episode("4", "c")
+      ),
+      positions = listOf(IntOffset(0, 0), IntOffset(340, 0), IntOffset(680, 0), IntOffset(1020, 0)),
+      sizes = listOf(SIZE, SIZE, SIZE, SIZE),
+      laneYs = listOf(104f, 0f, 104f, 208f),
+      branches = listOf(
+        branch("b", forkedFrom = null, mergedAt = null),
+        branch("c", forkedFrom = "2", mergedAt = null)
+      )
+    )
+
+    val hopped = edges.indexOfFirst { it.hops.isNotEmpty() }
+    assertTrue(hopped >= 0, "горизонталь средней дорожки пересечена уходом внешней")
+    assertEquals(
+      edges.lastIndex,
+      hopped,
+      "порядок списка — порядок отрисовки: горб, нарисованный раньше вертикали, ляжет под ней, " +
+        "и мостик перестанет быть мостиком"
+    )
+  }
 }
 
 private val SIZE = IntSize(width = 200, height = 72)

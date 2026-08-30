@@ -19,6 +19,9 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphVertical
  * историю. Затем ветвления и возвраты, дающие вертикали. И только потом мостики — когда все
  * вертикали известны.
  *
+ * Порядок списка на выходе — это порядок отрисовки, то есть кто над кем лежит, и горбящиеся рёбра
+ * поэтому уходят в его конец.
+ *
  * @param nodes узлы в хронологическом порядке
  * @param branches ветки графа, кроме магистрали
  * @param laneYs смещение дорожки каждого узла по Y, в пикселях
@@ -60,7 +63,13 @@ internal fun graphEdgesOf(
   edges += tailEdgesOf(nodes, branches, laneYs, positions, sizes, contentRight)
 
   // Мостики ставятся последним проходом: пока не построены все вертикали, пересекать нечего.
-  return edges.map { edge -> edge.copy(hops = hopsForEdgeOf(edge, verticals, hopClearance)) }
+  return edges
+    .map { edge -> edge.copy(hops = hopsForEdgeOf(edge, verticals, hopClearance)) }
+    // Горбящееся ребро поднимается над всеми остальными, и в этом весь мостик: дуга обязана пройти
+    // **над** чужой вертикалью. Вертикали строятся вторым проходом, то есть уже лежат поверх
+    // горизонталей, и без подъёма чужая линия проходила бы сквозь горб. Сортировка устойчивая,
+    // поэтому порядок внутри обеих половин остаётся тем, в котором рёбра построены.
+    .sortedBy { edge -> edge.hops.isNotEmpty() }
 }
 
 /**
