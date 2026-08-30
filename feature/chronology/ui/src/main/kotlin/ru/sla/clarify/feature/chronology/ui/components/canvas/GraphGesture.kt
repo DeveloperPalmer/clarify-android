@@ -36,8 +36,8 @@ import kotlin.math.abs
  * `|pan| > touchSlop`. Своя формула означала бы, что пинч на этом экране берётся не так, как во всех
  * остальных приложениях устройства.
  *
- * Скорость снимается по **центроиду**, а не по указателю: при пинче именно центроид и есть движение
- * картинки. Отсюда же и сброс трекера при смене числа пальцев — см. тело цикла.
+ * Скорость под инерцию снимается **только с протяжки одним пальцем**: жест, в котором побывал второй
+ * палец, отпускается без броска — см. тело цикла.
  *
  * @param isBlocked лежит ли точка касания на том, что закрывает полотно: жест, начатый внутри
  *   инструмента, до камеры не доходит вовсе
@@ -80,6 +80,7 @@ internal suspend fun PointerInputScope.detectCameraGestures(
     tracker.addPointerInputChange(down)
 
     var pointers = 1
+    var isPinch = false
     var pastSlop = false
     var zoom = 1f
     var pan = Offset.Zero
@@ -96,7 +97,24 @@ internal suspend fun PointerInputScope.detectCameraGestures(
       val zoomChange = event.calculateZoom()
       val panChange = event.calculatePan()
       val centroid = event.calculateCentroid(useCurrent = false)
-      trackVelocity(tracker, event, centroid, pressed, pointers)
+      if (pressed > 1 || pointers > 1) {
+        // Второй палец на экране — и жест перестал быть протяжкой до самого конца жеста. Трекеру
+        // с этого кадра нечего давать: пальцы пинча разъезжаются в разные стороны, и скорость
+        // любого из них — не скорость картинки, а центроид, которым картинка и движется, при
+        // отрыве первого пальца скачком переезжает на оставшийся. Условие смотрит и на прошлый
+        // кадр: пинч схлопывается в один палец, и без памяти о нём кадры схлопывания и отпускания
+        // прочитались бы протяжкой.
+        isPinch = true
+      } else {
+        // Платформенный путь — с историческими точками внутри события и с точкой отпускания. Это не
+        // украшение: `VelocityTracker` считает методом наименьших квадратов и **возвращает ноль**,
+        // если точек меньше трёх или между соседними прошло больше сорока миллисекунд. Короткий
+        // флик даёт три-четыре события, поэтому потеря истории обнуляет бросок целиком.
+        // Нажатый указатель, а при отпускании последнего — он же сам: его up-событие и есть та
+        // финальная точка, без которой скорость считается по данным двухкадровой давности.
+        val moved = event.changes.fastFirstOrNull { it.pressed } ?: event.changes.first()
+        tracker.addPointerInputChange(moved)
+      }
       pointers = pressed
       if (!pastSlop) {
         zoom *= zoomChange
@@ -117,10 +135,12 @@ internal suspend fun PointerInputScope.detectCameraGestures(
     } while (event.changes.fastAny { it.pressed })
 
     if (pastSlop) {
-      // Кламп по осям, как у платформы: у трекера полиномиальная подгонка, и дрожание перед
-      // отпусканием умеет отдать десятки тысяч px/s, а пролёт растёт как v^1.736.
-      val maximum = viewConfiguration.maximumFlingVelocity
-      onRelease(tracker.calculateVelocity(Velocity(maximum, maximum)))
+      if (!isPinch) {
+        // Кламп по осям, как у платформы: у трекера полиномиальная подгонка, и дрожание перед
+        // отпусканием умеет отдать десятки тысяч px/s, а пролёт растёт как v^1.736.
+        val maximum = viewConfiguration.maximumFlingVelocity
+        onRelease(tracker.calculateVelocity(Velocity(maximum, maximum)))
+      }
       return@awaitEachGesture
     }
     // Порога жест не прошёл — это тап. Вторым таким же он становится двойным, а первым остаётся
@@ -154,49 +174,4 @@ private fun PointerInputChange.followsTap(
     return false
   }
   return (position - first.position).getDistance() <= configuration.touchSlop
-}
-
-/**
- * Кормит трекер скорости тем, что в этот момент и есть движение картинки.
- *
- * Один палец идёт платформенным путём — [addPointerInputChange] с историческими точками внутри
- * события и с точкой отпускания. Это не украшение: `VelocityTracker` считает по методу наименьших
- * квадратов второй степени и **возвращает ноль**, если точек меньше трёх или между соседними
- * прошло больше сорока миллисекунд. Короткий флик даёт три-четыре события, поэтому потеря истории
- * и финальной точки обнуляет бросок целиком, а не портит его слегка.
- *
- * Два пальца и больше идут центроидом: при пинче пальцы разъезжаются в разные стороны, и скорость
- * любого из них — не скорость картинки. Смена состава сбрасывает накопленное: центроид в этот момент
- * скачком переезжает на половину расстояния между пальцами, и трекер прочитал бы это как рывок в
- * тысячи пикселей в секунду, которого рукой не делали.
- *
- * @param tracker трекер жеста
- * @param event событие указателей
- * @param centroid центроид предыдущих позиций, [Offset.Unspecified] при отпускании последнего пальца
- * @param pressed сколько указателей нажато сейчас
- * @param previous сколько было нажато на прошлом событии
- */
-private fun trackVelocity(
-  tracker: VelocityTracker,
-  event: PointerEvent,
-  centroid: Offset,
-  pressed: Int,
-  previous: Int
-) {
-  if (pressed > 1) {
-    if (previous <= 1) {
-      tracker.resetTracking()
-    }
-    if (centroid.isSpecified) {
-      tracker.addPosition(event.changes.first().uptimeMillis, centroid)
-    }
-    return
-  }
-  if (previous > 1) {
-    tracker.resetTracking()
-  }
-  // Нажатый указатель, а при отпускании последнего — он же сам: его up-событие и есть та финальная
-  // точка, без которой скорость считается по данным двухкадровой давности.
-  val change = event.changes.fastFirstOrNull { it.pressed } ?: event.changes.first()
-  tracker.addPointerInputChange(change)
 }
