@@ -353,6 +353,41 @@ class GraphCanvasStateTest {
     )
   }
 
+  /**
+   * Порог сравнивается с масштабом, запрошенным одним событием жеста, а посадка отходит от края
+   * полосы на восемь процентов. При девяноста событиях в секунду быстрый щипок проходит этот запас
+   * за пару событий — и уровень начинает мигать, держа на каждый узел по два представления. Запас
+   * увеличить нельзя: он и есть то, чем стык уровней держится бесшовным.
+   */
+  @Test
+  fun `a second level switch waits for the crossfade of the first`() {
+    val state = GraphCanvasState()
+    state.fill(count = 9)
+    state.pan(Offset(x = -800f, y = 0f))
+    val focus = Offset(x = 700f, y = 300f)
+
+    state.zoom(focus = focus, change = 0.3f)
+    state.fill(count = 9, level = state.level.value)
+    // Щипка вдвое хватило бы на возврат: посадка стоит в восьми процентах от потолка полосы.
+    state.zoom(focus = focus, change = 2f)
+
+    assertEquals(
+      GraphLevel.Overview,
+      state.level.value,
+      "пока кроссфейд не доигран, край полосы работает стенкой, а не переходом: иначе быстрый щипок " +
+        "мигал бы уровнем, ни разу его не показав"
+    )
+
+    state.onLevelSettled()
+    state.zoom(focus = focus, change = 2f)
+
+    assertEquals(
+      GraphLevel.Episodes,
+      state.level.value,
+      "доигранный переход отпускает уровень: тот же щипок обязан увести обратно"
+    )
+  }
+
   @Test
   fun `a layout pass does not subscribe to the level either`() {
     val state = GraphCanvasState()
@@ -483,9 +518,11 @@ class GraphCanvasStateTest {
     count: Int,
     level: GraphLevel = GraphLevel.Episodes
   ): GraphPlacement {
+    val nodes = trunkNodes(count)
     return layout(
       level = level,
-      nodes = trunkNodes(count),
+      nodes = nodes,
+      lanes = graphLanesOf(nodes, branches = emptyList()),
       branches = emptyList(),
       viewportSize = VIEWPORT,
       nodeSizes = List(count) { IntSize(width = 120, height = 28) },

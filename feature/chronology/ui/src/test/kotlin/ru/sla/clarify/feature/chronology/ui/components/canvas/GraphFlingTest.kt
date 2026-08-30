@@ -162,6 +162,7 @@ class GraphFlingTest {
     state.layout(
       level = GraphLevel.Episodes,
       nodes = nodes,
+      lanes = graphLanesOf(nodes, FIVE_BRANCHES),
       branches = FIVE_BRANCHES,
       viewportSize = IntSize(width = 400, height = 200),
       nodeSizes = List(nodes.size) { IntSize(width = 120, height = 28) },

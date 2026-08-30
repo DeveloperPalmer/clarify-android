@@ -35,6 +35,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelSwitch
@@ -120,6 +121,20 @@ internal class GraphCanvasState {
   // Масштаб, на котором полотно ушло с прошлого уровня. Снапшотное: из него в фазе рисования
   // считается встречный масштаб уходящего представления, см. `counterScaleOf`.
   private var levelExitScale by mutableFloatStateOf(1f)
+
+  // Идёт ли смена уровня прямо сейчас. Обычное поле: за ним никто не рисует — его ставит жест, а
+  // снимает полотно, когда кроссфейд доигран.
+  //
+  // Существует затем, чтобы переход нельзя было начать поверх незаконченного. Порог сравнивается с
+  // масштабом, запрошенным **одним событием жеста**, а посадка отходит от края полосы на восемь
+  // процентов — при девяноста событиях в секунду быстрый щипок проходит этот запас за пару событий,
+  // и уровень начинает мигать от дрожания пальца. Мигание стоит дорого вдвойне: пока переход жив,
+  // полотно держит на каждый узел по два представления, а каждый новый отсчитывает свои двести
+  // пятьдесят миллисекунд заново.
+  //
+  // Запас в полосе при этом не увеличен, и это осознанно: он и есть то, чем стык уровней держится
+  // бесшовным. Посадка дальше от края означала бы скачок охвата ровно на кадре перехода.
+  private var isLevelSettling = false
 
   // Заявка на посадку после смены уровня. Обычное поле, как `motionJob`: за ней никто не рисует —
   // её кладёт жест и разбирает ближайшее измерение. Раньше разобрать нельзя: охват нового уровня
@@ -345,7 +360,10 @@ internal class GraphCanvasState {
     val band = levelBandOf(placement, viewport)
     val requested = previous * change
     val next = graphLevelSwitchOf(level = graphLevel, requestedScale = requested, band = band)
-    if (next != null && !placement.isEmpty) {
+    // Пока прошлый переход не доигран, полоса уровня работает обычной стенкой: щипок упирается в её
+    // край и остаётся на месте. Иначе тот же щипок увёл бы полотно обратно, не дав первому переходу
+    // ни закончиться, ни показаться.
+    if (next != null && !placement.isEmpty && !isLevelSettling) {
       switchLevel(to = next, focus = focus)
       telemetry.onZoom()
       // Шаг отдаётся неотвергнутым, хотя запрошенного масштаба на этом уровне и не бывает: упора
@@ -534,7 +552,19 @@ internal class GraphCanvasState {
     )
     pendingFit = false
     levelExitScale = cameraScale
+    isLevelSettling = true
     graphLevel = to
+  }
+
+  /**
+   * Сообщает, что кроссфейд смены уровня доигран и переход можно начинать снова.
+   *
+   * Зовётся полотном, а не отсчитывается здесь по таймеру: длительность перехода живёт в теме и
+   * обращается в ноль под reduced motion, а держатель не знает ни того, ни другого. Второй отсчёт
+   * того же времени разошёлся бы с первым — и разошёлся бы молча.
+   */
+  fun onLevelSettled() {
+    isLevelSettling = false
   }
 
   /**
@@ -774,9 +804,16 @@ internal class GraphCanvasState {
    * между композицией и измерением того же кадра. Прочитав уровень здесь, измерение взяло бы зазоры
    * обзора к плашкам, которые композиция успела построить эпизодами.
    *
+   * Дорожки приходят параметром по той же причине в третий раз — и заодно перестают считаться
+   * каждым измерением. Композиция их уже посчитала: акцент нужен точке ветвления до всякого
+   * измерения, а результат кэширован по узлам и веткам. Считая их здесь заново, измерение платило
+   * бы за индекс узлов, отрезки занятости и жадную раскраску на каждый свой проход — включая все
+   * проходы кадра смены уровня, где меняется раскладка, а дорожки те же самые.
+   *
    * @param level уровень детализации той же композиции: он задаёт зазоры и шаг дорожки
    * @param nodes узлы, из которых построено содержимое этой композиции
-   * @param branches ветки той же композиции: из них считаются дорожки
+   * @param lanes дорожки и акценты той же композиции, см. [graphLanesOf]
+   * @param branches ветки той же композиции: из них считаются рёбра
    * @param viewportSize размер видимой области
    * @param nodeSizes измеренные размеры узлов, в порядке [nodes]
    * @param density плотность экрана для перевода координат полотна в пиксели
@@ -787,6 +824,7 @@ internal class GraphCanvasState {
   fun layout(
     level: GraphLevel,
     nodes: List<GraphNode>,
+    lanes: GraphLanes,
     branches: List<GraphBranch>,
     viewportSize: IntSize,
     nodeSizes: List<IntSize>,
@@ -794,18 +832,20 @@ internal class GraphCanvasState {
     statusBar: Float,
     navigationBar: Float
   ): GraphPlacement {
-    // Дорожки считаются здесь, из параметров, а не читаются готовыми из состояния: узлы и ветки
-    // подменяются из `SideEffect`, то есть между композицией и измерением того же кадра, и раскраска
-    // по снапшот-полю разошлась бы с measurable'ами от старой композиции.
+    // Дорожки берутся из параметров, а не читаются готовыми из состояния: узлы и ветки подменяются
+    // из `SideEffect`, то есть между композицией и измерением того же кадра, и раскраска по
+    // снапшот-полю разошлась бы с measurable'ами от старой композиции.
     val branchIds = nodes.map { it.branchId }
-    val lanes = graphLanesOf(nodes, branches)
-    val colorIndexes = graphAccentsOf(nodes, branches).map { it.colorIndex }
-    val geometry = GraphGeometry(topLane = topLaneOf(lanes), laneStep = level.toLaneStep())
+    val nodeLanes = lanes.lanes
+    val geometry = GraphGeometry(topLane = topLaneOf(nodeLanes), laneStep = level.toLaneStep())
+    // Высоты дорожек считаются один раз на оба потребителя: раскладке и рёбрам нужны одни и те же
+    // числа, и второй проход по узлам за тем же результатом измерение делало бы каждый свой кадр.
+    val laneYs = with(density) { nodeLanes.map { geometry.laneYOf(it).toPx() } }
     val result = with(density) {
       graphPlacementOf(
-        lanes = lanes,
+        lanes = nodeLanes,
         gaps = nodes.map { it.gap.toStepWidth(level).toPx() },
-        laneYs = lanes.map { geometry.laneYOf(it).toPx() },
+        laneYs = laneYs,
         sizes = nodeSizes,
         margins = canvasMarginsOf(
           base = CANVAS_PADDING.toPx(),
@@ -820,7 +860,7 @@ internal class GraphCanvasState {
       graphEdgesOf(
         nodes = nodes,
         branches = branches,
-        laneYs = lanes.map { geometry.laneYOf(it).toPx() },
+        laneYs = laneYs,
         positions = result.nodes,
         sizes = nodeSizes,
         // Хвост идёт до правого края содержимого, а не до края видимой области, как просит §6.8:
@@ -834,8 +874,8 @@ internal class GraphCanvasState {
     }
     marks = laneMarksOf(
       branchIds = branchIds,
-      lanes = lanes,
-      colorIndexes = colorIndexes,
+      lanes = nodeLanes,
+      colorIndexes = lanes.accents.map { it.colorIndex },
       centres = result.centres,
       centreSpan = result.centreSpanX
     )

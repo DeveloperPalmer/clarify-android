@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import ru.sla.clarify.feature.chronology.ui.entity.GraphBranch
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeRole
@@ -217,21 +218,26 @@ internal fun nodeAccentsOf(
 }
 
 /**
- * Дорожки и акценты одним вызовом: всё, что выводится из порядка узлов и списка веток.
+ * Дорожки и акценты одним проходом: всё, что выводится из порядка узлов и списка веток.
  *
  * Существует затем, чтобы **композиция и измерение считали это одинаково**. Точке ветвления цвет и
  * направление нужны в composable-функции, то есть до всякого измерения, а раскладке те же дорожки
  * нужны в measure — и два независимых вызова разошлись бы на кадре, где узлы уже подменены, а
  * ветки ещё нет. Одна функция на оба места делает расхождение невозможным.
  *
+ * Одним проходом, а не двумя: назначение дорожек веткам нужно обеим половинам результата, а стоит
+ * оно индекса узлов, отрезков занятости и жадной раскраски. Прежде дорожки и акценты считались
+ * порознь, и измерение платило за эту работу дважды за кадр — при смене уровня детализации, где
+ * измерений на переход приходится несколько, это и было видно в счётчиках панели.
+ *
  * @param nodes узлы в хронологическом порядке
  * @param branches ветки графа, кроме магистрали, в порядке ветвления
- * @return дорожки узлов, их акценты и цвета веток
+ * @return дорожки узлов и их акценты
  */
-internal fun graphAccentsOf(
+internal fun graphLanesOf(
   nodes: List<GraphNode>,
   branches: List<GraphBranch>
-): List<GraphNodeAccent> {
+): GraphLanes {
   val branchIds = nodes.map { it.branchId }
   val indexById = nodes.withIndex().associate { (index, node) -> node.id to index }
   val branchLanes = laneAssignmentOf(
@@ -239,25 +245,8 @@ internal fun graphAccentsOf(
     order = branches.map { it.id }
   )
   val branchColors = branches.associate { it.id to it.colorIndex }
-  return nodeAccentsOf(nodes, branches, branchLanes, branchColors)
-}
-
-/**
- * Дорожка каждого узла по тем же данным, что и [graphAccentsOf].
- *
- * @param nodes узлы в хронологическом порядке
- * @param branches ветки графа, кроме магистрали, в порядке ветвления
- * @return номер дорожки каждого узла, в порядке [nodes]
- */
-internal fun graphLanesOf(
-  nodes: List<GraphNode>,
-  branches: List<GraphBranch>
-): List<Int> {
-  val branchIds = nodes.map { it.branchId }
-  val indexById = nodes.withIndex().associate { (index, node) -> node.id to index }
-  val branchLanes = laneAssignmentOf(
-    occupancy = branchOccupancyOf(branches, branchIds, indexById),
-    order = branches.map { it.id }
+  return GraphLanes(
+    lanes = nodeLanesOf(branchIds, branchLanes),
+    accents = nodeAccentsOf(nodes, branches, branchLanes, branchColors)
   )
-  return nodeLanesOf(branchIds, branchLanes)
 }

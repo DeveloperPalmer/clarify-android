@@ -299,7 +299,7 @@ class MocksTest {
     assertEquals(1, graph.graphNodes.size, "одно сообщение и есть весь граф — §15 п. 1")
     assertEquals(
       listOf(0),
-      graphLanesOf(graph.graphNodes, graph.branches),
+      graphLanesOf(graph.graphNodes, graph.branches).lanes,
       "единственный узел стоит на магистрали: обе оси камеры вырождаются в точку, и упор обязан " +
         "считаться упором, а не ошибкой"
     )
@@ -311,7 +311,7 @@ class MocksTest {
 
     assertTrue(graph.branches.isEmpty(), "переписка без веток — самый частый случай, §13")
     assertTrue(
-      graphLanesOf(graph.graphNodes, graph.branches).all { it == 0 },
+      graphLanesOf(graph.graphNodes, graph.branches).lanes.all { it == 0 },
       "граф вырождается в прямую линию: дорожка у всех нулевая, и полотно обязано схлопнуться по " +
         "высоте, а не оставить место под пустые ряды"
     )
@@ -324,7 +324,7 @@ class MocksTest {
   @Test
   fun `the crowded graph takes a lane past the ceiling`() {
     val graph = mockCrowdedGraph()
-    val lanes = graphLanesOf(graph.graphNodes, graph.branches).filter { it != 0 }.distinct()
+    val lanes = graphLanesOf(graph.graphNodes, graph.branches).lanes.filter { it != 0 }.distinct()
 
     assertEquals(
       graph.branches.size,
@@ -379,7 +379,7 @@ class MocksTest {
   fun `the demo graph still fits the overview at its own floor`() {
     val graph = mockGraph()
     val nodes = graph.graphNodes
-    val lanes = graphLanesOf(nodes, graph.branches)
+    val lanes = graphLanesOf(nodes, graph.branches).lanes
     val geometry = GraphGeometry(topLaneOf(lanes), GraphLevel.Overview.toLaneStep())
     val placement = graphPlacementOf(
       lanes = lanes,
@@ -414,7 +414,7 @@ class MocksTest {
   /** Дорожка каждой ветки демо-набора, включая магистраль. */
   private fun demoLanes(): Map<GraphBranch.Id, Int> {
     val nodes = mockGraph().graphNodes
-    val lanes = graphLanesOf(nodes, mockGraph().branches)
+    val lanes = graphLanesOf(nodes, mockGraph().branches).lanes
     return nodes.map { it.branchId }.zip(lanes).toMap()
   }
 
@@ -427,7 +427,7 @@ class MocksTest {
   private fun demoEdges(): List<GraphEdge> {
     val graph = mockGraph()
     val nodes = graph.graphNodes
-    val lanes = graphLanesOf(nodes, graph.branches)
+    val lanes = graphLanesOf(nodes, graph.branches).lanes
     return graphEdgesOf(
       nodes = nodes,
       branches = graph.branches,
