@@ -1,7 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
+import ru.sla.atlas.assembly.graphOf
 import ru.sla.atlas.entity.BasicNode
-import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.core.domain.date.DATE_TIME_FORMATTER_DAY_MONTH_TIME
 import ru.sla.clarify.entity.chat.Branch
@@ -21,11 +21,9 @@ import ru.sla.atlas.entity.Branch as GraphBranch
 /**
  * История беседы — в граф, который рисует полотно.
  *
- * **Порядок узлов задаёт время, а не ветка.** Ось X накапливается по порядку списка, поэтому набор,
- * сгруппированный по веткам, поставил бы ветку от 8 марта левее ветки от 6-го — прямое нарушение
- * §4.1 брифа. Узлы всех веток поэтому собираются в один список и сортируются один раз, и только
- * после этого у каждого появляется пауза: она считается от соседа **по времени**, а кто сосед,
- * до сортировки неизвестно.
+ * Порядок узлов, паузы между ними и состав веток сводит `graphOf`: три величины, которые обязаны
+ * сойтись, собирает тот, кто их и проверяет. Здесь остаётся то, чего библиотека знать не может, —
+ * из чего складывается узел беседы.
  *
  * **Точки ветвления и слияния — настоящие узлы списка, а не отметки на линии.** На этом держится то,
  * что вертикаль ребра не может пересечь чужую плашку: накопительная ось даёт каждому узлу
@@ -79,8 +77,8 @@ internal fun ChronologyHistory.toChronologyGraph(): ChronologyGraph {
     )
     GraphBranch(
       id = GraphBranch.Id(branch.id.value),
-      // Состав ветки заполняется ниже, когда узлы всех веток сведены в один список и отсортированы:
-      // порядок узлов — свойство графа, и до сортировки его нет ни у кого.
+      // Состав ветки заполнит сборка: порядок узлов — свойство графа, и до сортировки его нет ни у
+      // кого.
       nodeIds = emptyList(),
       // Порядковый номер по времени ветвления, а не номер дорожки: дорожка переиспользуется после
       // слияния, и цвет, взятый из неё, означал бы «номер ряда», а не «какая это тема».
@@ -95,29 +93,27 @@ internal fun ChronologyHistory.toChronologyGraph(): ChronologyGraph {
     )
   }
 
-  val ordered = drafts.sortedWith(compareBy({ it.at }, { it.node.toSortOrder() }))
-  val nodes = ordered.toNodes()
-  val placed = ordered.zip(nodes)
-  val nodeIdsByBranch = placed.groupBy({ (draft, _) -> draft.branchId }, { (_, node) -> node.id })
   return ChronologyGraph(
-    layout = Graph(
-      nodes = nodes,
+    layout = graphOf(
+      drafts = drafts.map { it.toNodeDraft() },
       // Магистраль — такая же ветка, как остальные, и в графе она названа отдельно: её узлы иначе
       // не принадлежали бы никому. Цвет нулевой, развилки и слияния у неё нет по определению.
       baseline = GraphBranch(
         id = baselineBranchId,
-        nodeIds = nodeIdsByBranch[baselineBranchId].orEmpty(),
+        nodeIds = emptyList(),
         colorIndex = 0,
         forkedFrom = null,
         mergedAt = null,
         status = GraphBranch.Status.Alive
       ),
-      branches = graphBranches.map { it.copy(nodeIds = nodeIdsByBranch[it.id].orEmpty()) }
+      branches = graphBranches,
+      gapOf = { it.toTimeGap() },
+      withGap = { node, gap -> node.withGap(gap) }
     ),
     branchNames = branches.associate { GraphBranch.Id(it.branch.id.value) to it.branch.name },
-    previewById = placed.mapNotNull { (draft, node) ->
-      draft.preview?.let { node.id to it }
-    }.toMap()
+    // Карточка адресуется идентификатором узла, а он сборку переживает: пауза меняется, тождество
+    // нет. Поэтому карту можно собрать по черновикам, не дожидаясь готовых узлов.
+    previewById = drafts.mapNotNull { draft -> draft.preview?.let { draft.node.id to it } }.toMap()
   )
 }
 
@@ -235,22 +231,6 @@ private fun mergeDraftOf(
 }
 
 /**
- * Черновики в узлы: у каждого появляется пауза, отделяющая его от соседа слева.
- *
- * Считается по **соседу в списке**, а не по соседу той же ветки: зазор раздвигает узлы по общей оси
- * времени, и пауза внутри ветки, посчитанная в обход чужих узлов, поставила бы её плашки поверх них.
- *
- * @return узлы в том же порядке, уже с паузами
- */
-private fun List<GraphNodeDraft>.toNodes(): List<Node> {
-  return mapIndexed { index, draft ->
-    val previous = getOrNull(index - 1)
-    // Перед первым узлом паузы нет: отступ от края полотна дают поля, а не выдуманный зазор.
-    draft.node.withGap(Duration.between(previous?.at ?: draft.at, draft.at).toTimeGap())
-  }
-}
-
-/**
  * Тот же узел с проставленной паузой.
  *
  * Перечисление здесь неизбежно: пауза лежит в каждом роде узла своим полем, и общего `copy` у
@@ -326,26 +306,6 @@ private fun List<Int>.toUnreadShares(unreadCount: Long): List<Long> {
 }
 
 /**
- * Порядок узлов, попавших на одну и ту же секунду.
- *
- * Совпадение это не экзотика, а обычное дело: фронт стоит на последнем сообщении магистрали, а
- * развилка — на том самом сообщении, от которого ушла ветка, и оно бывает первым в своём эпизоде.
- *
- * Порядок смысловой: сначала то, что было сказано, потом то, что из сказанного следует. Ветка ушла
- * **от** сообщения, значит после него; вернулась она позже, чем ушла; фронт замыкает магистраль.
- *
- * @return ключ сортировки внутри одной секунды
- */
-private fun Node.toSortOrder(): Int {
-  return when (this) {
-    is Node.Episode -> 0
-    is Node.Fork -> 1
-    is Node.Merge -> 2
-    is Node.Front -> 3
-  }
-}
-
-/**
  * Секунды эпохи — в локальное время.
  *
  * Отдельно от `Long.toLocalDateTime` из `mapper/data`: тот считает миллисекунды, а ветка и её merge
@@ -363,6 +323,6 @@ private fun Long.toBranchTime(): LocalDateTime {
  *
  * Узел собирается до того, как выяснится, кто стоит от него слева, а пауза у него не необязательное
  * поле, и быть им не должна: в графе узла без паузы не бывает. Значение здесь поэтому произвольное
- * — важно не оно, а то, что `toNodes` меняет паузу **каждому** узлу и мимо неё в граф не пройти.
+ * — важно не оно, а то, что сборка проставляет паузу **каждому** узлу и мимо неё в граф не пройти.
  */
 private val UNSET_GAP = TimeGap.Minutes
