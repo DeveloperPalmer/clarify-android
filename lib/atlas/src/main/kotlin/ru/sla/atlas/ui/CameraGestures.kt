@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.ui
 
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -28,12 +28,12 @@ import kotlin.math.abs
  * Готовые детекторы дают либо одно, либо другое: `detectDragGestures` знает момент отпускания и
  * отдаёт `PointerInputChange`, но ведёт жест по одному указателю, а `detectTransformGestures` и
  * `Modifier.transformable` считают пинч, но об отпускании не сообщают вовсе — у `TransformStopped`
- * нет ни скорости, ни позиции. Инерция на этом экране снимается в момент отпускания, поэтому взять
- * пинч из коробки и сохранить бросок нельзя. Сами вычисления при этом берутся у платформы целиком:
+ * нет ни скорости, ни позиции. Инерция снимается в момент отпускания, поэтому взять пинч из
+ * коробки и сохранить бросок нельзя. Сами вычисления при этом берутся у платформы целиком:
  * [calculateZoom], [calculatePan], [calculateCentroid], [calculateCentroidSize].
  *
  * Порог схватывания повторяет платформенный дословно: `|1 − zoom| · centroidSize > touchSlop` или
- * `|pan| > touchSlop`. Своя формула означала бы, что пинч на этом экране берётся не так, как во всех
+ * `|pan| > touchSlop`. Своя формула означала бы, что пинч здесь берётся не так, как во всех
  * остальных приложениях устройства.
  *
  * Скорость под инерцию снимается **только с протяжки одним пальцем**: жест, в котором побывал второй
@@ -46,9 +46,9 @@ import kotlin.math.abs
  * @param onTransform шаг жеста: точка, которую жест держит на месте, сдвиг центроида и множитель
  *   масштаба
  * @param onRelease скорость в момент отпускания, в пикселях в секунду
- * @param onDoubleTap два тапа подряд по фону: «вписать всё» и возврат (§11.1 брифа)
+ * @param onDoubleTap два тапа подряд по фону
  */
-internal suspend fun PointerInputScope.detectCameraGestures(
+suspend fun PointerInputScope.detectCameraGestures(
   isBlocked: (Offset) -> Boolean,
   onTouch: () -> Unit,
   onTransform: (focus: Offset, pan: Offset, zoom: Float) -> Unit,
