@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chronology.ui.mapper
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
 
 /**
  * Шаг дорожки на этом уровне детализации.
@@ -25,5 +26,25 @@ internal fun GraphLevel.toLaneStep(): Dp {
   return when (this) {
     GraphLevel.Episodes -> 104.dp
     GraphLevel.Overview -> 26.dp
+  }
+}
+
+/**
+ * Масштаб покоя уровня: тот, к которому возвращает перелёт камеры.
+ *
+ * У эпизодов это единица — плашка нарисована в свою величину. У обзора единица не означает ничего:
+ * покой там — «видно всё», то есть нижний край полосы, и зависит он от того, насколько длинна
+ * история.
+ *
+ * Живёт здесь, рядом с шагом дорожки, а не у камеры: это такая же таблица уровня, как и остальные.
+ * Камера покой получает числом — см. `flightScaleOf`.
+ *
+ * @param band полоса масштаба этого уровня
+ * @return масштаб, ниже которого перелёт не опускает
+ */
+internal fun GraphLevel.toRestScale(band: GraphLevelBand): Float {
+  return when (this) {
+    GraphLevel.Episodes -> 1f
+    GraphLevel.Overview -> band.min
   }
 }

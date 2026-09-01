@@ -55,6 +55,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 import ru.sla.clarify.feature.chronology.ui.entity.GraphZoomStep
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
+import ru.sla.clarify.feature.chronology.ui.mapper.toRestScale
 import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
 /**
@@ -674,8 +675,7 @@ internal class GraphCanvasState {
     val startScale = cameraScale
     val targetScale = flightScaleOf(
       scale = startScale,
-      level = graphLevel,
-      band = levelBandOf(placement, viewport)
+      restScale = graphLevel.toRestScale(levelBandOf(placement, viewport))
     )
     val start = cameraAt(cameraRangeOf(placement, viewport, startScale))
     animate(initialValue = 0f, targetValue = 1f, animationSpec = spec) { fraction, _ ->

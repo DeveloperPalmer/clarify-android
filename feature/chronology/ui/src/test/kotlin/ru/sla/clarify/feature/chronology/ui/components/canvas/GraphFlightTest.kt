@@ -21,6 +21,7 @@ import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.mapper.toRestScale
 
 /**
  * Перелёт камеры по кнопке: третий источник её движения после жеста и затухания.
@@ -167,27 +168,27 @@ class GraphFlightTest {
 
   @Test
   fun `the default scale is only restored from above`() {
-    val episodes = graphLevelBandOf(GraphLevel.Episodes, fitScale = 0.05f)
+    val episodesRest = GraphLevel.Episodes.toRestScale(graphLevelBandOf(GraphLevel.Episodes, fitScale = 0.05f))
 
-    assertEquals(1f, flightScaleOf(2.5f, GraphLevel.Episodes, episodes))
-    assertEquals(1f, flightScaleOf(1.0001f, GraphLevel.Episodes, episodes))
-    assertEquals(1f, flightScaleOf(1f, GraphLevel.Episodes, episodes), "на самой единице сбрасывать нечего")
-    assertEquals(0.4f, flightScaleOf(0.4f, GraphLevel.Episodes, episodes))
+    assertEquals(1f, flightScaleOf(2.5f, episodesRest))
+    assertEquals(1f, flightScaleOf(1.0001f, episodesRest))
+    assertEquals(1f, flightScaleOf(1f, episodesRest), "на самой единице сбрасывать нечего")
+    assertEquals(0.4f, flightScaleOf(0.4f, episodesRest))
   }
 
   @Test
   fun `the overview returns to its own rest, not to the unit scale`() {
-    val overview = graphLevelBandOf(GraphLevel.Overview, fitScale = 0.305f)
+    val overviewRest = GraphLevel.Overview.toRestScale(graphLevelBandOf(GraphLevel.Overview, fitScale = 0.305f))
 
     assertEquals(
       0.305f,
-      flightScaleOf(2.3f, GraphLevel.Overview, overview),
+      flightScaleOf(2.3f, overviewRest),
       1e-4f,
       "покой обзора — это «видно всё», а единица там не значит ничего"
     )
     assertEquals(
       0.305f,
-      flightScaleOf(0.305f, GraphLevel.Overview, overview),
+      flightScaleOf(0.305f, overviewRest),
       1e-4f,
       "на самом покое сбрасывать нечего"
     )
