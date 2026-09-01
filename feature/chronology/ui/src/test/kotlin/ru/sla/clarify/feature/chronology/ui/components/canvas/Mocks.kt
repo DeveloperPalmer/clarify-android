@@ -39,12 +39,12 @@ internal fun Graph<Node>.mockBranchColors(): Map<Branch.Id, Color> {
  * Дорожки и акценты графа беседы — ровно то, что считает полотно.
  *
  * Заведено затем, чтобы тест не пересказывал в каждом вызове, какой род узла за какую ветку
- * говорит: это знание фичи, и живёт оно в одном месте — [accentOwnerOf].
+ * говорит: это знание фичи, и живёт оно в одном месте — [foreignBranchOf].
  *
  * @return дорожки узлов и их акценты
  */
 internal fun Graph<GraphNode>.mockLanes(): Lanes {
-  return lanesOf(this, mockBranchColors(), ::accentOwnerOf)
+  return lanesOf(this, mockBranchColors(), ::foreignBranchOf)
 }
 
 /**

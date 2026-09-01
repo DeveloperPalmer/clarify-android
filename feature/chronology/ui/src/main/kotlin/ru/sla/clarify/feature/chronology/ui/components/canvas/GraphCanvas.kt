@@ -58,7 +58,7 @@ internal fun GraphCanvas(
     blocked = blocked,
     // Точка ветвления и точка слияния стоят на магистрали, а показывают ветку, которая от них
     // ушла или в них вернулась. Знать об этом полотну неоткуда: рода узлов — знание фичи.
-    accentOwnerOf = { graphNode -> graph.accentOwnerOf(graphNode) },
+    foreignBranchOf = { graphNode -> graph.foreignBranchOf(graphNode) },
     background = {
       CanvasBackdrop(
         modifier = Modifier.fillMaxSize(),

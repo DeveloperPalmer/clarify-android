@@ -16,10 +16,10 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
  * одной на ветку.
  *
  * @param node узел графа
- * @return ветка, чьи цвет и направление узел показывает; `null` — узел говорит за свою, и подставит
- *   её раскладка
+ * @return чужая ветка, чьи цвет и направление узел показывает; `null` — чужой нет, и свою
+ *   подставит раскладка
  */
-internal fun Graph<GraphNode>.accentOwnerOf(node: GraphNode): Branch.Id? {
+internal fun Graph<GraphNode>.foreignBranchOf(node: GraphNode): Branch.Id? {
   return when (node) {
     is GraphNode.Fork -> branchForkedAt(node.id)
     is GraphNode.Merge -> branchMergedAt(node.id)
