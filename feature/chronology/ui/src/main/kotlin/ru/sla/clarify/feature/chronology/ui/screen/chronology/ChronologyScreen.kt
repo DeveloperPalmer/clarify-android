@@ -105,7 +105,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
           ceremony = ceremonyState,
           // Пока карточка открыта, полотно жестов не берёт вовсе: прямоугольник, из которого вырос
           // морф, заморожен, и уехавшая под скримом камера сделала бы обратный морф ложью.
-          blocked = { state.selectedNode != null },
+          gesturesEnabled = { state.selectedNode == null },
           node = { graphNode, accent, level ->
             // Имя ветки в узел не приходит: узлу оно не нужно ни для чего, кроме подписи, а подпись
             // собирается здесь — там, где имя вообще есть. У магистрали имени нет, и подпись про

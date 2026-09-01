@@ -1,7 +1,5 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -32,7 +30,7 @@ import ru.sla.clarify.uikit.theme.AppTheme
  * @param ceremony церемония слияния: полотно её не запускает, но линия ветки на время церемонии
  *   показывается так, будто ветка снова готова к слиянию
  * @param modifier модификатор корня полотна
- * @param blocked взято ли полотно целиком: пока `true`, жест не начинается вовсе
+ * @param gesturesEnabled берёт ли полотно жесты камеры прямо сейчас
  * @param node содержимое узла на заданном уровне детализации
  * @param overlay что нарисовать поверх полотна: панель, мини-карта, что угодно
  */
@@ -41,7 +39,7 @@ internal fun GraphCanvas(
   state: AtlasCanvasState<GraphNode, GraphLevel>,
   ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
-  blocked: () -> Boolean = { false },
+  gesturesEnabled: () -> Boolean = { true },
   node: @Composable (graphNode: GraphNode, accent: NodeAccent, level: GraphLevel) -> Unit,
   overlay: @Composable BoxScope.(onBoundsChanged: (key: Any, bounds: Rect) -> Unit) -> Unit = { }
 ) {
@@ -53,12 +51,11 @@ internal fun GraphCanvas(
     modifier = modifier,
     state = state,
     branchColors = branchColors,
-    flingDecay = rememberSplineBasedDecay(),
-    crossfadeSpec = snap(),
-    blocked = blocked,
-    // Точка ветвления и точка слияния стоят на магистрали, а показывают ветку, которая от них
-    // ушла или в них вернулась. Знать об этом полотну неоткуда: рода узлов — знание фичи.
+    gesturesEnabled = gesturesEnabled,
     foreignBranchOf = { graphNode -> graph.foreignBranchOf(graphNode) },
+    drawEdges = drawEdges,
+    node = node,
+    overlay = overlay,
     background = {
       CanvasBackdrop(
         modifier = Modifier.fillMaxSize(),
@@ -69,9 +66,6 @@ internal fun GraphCanvas(
         color = colors.contentPrimary.copy(alpha = 0.04f),
         telemetry = state.telemetry
       )
-    },
-    drawEdges = drawEdges,
-    node = node,
-    overlay = overlay
+    }
   )
 }

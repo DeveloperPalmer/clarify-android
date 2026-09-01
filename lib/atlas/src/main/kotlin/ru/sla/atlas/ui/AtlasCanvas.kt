@@ -3,7 +3,9 @@ package ru.sla.atlas.ui
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -73,10 +75,10 @@ import ru.sla.atlas.lod.counterScaleOf
  * @param state камера полотна и результат его последней раскладки
  * @param branchColors цвет каждой ветки графа, магистраль включая: палитру полотно не читает, а
  *   получает готовой
+ * @param modifier модификатор корня полотна
  * @param flingDecay кривая затухания броска
  * @param crossfadeSpec кривая кроссфейда при смене уровня детализации; мгновенная подмена — это
  *   `snap`, и решает это вызывающий: полотно не знает, отказался ли зритель от движения
- * @param modifier модификатор корня полотна
  * @param foreignBranchOf чужая ветка узла: узел ветвления и узел слияния стоят на магистрали, а
  *   показывают ту ветку, что от них ушла или в них вернулась. `null` — чужой нет, узел говорит за
  *   свою; рода узлов знает только вызывающий, и спрашивают здесь именно их
@@ -87,11 +89,12 @@ import ru.sla.atlas.lod.counterScaleOf
  *   обработчик, которым содержимое объявляет занятую им зону под своим ключом, — жест, начатый в
  *   любой из объявленных зон, до камеры не доходит. Зона объявляется в координатах корня, а пустой
  *   прямоугольник её снимает. Полотно при этом не знает, что именно там лежит
- * @param blocked взято ли полотно целиком: пока `true`, жест не начинается вовсе. Та же зона, что
- *   объявляет содержимое слота, только во весь вьюпорт и объявленная снаружи — потому что накрывший
- *   полотно скрим обязан накрыть и шапку экрана, а значит внутри слота лежать не может. Читается в
- *   момент касания, поэтому лямбда, а не значение: иначе полотно рекомпоновалось бы на каждое
- *   открытие карточки
+ * @param gesturesEnabled берёт ли полотно жесты камеры прямо сейчас: пока `false`, ни протяжка, ни
+ *   пинч, ни двойной тап не начинаются вовсе. На узлы это не распространяется — их нажатия живут
+ *   своими модификаторами. По сути та же зона, что объявляет содержимое слота, только во весь
+ *   вьюпорт и объявленная снаружи: накрывший полотно скрим обязан накрыть и шапку экрана, а значит
+ *   внутри слота лежать не может. Читается в момент касания, поэтому лямбда, а не значение: иначе
+ *   полотно рекомпоновалось бы на каждую смену ответа
  * @param node содержимое узла на заданном уровне детализации; обязано выпускать ровно один элемент
  *   раскладки — полотно ставит их по одному на узел и считает по позиции, а не по идентификатору
  */
@@ -100,10 +103,10 @@ import ru.sla.atlas.lod.counterScaleOf
 fun <N : Node, L> AtlasCanvas(
   state: AtlasCanvasState<N, L>,
   branchColors: Map<Branch.Id, Color>,
-  flingDecay: DecayAnimationSpec<Float>,
-  crossfadeSpec: FiniteAnimationSpec<Float>,
   modifier: Modifier = Modifier,
-  blocked: () -> Boolean = { false },
+  flingDecay: DecayAnimationSpec<Float> = rememberSplineBasedDecay(),
+  crossfadeSpec: FiniteAnimationSpec<Float> = snap(),
+  gesturesEnabled: () -> Boolean = { true },
   foreignBranchOf: (node: N) -> Branch.Id? = { null },
   background: @Composable () -> Unit = { },
   drawEdges: DrawScope.() -> Unit = { },
@@ -120,7 +123,7 @@ fun <N : Node, L> AtlasCanvas(
   val currentDecay by rememberUpdatedState(flingDecay)
   // По той же причине: обработчик жеста живёт дольше любой отдельной композиции, и захваченная им
   // лямбда обязана обновляться, а не застывать той, что была при открытии экрана.
-  val currentBlocked by rememberUpdatedState(blocked)
+  val currentGesturesEnabled by rememberUpdatedState(gesturesEnabled)
   // Затухание доигрывает после того, как корутина жеста уже отменена, поэтому scope нужен свой.
   val flingScope = rememberCoroutineScope()
   // Зоны, занятые тем, что лежит поверх полотна: полотно ловит жест на всём вьюпорте и по ним
@@ -167,7 +170,7 @@ fun <N : Node, L> AtlasCanvas(
         detectCameraGestures(
           isBlocked = { position ->
             val inRoot = position + currentCanvasOrigin
-            currentBlocked() || overlayZones.values.any { zone -> zone.contains(inRoot) }
+            !currentGesturesEnabled() || overlayZones.values.any { zone -> zone.contains(inRoot) }
           },
           onTouch = { currentState.stopMotion() },
           onTransform = { focus, pan, zoom ->
