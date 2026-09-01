@@ -1,12 +1,10 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.layout
 
 import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
-import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 
 /**
  * Раскладка вынесена в чистую функцию потому, что все регрессии этой фичи жили именно здесь:
@@ -57,15 +55,15 @@ class GraphPlacementTest {
 
   @Test
   fun `an empty graph places nothing`() {
-    val placement = graphPlacementOf(
+    val placement = placementOf(
       lanes = emptyList(),
       gaps = emptyList(),
       laneYs = emptyList(),
       sizes = emptyList(),
-      margins = GraphCanvasMargins.Zero
+      margins = CanvasMargins.Zero
     )
 
-    assertEquals(GraphPlacement.Empty, placement)
+    assertEquals(Placement.Empty, placement)
   }
 
   /**
@@ -76,12 +74,12 @@ class GraphPlacementTest {
   @Test
   fun `a model out of step with the measured sizes is refused, not indexed past the end`() {
     val grown = assertThrows(IllegalStateException::class.java) {
-      graphPlacementOf(
+      placementOf(
         lanes = listOf(0, 0, 0),
         gaps = listOf(0f, 40f, 40f),
         laneYs = listOf(LANE_Y, LANE_Y, LANE_Y),
         sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT)),
-        margins = GraphCanvasMargins.Zero
+        margins = CanvasMargins.Zero
       )
     }
     assertTrue(
@@ -90,12 +88,12 @@ class GraphPlacementTest {
     )
 
     assertThrows(IllegalStateException::class.java) {
-      graphPlacementOf(
+      placementOf(
         lanes = listOf(0),
         gaps = listOf(0f),
         laneYs = listOf(LANE_Y),
         sizes = List(3) { IntSize(NODE_WIDTH, NODE_HEIGHT) },
-        margins = GraphCanvasMargins.Zero
+        margins = CanvasMargins.Zero
       )
     }
   }
@@ -107,12 +105,12 @@ class GraphPlacementTest {
   @Test
   fun `an empty model with measured nodes is refused too`() {
     assertThrows(IllegalStateException::class.java) {
-      graphPlacementOf(
+      placementOf(
         lanes = emptyList(),
         gaps = emptyList(),
         laneYs = emptyList(),
         sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT)),
-        margins = GraphCanvasMargins.Zero
+        margins = CanvasMargins.Zero
       )
     }
   }
@@ -121,12 +119,12 @@ class GraphPlacementTest {
   fun `canvas margins keep the content off the screen edge`() {
     val bare = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 40f))
 
-    val padded = graphPlacementOf(
+    val padded = placementOf(
       lanes = listOf(0, 0),
       gaps = listOf(0f, 40f),
       laneYs = listOf(LANE_Y, LANE_Y),
       sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT), IntSize(NODE_WIDTH, NODE_HEIGHT)),
-      margins = GraphCanvasMargins(left = 32f, top = 32f, right = 32f, bottom = 32f)
+      margins = CanvasMargins(left = 32f, top = 32f, right = 32f, bottom = 32f)
     )
 
     assertEquals(bare.bounds.left - 32f, padded.bounds.left, "поля входят в протяжённость полотна")
@@ -142,12 +140,12 @@ class GraphPlacementTest {
   fun `canvas margins differ per side`() {
     val bare = placementOf(lanes = listOf(0, 0), gaps = listOf(0f, 40f))
 
-    val padded = graphPlacementOf(
+    val padded = placementOf(
       lanes = listOf(0, 0),
       gaps = listOf(0f, 40f),
       laneYs = listOf(LANE_Y, LANE_Y),
       sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT), IntSize(NODE_WIDTH, NODE_HEIGHT)),
-      margins = canvasMarginsOf(base = 32f, statusBar = 60f, navigationBar = 40f)
+      margins = CanvasMargins(left = 32f, top = 92f, right = 32f, bottom = 72f)
     )
 
     assertEquals(bare.bounds.left - 32f, padded.bounds.left, "по бокам только базовое поле")
@@ -176,25 +174,25 @@ class GraphPlacementTest {
    */
   @Test
   fun `measured sizes come back in the model order`() {
-    val placement = graphPlacementOf(
+    val placement = placementOf(
       lanes = listOf(0, 0),
       gaps = listOf(0f, 40f),
       laneYs = listOf(LANE_Y, LANE_Y),
       sizes = listOf(IntSize(NODE_WIDTH, NODE_HEIGHT), IntSize(24, 24)),
-      margins = GraphCanvasMargins.Zero
+      margins = CanvasMargins.Zero
     )
 
     assertEquals(IntSize(NODE_WIDTH, NODE_HEIGHT), placement.sizes[0])
     assertEquals(IntSize(24, 24), placement.sizes[1], "точка и плашка меряются по-разному")
   }
 
-  private fun placementOf(lanes: List<Int>, gaps: List<Float>): GraphPlacement {
-    return graphPlacementOf(
+  private fun placementOf(lanes: List<Int>, gaps: List<Float>): Placement {
+    return placementOf(
       lanes = lanes,
       gaps = gaps,
       laneYs = lanes.map { LANE_Y + it * LANE_Y },
       sizes = lanes.map { IntSize(NODE_WIDTH, NODE_HEIGHT) },
-      margins = GraphCanvasMargins.Zero
+      margins = CanvasMargins.Zero
     )
   }
 }

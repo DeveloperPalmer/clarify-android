@@ -54,6 +54,7 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.layout.CanvasMargins
 import ru.sla.atlas.layout.Edge
 import ru.sla.atlas.layout.EdgeRole
 import ru.sla.atlas.layout.Lanes
@@ -71,7 +72,7 @@ import kotlin.math.abs
  * Полотно хронологии: фон, узлы графа и связи между ними, по которому можно панорамировать.
  *
  * Композабл здесь ничего не считает — только композирует, принимает жест и рисует. Где узлы стоят,
- * считает [graphPlacementOf]; камеру и результат раскладки держит [GraphCanvasState]; события
+ * считает [placementOf]; камеру и результат раскладки держит [GraphCanvasState]; события
  * пальцев разбирает [detectCameraGestures].
  *
  * Масштаб — свойство камеры, а не раскладки: он применяется слоем и потому не стоит ни измерения,
@@ -416,10 +417,11 @@ private fun GraphNodesLayer(
       // Врезки складываются с отступом здесь, а не в измерении полотна: полотно занимает весь экран
       // под системными барами, и увести из-под них плашки обязаны поля — но чем эти бары высоки,
       // знает окно, а не граф.
-      margins = canvasMarginsOf(
-        base = 64.dp.toPx(),
-        statusBar = statusBar.getTop(this).toFloat(),
-        navigationBar = navigationBar.getBottom(this).toFloat()
+      margins = CanvasMargins(
+        left = 64.dp.toPx(),
+        top = 64.dp.toPx() + statusBar.getTop(this),
+        right = 64.dp.toPx(),
+        bottom = 64.dp.toPx() + navigationBar.getBottom(this)
       ),
       viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight),
       graph = graph,

@@ -7,17 +7,17 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.TimeGap
+import ru.sla.atlas.layout.CanvasMargins
 import ru.sla.atlas.layout.Edge
 import ru.sla.atlas.layout.EdgeRole
+import ru.sla.atlas.layout.LaneGeometry
 import ru.sla.atlas.layout.edgesOf
-import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphGeometry
+import ru.sla.atlas.layout.placementOf
+import ru.sla.atlas.layout.topLaneOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.fitScaleOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphLevelBandOf
-import ru.sla.clarify.feature.chronology.ui.components.canvas.graphPlacementOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockBranchColors
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockLanes
-import ru.sla.clarify.feature.chronology.ui.components.canvas.topLaneOf
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
@@ -380,13 +380,13 @@ class MocksTest {
     val graph = mockGraph()
     val nodes = graph.graphNodes
     val lanes = graph.layout.mockLanes().lanes
-    val geometry = GraphGeometry(topLaneOf(lanes), GraphLevel.Overview.toLaneStep())
-    val placement = graphPlacementOf(
+    val geometry = LaneGeometry(topLaneOf(lanes), GraphLevel.Overview.toLaneStep())
+    val placement = placementOf(
       lanes = lanes,
       gaps = nodes.map { it.gap.toStepWidth(GraphLevel.Overview).value },
       laneYs = lanes.map { geometry.laneYOf(it).value },
       sizes = nodes.map { it.toOverviewSize() },
-      margins = GraphCanvasMargins(left = 64f, top = 64f, right = 64f, bottom = 64f)
+      margins = CanvasMargins(left = 64f, top = 64f, right = 64f, bottom = 64f)
     )
 
     val fit = fitScaleOf(placement.bounds, IntSize(width = 412, height = 892))

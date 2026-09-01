@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.layout
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.IntSize
  * @param centres центры плашек, в порядке модели: куда наводиться, решает камера, а не раскладка
  */
 @Immutable
-data class GraphPlacement(
+data class Placement(
   val nodes: List<IntOffset>,
   val sizes: List<IntSize>,
   val bounds: Rect,
@@ -40,7 +40,7 @@ data class GraphPlacement(
   companion object {
 
     /** Пустой граф: панорамировать нечего, камера остаётся в нуле. */
-    val Empty = GraphPlacement(
+    val Empty = Placement(
       nodes = emptyList(),
       sizes = emptyList(),
       bounds = Rect.Zero,

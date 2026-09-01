@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.layout
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -6,8 +6,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
-import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -22,13 +20,13 @@ import kotlin.math.roundToInt
  * сдвиг под вьюпорт добавляет камера, и геометрия о нём не знает.
  *
  * Шаг дорожки приходит параметром, а не берётся константой файла: он свойство уровня детализации —
- * обзор ужимает раскладку вчетверо по обеим осям, см. `GraphLevel.toLaneStep`. Из-за этого же тип
- * перестал быть `value class`: одно поле второго не вмещает.
+ * уровень детализации сжимает раскладку по обеим осям одним и тем же числом, и шаг задаёт
+ * вызывающий. Из-за этого же тип перестал быть `value class`: одно поле второго не вмещает.
  *
  * @param topLane номер самой верхней занятой дорожки, см. [topLaneOf]
  * @param laneStep расстояние между соседними дорожками на этом уровне детализации
  */
-internal class GraphGeometry(private val topLane: Int, private val laneStep: Dp) {
+class LaneGeometry(private val topLane: Int, private val laneStep: Dp) {
 
   /**
    * Смещение дорожки по Y, отсчитанное от верха полотна.
@@ -53,7 +51,7 @@ internal class GraphGeometry(private val topLane: Int, private val laneStep: Dp)
  * @param lanes номера дорожек узлов
  * @return номер верхней дорожки, не больше нуля
  */
-internal fun topLaneOf(lanes: List<Int>): Int {
+fun topLaneOf(lanes: List<Int>): Int {
   var top = 0
   lanes.forEach { lane ->
     if (lane < top) top = lane
@@ -72,7 +70,7 @@ internal fun topLaneOf(lanes: List<Int>): Int {
  * @param widths измеренные ширины узлов
  * @return смещения левых краёв в порядке узлов
  */
-internal fun leftOffsetsOf(gaps: List<Float>, widths: List<Float>): List<Float> {
+fun leftOffsetsOf(gaps: List<Float>, widths: List<Float>): List<Float> {
   var left = 0f
   return gaps.mapIndexed { index, gap ->
     left += gap
@@ -94,7 +92,7 @@ internal fun leftOffsetsOf(gaps: List<Float>, widths: List<Float>): List<Float> 
  * @param x координата полотна по оси времени
  * @return индекс ближайшей плашки; `-1`, когда плашек нет
  */
-internal fun nearestCentreIndexOf(centres: List<Offset>, x: Float): Int {
+fun nearestCentreIndexOf(centres: List<Offset>, x: Float): Int {
   var nearest = -1
   var distance = Float.MAX_VALUE
   centres.forEachIndexed { index, centre ->
@@ -110,12 +108,12 @@ internal fun nearestCentreIndexOf(centres: List<Offset>, x: Float): Int {
 /**
  * Раскладка графа целиком: положения плашек, границы содержимого и связи.
  *
- * Чистая функция, и это не эстетика: вся арифметика раскладки, в которой случились все регрессии
- * этой фичи, здесь проверяется юнит-тестом, а не глазами на устройстве.
+ * Чистая функция, и это не эстетика: вся арифметика раскладки проверяется здесь юнит-тестом, а не
+ * глазами на устройстве. Регрессии раскладки случались именно в ней.
  *
  * Полотно начинается в нуле: центрировать начало истории здесь незачем и вредно — кламп камеры
- * прижимал бы содержимое к краю экрана и ровно отменял такое смещение. За то, куда камера наводится,
- * отвечает [timelinePanRangeOf].
+ * прижимал бы содержимое к краю экрана и ровно отменял такое смещение. За то, куда камера
+ * наводится, отвечает сама камера.
  *
  * Все четыре списка обязаны быть одной длины, и это проверяется, а не подразумевается: три из них
  * описывают модель, четвёртый приходит из фазы измерения, и рассинхрон между этими источниками —
@@ -129,13 +127,13 @@ internal fun nearestCentreIndexOf(centres: List<Offset>, x: Float): Int {
  * @param margins поля полотна вокруг содержимого
  * @return раскладка, пустая при отсутствии узлов
  */
-internal fun graphPlacementOf(
+fun placementOf(
   lanes: List<Int>,
   gaps: List<Float>,
   laneYs: List<Float>,
   sizes: List<IntSize>,
-  margins: GraphCanvasMargins
-): GraphPlacement {
+  margins: CanvasMargins
+): Placement {
   check(lanes.size == gaps.size && lanes.size == laneYs.size && lanes.size == sizes.size) {
     "Раскладка получила рассогласованные списки: " +
       "lanes=${lanes.size}, " +
@@ -144,7 +142,7 @@ internal fun graphPlacementOf(
       "sizes=${sizes.size}"
   }
   if (sizes.isEmpty()) {
-    return GraphPlacement.Empty
+    return Placement.Empty
   }
   val widths = sizes.map { it.width.toFloat() }
   val lefts = leftOffsetsOf(gaps, widths)
@@ -156,7 +154,7 @@ internal fun graphPlacementOf(
   }
   val centresX = lefts.mapIndexed { index, left -> left + widths[index] / 2f }
   val centres = centresX.mapIndexed { index, centreX -> Offset(x = centreX, y = laneYs[index]) }
-  return GraphPlacement(
+  return Placement(
     nodes = nodes,
     sizes = sizes,
     // Поля входят в протяжённость полотна, а не добавляются камере отдельным слагаемым: диапазон
@@ -176,7 +174,7 @@ internal fun graphPlacementOf(
 }
 
 /**
- * Где узел нарисован на экране: его прямоугольник в координатах вьюпорта.
+ * Где прямоугольник полотна оказывается на экране.
  *
  * Та же формула, на которой построена вся камера, — `экран = полотно · scale + камера`. Второй её
  * записи в фиче нет и быть не должно: раскладка живёт в координатах полотна, а всё, что кладётся
@@ -191,31 +189,10 @@ internal fun graphPlacementOf(
  * @param scale масштаб камеры
  * @return прямоугольник узла в координатах вьюпорта, уже с учётом масштаба
  */
-internal fun nodeRectOf(topLeft: IntOffset, size: IntSize, camera: Offset, scale: Float): Rect {
+fun screenRectOf(topLeft: IntOffset, size: IntSize, camera: Offset, scale: Float): Rect {
   return Rect(
     offset = Offset(x = topLeft.x * scale + camera.x, y = topLeft.y * scale + camera.y),
     size = Size(width = size.width * scale, height = size.height * scale)
-  )
-}
-
-/**
- * Поля полотна: базовый отступ со всех сторон плюс системные врезки сверху и снизу.
- *
- * Полотно занимает весь экран под системными барами — иначе панорамирование обрывалось бы там, где
- * начинается статус-бар, а фон не доходил бы до кромки. Значит уводить плашки из-под баров должны
- * поля, а не размер полотна.
- *
- * @param base отступ, одинаковый со всех сторон
- * @param statusBar высота строки состояния
- * @param navigationBar высота навигационной полосы
- * @return поля по четырём сторонам
- */
-internal fun canvasMarginsOf(base: Float, statusBar: Float, navigationBar: Float): GraphCanvasMargins {
-  return GraphCanvasMargins(
-    left = base,
-    top = base + statusBar,
-    right = base,
-    bottom = base + navigationBar
   )
 }
 
@@ -225,7 +202,7 @@ internal fun canvasMarginsOf(base: Float, statusBar: Float, navigationBar: Float
  * @param margins поля по четырём сторонам
  * @return прямоугольник, включающий поля
  */
-private fun Rect.expandedBy(margins: GraphCanvasMargins): Rect {
+private fun Rect.expandedBy(margins: CanvasMargins): Rect {
   return Rect(
     left = left - margins.left,
     top = top - margins.top,

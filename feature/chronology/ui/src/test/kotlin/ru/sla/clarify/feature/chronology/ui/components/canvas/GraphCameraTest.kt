@@ -7,8 +7,8 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.layout.Placement
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
-import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import kotlin.math.abs
 
 /**
@@ -92,7 +92,7 @@ class GraphCameraTest {
 
   @Test
   fun `an empty graph has nowhere to pan`() {
-    val range = cameraRangeOf(GraphPlacement.Empty, IntSize(width = 1000, height = 600), scale = 1f)
+    val range = cameraRangeOf(Placement.Empty, IntSize(width = 1000, height = 600), scale = 1f)
 
     assertEquals(GraphCameraRange.Empty, range)
   }
@@ -148,7 +148,7 @@ class GraphCameraTest {
   fun `an empty graph rests at zero`() {
     val viewport = IntSize(width = 1000, height = 600)
 
-    val rest = cameraRestOf(GraphPlacement.Empty, viewport, GraphCameraRange.Empty, scale = 1f)
+    val rest = cameraRestOf(Placement.Empty, viewport, GraphCameraRange.Empty, scale = 1f)
 
     assertEquals(Offset.Zero, rest)
   }
@@ -453,8 +453,8 @@ class GraphCameraTest {
     )
   }
 
-  private fun placement(): GraphPlacement {
-    return GraphPlacement(
+  private fun placement(): Placement {
+    return Placement(
       nodes = listOf(IntOffset.Zero),
       sizes = listOf(IntSize(width = 120, height = 100)),
       bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 100f),

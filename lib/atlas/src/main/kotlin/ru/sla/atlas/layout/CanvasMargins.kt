@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.layout
 
 import androidx.compose.runtime.Immutable
 
@@ -16,7 +16,7 @@ import androidx.compose.runtime.Immutable
  * @param bottom поле снизу, включая навигационную полосу
  */
 @Immutable
-data class GraphCanvasMargins(
+data class CanvasMargins(
   val left: Float,
   val top: Float,
   val right: Float,
@@ -26,6 +26,6 @@ data class GraphCanvasMargins(
   companion object {
 
     /** Полотно без полей: содержимое доходит до самой кромки. */
-    val Zero = GraphCanvasMargins(left = 0f, top = 0f, right = 0f, bottom = 0f)
+    val Zero = CanvasMargins(left = 0f, top = 0f, right = 0f, bottom = 0f)
   }
 }

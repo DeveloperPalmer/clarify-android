@@ -32,20 +32,25 @@ import kotlinx.coroutines.withContext
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.layout.CanvasMargins
 import ru.sla.atlas.layout.Edge
+import ru.sla.atlas.layout.LaneGeometry
 import ru.sla.atlas.layout.Lanes
+import ru.sla.atlas.layout.Placement
 import ru.sla.atlas.layout.edgesOf
+import ru.sla.atlas.layout.nearestCentreIndexOf
+import ru.sla.atlas.layout.placementOf
+import ru.sla.atlas.layout.screenRectOf
+import ru.sla.atlas.layout.topLaneOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraPose
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelSwitch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
-import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 import ru.sla.clarify.feature.chronology.ui.entity.GraphZoomStep
 import ru.sla.clarify.feature.chronology.ui.entity.Node
@@ -72,7 +77,7 @@ internal fun rememberGraphCanvasState(graph: Graph<Node>): GraphCanvasState {
 /**
  * Камера полотна и результат его последней раскладки.
  *
- * Разделение обязанностей: [graphPlacementOf] считает, где узлы стоят на полотне, состояние держит
+ * Разделение обязанностей: [placementOf] считает, где узлы стоят на полотне, состояние держит
  * камеру и результат раскладки, композабл не считает ничего.
  *
  * Наружу отдаются [State], а не готовые значения. Это не оформление: значение заставило бы читателя
@@ -110,7 +115,7 @@ internal class GraphCanvasState {
   private var backdrop by mutableStateOf(Offset.Zero)
 
   private var viewport by mutableStateOf(IntSize.Zero)
-  private var placement by mutableStateOf(GraphPlacement.Empty)
+  private var placement by mutableStateOf(Placement.Empty)
 
   // Уровень детализации — снапшотное: его читает композиция, чтобы выбрать представление узла.
   // Измерение получает уровень **параметром**, ровно как узлы, и по той же причине: прочитав его
@@ -520,7 +525,7 @@ internal class GraphCanvasState {
    * @param viewport размер видимой области
    * @return пределы, за которыми уровень сменяется соседним
    */
-  private fun levelBandOf(placement: GraphPlacement, viewport: IntSize): GraphLevelBand {
+  private fun levelBandOf(placement: Placement, viewport: IntSize): GraphLevelBand {
     return graphLevelBandOf(graphLevel, fitScaleOf(placement.bounds, viewport))
   }
 
@@ -570,7 +575,7 @@ internal class GraphCanvasState {
    * @param placement раскладка нового уровня
    * @param viewport размер видимой области
    */
-  private fun land(switch: GraphLevelSwitch, placement: GraphPlacement, viewport: IntSize) {
+  private fun land(switch: GraphLevelSwitch, placement: Placement, viewport: IntSize) {
     val landing = levelLandingOf(
       scaleBefore = switch.scaleBefore,
       spanBefore = switch.spanBefore,
@@ -597,7 +602,7 @@ internal class GraphCanvasState {
    * @param placement раскладка, по которой вписываем
    * @param viewport размер видимой области
    */
-  private fun applyFit(placement: GraphPlacement, viewport: IntSize) {
+  private fun applyFit(placement: Placement, viewport: IntSize) {
     val fit = fitScaleOf(placement.bounds, viewport)
     val band = graphLevelBandOf(graphLevel, fit)
     val fitted = fit.coerceIn(band.min, band.max)
@@ -736,7 +741,7 @@ internal class GraphCanvasState {
     if (index < 0 || index > placement.nodes.lastIndex) {
       return null
     }
-    return nodeRectOf(
+    return screenRectOf(
       topLeft = placement.nodes[index],
       size = placement.sizes[index],
       camera = offset.value,
@@ -826,19 +831,19 @@ internal class GraphCanvasState {
     viewportSize: IntSize,
     nodeSizes: List<IntSize>,
     density: Density,
-    margins: GraphCanvasMargins
-  ): GraphPlacement {
+    margins: CanvasMargins
+  ): Placement {
     // Дорожки берутся из параметров, а не читаются готовыми из состояния: граф подменяется из
     // `SideEffect`, то есть между композицией и измерением того же кадра, и раскраска по
     // снапшот-полю разошлась бы с measurable'ами от старой композиции.
     val branchIds = graph.branchIds
     val nodeLanes = lanes.lanes
-    val geometry = GraphGeometry(topLane = topLaneOf(nodeLanes), laneStep = level.toLaneStep())
+    val geometry = LaneGeometry(topLane = topLaneOf(nodeLanes), laneStep = level.toLaneStep())
     // Высоты дорожек считаются один раз на оба потребителя: раскладке и рёбрам нужны одни и те же
     // числа, и второй проход по узлам за тем же результатом измерение делало бы каждый свой кадр.
     val laneYs = with(density) { nodeLanes.map { geometry.laneYOf(it).toPx() } }
     val result = with(density) {
-      graphPlacementOf(
+      placementOf(
         lanes = nodeLanes,
         gaps = graph.nodes.map { it.gap.toStepWidth(level).toPx() },
         laneYs = laneYs,

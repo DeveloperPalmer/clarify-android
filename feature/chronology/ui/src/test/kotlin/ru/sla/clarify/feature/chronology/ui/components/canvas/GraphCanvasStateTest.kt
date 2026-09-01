@@ -13,8 +13,9 @@ import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.TimeGap
+import ru.sla.atlas.layout.Placement
+import ru.sla.atlas.layout.nearestCentreIndexOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
@@ -300,7 +301,7 @@ class GraphCanvasStateTest {
    * @param placement раскладка
    * @return положение покоя
    */
-  private fun restOf(placement: GraphPlacement): Offset {
+  private fun restOf(placement: Placement): Offset {
     return cameraRestOf(placement, VIEWPORT, cameraRangeOf(placement, VIEWPORT, scale = 1f), scale = 1f)
   }
 
@@ -502,7 +503,7 @@ class GraphCanvasStateTest {
   private fun GraphCanvasState.fill(
     count: Int,
     level: GraphLevel = GraphLevel.Episodes
-  ): GraphPlacement {
+  ): Placement {
     val placement = place(count, level)
     setGraph(baselineGraph(count))
     return placement
@@ -518,7 +519,7 @@ class GraphCanvasStateTest {
   private fun GraphCanvasState.place(
     count: Int,
     level: GraphLevel = GraphLevel.Episodes
-  ): GraphPlacement {
+  ): Placement {
     val graph = baselineGraph(count)
     return layout(
       level = level,

@@ -2,11 +2,11 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
+import ru.sla.atlas.layout.Placement
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
-import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 
 /*
  * Камера полотна: где ей разрешено быть, где она стоит в покое, как на неё ложится дельта и когда
@@ -88,7 +88,7 @@ internal fun panRangeOf(min: Float, max: Float, viewport: Float): ClosedFloating
  * масштаб вообще входит в арифметику камеры, — умножение границ содержимого здесь. Всё остальное —
  * шаг, покой, признак упора — считает в экранных пикселях и о масштабе не знает.
  *
- * Поля полотна масштабируются вместе с содержимым, потому что входят в [GraphPlacement.bounds].
+ * Поля полотна масштабируются вместе с содержимым, потому что входят в [Placement.bounds].
  * Цена: системные врезки, лежащие в тех же полях, тоже сжимаются, и на самом мелком масштабе поле
  * снизу становится меньше кнопочной навигационной полосы — 64 dp поля плюс 48 dp полосы дают при
  * 0.4× сорок пять пикселей вместо сорока восьми. Обратный ход, если это увидят глазом: вынести
@@ -100,7 +100,7 @@ internal fun panRangeOf(min: Float, max: Float, viewport: Float): ClosedFloating
  * @return диапазоны по обеим осям; вырожденные — норма, а не краевой случай
  */
 internal fun cameraRangeOf(
-  placement: GraphPlacement,
+  placement: Placement,
   viewport: IntSize,
   scale: Float
 ): GraphCameraRange {
@@ -188,7 +188,7 @@ private fun widestOf(
  * @return положение камеры в покое
  */
 internal fun cameraRestOf(
-  placement: GraphPlacement,
+  placement: Placement,
   viewport: IntSize,
   range: GraphCameraRange,
   scale: Float

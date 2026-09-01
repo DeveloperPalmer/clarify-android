@@ -4,9 +4,9 @@ import androidx.compose.ui.graphics.Color
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.layout.CanvasMargins
 import ru.sla.atlas.layout.Lanes
 import ru.sla.atlas.layout.lanesOf
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
@@ -55,6 +55,6 @@ internal fun Graph<Node>.mockLanes(): Lanes {
  *
  * @return поля при плотности `1f`, где пиксель равен точке
  */
-internal fun mockCanvasMargins(): GraphCanvasMargins {
-  return canvasMarginsOf(base = 64f, statusBar = 0f, navigationBar = 0f)
+internal fun mockCanvasMargins(): CanvasMargins {
+  return CanvasMargins(left = 64f, top = 64f, right = 64f, bottom = 64f)
 }

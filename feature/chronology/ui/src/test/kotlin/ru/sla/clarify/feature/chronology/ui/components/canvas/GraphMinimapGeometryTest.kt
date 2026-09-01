@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.layout.Placement
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
-import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 
 /**
@@ -392,8 +392,8 @@ class GraphMinimapGeometryTest {
    *
    * @return раскладка, у которой есть чем панорамировать
    */
-  private fun longPlacement(): GraphPlacement {
-    return GraphPlacement(
+  private fun longPlacement(): Placement {
+    return Placement(
       nodes = listOf(IntOffset.Zero),
       sizes = listOf(IntSize.Zero),
       bounds = Rect(left = -100f, top = 0f, right = 10_100f, bottom = 400f),
