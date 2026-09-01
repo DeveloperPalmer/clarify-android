@@ -1,61 +1,93 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
-import ru.sla.clarify.core.resources.R
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import kotlinx.coroutines.CoroutineScope
+import ru.sla.atlas.entity.Node
+import ru.sla.atlas.entity.NodeAccent
+import ru.sla.clarify.feature.chronology.ui.components.canvas.MergeCeremonyState
+import ru.sla.clarify.feature.chronology.ui.components.node.EpisodeNode
+import ru.sla.clarify.feature.chronology.ui.components.node.ForkNode
+import ru.sla.clarify.feature.chronology.ui.components.node.FrontNode
+import ru.sla.clarify.feature.chronology.ui.components.node.GlyphNode
+import ru.sla.clarify.feature.chronology.ui.components.node.MergeNode
+import ru.sla.clarify.feature.chronology.ui.entity.Chronology
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 
-/**
- * Связная подпись узла для скринридера — §14 брифа.
- *
- * Граф — самый враждебный скринридеру вид интерфейса: рёбра он не читает вовсе, и вся структура
- * обязана уместиться в подпись самого узла. Поэтому подпись собирается здесь, а не в компонентах:
- * формулировка у девяти узлов одна, а знает её только экран — имя ветки в узел не приходит и
- * приходить не должно, это содержимое, а не то, что узел рисует.
- *
- * Части перечисляются в порядке убывания важности: чем узел является, сколько в нём чего, когда это
- * было, где это лежит и что осталось непрочитанным.
- *
- * @param branchName имя ветки, которой принадлежит узел; `null` у магистрали
- * @return готовая к озвучиванию строка
- */
 @Composable
-internal fun GraphNode.toDescription(branchName: String?): String {
-  val branch = branchName?.let { stringResource(R.string.chronology_node_branch, it) }
-  return when (this) {
-    is GraphNode.Episode -> nodeDescriptionOf(
-      listOf(
-        stringResource(R.string.chronology_node_episode),
-        pluralStringResource(R.plurals.chronology_episode_messages_count, count, count),
-        time,
-        branch,
-        unreadCount.takeIf { it > 0 }?.let { unread ->
-          pluralStringResource(R.plurals.chronology_node_unread_count, unread.toInt(), unread.toInt())
+internal fun GraphNode(
+  modifier: Modifier = Modifier,
+  chronology: Chronology,
+  mergeCeremonyState: MergeCeremonyState,
+  selectedNode: Node.Id?,
+  node: GraphNode,
+  level: GraphLevel,
+  accent: NodeAccent,
+  scope: CoroutineScope,
+  hapticFeedback: HapticFeedback,
+  onClick: (Node.Id) -> Unit
+) {
+  return when (node) {
+    is GraphNode.Front -> {
+      FrontNode(
+        modifier = modifier,
+        hasCaption = level == GraphLevel.LOD0
+      )
+    }
+    is GraphNode.Fork -> {
+      ForkNode(
+        modifier = modifier,
+        color = accent.color
+      )
+    }
+    is GraphNode.Merge -> {
+      val mergedBranch = chronology.graph.branchMergedAt(node.id)
+      MergeNode(
+        modifier = modifier,
+        state = GraphNode.Merge.Status.Done,
+        level = level,
+        accent = accent,
+        ceremony = {
+          mergeCeremonyState
+            .takeIf { it.branch.value == mergedBranch }
+            ?.frame
+            ?.value
+        },
+        onClick = mergedBranch?.let { branchId ->
+          {
+            mergeCeremonyState.play(
+              scope = scope,
+              branchId = branchId,
+              onFinishAnimation = { hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm) }
+            )
+          }
         }
       )
-    )
-    is GraphNode.Fork -> nodeDescriptionOf(
-      listOf(stringResource(R.string.chronology_node_fork), branch)
-    )
-    is GraphNode.Merge -> nodeDescriptionOf(
-      listOf(stringResource(R.string.chronology_node_merge), branch)
-    )
-    // Фронт — единственный узел, у которого нет ни данных, ни ветки: он и есть «сейчас».
-    is GraphNode.Front -> stringResource(R.string.chronology_front_caption)
+    }
+    is GraphNode.Episode -> when (level) {
+      GraphLevel.LOD0 -> {
+        EpisodeNode(
+          modifier = modifier.graphicsLayer { alpha = if (node.id == selectedNode) 0f else 1f },
+          time = node.time,
+          count = node.count,
+          snippet = node.snippet,
+          myShare = node.myShare,
+          unreadCount = node.unreadCount,
+          dim = node.dim,
+          onClick = { onClick(node.id) }
+        )
+      }
+      GraphLevel.LOD1 -> {
+        GlyphNode(
+          modifier = modifier.graphicsLayer { alpha = if (node.dim) 0.6f else 1f },
+          color = accent.color,
+          unreadCount = node.unreadCount
+        )
+      }
+    }
   }
-}
-
-/**
- * Собирает подпись из частей, пропуская те, которых нет.
- *
- * Чистая половина маппера, и заведена она не ради красоты: `@Composable`-функция юнит-тестом не
- * покрывается — Robolectric в проекте нет, — а проверять здесь надо ровно одно: часть, которой нет,
- * в подпись не попадает. Иначе скринридер прочитает «Эпизод, , 6 мар» или «ветка null».
- *
- * @param parts части подписи в порядке озвучивания; `null` и пустые пропускаются
- * @return части через запятую
- */
-internal fun nodeDescriptionOf(parts: List<String?>): String {
-  return parts.filterNot { it.isNullOrBlank() }.joinToString(separator = ", ")
 }

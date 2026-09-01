@@ -41,15 +41,15 @@ internal object ChronologyLevels : LevelScheme<GraphLevel> {
 
   override fun coarserThan(level: GraphLevel): GraphLevel? {
     return when (level) {
-      GraphLevel.Episodes -> GraphLevel.Overview
-      GraphLevel.Overview -> null
+      GraphLevel.LOD0 -> GraphLevel.LOD1
+      GraphLevel.LOD1 -> null
     }
   }
 
   override fun finerThan(level: GraphLevel): GraphLevel? {
     return when (level) {
-      GraphLevel.Overview -> GraphLevel.Episodes
-      GraphLevel.Episodes -> null
+      GraphLevel.LOD1 -> GraphLevel.LOD0
+      GraphLevel.LOD0 -> null
     }
   }
 }

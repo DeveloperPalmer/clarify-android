@@ -24,8 +24,8 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
  */
 internal fun GraphLevel.toLaneStep(): Dp {
   return when (this) {
-    GraphLevel.Episodes -> 104.dp
-    GraphLevel.Overview -> 26.dp
+    GraphLevel.LOD0 -> 104.dp
+    GraphLevel.LOD1 -> 26.dp
   }
 }
 
@@ -44,8 +44,8 @@ internal fun GraphLevel.toLaneStep(): Dp {
  */
 internal fun GraphLevel.toRestScale(band: ScaleBand): Float {
   return when (this) {
-    GraphLevel.Episodes -> 1f
-    GraphLevel.Overview -> band.min
+    GraphLevel.LOD0 -> 1f
+    GraphLevel.LOD1 -> band.min
   }
 }
 
@@ -60,11 +60,11 @@ internal fun GraphLevel.toRestScale(band: ScaleBand): Float {
 internal fun GraphLevel.toScaleBand(fitScale: Float): ScaleBand {
   return when (this) {
     // Диапазон §11.1 брифа, зафиксированный владельцем; уход в обзор его не сужает.
-    GraphLevel.Episodes -> ScaleBand(min = 0.4f, max = 2.5f)
+    GraphLevel.LOD0 -> ScaleBand(min = 0.4f, max = 2.5f)
     // Нижний край обзора — «видно всё», но не глубже 0.2×. На демо-наборе это 0.305×, и упор
     // приходится ровно на вписанный граф; на переписке в двести эпизодов вписывание потребовало бы
     // 0.077×, где глиф 14 dp вырождается в полтора пикселя и обзор перестаёт быть картой.
-    GraphLevel.Overview -> ScaleBand(min = fitScale.coerceIn(0.2f, 0.4f), max = 2.5f)
+    GraphLevel.LOD1 -> ScaleBand(min = fitScale.coerceIn(0.2f, 0.4f), max = 2.5f)
   }
 }
 
@@ -78,7 +78,7 @@ internal fun GraphLevel.toScaleBand(fitScale: Float): ScaleBand {
  */
 internal fun GraphLevel.toDebugLabel(): String {
   return when (this) {
-    GraphLevel.Overview -> "overview"
-    GraphLevel.Episodes -> "episodes"
+    GraphLevel.LOD1 -> "overview"
+    GraphLevel.LOD0 -> "episodes"
   }
 }

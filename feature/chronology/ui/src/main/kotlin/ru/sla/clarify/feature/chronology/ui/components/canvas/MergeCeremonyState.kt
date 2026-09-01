@@ -90,17 +90,17 @@ internal class MergeCeremonyState(private val decelerate: Easing) {
    *
    * @param scope область, переживающая композицию узла, по которому нажали
    * @param branchId ветка, чью церемонию играем
-   * @param onImpact удар кадра 5: зовётся ровно на границе 850 мс и ровно один раз за проигрывание
+   * @param onFinishAnimation удар кадра 5: зовётся ровно на границе 850 мс и ровно один раз за проигрывание
    */
   fun play(
     scope: CoroutineScope,
     branchId: Branch.Id,
-    onImpact: () -> Unit
+    onFinishAnimation: () -> Unit
   ) {
     stop()
     playedBranch = branchId
     elapsed = 0f
-    job = scope.launch { run(onImpact) }
+    job = scope.launch { run(onFinishAnimation) }
   }
 
   /** Обрывает церемонию и возвращает граф к покою. */
@@ -111,7 +111,7 @@ internal class MergeCeremonyState(private val decelerate: Easing) {
     elapsed = 0f
   }
 
-  private suspend fun run(onImpact: () -> Unit) {
+  private suspend fun run(onFinishAnimation: () -> Unit) {
     var struck = false
     // Кривая шкалы линейна намеренно: свою кривую применяет каждый кадр внутри себя, и вторая,
     // наложенная на всю шкалу, растянула бы одни кадры за счёт других.
@@ -127,7 +127,7 @@ internal class MergeCeremonyState(private val decelerate: Easing) {
       // засова удар дребезжал бы каждым кадром до конца шкалы.
       if (!struck && value >= LINE_PULL_END) {
         struck = true
-        onImpact()
+        onFinishAnimation()
       }
     }
     playedBranch = null

@@ -1,6 +1,8 @@
 package ru.sla.clarify.feature.chronology.ui.components.node
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -11,15 +13,17 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import ru.sla.atlas.entity.NodeAccent
+import ru.sla.atlas.ui.drawnOnly
 import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
+import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -39,75 +43,91 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * узла **внутри** `Layout` полотна на каждом кадре анимации. Поэтому [ceremony] приходит лямбдой и
  * читается в фазе рисования — тем же приёмом, которым камера меняет свой слой.
  *
- * @param contentDescription связная подпись для скринридера (§14). Тапа у узла нет, а подпись есть:
- *   рёбра скринридер не читает, и о возврате ветки в магистраль сказать больше некому
- * @param modifier модификатор узла
  * @param state кольцо ожидания или залитая точка; за пределами церемонии узел живёт только им
+ * @param modifier модификатор узла
  * @param ceremony кадр церемонии, если она играет; `null` — узел в покое и рисуется по [state]
  */
 @Composable
 internal fun MergeNode(
-  contentDescription: String,
+  level: GraphLevel,
+  accent: NodeAccent,
+  state: GraphNode.Merge.Status,
   modifier: Modifier = Modifier,
-  state: GraphNode.Merge.Status = GraphNode.Merge.Status.Done,
+  onClick: (() -> Unit)? = null,
   ceremony: () -> MergeCeremonyFrame? = { null }
 ) {
-  val colors = AppTheme.colors
-  val restFill = if (state == GraphNode.Merge.Status.Done) 1f else 0f
   Box(
-    modifier = modifier
-      .clearAndSetSemantics { this.contentDescription = contentDescription }
-      .size(24.dp)
-      .drawBehind {
-        val frame = ceremony()
-        // До кадра 3 точки на магистрали нет вовсе (§6.6): она не «прозрачная», её ещё не случилось.
-        val presence = frame?.ring ?: 1f
-        val filled = frame?.impact ?: restFill
-        if (presence <= 0f) {
-          return@drawBehind
-        }
-        val radius = size.minDimension / 2f
-        // Подложка непрозрачна намеренно: узел стоит **на** линии магистрали, и просвечивающая
-        // сквозь кольцо линия превратила бы его в перечёркнутый кружок.
-        drawCircle(color = colors.backgroundPrimary, radius = radius, alpha = presence)
-        drawCircle(color = colors.successPrimary, radius = radius, alpha = presence * filled)
-        val waiting = presence * (1f - filled)
-        if (waiting > 0f) {
-          drawCircle(
-            color = colors.contentGoldPrimary,
-            radius = radius - 1.dp.toPx(),
-            alpha = waiting,
-            style = Stroke(width = 2.dp.toPx())
-          )
-          val pulse = frame?.ringPulse ?: 0f
-          if (pulse > 0f) {
-            // Волна ожидания: кольцо расходится наружу до полутора радиусов и гаснет. Рисуется
-            // обводкой, а не размытием, — при панорамировании это не стоит ничего (§16 брифа).
-            drawCircle(
-              color = colors.contentGoldPrimary,
-              radius = radius * (1f + pulse / 2f),
-              alpha = waiting * (1f - pulse) * 0.4f,
-              style = Stroke(width = 1.dp.toPx())
-            )
-          }
-        }
-      },
+    modifier = modifier,
     contentAlignment = Alignment.Center
   ) {
-    Icon(
+    val colors = AppTheme.colors
+    val restFill = if (state == GraphNode.Merge.Status.Done) 1f else 0f
+    Box(
       modifier = Modifier
-        .size(15.dp)
-        .graphicsLayer {
-          // Кадр 5: иконка приходит масштабом 0.6 → 1.0 вместе с заливкой, а не после неё.
-          val filled = ceremony()?.impact ?: restFill
-          alpha = filled
-          scaleX = 0.6f + 0.4f * filled
-          scaleY = scaleX
+        .size(24.dp)
+        .drawBehind {
+          val frame = ceremony()
+          // До кадра 3 точки на магистрали нет вовсе (§6.6): она не «прозрачная», её ещё не случилось.
+          val presence = frame?.ring ?: 1f
+          val filled = frame?.impact ?: restFill
+          if (presence <= 0f) {
+            return@drawBehind
+          }
+          val radius = size.minDimension / 2f
+          // Подложка непрозрачна намеренно: узел стоит **на** линии магистрали, и просвечивающая
+          // сквозь кольцо линия превратила бы его в перечёркнутый кружок.
+          drawCircle(color = colors.backgroundPrimary, radius = radius, alpha = presence)
+          drawCircle(color = colors.successPrimary, radius = radius, alpha = presence * filled)
+          val waiting = presence * (1f - filled)
+          if (waiting > 0f) {
+            drawCircle(
+              color = colors.contentGoldPrimary,
+              radius = radius - 1.dp.toPx(),
+              alpha = waiting,
+              style = Stroke(width = 2.dp.toPx())
+            )
+            val pulse = frame?.ringPulse ?: 0f
+            if (pulse > 0f) {
+              // Волна ожидания: кольцо расходится наружу до полутора радиусов и гаснет. Рисуется
+              // обводкой, а не размытием, — при панорамировании это не стоит ничего (§16 брифа).
+              drawCircle(
+                color = colors.contentGoldPrimary,
+                radius = radius * (1f + pulse / 2f),
+                alpha = waiting * (1f - pulse) * 0.4f,
+                style = Stroke(width = 1.dp.toPx())
+              )
+            }
+          }
         },
-      painter = painterResource(R.drawable.ic_git_merged_24),
-      tint = AppTheme.colors.graphMergeContent,
-      contentDescription = null
-    )
+      contentAlignment = Alignment.Center
+    ) {
+      Icon(
+        modifier = Modifier
+          .size(15.dp)
+          .graphicsLayer {
+            // Кадр 5: иконка приходит масштабом 0.6 → 1.0 вместе с заливкой, а не после неё.
+            val filled = ceremony()?.impact ?: restFill
+            alpha = filled
+            scaleX = 0.6f + 0.4f * filled
+            scaleY = scaleX
+          },
+        painter = painterResource(R.drawable.ic_git_merged_24),
+        tint = AppTheme.colors.graphMergeContent,
+        contentDescription = null
+      )
+    }
+    if (level == GraphLevel.LOD0) {
+      MergedRequestNode(
+        // Чип в коробку узла не входит: мерился бы он вместе с точкой слияния — коробка
+        // стала бы шириной в чип, а горизонтали дорожки начинаются у её края, и линия
+        // подходила бы к точке с пробелом в полчипа с каждой стороны. Отступ уводит чип
+        // на ту сторону магистрали, откуда ветка **не** возвращается.
+        modifier = Modifier
+          .offset(y = if (accent.lane < 0) 34.dp else (-34).dp)
+          .drawnOnly(),
+        onClick = onClick
+      )
+    }
   }
 }
 
@@ -118,7 +138,7 @@ private fun MergeNodePreviewLight(
   merge: MergeNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Light) {
-    MergeNode(state = merge.state, contentDescription = "Слияние")
+    MergeNodePreviewContent(merge)
   }
 }
 
@@ -129,8 +149,21 @@ private fun MergeNodePreviewDark(
   merge: MergeNodePreview
 ) {
   PreviewColumn(colorTheme = ColorTheme.Dark) {
-    MergeNode(state = merge.state, contentDescription = "Слияние")
+    MergeNodePreviewContent(merge)
   }
+}
+
+@Composable
+private fun MergeNodePreviewContent(merge: MergeNodePreview) {
+  MergeNode(
+    // Чип висит в 34 dp от точки и в её коробку не входит: без поля кадр обрезал бы ровно его.
+    modifier = Modifier.padding(vertical = 40.dp),
+    level = GraphLevel.LOD0,
+    // Акцент узлу слияния нужен ровно за одним — за знаком дорожки: он говорит, с какой стороны
+    // магистрали ветка, а значит с какой стороны встанет чип. Цвет через настоящий маппер.
+    accent = NodeAccent(lane = 1, color = 1.toBranchColor(AppTheme.colors)),
+    state = merge.state
+  )
 }
 
 @Immutable

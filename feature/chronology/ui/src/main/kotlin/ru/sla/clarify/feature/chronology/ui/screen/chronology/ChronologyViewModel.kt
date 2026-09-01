@@ -42,13 +42,13 @@ class ChronologyViewModel @Inject constructor(
   private fun MachineDsl<ViewState>.configureNodePreview() {
     onEach(intent(ViewIntents::selectNode)) {
       transitionTo { state, selection ->
-        state.copy(selectedNode = selection)
+        state.copy(selectedNodeId = selection)
       }
     }
 
     onEach(intent(ViewIntents::closeNodePreview)) {
       transitionTo { state, _ ->
-        state.copy(selectedNode = null)
+        state.copy(selectedNodeId = null)
       }
     }
   }

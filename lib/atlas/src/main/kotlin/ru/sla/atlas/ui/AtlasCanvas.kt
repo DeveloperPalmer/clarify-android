@@ -44,8 +44,6 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.CanvasMargins
-import ru.sla.atlas.entity.Graph
-import ru.sla.atlas.entity.Lanes
 import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.NodeAccent
 import ru.sla.atlas.layout.lanesOf
@@ -148,18 +146,6 @@ fun <N : Node, L> AtlasCanvas(
   val currentCanvasOrigin by rememberUpdatedState(canvasOrigin)
 
   SideEffect { telemetry.onCanvasComposition() }
-  // Узлы снимаются один раз и уходят и в содержимое, и в измерение. Читать их в measure заново
-  // нельзя: состояние подменяется из `SideEffect`, то есть уже после этой композиции, но ещё до
-  // измерения того же кадра, — и измерение получило бы новый список к старым measurable'ам.
-  val graph = state.graph
-  val nodes = graph.nodes
-  // Дорожки считаются здесь, а не в измерении, и это не оптимизация. Точке ветвления нужен цвет и
-  // направление **уходящей** ветки, а рисуется она в композиции — то есть до того, как измерение
-  // что-либо посчитает. Один и тот же результат уходит и в содержимое, и в `layout`, поэтому
-  // разъехаться им нечем.
-  val lanes = remember(graph, branchColors) {
-    lanesOf(graph, branchColors, foreignBranchOf)
-  }
   Box(
     // Жест висит на всём вьюпорте, а не на слое узлов: полотно не всегда достаёт до края экрана,
     // и панорамирование не работало бы там, где его нет.
@@ -198,9 +184,8 @@ fun <N : Node, L> AtlasCanvas(
     background()
     AtlasNodesLayer(
       state = state,
-      graph = graph,
-      lanes = lanes,
       branchColors = branchColors,
+      foreignBranchOf = foreignBranchOf,
       crossfadeSpec = crossfadeSpec,
       drawEdges = drawEdges,
       node = node
@@ -224,10 +209,9 @@ fun <N : Node, L> AtlasCanvas(
  * экрана и панорамирование не работало бы там, где узлов нет.
  *
  * @param state камера полотна и результат его последней раскладки
- * @param graph граф, из которого строится содержимое; приходит параметром, а не читается из [state],
- *   чтобы композиция и измерение одного кадра видели один и тот же список
- * @param lanes дорожки и акценты того же кадра, посчитанные один раз на оба потребителя
+ * @param branchColors цвет каждой ветки графа
  * @param crossfadeSpec кривая кроссфейда при смене уровня
+ * @param foreignBranchOf чужая ветка узла, см. [AtlasCanvas]
  * @param drawEdges чем нарисовать связи
  * @param modifier модификатор слоя
  * @param node содержимое узла на заданном уровне детализации
@@ -236,10 +220,9 @@ fun <N : Node, L> AtlasCanvas(
 @Composable
 private fun <N : Node, L> AtlasNodesLayer(
   state: AtlasCanvasState<N, L>,
-  graph: Graph<N>,
-  lanes: Lanes,
   branchColors: Map<Branch.Id, Color>,
   crossfadeSpec: FiniteAnimationSpec<Float>,
+  foreignBranchOf: (node: N) -> Branch.Id?,
   drawEdges: DrawScope.() -> Unit,
   modifier: Modifier = Modifier,
   node: @Composable (node: N, accent: NodeAccent, level: L) -> Unit
@@ -247,6 +230,21 @@ private fun <N : Node, L> AtlasNodesLayer(
   val telemetry = state.telemetry
   val statusBar = WindowInsets.statusBars
   val navigationBar = WindowInsets.navigationBars
+  // Граф снимается здесь — там же, где стоит `Layout`, а не этажом выше. Читать его в measure
+  // заново нельзя: состояние подменяется из `SideEffect`, то есть уже после этой композиции, но ещё
+  // до измерения того же кадра, — и измерение получило бы новый список к старым measurable'ам.
+  // Но и приезжать сюда параметром он не должен: параметр приходит из **чужой** композиции, а
+  // содержимое и лямбда измерения строятся в этой. Пока обе половины читают одно значение в одном
+  // теле, разъехаться им нечем; стоит развести чтение и `Layout` по разным композаблам — и число
+  // узлов у модели перестаёт быть числом узлов у дерева, что `placementOf` и ловит своим `check`.
+  val graph = state.graph
+  // Дорожки считаются здесь, а не в измерении, и это не оптимизация. Точке ветвления нужен цвет и
+  // направление **уходящей** ветки, а рисуется она в композиции — то есть до того, как измерение
+  // что-либо посчитает. Один и тот же результат уходит и в содержимое, и в `layout`, поэтому
+  // разъехаться им нечем.
+  val lanes = remember(graph, branchColors) {
+    lanesOf(graph, branchColors, foreignBranchOf)
+  }
   // Уровень снимается один раз и уходит и в содержимое, и в измерение: прочитанный в measure заново,
   // он пришёл бы к узел, построенным другим уровнем, — ровно та же ловушка, что и со списком
   // узлов. Переход держит `Transition`: `currentState` — уходящий уровень, и своего держателя со

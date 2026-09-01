@@ -22,9 +22,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -50,9 +49,6 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * @param time время начала эпизода, готовое к показу
  * @param count сколько сообщений в кластере
  * @param snippet последнее сообщение эпизода
- * @param contentDescription связная подпись для скринридера (§14): собирается маппером, потому что
- *   имя ветки узлу неоткуда взять. Три текста плашки при этом скрываются — иначе скринридер
- *   прочитает и подпись, и их
  * @param modifier модификатор узла
  * @param myShare доля своих реплик в полоске соотношения
  * @param unreadCount счётчик непрочитанных; ноль — читать нечего
@@ -65,7 +61,6 @@ internal fun EpisodeNode(
   time: String,
   count: Int,
   snippet: String,
-  contentDescription: String,
   modifier: Modifier = Modifier,
   myShare: Float = DEFAULT_MY_SHARE,
   unreadCount: Long = 0,
@@ -76,13 +71,10 @@ internal fun EpisodeNode(
   val unread = unreadCount > 0
   Box(
     modifier = modifier
-      // Подпись ставится здесь, а не сливается с текстами внутри: `clearAndSetSemantics` чистит
-      // семантику потомков, но не своего же узла, — поэтому действие клика, объявленное `surface`
-      // ниже по цепочке, остаётся на месте, а время, счётчик и сниппет замолкают.
-      .clearAndSetSemantics {
-        this.contentDescription = contentDescription
-        if (onClick != null) role = Role.Button
-      }
+      // Собственной подписи у узла нет: скринридер читает время, счётчик и сниппет внутри плашки.
+      // Роль при этом объявляется здесь, а не берётся у `surface` ниже по цепочке: тот ставит
+      // действие через `combinedClickable`, а роли не знает — без неё узел озвучивается текстом.
+      .semantics { if (onClick != null) role = Role.Button }
       .graphicsLayer { alpha = if (dim) 0.6f else 1f }
       // Гало рисуется за пределами плашки и намеренно не влияет на раскладку: иначе непрочитанный
       // узел был бы шире прочитанного и сдвигал бы соседей по дорожке.
@@ -207,7 +199,6 @@ private fun EpisodeNodePreviewDark(
 private fun EpisodeNodePreviewContent(episode: EpisodeNodePreview) {
   EpisodeNode(
     modifier = Modifier.padding(UNREAD_HALO_WIDTH),
-    contentDescription = episode.snippet,
     onClick = {},
     time = episode.time,
     count = episode.count,

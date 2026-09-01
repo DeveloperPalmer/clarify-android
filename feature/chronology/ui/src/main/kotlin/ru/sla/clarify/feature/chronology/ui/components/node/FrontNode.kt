@@ -12,10 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import ru.sla.atlas.ui.drawnOnly
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -45,13 +44,12 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  */
 @Composable
 internal fun FrontNode(
-  contentDescription: String,
   modifier: Modifier = Modifier,
   hasCaption: Boolean = true
 ) {
   val accentColor = AppTheme.colors.contentAccentPrimary
   Box(
-    modifier = modifier.clearAndSetSemantics { this.contentDescription = contentDescription },
+    modifier = modifier,
     contentAlignment = Alignment.Center
   ) {
     Box(
@@ -75,7 +73,9 @@ internal fun FrontNode(
       Text(
         // Подпись висит над точкой и в измерение по вертикали не входит: коробку по высоте задаёт
         // строка, а точка обязана остаться в её центре.
-        modifier = Modifier.offset(y = (-18).dp),
+        modifier = Modifier
+          .offset(y = (-18).dp)
+          .drawnOnly(),
         // Капслок применяется здесь, а не в стиле: `overline` задаёт только метрики разряжённого
         // начертания, а решение кричать принимает точка использования.
         text = stringResource(R.string.chronology_front_caption).uppercase(),
@@ -91,14 +91,10 @@ internal fun FrontNode(
 private fun FrontNodePreviewLight() {
   PreviewColumn(colorTheme = ColorTheme.Light) {
     // Подпись выходит за коробку узла вверх, и без поля кадр обрезал бы ровно её.
-    FrontNode(
-      modifier = Modifier.padding(vertical = 24.dp),
-      contentDescription = "Сейчас"
-    )
+    FrontNode(modifier = Modifier.padding(vertical = 24.dp))
     // Второй кадр — фронт на обзоре: без подписи от узла остаётся одна точка с гало.
     FrontNode(
       modifier = Modifier.padding(vertical = 24.dp),
-      contentDescription = "Сейчас",
       hasCaption = false
     )
   }
@@ -108,13 +104,9 @@ private fun FrontNodePreviewLight() {
 @Composable
 private fun FrontNodePreviewDark() {
   PreviewColumn(colorTheme = ColorTheme.Dark) {
+    FrontNode(modifier = Modifier.padding(vertical = 24.dp))
     FrontNode(
       modifier = Modifier.padding(vertical = 24.dp),
-      contentDescription = "Сейчас"
-    )
-    FrontNode(
-      modifier = Modifier.padding(vertical = 24.dp),
-      contentDescription = "Сейчас",
       hasCaption = false
     )
   }

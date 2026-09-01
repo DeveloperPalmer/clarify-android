@@ -380,10 +380,10 @@ class MocksTest {
     val mock = mockGraph()
     val nodes = mock.graphNodes
     val lanes = mock.graph.mockLanes().lanes
-    val geometry = LaneGeometry(topLaneOf(lanes), GraphLevel.Overview.toLaneStep())
+    val geometry = LaneGeometry(topLaneOf(lanes), GraphLevel.LOD1.toLaneStep())
     val placement = placementOf(
       lanes = lanes,
-      gaps = nodes.map { it.gap.toStepWidth(GraphLevel.Overview).value },
+      gaps = nodes.map { it.gap.toStepWidth(GraphLevel.LOD1).value },
       laneYs = lanes.map { geometry.laneYOf(it).value },
       sizes = nodes.map { it.toOverviewSize() },
       margins = CanvasMargins(left = 64f, top = 64f, right = 64f, bottom = 64f)
@@ -392,7 +392,7 @@ class MocksTest {
     val fit = fitScaleOf(placement.bounds, IntSize(width = 412, height = 892))
 
     assertTrue(
-      fit > ChronologyLevels.bandOf(GraphLevel.Overview, fit).min - 1e-4f,
+      fit > ChronologyLevels.bandOf(GraphLevel.LOD1, fit).min - 1e-4f,
       "нижний край обзора и есть вписанный граф: набор, переросший его, вписывается уже не целиком"
     )
     assertTrue(

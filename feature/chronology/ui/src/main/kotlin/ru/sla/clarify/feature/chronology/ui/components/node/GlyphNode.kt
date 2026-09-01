@@ -11,8 +11,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -41,8 +39,6 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  * узлов больше всего, не отменяется.
  *
  * @param color цвет обводки: идентичность дорожки, на которой стоит узел
- * @param contentDescription связная подпись для скринридера (§14): на первом уровне детализации от
- *   узла остаётся кружок, и подпись — единственное, чем он себя называет
  * @param modifier модификатор узла
  * @param unreadCount счётчик непрочитанных; ноль — читать нечего. Отдельного флага нет намеренно:
  *   два параметра, которые всегда двигаются вместе, — способ ошибиться
@@ -50,14 +46,12 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 @Composable
 internal fun GlyphNode(
   color: Color,
-  contentDescription: String,
   modifier: Modifier = Modifier,
   unreadCount: Long = 0
 ) {
   val accentColor = AppTheme.colors.contentAccentPrimary
   Box(
     modifier = modifier
-      .clearAndSetSemantics { this.contentDescription = contentDescription }
       // Гало рисуется до того, как узлу задан размер, и в раскладке места не занимает — то же
       // правило, что у плашки эпизода. Скругление равно половине глифа: у круга «скругление плашки»
       // это его радиус, и меньшее значение срезало бы гало углами.
@@ -80,7 +74,6 @@ private fun GlyphNodePreviewLight(
     GlyphNode(
       modifier = Modifier.padding(UNREAD_HALO_WIDTH),
       color = glyph.lane.toPreviewColor(),
-      contentDescription = "Эпизод",
       unreadCount = glyph.unreadCount
     )
   }
@@ -96,7 +89,6 @@ private fun GlyphNodePreviewDark(
     GlyphNode(
       modifier = Modifier.padding(UNREAD_HALO_WIDTH),
       color = glyph.lane.toPreviewColor(),
-      contentDescription = "Эпизод",
       unreadCount = glyph.unreadCount
     )
   }

@@ -32,7 +32,7 @@ internal fun TimeGap.toStepWidth(level: GraphLevel): Dp {
     TimeGap.Long -> 152.dp
   }
   return when (level) {
-    GraphLevel.Episodes -> step
-    GraphLevel.Overview -> step / 4
+    GraphLevel.LOD0 -> step
+    GraphLevel.LOD1 -> step / 4
   }
 }

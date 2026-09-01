@@ -20,8 +20,8 @@ class GraphLevelMappersTest {
   @Test
   fun `the overview lane step is a quarter of the episode one`() {
     assertEquals(
-      GraphLevel.Episodes.toLaneStep() / 4,
-      GraphLevel.Overview.toLaneStep(),
+      GraphLevel.LOD0.toLaneStep() / 4,
+      GraphLevel.LOD1.toLaneStep(),
       "то же число делит и зазоры: одно правило на всю раскладку уровня"
     )
   }
@@ -30,19 +30,19 @@ class GraphLevelMappersTest {
   fun `the overview floor sinks to fit-all but never below the glyph limit`() {
     assertEquals(
       0.305f,
-      GraphLevel.Overview.toScaleBand(fitScale = 0.305f).min,
+      GraphLevel.LOD1.toScaleBand(fitScale = 0.305f).min,
       1e-4f,
       "на демо-наборе упор обзора приходится ровно на вписанный граф"
     )
     assertEquals(
       0.2f,
-      GraphLevel.Overview.toScaleBand(fitScale = 0.077f).min,
+      GraphLevel.LOD1.toScaleBand(fitScale = 0.077f).min,
       1e-4f,
       "переписка в двести эпизодов вписалась бы на 0.077×, где глиф вырождается в полтора пикселя"
     )
     assertEquals(
       0.4f,
-      GraphLevel.Overview.toScaleBand(fitScale = 0.9f).min,
+      GraphLevel.LOD1.toScaleBand(fitScale = 0.9f).min,
       1e-4f,
       "короткая история вписывается и так: ниже общего предела обзор не опускается"
     )

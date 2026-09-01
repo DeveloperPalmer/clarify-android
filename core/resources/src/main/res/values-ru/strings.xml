@@ -190,8 +190,4 @@
     <string name="chronology_branch_status_merged">Закрыта</string>
     <string name="chronology_origin_caption">Начало переписки</string>
     <string name="chronology_front_caption">Сейчас</string>
-    <string name="chronology_node_episode">Эпизод</string>
-    <string name="chronology_node_fork">Ответвление</string>
-    <string name="chronology_node_merge">Слияние</string>
-    <string name="chronology_node_branch">ветка „%1$s“</string>
 </resources>

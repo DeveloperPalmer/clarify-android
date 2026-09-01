@@ -13,8 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -58,14 +56,12 @@ import ru.sla.clarify.uikit.theme.ColorTheme
  */
 @Composable
 internal fun MergedRequestNode(
-  contentDescription: String,
   modifier: Modifier = Modifier,
   maxWidth: Dp = 120.dp,
   onClick: (() -> Unit)? = null
 ) {
   Row(
     modifier = modifier
-      .clearAndSetSemantics { this.contentDescription = contentDescription }
       // Скругление 12 при высоте 24 и есть капсула: других форм в системе нет, и заводить их ради
       // одного чипа не потребовалось.
       .defaultMinSize(minHeight = 24.dp)
@@ -121,6 +117,6 @@ private fun MergedRequestNodePreviewDark() {
  */
 @Composable
 private fun MergedRequestNodePreviewContent() {
-  MergedRequestNode(contentDescription = "Закрыта")
-  MergedRequestNode(contentDescription = "Закрыта", maxWidth = 60.dp)
+  MergedRequestNode()
+  MergedRequestNode(maxWidth = 60.dp)
 }

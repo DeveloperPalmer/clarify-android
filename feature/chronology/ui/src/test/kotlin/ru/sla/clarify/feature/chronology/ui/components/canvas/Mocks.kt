@@ -70,5 +70,5 @@ internal fun mockCanvasMargins(): CanvasMargins {
  * @return состояние, каким его получает экран при открытии
  */
 internal fun mockCanvasState(): AtlasCanvasState<GraphNode, GraphLevel> {
-  return AtlasCanvasState(levels = ChronologyLevels, initialLevel = GraphLevel.Episodes)
+  return AtlasCanvasState(levels = ChronologyLevels, initialLevel = GraphLevel.LOD0)
 }

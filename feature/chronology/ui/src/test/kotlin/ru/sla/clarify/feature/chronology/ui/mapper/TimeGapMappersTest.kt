@@ -31,8 +31,8 @@ class TimeGapMappersTest {
   fun `overview gaps are a quarter of the episode ones`() {
     TimeGap.entries.forEach { gap ->
       assertEquals(
-        gap.toStepWidth(GraphLevel.Episodes) / 4,
-        gap.toStepWidth(GraphLevel.Overview),
+        gap.toStepWidth(GraphLevel.LOD0) / 4,
+        gap.toStepWidth(GraphLevel.LOD1),
         "обзор — та же лестница, делённая на четыре: делённая сохраняет пропорции истории, " +
           "а заведённая заново уводит засечки мини-карты вдвое сильнее"
       )
