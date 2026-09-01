@@ -3,9 +3,9 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 import androidx.compose.ui.graphics.Color
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.CanvasMargins
 import ru.sla.atlas.entity.Graph
-import ru.sla.atlas.layout.CanvasMargins
-import ru.sla.atlas.layout.Lanes
+import ru.sla.atlas.entity.Lanes
 import ru.sla.atlas.layout.lanesOf
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 

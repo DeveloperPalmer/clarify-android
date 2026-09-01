@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.CanvasMargins
+import ru.sla.atlas.entity.Edge
+import ru.sla.atlas.entity.EdgeRole
 import ru.sla.atlas.entity.TimeGap
-import ru.sla.atlas.layout.CanvasMargins
-import ru.sla.atlas.layout.Edge
-import ru.sla.atlas.layout.EdgeRole
 import ru.sla.atlas.layout.LaneGeometry
 import ru.sla.atlas.layout.edgesOf
 import ru.sla.atlas.layout.placementOf

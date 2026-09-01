@@ -6,6 +6,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import ru.sla.atlas.entity.CanvasMargins
+import ru.sla.atlas.entity.Placement
 import kotlin.math.abs
 import kotlin.math.roundToInt
 

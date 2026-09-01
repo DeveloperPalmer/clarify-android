@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.Color
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Lanes
+import ru.sla.atlas.entity.NodeAccent
 
 /**
  * Отрезок индексов, на котором ветка держит свою дорожку.

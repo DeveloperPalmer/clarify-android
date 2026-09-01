@@ -1,4 +1,4 @@
-package ru.sla.atlas.layout
+package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color

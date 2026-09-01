@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.entity.CanvasMargins
+import ru.sla.atlas.entity.Placement
 
 /**
  * Раскладка вынесена в чистую функцию потому, что все регрессии этой фичи жили именно здесь:

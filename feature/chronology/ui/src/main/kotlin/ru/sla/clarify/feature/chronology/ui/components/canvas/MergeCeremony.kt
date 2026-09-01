@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 import androidx.compose.animation.core.Easing
 import androidx.compose.ui.util.fastAny
 import ru.sla.atlas.entity.Branch
-import ru.sla.atlas.layout.Edge
+import ru.sla.atlas.entity.Edge
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 
 /** Полная длина церемонии слияния, мс: семь кадров §12 на одной шкале. */

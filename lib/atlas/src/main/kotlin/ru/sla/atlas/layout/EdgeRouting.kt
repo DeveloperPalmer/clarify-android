@@ -6,7 +6,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Edge
+import ru.sla.atlas.entity.EdgeRole
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Vertical
 
 /**
  * Все рёбра графа: горизонтали дорожек, уходы, возвраты, хвосты и мостики над чужими вертикалями.

@@ -53,12 +53,12 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.CanvasMargins
+import ru.sla.atlas.entity.Edge
+import ru.sla.atlas.entity.EdgeRole
 import ru.sla.atlas.entity.Graph
-import ru.sla.atlas.layout.CanvasMargins
-import ru.sla.atlas.layout.Edge
-import ru.sla.atlas.layout.EdgeRole
-import ru.sla.atlas.layout.Lanes
-import ru.sla.atlas.layout.NodeAccent
+import ru.sla.atlas.entity.Lanes
+import ru.sla.atlas.entity.NodeAccent
 import ru.sla.atlas.layout.lanesOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame

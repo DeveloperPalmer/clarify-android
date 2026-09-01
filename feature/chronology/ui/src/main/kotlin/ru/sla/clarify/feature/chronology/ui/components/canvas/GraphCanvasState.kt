@@ -31,12 +31,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.CanvasMargins
+import ru.sla.atlas.entity.Edge
 import ru.sla.atlas.entity.Graph
-import ru.sla.atlas.layout.CanvasMargins
-import ru.sla.atlas.layout.Edge
+import ru.sla.atlas.entity.Lanes
+import ru.sla.atlas.entity.Placement
 import ru.sla.atlas.layout.LaneGeometry
-import ru.sla.atlas.layout.Lanes
-import ru.sla.atlas.layout.Placement
 import ru.sla.atlas.layout.edgesOf
 import ru.sla.atlas.layout.nearestCentreIndexOf
 import ru.sla.atlas.layout.placementOf

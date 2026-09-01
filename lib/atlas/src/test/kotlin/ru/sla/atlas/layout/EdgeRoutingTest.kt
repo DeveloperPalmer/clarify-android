@@ -8,7 +8,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Edge
+import ru.sla.atlas.entity.EdgeRole
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Vertical
 import ru.sla.atlas.entity.mockBranch
 import ru.sla.atlas.entity.mockBranchColors
 import ru.sla.atlas.entity.mockNode

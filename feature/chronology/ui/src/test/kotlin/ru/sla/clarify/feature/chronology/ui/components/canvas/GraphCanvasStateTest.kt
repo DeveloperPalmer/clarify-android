@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Placement
 import ru.sla.atlas.entity.TimeGap
-import ru.sla.atlas.layout.Placement
 import ru.sla.atlas.layout.nearestCentreIndexOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node

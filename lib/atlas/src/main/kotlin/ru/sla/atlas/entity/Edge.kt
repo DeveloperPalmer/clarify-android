@@ -1,9 +1,8 @@
-package ru.sla.atlas.layout
+package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import ru.sla.atlas.entity.Branch
 
 /**
  * Ребро графа: ортогональная ломаная в координатах полотна.

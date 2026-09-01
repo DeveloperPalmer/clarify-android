@@ -7,7 +7,7 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.atlas.layout.Placement
+import ru.sla.atlas.entity.Placement
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import kotlin.math.abs
 
