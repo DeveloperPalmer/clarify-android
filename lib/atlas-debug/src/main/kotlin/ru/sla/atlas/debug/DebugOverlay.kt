@@ -1,14 +1,18 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.debug
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -31,24 +35,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import kotlinx.coroutines.delay
+import ru.sla.atlas.debug.entity.DebugRow
+import ru.sla.atlas.debug.entity.DebugSnapshot
+import ru.sla.atlas.debug.mapper.toFactRows
+import ru.sla.atlas.debug.mapper.toPhaseRows
+import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Telemetry
 import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.atlas.ui.peaksOf
 import ru.sla.atlas.ui.ratesOf
-import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
-import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugSnapshot
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.Node
-import ru.sla.clarify.feature.chronology.ui.mapper.toFactRows
-import ru.sla.clarify.feature.chronology.ui.mapper.toPhaseRows
-import ru.sla.clarify.uikit.component.AppPager
-import ru.sla.clarify.uikit.modifier.surface
-import ru.sla.clarify.uikit.theme.AppTheme
-import ru.sla.clarify.uikit.theme.HSpacer
-import ru.sla.clarify.uikit.theme.VSpacer
 
 /**
- * Отладочная панель полотна, под тоглом `chronologyDebugOverlay`.
+ * Отладочная панель полотна.
  *
  * Панель отвечает на вопросы, которые не разделить по внешнему виду графа: доходит ли жест до
  * обработчика, не упёрлась ли камера в границу и — главное — не крутится ли какая-то фаза Compose
@@ -63,14 +61,16 @@ import ru.sla.clarify.uikit.theme.VSpacer
  * панорамирования. Это единственное место в полотне, где такое чтение допустимо.
  *
  * @param state камера полотна и результат его последней раскладки
+ * @param levelLabelOf имя уровня детализации словами: как называются уровни, знает вызывающий
  * @param onBoundsChanged куда панель встала и когда её не стало: полотно ловит жест на всём
  *   вьюпорте и по этой зоне отличает палец, положенный на панель, от пальца на графе. Убранная
  *   панель обязана снять зону за собой — иначе полотно продолжит обходить стороной пустое место
  * @param modifier модификатор панели
  */
 @Composable
-internal fun GraphDebugOverlay(
-  state: AtlasCanvasState<Node, GraphLevel>,
+fun <N : BasicNode, L> DebugOverlay(
+  state: AtlasCanvasState<N, L>,
+  levelLabelOf: (L) -> String,
   onBoundsChanged: (key: Any, bounds: Rect) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -87,7 +87,7 @@ internal fun GraphDebugOverlay(
   var rates by remember { mutableStateOf(Telemetry.Empty) }
   var peak by remember {
     mutableStateOf(
-      GraphDebugSnapshot(
+      DebugSnapshot(
         rates = Telemetry.Empty,
         totals = Telemetry.Empty,
         info = state.debugInfo.value,
@@ -112,7 +112,7 @@ internal fun GraphDebugOverlay(
       val updatedPeaks = peaksOf(peak.rates, tickRates)
       if (updatedPeaks != peak.rates) {
         // Состояние читается из корутины, а не из композиции: подписки это не создаёт.
-        peak = GraphDebugSnapshot(
+        peak = DebugSnapshot(
           rates = updatedPeaks,
           totals = current,
           info = state.debugInfo.value,
@@ -129,6 +129,7 @@ internal fun GraphDebugOverlay(
   }
   val facts = remember(info, totals) {
     info.toFactRows(
+      labelOf = levelLabelOf,
       lastPan = telemetry.lastPan,
       lastFling = telemetry.lastFling,
       tickMillis = TICK_MILLIS
@@ -139,18 +140,19 @@ internal fun GraphDebugOverlay(
   }
   val peakFacts = remember(peak) {
     peak.info.toFactRows(
+      labelOf = levelLabelOf,
       lastPan = peak.lastPan,
       lastFling = peak.lastFling,
       tickMillis = TICK_MILLIS
     )
   }
   val pagerState = rememberPagerState(pageCount = { 2 })
-  AppPager(
+  HorizontalPager(
     state = pagerState,
     modifier = modifier.onGloballyPositioned { onBoundsChanged(ZONE_KEY, it.boundsInRoot()) }
   ) { page ->
-    GraphDebugPage(
-      title = if (page == 0) "GRAPH DEBUG" else "GRAPH PEAKS",
+    DebugPage(
+      title = if (page == 0) "CANVAS DEBUG" else "CANVAS PEAKS",
       phases = if (page == 0) phases else peakPhases,
       facts = if (page == 0) facts else peakFacts
     )
@@ -166,48 +168,47 @@ internal fun GraphDebugOverlay(
  * @param modifier модификатор страницы
  */
 @Composable
-private fun GraphDebugPage(
+private fun DebugPage(
   title: String,
-  phases: List<GraphDebugRow>,
-  facts: List<GraphDebugRow>,
+  phases: List<DebugRow>,
+  facts: List<DebugRow>,
   modifier: Modifier = Modifier
 ) {
   Column(
-    modifier = modifier.surface(
-      backgroundColor = AppTheme.colors.cardPrimary,
-      shape = AppTheme.shapes.round12,
-      elevation = AppTheme.elevation.large
+    modifier = modifier.background(
+      color = PANEL_BACKGROUND,
+      shape = RoundedCornerShape(12.dp)
     )
   ) {
-    VSpacer(PANEL_PADDING)
+    Spacer(Modifier.height(PANEL_PADDING))
     BasicText(
       modifier = Modifier.padding(horizontal = PANEL_PADDING),
       text = title,
-      style = AppTheme.typography.label3Bold.copy(color = AppTheme.colors.contentTertiary)
+      style = TITLE_STYLE.copy(color = LABEL_COLOR)
     )
-    VSpacer(8.dp)
+    Spacer(Modifier.height(8.dp))
     // Две колонки: фазы Compose слева, факты о полотне справа. Так шестнадцать метрик укладываются
     // в девять строк и панель перестаёт закрывать граф, ради которого её открыли.
-    val rowHeight = with(LocalDensity.current) { AppTheme.typography.caption.lineHeight.toDp() }
+    val rowHeight = with(LocalDensity.current) { ROW_STYLE.lineHeight.toDp() }
     Row(
       modifier = Modifier
         .heightIn(max = rowHeight * VISIBLE_ROWS)
         .verticalScroll(rememberScrollState())
         .padding(horizontal = PANEL_PADDING)
     ) {
-      GraphDebugColumn(
+      DebugColumn(
         modifier = Modifier.width(PHASE_COLUMN_WIDTH),
         rows = phases,
         labelWidth = PHASE_LABEL_WIDTH
       )
-      HSpacer(12.dp)
-      GraphDebugColumn(
+      Spacer(Modifier.width(12.dp))
+      DebugColumn(
         modifier = Modifier.fillMaxWidth(),
         rows = facts,
         labelWidth = FACT_LABEL_WIDTH
       )
     }
-    VSpacer(PANEL_PADDING)
+    Spacer(Modifier.height(PANEL_PADDING))
   }
 }
 
@@ -219,35 +220,31 @@ private fun GraphDebugPage(
  * @param modifier модификатор колонки
  */
 @Composable
-private fun GraphDebugColumn(
-  rows: List<GraphDebugRow>,
+private fun DebugColumn(
+  rows: List<DebugRow>,
   labelWidth: Dp,
   modifier: Modifier = Modifier
 ) {
-  val anomalyColor = AppTheme.colors.errorPrimary
-  val labelColor = AppTheme.colors.contentTertiary
-  val valueColor = AppTheme.colors.contentPrimary
-  val anomalyContentColor = AppTheme.colors.contentAccentSecondary
   Column(modifier = modifier) {
     rows.fastForEach { row ->
       Row(
         modifier = Modifier
           .fillMaxWidth()
-          .background(if (row.isAnomalous) anomalyColor else Color.Transparent)
+          .background(if (row.isAnomalous) ANOMALY_BACKGROUND else Color.Transparent)
       ) {
         BasicText(
           modifier = Modifier.width(labelWidth),
           text = row.label,
-          style = AppTheme.typography.caption.copy(
-            color = if (row.isAnomalous) anomalyContentColor else labelColor
+          style = ROW_STYLE.copy(
+            color = if (row.isAnomalous) ANOMALY_CONTENT else LABEL_COLOR
           )
         )
         BasicText(
           text = row.value,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          style = AppTheme.typography.caption.copy(
-            color = if (row.isAnomalous) anomalyContentColor else valueColor
+          style = ROW_STYLE.copy(
+            color = if (row.isAnomalous) ANOMALY_CONTENT else VALUE_COLOR
           )
         )
       }

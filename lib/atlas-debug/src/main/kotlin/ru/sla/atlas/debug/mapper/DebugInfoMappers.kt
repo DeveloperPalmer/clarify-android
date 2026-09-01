@@ -1,11 +1,10 @@
-package ru.sla.clarify.feature.chronology.ui.mapper
+package ru.sla.atlas.debug.mapper
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Velocity
+import ru.sla.atlas.debug.entity.DebugRow
 import ru.sla.atlas.entity.DebugInfo
-import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import kotlin.math.roundToInt
 
 /**
@@ -14,70 +13,60 @@ import kotlin.math.roundToInt
  * Числа округляются до целых пикселей: доли пикселя в диагностике ничего не решают, а строку вроде
  * `Rect.fromLTRB(252.0, 100.0, 2629.0, 447.0)` в колонку не уложить.
  *
+ * @param labelOf имя уровня детализации словами: как называются уровни, знает только тот, у кого
+ *   они есть
  * @param lastPan последнее приращение жеста
  * @param lastFling скорость последнего отпускания
  * @param tickMillis период, с которым панель снимает счётчики
  * @return строки правой колонки панели
  */
-internal fun DebugInfo<GraphLevel>.toFactRows(
+fun <L> DebugInfo<L>.toFactRows(
+  labelOf: (L) -> String,
   lastPan: Offset,
   lastFling: Velocity,
   tickMillis: Long
-): List<GraphDebugRow> {
+): List<DebugRow> {
   return listOf(
-    GraphDebugRow("viewport", "$viewportWidth × $viewportHeight"),
-    GraphDebugRow(
+    DebugRow("viewport", "$viewportWidth × $viewportHeight"),
+    DebugRow(
       label = "camera",
       value = lineOf(camera) + if (isCameraMoved) "" else " · rest",
       isAnomalous = !camera.isValid()
     ),
     // Масштаб — в процентах, а не кратностью: панель считает целыми числами везде, а «40 %» и
     // «250 %» читаются с той же дистанции, что и остальные строки.
-    GraphDebugRow(
+    DebugRow(
       label = "scale",
       value = "${(scale * PERCENT).roundToInt()} %",
       isAnomalous = !scale.isFinite() || scale <= 0f
     ),
     // Уровень и его полоса стоят рядом с масштабом: без них «40 %» ничего не значит — тот же
-    // масштаб на обзоре показывает вшестеро больше истории, чем на эпизодах.
-    GraphDebugRow(
+    // масштаб на обзорном уровне показывает в разы больше истории, чем на подробном.
+    DebugRow(
       label = "lod",
-      value = "${level.toDebugLabel()} · ${(levelBand.min * PERCENT).roundToInt()} … " +
+      value = "${labelOf(level)} · ${(levelBand.min * PERCENT).roundToInt()} … " +
         "${(levelBand.max * PERCENT).roundToInt()} %"
     ),
-    GraphDebugRow("bounds", lineOf(contentBounds)),
-    GraphDebugRow(
+    DebugRow("bounds", lineOf(contentBounds)),
+    DebugRow(
       label = "span x",
       value = "${centreSpanX.start.roundToInt()} … ${centreSpanX.endInclusive.roundToInt()}"
     ),
-    GraphDebugRow(
+    DebugRow(
       label = "nodes",
       value = "$nodeCount · edges $edgeCount",
       isAnomalous = nodeCount > 0 && contentBounds.isEmpty
     ),
-    GraphDebugRow("last pan", lineOf(lastPan)),
+    DebugRow("last pan", lineOf(lastPan)),
     // Скорость отпускания пишется до отбраковки слабого броска: ноль здесь при живом жесте означает,
     // что трекер остался без точек, а не что палец вели медленно. Различить это по поведению
     // картинки нельзя — в обоих случаях инерции просто нет.
-    GraphDebugRow(
+    DebugRow(
       label = "last v",
       value = "${lastFling.x.roundToInt()}, ${lastFling.y.roundToInt()}"
     ),
-    GraphDebugRow("tick", "$tickMillis ms")
+    DebugRow("tick", "$tickMillis ms")
   )
-}
-
-/**
- * Имя уровня для панели.
- *
- * По-английски, как и все остальные значения панели: она читается вперемешку с именами фаз, и
- * русское слово среди них выглядело бы значением другого рода.
- */
-private fun GraphLevel.toDebugLabel(): String {
-  return when (this) {
-    GraphLevel.Overview -> "overview"
-    GraphLevel.Episodes -> "episodes"
-  }
 }
 
 private fun lineOf(offset: Offset): String {

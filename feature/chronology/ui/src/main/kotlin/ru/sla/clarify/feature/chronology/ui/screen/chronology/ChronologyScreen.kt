@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import ru.sla.atlas.debug.DebugOverlay
 import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.ui.rememberAtlasCanvasState
@@ -34,7 +35,6 @@ import ru.sla.clarify.core.ui.screen.rememberViewIntents
 import ru.sla.clarify.feature.chronology.ui.components.canvas.CameraButtons
 import ru.sla.clarify.feature.chronology.ui.components.canvas.ChronologyLevels
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphCanvas
-import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphDebugOverlay
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphMinimap
 import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberMergeCeremonyState
 import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberReducedMotion
@@ -48,6 +48,7 @@ import ru.sla.clarify.feature.chronology.ui.components.preview.NodePreviewMorph
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeSelection
 import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.mapper.toDebugLabel
 import ru.sla.clarify.feature.chronology.ui.mapper.toDescription
 import ru.sla.clarify.feature.chronology.ui.mapper.toNodeDescription
 import ru.sla.clarify.uikit.component.icon.IconAction
@@ -253,8 +254,9 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
               verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
               if (state.debugOverlayAvailable && state.debugOverlayVisible) {
-                GraphDebugOverlay(
+                DebugOverlay(
                   state = canvasState,
+                  levelLabelOf = { level -> level.toDebugLabel() },
                   onBoundsChanged = onBoundsChanged
                 )
               }

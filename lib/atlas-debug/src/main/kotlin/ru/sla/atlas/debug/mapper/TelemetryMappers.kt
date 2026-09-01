@@ -1,7 +1,7 @@
-package ru.sla.clarify.feature.chronology.ui.mapper
+package ru.sla.atlas.debug.mapper
 
+import ru.sla.atlas.debug.entity.DebugRow
 import ru.sla.atlas.entity.Telemetry
-import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
 
 /**
  * Счётчики фаз Compose в строки отладочной панели.
@@ -12,7 +12,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
  * @param rates те же счётчики в единицах в секунду
  * @return строки левой колонки панели
  */
-internal fun Telemetry.toPhaseRows(rates: Telemetry): List<GraphDebugRow> {
+fun Telemetry.toPhaseRows(rates: Telemetry): List<DebugRow> {
   return listOf(
     phaseRow("canvas", canvasCompositions, rates.canvasCompositions, IDLE_LIMIT),
     phaseRow("nodes", nodeCompositions, rates.nodeCompositions, NODE_LIMIT),
@@ -44,8 +44,8 @@ internal fun Telemetry.toPhaseRows(rates: Telemetry): List<GraphDebugRow> {
  * @param limit предел, выше которого значение аномально
  * @return строка панели
  */
-private fun phaseRow(label: String, total: Int, rate: Int, limit: Int): GraphDebugRow {
-  return GraphDebugRow(
+private fun phaseRow(label: String, total: Int, rate: Int, limit: Int): DebugRow {
+  return DebugRow(
     label = label,
     value = "$rate/s · $total",
     isAnomalous = rate > limit

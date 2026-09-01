@@ -11,6 +11,8 @@ android {
 dependencies {
   // api — узлы и ветки полотна выходят наружу через ChronologyGraph и ViewState
   api project(":lib:atlas")
+  // Панель под тоглом `chronologyDebugOverlay`: экран её показывает, но наружу она не выходит.
+  implementation project(":lib:atlas-debug")
   implementation project(":uikit")
   implementation project(":feature:chronology:domain")
 

@@ -67,3 +67,18 @@ internal fun GraphLevel.toScaleBand(fitScale: Float): ScaleBand {
     GraphLevel.Overview -> ScaleBand(min = fitScale.coerceIn(0.2f, 0.4f), max = 2.5f)
   }
 }
+
+/**
+ * Имя уровня для отладочной панели.
+ *
+ * По-английски, как и все остальные значения панели: она читается вперемешку с именами фаз Compose,
+ * и русское слово среди них выглядело бы значением другого рода.
+ *
+ * @return короткое имя уровня
+ */
+internal fun GraphLevel.toDebugLabel(): String {
+  return when (this) {
+    GraphLevel.Overview -> "overview"
+    GraphLevel.Episodes -> "episodes"
+  }
+}

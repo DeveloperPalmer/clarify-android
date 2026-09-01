@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.debug.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
@@ -15,6 +15,7 @@ import ru.sla.atlas.entity.Telemetry
  * забытая ветка дала бы снимок из разных моментов — то есть ровно то расхождение, ради чтения
  * которого панель и открывают.
  *
+ * @param L уровень детализации вызывающего
  * @param rates пиковые скорости, по каждой фазе своя
  * @param totals накопленные счётчики на момент пика
  * @param info камера и раскладка на момент пика
@@ -22,10 +23,10 @@ import ru.sla.atlas.entity.Telemetry
  * @param lastFling скорость последнего отпускания на момент пика
  */
 @Immutable
-data class GraphDebugSnapshot(
+data class DebugSnapshot<out L>(
   val rates: Telemetry,
   val totals: Telemetry,
-  val info: DebugInfo<GraphLevel>,
+  val info: DebugInfo<L>,
   val lastPan: Offset,
   val lastFling: Velocity
 )

@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.debug.entity
 
 import androidx.compose.runtime.Immutable
 
@@ -16,7 +16,7 @@ import androidx.compose.runtime.Immutable
  * @param isAnomalous вышло ли значение за ожидаемый предел
  */
 @Immutable
-data class GraphDebugRow(
+data class DebugRow(
   val label: String,
   val value: String,
   val isAnomalous: Boolean = false
