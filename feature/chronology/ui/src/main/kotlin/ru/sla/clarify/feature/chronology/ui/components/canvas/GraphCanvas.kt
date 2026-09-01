@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.animation.core.snap
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -44,18 +45,16 @@ internal fun GraphCanvas(
   node: @Composable (graphNode: GraphNode, accent: NodeAccent, level: GraphLevel) -> Unit,
   overlay: @Composable BoxScope.(onBoundsChanged: (key: Any, bounds: Rect) -> Unit) -> Unit = { }
 ) {
-  val colors = AppTheme.colors
   val graph = state.graph
+  val colors = AppTheme.colors
   val branchColors = remember(graph, colors) { graph.toBranchColors(colors) }
-  val drawEdges = rememberEdgePainter(edges = state.edges, ceremony = ceremony)
+  val drawEdges = rememberEdgePainter(state.edges, ceremony)
   AtlasCanvas(
     modifier = modifier,
     state = state,
     branchColors = branchColors,
-    flingDecay = AppTheme.motion.flingDecay(),
-    // Под reduced motion кроссфейда уровней нет вовсе: представление подменяется мгновенно. Гаптику
-    // при этом зовёт экран — отклик это не движение, и глушить его вместе с анимацией нельзя (§14).
-    crossfadeSpec = if (rememberReducedMotion()) snap() else AppTheme.motion.mediumTween(),
+    flingDecay = rememberSplineBasedDecay(),
+    crossfadeSpec = snap(),
     blocked = blocked,
     // Точка ветвления и точка слияния стоят на магистрали, а показывают ветку, которая от них ушла
     // или в них вернулась. Знать об этом полотну неоткуда: рода узлов — знание фичи.

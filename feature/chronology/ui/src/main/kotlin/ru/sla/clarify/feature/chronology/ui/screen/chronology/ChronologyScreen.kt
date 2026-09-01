@@ -36,7 +36,6 @@ import ru.sla.clarify.feature.chronology.ui.components.canvas.ChronologyLevels
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphCanvas
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphMinimap
 import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberMergeCeremonyState
-import ru.sla.clarify.feature.chronology.ui.components.canvas.rememberReducedMotion
 import ru.sla.clarify.feature.chronology.ui.components.node.EpisodeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.ForkNode
 import ru.sla.clarify.feature.chronology.ui.components.node.FrontNode
@@ -80,7 +79,6 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
       // Церемония доигрывает после того, как композиция чипа уже могла уйти, поэтому scope свой.
       val ceremonyScope = rememberCoroutineScope()
       val haptics = LocalHapticFeedback.current
-      val reducedMotion = rememberReducedMotion()
       // Подпись пузыря мини-карты. Собирается здесь, потому что дату знает экран, а какой узел под
       // центром — полотно; отдаётся `State`, чтобы прочитал её лист, а не тело экрана: чтение
       // прямо тут пересобирало бы лямбды полотна при каждой смене узла под камерой.
@@ -211,7 +209,6 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                         ceremonyState.play(
                           scope = ceremonyScope,
                           branchId = branchId,
-                          reduced = reducedMotion,
                           // Первая тактильная отдача в проекте. `Confirm`, а не `LongPress`: удар
                           // кадра 5 означает «дело доведено до конца», и это ровно семантика
                           // константы, а не сила вибрации.

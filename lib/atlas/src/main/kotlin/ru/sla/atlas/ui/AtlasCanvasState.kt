@@ -451,7 +451,7 @@ class AtlasCanvasState<N : Node, L>(
    *
    * @param scope scope, переживающий жест
    * @param velocity скорость отпускания в пикселях в секунду
-   * @param decay кривая затухания, см. `AppMotion.flingDecay`
+   * @param decay кривая затухания броска
    */
   fun fling(scope: CoroutineScope, velocity: Velocity, decay: DecayAnimationSpec<Float>) {
     stopMotion()
@@ -491,7 +491,7 @@ class AtlasCanvasState<N : Node, L>(
    * границы поехали — и перелёт обязан довести камеру туда, где цель оказалась **сейчас**.
    *
    * @param scope scope, переживающий композицию кнопки
-   * @param spec кривая перелёта, см. `AppMotion.largeTween`
+   * @param spec кривая перелёта
    * @param target точка полотна, к которой лететь; спрашивается каждый кадр
    */
   fun flyTo(scope: CoroutineScope, spec: AnimationSpec<Float>, target: Placement.() -> Offset) {
@@ -612,8 +612,8 @@ class AtlasCanvasState<N : Node, L>(
    * Сообщает, что кроссфейд смены уровня доигран и переход можно начинать снова.
    *
    * Зовётся полотном, а не отсчитывается здесь по таймеру: длительность перехода живёт в теме и
-   * обращается в ноль под reduced motion, а держатель не знает ни того, ни другого. Второй отсчёт
-   * того же времени разошёлся бы с первым — и разошёлся бы молча.
+   * умножается на системный множитель длительности анимаций, а держатель не знает ни того, ни
+   * другого. Второй отсчёт того же времени разошёлся бы с первым — и разошёлся бы молча.
    */
   fun onLevelSettled() {
     isLevelSettling = false
