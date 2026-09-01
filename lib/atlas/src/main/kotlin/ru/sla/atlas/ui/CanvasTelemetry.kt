@@ -1,23 +1,26 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.ui
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Velocity
-import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
+import ru.sla.atlas.entity.Telemetry
 
 /**
  * Счётчики проходов Compose по полотну.
  *
  * Все поля — **обычные**, не снапшот-состояние, и это главное свойство этого класса. Инструмент не
  * должен вызывать то, что измеряет: снапшот-запись из фазы измерения, которую кто-то читает в
- * композиции, сама и есть бесконечный цикл, который тут ищут. Панель забирает значения по таймеру,
- * а не по подписке.
+ * композиции, сама и есть бесконечный цикл, который тут ищут. Показывающий забирает значения по
+ * таймеру, а не по подписке.
+ *
+ * Отметки открыты наружу, потому что бьёт их не только сам держатель: слой камеры, связи и фон
+ * рисует полотно, и посчитать свои проходы за него никто не может.
  *
  * Счёт идёт всегда, независимо от тогла: инкремент целого стоит ничего, зато числа правдивы с
  * момента запуска, а не с момента включения панели.
  */
 @Stable
-class GraphCanvasTelemetry {
+class CanvasTelemetry {
 
   private var canvasCompositions = 0
   private var nodeCompositions = 0
@@ -46,39 +49,39 @@ class GraphCanvasTelemetry {
   var lastFling: Velocity = Velocity.Zero
     private set
 
-  internal fun onCanvasComposition() {
+  fun onCanvasComposition() {
     canvasCompositions++
   }
 
-  internal fun onNodeComposition() {
+  fun onNodeComposition() {
     nodeCompositions++
   }
 
-  internal fun onOverlayComposition() {
+  fun onOverlayComposition() {
     overlayCompositions++
   }
 
-  internal fun onMeasure() {
+  fun onMeasure() {
     measurePasses++
   }
 
-  internal fun onPlacement() {
+  fun onPlacement() {
     placementPasses++
   }
 
-  internal fun onLayerUpdate() {
+  fun onLayerUpdate() {
     layerUpdates++
   }
 
-  internal fun onEdgeDraw() {
+  fun onEdgeDraw() {
     edgeDraws++
   }
 
-  internal fun onBackdropDraw() {
+  fun onBackdropDraw() {
     backdropDraws++
   }
 
-  internal fun onPan(delta: Offset) {
+  fun onPan(delta: Offset) {
     panEvents++
     lastPan = delta
   }
@@ -91,7 +94,7 @@ class GraphCanvasTelemetry {
    * проверку зума — что измерение при нём стоит — тогда не на чем построить. Отпечаток исправного
    * пинча: `zoom` и `layer` идут покадрово, `measure` и `placement` стоят.
    */
-  internal fun onZoom() {
+  fun onZoom() {
     zoomEvents++
   }
 
@@ -100,7 +103,7 @@ class GraphCanvasTelemetry {
    *
    * @param velocity скорость в пикселях в секунду
    */
-  internal fun onRelease(velocity: Velocity) {
+  fun onRelease(velocity: Velocity) {
     lastFling = velocity
   }
 
@@ -117,7 +120,7 @@ class GraphCanvasTelemetry {
    *
    * @param rejected отвергла ли камера этот кадр целиком, см. `PanStep.isRejected`
    */
-  internal fun onFlingStep(rejected: Boolean) {
+  fun onFlingStep(rejected: Boolean) {
     flingSteps++
     if (rejected) {
       flingStalls++
@@ -129,8 +132,8 @@ class GraphCanvasTelemetry {
    *
    * @return накопленные значения на момент вызова
    */
-  fun read(): GraphTelemetry {
-    return GraphTelemetry(
+  fun read(): Telemetry {
+    return Telemetry(
       canvasCompositions = canvasCompositions,
       nodeCompositions = nodeCompositions,
       overlayCompositions = overlayCompositions,
@@ -155,18 +158,18 @@ class GraphCanvasTelemetry {
  * @param elapsedMillis прошедшее между снимками время
  * @return те же поля, но в единицах в секунду
  */
-internal fun ratesOf(
-  previous: GraphTelemetry,
-  current: GraphTelemetry,
+fun ratesOf(
+  previous: Telemetry,
+  current: Telemetry,
   elapsedMillis: Long
-): GraphTelemetry {
+): Telemetry {
   if (elapsedMillis <= 0L) {
-    return GraphTelemetry.Empty
+    return Telemetry.Empty
   }
   fun rate(from: Int, to: Int): Int {
     return ((to - from) * MILLIS_IN_SECOND / elapsedMillis).toInt()
   }
-  return GraphTelemetry(
+  return Telemetry(
     canvasCompositions = rate(previous.canvasCompositions, current.canvasCompositions),
     nodeCompositions = rate(previous.nodeCompositions, current.nodeCompositions),
     overlayCompositions = rate(previous.overlayCompositions, current.overlayCompositions),
@@ -193,8 +196,8 @@ internal fun ratesOf(
  * @param rates скорости последнего такта
  * @return максимум по каждой фазе
  */
-internal fun peaksOf(peaks: GraphTelemetry, rates: GraphTelemetry): GraphTelemetry {
-  return GraphTelemetry(
+fun peaksOf(peaks: Telemetry, rates: Telemetry): Telemetry {
+  return Telemetry(
     canvasCompositions = maxOf(peaks.canvasCompositions, rates.canvasCompositions),
     nodeCompositions = maxOf(peaks.nodeCompositions, rates.nodeCompositions),
     overlayCompositions = maxOf(peaks.overlayCompositions, rates.overlayCompositions),

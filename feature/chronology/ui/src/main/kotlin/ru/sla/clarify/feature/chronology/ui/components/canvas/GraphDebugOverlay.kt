@@ -31,9 +31,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import kotlinx.coroutines.delay
+import ru.sla.atlas.entity.Telemetry
+import ru.sla.atlas.ui.peaksOf
+import ru.sla.atlas.ui.ratesOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugSnapshot
-import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
 import ru.sla.clarify.feature.chronology.ui.mapper.toFactRows
 import ru.sla.clarify.feature.chronology.ui.mapper.toPhaseRows
 import ru.sla.clarify.uikit.component.AppPager
@@ -78,13 +80,13 @@ internal fun GraphDebugOverlay(
   }
 
   val info by state.debugInfo
-  var totals by remember { mutableStateOf(GraphTelemetry.Empty) }
-  var rates by remember { mutableStateOf(GraphTelemetry.Empty) }
+  var totals by remember { mutableStateOf(Telemetry.Empty) }
+  var rates by remember { mutableStateOf(Telemetry.Empty) }
   var peak by remember {
     mutableStateOf(
       GraphDebugSnapshot(
-        rates = GraphTelemetry.Empty,
-        totals = GraphTelemetry.Empty,
+        rates = Telemetry.Empty,
+        totals = Telemetry.Empty,
         info = state.debugInfo.value,
         lastPan = telemetry.lastPan,
         lastFling = telemetry.lastFling

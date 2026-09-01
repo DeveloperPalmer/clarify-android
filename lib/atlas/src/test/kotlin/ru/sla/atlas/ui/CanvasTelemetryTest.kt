@@ -1,8 +1,8 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.ui
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
+import ru.sla.atlas.entity.Telemetry
 
 /**
  * Скорости считаются делением на прошедшее время, поэтому проверяется и вырожденный такт: панель
@@ -13,8 +13,8 @@ class GraphCanvasTelemetryTest {
   @Test
   fun `rate is the difference over the elapsed second`() {
     val rates = ratesOf(
-      previous = GraphTelemetry.Empty.copy(canvasCompositions = 10),
-      current = GraphTelemetry.Empty.copy(canvasCompositions = 40),
+      previous = Telemetry.Empty.copy(canvasCompositions = 10),
+      current = Telemetry.Empty.copy(canvasCompositions = 40),
       elapsedMillis = 500L
     )
 
@@ -24,17 +24,17 @@ class GraphCanvasTelemetryTest {
   @Test
   fun `a zero interval yields no rates instead of dividing by zero`() {
     val rates = ratesOf(
-      previous = GraphTelemetry.Empty,
-      current = GraphTelemetry.Empty.copy(measurePasses = 5),
+      previous = Telemetry.Empty,
+      current = Telemetry.Empty.copy(measurePasses = 5),
       elapsedMillis = 0L
     )
 
-    assertEquals(GraphTelemetry.Empty, rates)
+    assertEquals(Telemetry.Empty, rates)
   }
 
   @Test
   fun `every counter is converted, not just the first`() {
-    val current = GraphTelemetry(
+    val current = Telemetry(
       canvasCompositions = 1,
       nodeCompositions = 2,
       overlayCompositions = 3,
@@ -49,14 +49,14 @@ class GraphCanvasTelemetryTest {
       flingStalls = 12
     )
 
-    val rates = ratesOf(GraphTelemetry.Empty, current, elapsedMillis = 1000L)
+    val rates = ratesOf(Telemetry.Empty, current, elapsedMillis = 1000L)
 
     assertEquals(current, rates, "за секунду скорость равна приращению")
   }
 
   @Test
   fun `every counter is peaked, not just the first`() {
-    val loud = GraphTelemetry(
+    val loud = Telemetry(
       canvasCompositions = 1,
       nodeCompositions = 2,
       overlayCompositions = 3,
@@ -71,17 +71,17 @@ class GraphCanvasTelemetryTest {
       flingStalls = 12
     )
 
-    val peaks = peaksOf(GraphTelemetry.Empty, loud)
+    val peaks = peaksOf(Telemetry.Empty, loud)
 
     assertEquals(loud, peaks, "счётчик, забытый в peaksOf, дал бы вечный ноль в строке пика")
   }
 
   @Test
   fun `a peak is held per phase, not per tick`() {
-    val loudMeasure = GraphTelemetry.Empty.copy(measurePasses = 87, layerUpdates = 45)
-    val loudLayer = GraphTelemetry.Empty.copy(measurePasses = 0, layerUpdates = 120)
+    val loudMeasure = Telemetry.Empty.copy(measurePasses = 87, layerUpdates = 45)
+    val loudLayer = Telemetry.Empty.copy(measurePasses = 0, layerUpdates = 120)
 
-    val peaks = peaksOf(peaksOf(GraphTelemetry.Empty, loudMeasure), loudLayer)
+    val peaks = peaksOf(peaksOf(Telemetry.Empty, loudMeasure), loudLayer)
 
     assertEquals(87, peaks.measurePasses, "всплеск держится и после спокойного такта")
     assertEquals(120, peaks.layerUpdates, "у каждой фазы свой пик: они не совпадают по времени")
@@ -89,7 +89,7 @@ class GraphCanvasTelemetryTest {
 
   @Test
   fun `a quiet tick cannot lower a peak`() {
-    val peaks = peaksOf(GraphTelemetry.Empty.copy(measurePasses = 87), GraphTelemetry.Empty)
+    val peaks = peaksOf(Telemetry.Empty.copy(measurePasses = 87), Telemetry.Empty)
 
     assertEquals(87, peaks.measurePasses, "пик существует ровно затем, чтобы пережить свой такт")
   }

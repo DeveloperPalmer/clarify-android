@@ -1,7 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
+import ru.sla.atlas.entity.Telemetry
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
-import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
 
 /**
  * Счётчики фаз Compose в строки отладочной панели.
@@ -12,7 +12,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphTelemetry
  * @param rates те же счётчики в единицах в секунду
  * @return строки левой колонки панели
  */
-internal fun GraphTelemetry.toPhaseRows(rates: GraphTelemetry): List<GraphDebugRow> {
+internal fun Telemetry.toPhaseRows(rates: Telemetry): List<GraphDebugRow> {
   return listOf(
     phaseRow("canvas", canvasCompositions, rates.canvasCompositions, IDLE_LIMIT),
     phaseRow("nodes", nodeCompositions, rates.nodeCompositions, NODE_LIMIT),

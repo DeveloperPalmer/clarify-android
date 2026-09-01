@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
 
@@ -23,7 +23,7 @@ import androidx.compose.runtime.Immutable
  * @param flingStalls кадры затухания, на которых камера не взяла ничего
  */
 @Immutable
-data class GraphTelemetry(
+data class Telemetry(
   val canvasCompositions: Int,
   val nodeCompositions: Int,
   val overlayCompositions: Int,
@@ -39,6 +39,6 @@ data class GraphTelemetry(
 ) {
 
   companion object {
-    val Empty = GraphTelemetry(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    val Empty = Telemetry(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   }
 }

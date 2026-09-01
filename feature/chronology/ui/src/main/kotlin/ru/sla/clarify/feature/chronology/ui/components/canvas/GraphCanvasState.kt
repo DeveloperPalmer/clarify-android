@@ -71,6 +71,7 @@ import ru.sla.atlas.minimap.centreXOf
 import ru.sla.atlas.minimap.laneMarksOf
 import ru.sla.atlas.minimap.scrubbedCameraXOf
 import ru.sla.atlas.minimap.viewportSpanOf
+import ru.sla.atlas.ui.CanvasTelemetry
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node
@@ -185,7 +186,7 @@ internal class GraphCanvasState(private val levels: LevelScheme<GraphLevel>) {
   private var motionJob: Job? = null
 
   /** Счётчики проходов Compose по полотну: обычные поля, снимаются по таймеру. */
-  val telemetry = GraphCanvasTelemetry()
+  val telemetry = CanvasTelemetry()
 
   /** Граф, который полотно сейчас показывает: порядок узлов и состав веток. */
   val graph: Graph<Node>

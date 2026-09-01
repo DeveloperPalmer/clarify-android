@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chronology.ui.entity
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Velocity
+import ru.sla.atlas.entity.Telemetry
 
 /**
  * Худший такт за смену: пиковые скорости фаз и полотно в тот момент.
@@ -21,8 +22,8 @@ import androidx.compose.ui.unit.Velocity
  */
 @Immutable
 data class GraphDebugSnapshot(
-  val rates: GraphTelemetry,
-  val totals: GraphTelemetry,
+  val rates: Telemetry,
+  val totals: Telemetry,
   val info: GraphDebugInfo,
   val lastPan: Offset,
   val lastFling: Velocity
