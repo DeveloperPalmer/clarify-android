@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test
 /**
  * Раскладка вынесена в чистую функцию потому, что все регрессии этой фичи жили именно здесь:
  * содержимое центрировалось мимо камеры, дорожки группировались по координате, зазор применялся к
- * центрам и плашки наезжали друг на друга. Каждая из них ниже — утверждение, а не наблюдение на
+ * центрам и узлы наезжали друг на друга. Каждая из них ниже — утверждение, а не наблюдение на
  * скриншоте.
  */
-class GraphPlacementTest {
+class PlacementTest {
 
   @Test
   fun `the canvas starts at the first gap, not at a centring shift`() {
@@ -40,7 +40,7 @@ class GraphPlacementTest {
     placement.nodes.zipWithNext { left, right ->
       assertTrue(
         right.x >= left.x + NODE_WIDTH,
-        "плашки обязаны стоять рядом, а не друг на друге"
+        "узлы обязаны стоять рядом, а не друг на друге"
       )
     }
   }
@@ -150,11 +150,11 @@ class GraphPlacementTest {
 
     assertEquals(bare.bounds.left - 32f, padded.bounds.left, "по бокам только базовое поле")
     assertEquals(bare.bounds.right + 32f, padded.bounds.right)
-    assertEquals(bare.bounds.top - 92f, padded.bounds.top, "сверху к нему прибавлен статус-бар")
+    assertEquals(bare.bounds.top - 92f, padded.bounds.top, "сверху поле больше на то, что заняли сверху")
     assertEquals(
       bare.bounds.bottom + 72f,
       padded.bounds.bottom,
-      "снизу — навигационная полоса: иначе крайняя плашка уезжает под неё"
+      "снизу поле больше на ту же величину: разные стороны раздувают границы независимо"
     )
   }
 
@@ -163,12 +163,12 @@ class GraphPlacementTest {
     val placement = placementOf(lanes = listOf(0, 1), gaps = listOf(12f, 40f))
 
     assertEquals(12f + NODE_WIDTH / 2f, placement.centres[0].x, "порядок центров — порядок модели")
-    assertEquals(LANE_Y, placement.centres[0].y, "центр плашки по вертикали — это её дорожка")
+    assertEquals(LANE_Y, placement.centres[0].y, "центр узла по вертикали — это его дорожка")
     assertEquals(2 * LANE_Y, placement.centres[1].y)
   }
 
   /**
-   * Размер узла нужен не только границам полотна: из него строится прямоугольник плашки на экране,
+   * Размер узла нужен не только границам полотна: из него строится прямоугольник узла на экране,
    * из которого растёт превью-карточка. Выводить его обратным счётом из центра нельзя — центр уже
    * округлён.
    */
@@ -183,7 +183,7 @@ class GraphPlacementTest {
     )
 
     assertEquals(IntSize(NODE_WIDTH, NODE_HEIGHT), placement.sizes[0])
-    assertEquals(IntSize(24, 24), placement.sizes[1], "точка и плашка меряются по-разному")
+    assertEquals(IntSize(24, 24), placement.sizes[1], "узлы меряются каждый сам по себе и бывают разного размера")
   }
 
   private fun placementOf(lanes: List<Int>, gaps: List<Float>): Placement {
