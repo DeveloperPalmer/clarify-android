@@ -41,7 +41,6 @@ import ru.sla.atlas.camera.isCameraStuck
 import ru.sla.atlas.camera.panStepOf
 import ru.sla.atlas.camera.scaleStepOf
 import ru.sla.atlas.camera.zoomedCameraOf
-import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.CameraPose
@@ -469,7 +468,7 @@ class AtlasCanvasState<N : BasicNode, L>(
   }
 
   /**
-   * Уводит камеру к [anchor] перелётом.
+   * Уводит камеру к точке полотна перелётом.
    *
    * Перелёт **всегда анимирован**, телепорта нет: камера, прыгнувшая через всю историю, не
    * оставляет зрителю ничего, из чего понять, куда он попал.
@@ -486,16 +485,21 @@ class AtlasCanvasState<N : BasicNode, L>(
    * Спека приходит снаружи по той же причине, что и у инерции: она берётся из темы, о которой
    * держатель не знает, а тест подменяет её на ту, что не тянет за собой Android-фреймворк.
    *
+   * **Куда лететь, полотно не перечисляет.** Начало истории, её фронт, линия непрочитанного,
+   * открытая ветка — это места вызывающего, и набор их у каждого свой. Цель приходит функцией от
+   * раскладки, а не готовой точкой, потому что раскладка меняется под ногами: пришло сообщение,
+   * границы поехали — и перелёт обязан довести камеру туда, где цель оказалась **сейчас**.
+   *
    * @param scope scope, переживающий композицию кнопки
    * @param spec кривая перелёта, см. `AppMotion.largeTween`
-   * @param anchor куда лететь
+   * @param target точка полотна, к которой лететь; спрашивается каждый кадр
    */
-  fun flyTo(scope: CoroutineScope, spec: AnimationSpec<Float>, anchor: Anchor) {
+  fun flyTo(scope: CoroutineScope, spec: AnimationSpec<Float>, target: Placement.() -> Offset) {
     stopMotion()
     if (placement.isEmpty) {
       return
     }
-    motionJob = scope.launch { runFlight(spec, anchor) }
+    motionJob = scope.launch { runFlight(spec, target) }
   }
 
   /**
@@ -706,18 +710,18 @@ class AtlasCanvasState<N : BasicNode, L>(
   }
 
   /**
-   * Ведёт камеру к якорю по кривой [spec].
+   * Ведёт камеру к цели по кривой [spec].
    *
    * Анимируется **доля пути**, а не сама камера, ровно по той же причине, что и у затухания: камеру
    * пере-зажимает раскладка, и анимация, владеющая ею напрямую, разъехалась бы с этим на первом же
    * входящем сообщении. Цель и диапазон перечитываются каждый кадр — пришло сообщение, границы
-   * поехали, и перелёт доводит камеру туда, где якорь оказался **сейчас**, а не туда, где он был на
+   * поехали, и перелёт доводит камеру туда, где цель оказалась **сейчас**, а не туда, где она была на
    * старте.
    *
    * Шаг кладётся через [applyPan], а не записью камеры: оттуда берутся кламп на записи и параллакс
    * фона на потреблённое. Фон обязан лететь вместе с графом, иначе узор во время перелёта стоит.
    */
-  private suspend fun runFlight(spec: AnimationSpec<Float>, anchor: Anchor) {
+  private suspend fun runFlight(spec: AnimationSpec<Float>, target: Placement.() -> Offset) {
     val startScale = cameraScale
     val targetScale = flightScaleOf(
       scale = startScale,
@@ -726,12 +730,12 @@ class AtlasCanvasState<N : BasicNode, L>(
     val start = cameraAt(cameraRangeOf(placement, viewport, startScale))
     animate(initialValue = 0f, targetValue = 1f, animationSpec = spec) { fraction, _ ->
       // Масштаб ложится первым, ровно как в пинче: он меняет и границы камеры, и то, куда попадёт
-      // якорь, — а цель перелёта обязана считаться под масштаб **этого** кадра, иначе последний
+      // цель, — а она обязана считаться под масштаб **этого** кадра, иначе последний
       // кадр придёт с промахом на разницу масштабов.
       cameraScale = startScale + (targetScale - startScale) * fraction
       val range = cameraRangeOf(placement, viewport, cameraScale)
       val target = cameraAimedAt(
-        point = anchorPointOf(anchor),
+        point = placement.target(),
         viewport = viewport,
         range = range,
         scale = cameraScale
@@ -743,23 +747,6 @@ class AtlasCanvasState<N : BasicNode, L>(
       // Тем же счётчиком, что и затухание: панель заведена ловить движение без пальца и зависание,
       // а не различать, чем именно оно вызвано. Понадобится различать — счётчик заводится дёшево.
       telemetry.onFlingStep(step.isRejected)
-    }
-  }
-
-  /**
-   * Точка полотна, к которой ведёт якорь.
-   *
-   * Крайние узлы берутся первым и последним по списку, а не поиском минимума: `leftOffsetsOf`
-   * накапливает смещения по порядку модели, поэтому координата X монотонна по индексу **по
-   * построению раскладки**, а не по свойствам данных. Перебор здесь дал бы тот же ответ дороже.
-   *
-   * @param anchor куда лететь
-   * @return центр узла в координатах полотна
-   */
-  private fun anchorPointOf(anchor: Anchor): Offset {
-    return when (anchor) {
-      Anchor.Start -> placement.centres.first()
-      Anchor.Front -> placement.centres.last()
     }
   }
 

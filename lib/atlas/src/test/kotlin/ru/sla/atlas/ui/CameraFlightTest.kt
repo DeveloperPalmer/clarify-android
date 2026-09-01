@@ -17,11 +17,11 @@ import org.junit.jupiter.api.Test
 import ru.sla.atlas.camera.cameraAimedAt
 import ru.sla.atlas.camera.cameraRangeOf
 import ru.sla.atlas.camera.flightScaleOf
-import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.MockNode
+import ru.sla.atlas.entity.Placement
 import ru.sla.atlas.entity.TimeGap
 import ru.sla.atlas.entity.mockBranch
 import ru.sla.atlas.entity.mockNode
@@ -35,7 +35,7 @@ import ru.sla.atlas.lod.MockLevels
  * `BroadcastFrameClock` лежит в runtime, кадры шлёт тест.
  *
  * Сторожит три вещи, каждая из которых ломается молча. Перелёт обязан **доводить** камеру до
- * наведения на якорь, а не останавливаться где-то рядом. Он обязан **отдавать** камеру пальцу — и
+ * наведения на цель, а не останавливаться где-то рядом. Он обязан **отдавать** камеру пальцу — и
  * пальцу на полотне, и скрабу мини-карты, — потому что делит с затуханием один job, и стоит завести
  * ему свой, как отмена начнёт работать через раз. И он не должен пытаться лететь там, где графа ещё
  * нет: пустая раскладка — обычное состояние экрана до первого измерения.
@@ -47,11 +47,11 @@ class CameraFlightTest {
     val state = laidOut()
     val before = state.offset.value
 
-    state.fly(this, Anchor.Front)
+    state.fly(this, FRONT)
 
     assertNotEquals(before, state.offset.value, "перелёт обязан сдвинуть камеру")
     assertEquals(
-      aimedAt(state, Anchor.Front),
+      aimedAt(state, FRONT),
       state.offset.value,
       "и довести её до наведения на последний узел, а не остановиться рядом"
     )
@@ -62,10 +62,10 @@ class CameraFlightTest {
     val state = laidOut()
     state.pan(Offset(x = -3000f, y = 0f))
 
-    state.fly(this, Anchor.Start)
+    state.fly(this, START)
 
     assertEquals(
-      aimedAt(state, Anchor.Start),
+      aimedAt(state, START),
       state.offset.value,
       "«к началу» приводит туда же, где камера стоит в покое: определение наведения одно на оба"
     )
@@ -74,7 +74,7 @@ class CameraFlightTest {
   @Test
   fun `a flight moves the camera gradually instead of teleporting it`() = runTest {
     val state = laidOut()
-    val trail = state.flightTrail(this, Anchor.Front)
+    val trail = state.flightTrail(this, FRONT)
 
     assertTrue(
       trail.size > 4,
@@ -91,7 +91,7 @@ class CameraFlightTest {
   fun `a touch takes the camera away from a running flight`() = runTest {
     val state = laidOut()
     val clock = BroadcastFrameClock()
-    state.flyTo(this + clock, tween(durationMillis = 400), Anchor.Front)
+    state.flyTo(this + clock, tween(durationMillis = 400), FRONT)
     runCurrent()
     clock.sendFrame(FRAME_NANOS)
     runCurrent()
@@ -117,10 +117,10 @@ class CameraFlightTest {
 
     // Оба живут в одном job, поэтому отмена достаётся даром: заведи перелёту свой, и здесь два
     // источника начали бы писать камеру наперегонки.
-    state.fly(this, Anchor.Start)
+    state.fly(this, START)
 
     assertEquals(
-      aimedAt(state, Anchor.Start),
+      aimedAt(state, START),
       state.offset.value,
       "перелёт обязан начаться с того, что оборвёт инерцию"
     )
@@ -131,7 +131,7 @@ class CameraFlightTest {
     val state = laidOut()
     state.zoom(focus = Offset(x = 200f, y = 100f), change = 2.5f)
 
-    state.fly(this, Anchor.Front)
+    state.fly(this, FRONT)
 
     assertEquals(
       1f,
@@ -149,7 +149,7 @@ class CameraFlightTest {
     state.zoom(focus = Offset(x = 200f, y = 100f), change = 0.6f)
     val zoomedOut = state.scale.value
 
-    state.fly(this, Anchor.Start)
+    state.fly(this, START)
 
     assertEquals(
       zoomedOut,
@@ -163,7 +163,7 @@ class CameraFlightTest {
     val state = laidOut()
     state.zoom(focus = Offset(x = 200f, y = 100f), change = 2.5f)
 
-    val trail = state.scaleTrail(this, Anchor.Front)
+    val trail = state.scaleTrail(this, FRONT)
 
     assertTrue(trail.size > 4, "сброс обязан занять те же кадры, что и перелёт")
     assertTrue(
@@ -206,19 +206,19 @@ class CameraFlightTest {
     val state = mockCanvasState()
     val before = state.offset.value
 
-    state.fly(this, Anchor.Front)
+    state.fly(this, FRONT)
 
     assertEquals(before, state.offset.value, "до первого измерения лететь некуда")
   }
 
   /**
-   * Где обязана оказаться камера после перелёта к [anchor].
+   * Где обязана оказаться камера после перелёта к [target].
    *
    * @param state состояние с уже выполненной раскладкой
-   * @param anchor якорь перелёта
+   * @param target куда лететь
    * @return положение камеры, зажатое её диапазоном
    */
-  private fun aimedAt(state: AtlasCanvasState<MockNode, MockLevel>, anchor: Anchor): Offset {
+  private fun aimedAt(state: AtlasCanvasState<MockNode, MockLevel>, target: Placement.() -> Offset): Offset {
     val placement = state.layout(
       level = MockLevel.Fine,
       graph = state.graph,
@@ -229,10 +229,7 @@ class CameraFlightTest {
       density = Density(density = 1f),
       margins = mockCanvasMargins()
     )
-    val point = when (anchor) {
-      Anchor.Start -> placement.centres.first()
-      Anchor.Front -> placement.centres.last()
-    }
+    val point = placement.target()
     return cameraAimedAt(
       point = point,
       viewport = VIEWPORT,
@@ -245,22 +242,25 @@ class CameraFlightTest {
    * Проигрывает перелёт до конца.
    *
    * @param scope scope теста
-   * @param anchor якорь перелёта
+   * @param target куда лететь
    */
-  private fun AtlasCanvasState<MockNode, MockLevel>.fly(scope: TestScope, anchor: Anchor) {
-    flightTrail(scope, anchor)
+  private fun AtlasCanvasState<MockNode, MockLevel>.fly(scope: TestScope, target: Placement.() -> Offset) {
+    flightTrail(scope, target)
   }
 
   /**
    * Проигрывает перелёт до конца, снимая масштаб на каждом кадре.
    *
    * @param scope scope теста
-   * @param anchor якорь перелёта
+   * @param target куда лететь
    * @return масштаб на каждом кадре перелёта
    */
-  private fun AtlasCanvasState<MockNode, MockLevel>.scaleTrail(scope: TestScope, anchor: Anchor): List<Float> {
+  private fun AtlasCanvasState<MockNode, MockLevel>.scaleTrail(
+    scope: TestScope,
+    target: Placement.() -> Offset
+  ): List<Float> {
     val clock = BroadcastFrameClock()
-    flyTo(scope + clock, tween(durationMillis = 400), anchor)
+    flyTo(scope + clock, tween(durationMillis = 400), target)
     scope.runCurrent()
     val trail = mutableListOf<Float>()
     var nanos = 0L
@@ -280,12 +280,15 @@ class CameraFlightTest {
    * ждущих у часов ещё нет, и цикл завершился бы, не начавшись.
    *
    * @param scope scope теста
-   * @param anchor якорь перелёта
+   * @param target куда лететь
    * @return камера на каждом кадре перелёта
    */
-  private fun AtlasCanvasState<MockNode, MockLevel>.flightTrail(scope: TestScope, anchor: Anchor): List<Offset> {
+  private fun AtlasCanvasState<MockNode, MockLevel>.flightTrail(
+    scope: TestScope,
+    target: Placement.() -> Offset
+  ): List<Offset> {
     val clock = BroadcastFrameClock()
-    flyTo(scope + clock, tween(durationMillis = 400), anchor)
+    flyTo(scope + clock, tween(durationMillis = 400), target)
     scope.runCurrent()
     val trail = mutableListOf<Offset>()
     var nanos = 0L
@@ -354,3 +357,7 @@ private fun fiveBranchGraph(): Graph<MockNode> {
     }
   )
 }
+
+// Куда летит камера в тесте: начало истории и её фронт — те же два места, что показывает экран.
+private val START: Placement.() -> Offset = { centres.first() }
+private val FRONT: Placement.() -> Offset = { centres.last() }

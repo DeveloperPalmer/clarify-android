@@ -25,7 +25,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ru.sla.atlas.debug.DebugOverlay
-import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.ui.drawnOnly
 import ru.sla.atlas.ui.rememberAtlasCanvasState
@@ -254,8 +253,11 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                 // Кнопки стоят в той же колонке, что панель и мини-карта, поэтому отступ «над
                 // мини-картой» из §11.1 получается сам и не зависит от её высоты числом.
                 modifier = Modifier.align(Alignment.End),
-                onStart = { canvasState.flyTo(flightScope, flightSpec, Anchor.Start) },
-                onFront = { canvasState.flyTo(flightScope, flightSpec, Anchor.Front) },
+                // Куда лететь, полотно не знает: исток — самое начало переписки, фронт — последнее
+                // по времени, что в ней есть. Оба спрашиваются у раскладки каждый кадр, поэтому
+                // пришедшее во время перелёта сообщение уводит фронт вместе с собой.
+                onStart = { canvasState.flyTo(flightScope, flightSpec) { centres.first() } },
+                onFront = { canvasState.flyTo(flightScope, flightSpec) { centres.last() } },
                 onBoundsChanged = onBoundsChanged
               )
               GraphMinimap(
