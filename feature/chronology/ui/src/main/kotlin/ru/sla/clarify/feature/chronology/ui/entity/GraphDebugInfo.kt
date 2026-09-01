@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chronology.ui.entity
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import ru.sla.atlas.entity.ScaleBand
 
 /**
  * Снимок состояния полотна для отладочной панели.
@@ -31,7 +32,7 @@ data class GraphDebugInfo(
   val scale: Float,
   val isCameraMoved: Boolean,
   val level: GraphLevel,
-  val levelBand: GraphLevelBand,
+  val levelBand: ScaleBand,
   val centreSpanX: ClosedFloatingPointRange<Float>,
   val nodeCount: Int,
   val edgeCount: Int

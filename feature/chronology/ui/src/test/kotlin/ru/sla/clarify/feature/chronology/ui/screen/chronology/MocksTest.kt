@@ -14,8 +14,8 @@ import ru.sla.atlas.layout.LaneGeometry
 import ru.sla.atlas.layout.edgesOf
 import ru.sla.atlas.layout.placementOf
 import ru.sla.atlas.layout.topLaneOf
-import ru.sla.clarify.feature.chronology.ui.components.canvas.fitScaleOf
-import ru.sla.clarify.feature.chronology.ui.components.canvas.graphLevelBandOf
+import ru.sla.atlas.lod.fitScaleOf
+import ru.sla.clarify.feature.chronology.ui.components.canvas.ChronologyLevels
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockBranchColors
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockLanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
@@ -392,7 +392,7 @@ class MocksTest {
     val fit = fitScaleOf(placement.bounds, IntSize(width = 412, height = 892))
 
     assertTrue(
-      fit > graphLevelBandOf(GraphLevel.Overview, fit).min - 1e-4f,
+      fit > ChronologyLevels.bandOf(GraphLevel.Overview, fit).min - 1e-4f,
       "нижний край обзора и есть вписанный граф: набор, переросший его, вписывается уже не целиком"
     )
     assertTrue(

@@ -17,6 +17,7 @@ import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Placement
 import ru.sla.atlas.entity.TimeGap
 import ru.sla.atlas.layout.nearestCentreIndexOf
+import ru.sla.atlas.lod.fitScaleOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 
@@ -32,7 +33,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a rejected delta cannot be banked for later`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 3)
 
     state.pan(Offset(x = -4000f, y = 0f))
@@ -45,7 +46,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a pan into the wall consumes nothing`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 3)
 
     state.pan(Offset(x = -4000f, y = 0f))
@@ -56,7 +57,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `banked overshoot cannot outlive a layout pass`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 3)
     state.pan(Offset(x = -4000f, y = 0f))
 
@@ -78,7 +79,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `an untouched camera follows new nodes`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 1)
     val alone = state.offset.value
 
@@ -90,7 +91,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a touched camera stays where the user left it`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 3)
 
     state.pan(Offset(x = -100f, y = 0f))
@@ -102,7 +103,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a layout pass does not subscribe to what the gesture writes`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 3)
     state.pan(Offset(x = -100f, y = 0f))
 
@@ -124,7 +125,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a pinch keeps the focused point under the fingers`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 6)
     // Камеру уводят с покоя намеренно: в покое она стоит у самой границы диапазона, и кламп там
     // отобрал бы у пинча ровно то, что проверяет этот тест.
@@ -143,7 +144,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a pinch out re-clamps the camera in the same step`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 6)
     state.pan(Offset(x = -4000f, y = 0f))
 
@@ -162,7 +163,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `the scale cannot leave the band of its level`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 6)
     val focus = Offset(x = 500f, y = 300f)
 
@@ -179,7 +180,7 @@ class GraphCanvasStateTest {
     state.zoom(focus = focus, change = 0.001f)
 
     assertEquals(
-      graphLevelBandOf(GraphLevel.Overview, fitScaleOf(overview.bounds, VIEWPORT)).min,
+      ChronologyLevels.bandOf(GraphLevel.Overview, fitScaleOf(overview.bounds, VIEWPORT)).min,
       state.scale.value,
       "ниже обзора уровня нет: там масштаб упирается в нижний край его полосы"
     )
@@ -187,7 +188,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `the backdrop lags behind the camera`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 6)
 
     state.pan(Offset(x = -500f, y = 0f))
@@ -201,7 +202,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a wall stops the backdrop together with the graph`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 6)
     state.pan(Offset(x = -9000f, y = 0f))
     val atTheWall = state.backdropOffset.value
@@ -217,7 +218,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a pinch keeps the backdrop point under the fingers too`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 6)
     state.pan(Offset(x = -500f, y = 0f))
     val focus = Offset(x = 400f, y = 300f)
@@ -232,7 +233,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a layout pass does not subscribe to the scale either`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 3)
     state.pan(Offset(x = -100f, y = 0f))
 
@@ -254,7 +255,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a scrub puts the asked fraction under the centre of the screen`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 12)
 
     state.scrubTo(fraction = 0.5f)
@@ -269,7 +270,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a scrub to either end leaves the camera against its wall`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     val placement = state.place(count = 12)
     val range = cameraRangeOf(placement, VIEWPORT, scale = 1f)
 
@@ -283,7 +284,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a scrub leaves the vertical camera alone`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.place(count = 12)
     state.pan(Offset(x = 0f, y = -40f))
     val height = state.offset.value.y
@@ -314,7 +315,7 @@ class GraphCanvasStateTest {
    */
   @Test
   fun `a level switch keeps the anchor node under the same screen point`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     val before = state.fill(count = 9)
     state.pan(Offset(x = -800f, y = 0f))
     val focus = Offset(x = 700f, y = 300f)
@@ -339,14 +340,14 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a level switch lands the scale inside the new band`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.fill(count = 9)
     state.pan(Offset(x = -800f, y = 0f))
 
     state.zoom(focus = Offset(x = 700f, y = 300f), change = 0.3f)
     val placement = state.fill(count = 9, level = state.level.value)
 
-    val band = graphLevelBandOf(GraphLevel.Overview, fitScaleOf(placement.bounds, VIEWPORT))
+    val band = ChronologyLevels.bandOf(GraphLevel.Overview, fitScaleOf(placement.bounds, VIEWPORT))
     assertTrue(
       state.scale.value >= band.min && state.scale.value <= band.max,
       "масштаб посадки обязан лежать в полосе нового уровня, а не в полосе покинутого"
@@ -365,7 +366,7 @@ class GraphCanvasStateTest {
    */
   @Test
   fun `a second level switch waits for the crossfade of the first`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.fill(count = 9)
     state.pan(Offset(x = -800f, y = 0f))
     val focus = Offset(x = 700f, y = 300f)
@@ -394,7 +395,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a layout pass does not subscribe to the level either`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.fill(count = 3)
 
     val readWhileMeasuring = mutableSetOf<Any>()
@@ -415,7 +416,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a second double tap returns the camera, the scale and the level`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.fill(count = 9)
     state.pan(Offset(x = -300f, y = 0f))
     val level = state.level.value
@@ -436,7 +437,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a switch on an empty graph changes nothing`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
 
     state.zoom(focus = Offset(x = 500f, y = 300f), change = 0.1f)
     state.fitAll()
@@ -455,7 +456,7 @@ class GraphCanvasStateTest {
    */
   @Test
   fun `a node rect stands where the plate is drawn`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     val placement = state.fill(count = 3)
 
     val rect = state.nodeRectOf(BasicNode.Id("n1"))
@@ -470,7 +471,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `a node rect follows the camera`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.fill(count = 3)
     val resting = state.nodeRectOf(BasicNode.Id("n1"))
 
@@ -485,7 +486,7 @@ class GraphCanvasStateTest {
 
   @Test
   fun `an unknown node has no rect`() {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     state.fill(count = 3)
 
     assertNull(

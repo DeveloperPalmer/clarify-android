@@ -60,6 +60,7 @@ import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Lanes
 import ru.sla.atlas.entity.NodeAccent
 import ru.sla.atlas.layout.lanesOf
+import ru.sla.atlas.lod.counterScaleOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 import ru.sla.clarify.feature.chronology.ui.entity.Node

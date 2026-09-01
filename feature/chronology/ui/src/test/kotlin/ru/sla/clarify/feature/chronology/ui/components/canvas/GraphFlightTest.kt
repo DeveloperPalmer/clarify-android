@@ -171,7 +171,7 @@ class GraphFlightTest {
 
   @Test
   fun `the default scale is only restored from above`() {
-    val episodesRest = GraphLevel.Episodes.toRestScale(graphLevelBandOf(GraphLevel.Episodes, fitScale = 0.05f))
+    val episodesRest = GraphLevel.Episodes.toRestScale(ChronologyLevels.bandOf(GraphLevel.Episodes, fitScale = 0.05f))
 
     assertEquals(1f, flightScaleOf(2.5f, episodesRest))
     assertEquals(1f, flightScaleOf(1.0001f, episodesRest))
@@ -181,7 +181,7 @@ class GraphFlightTest {
 
   @Test
   fun `the overview returns to its own rest, not to the unit scale`() {
-    val overviewRest = GraphLevel.Overview.toRestScale(graphLevelBandOf(GraphLevel.Overview, fitScale = 0.305f))
+    val overviewRest = GraphLevel.Overview.toRestScale(ChronologyLevels.bandOf(GraphLevel.Overview, fitScale = 0.305f))
 
     assertEquals(
       0.305f,
@@ -199,7 +199,7 @@ class GraphFlightTest {
 
   @Test
   fun `a flight over an empty graph does nothing`() = runTest {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     val before = state.offset.value
 
     state.fly(this, Anchor.Front)
@@ -300,7 +300,7 @@ class GraphFlightTest {
    * @return состояние с уже выполненной раскладкой
    */
   private fun laidOut(): GraphCanvasState {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     val graph = fiveBranchGraph()
     state.setGraph(graph)
     state.layout(

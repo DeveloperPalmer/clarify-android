@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
@@ -20,7 +20,7 @@ import androidx.compose.ui.geometry.Offset
  * @param scaleBefore масштаб, на котором полотно ушло с прошлого уровня
  */
 @Immutable
-data class GraphLevelSwitch(
+data class LevelSwitch(
   val anchorIndex: Int,
   val anchorScreen: Offset,
   val spanBefore: Float,

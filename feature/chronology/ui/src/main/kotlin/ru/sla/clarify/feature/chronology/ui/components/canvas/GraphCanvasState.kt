@@ -44,13 +44,16 @@ import ru.sla.atlas.camera.zoomedCameraOf
 import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.CameraPose
 import ru.sla.atlas.entity.CameraRange
 import ru.sla.atlas.entity.CanvasMargins
 import ru.sla.atlas.entity.Edge
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Lanes
+import ru.sla.atlas.entity.LevelSwitch
 import ru.sla.atlas.entity.PanStep
 import ru.sla.atlas.entity.Placement
+import ru.sla.atlas.entity.ScaleBand
 import ru.sla.atlas.entity.ZoomStep
 import ru.sla.atlas.layout.LaneGeometry
 import ru.sla.atlas.layout.edgesOf
@@ -58,17 +61,15 @@ import ru.sla.atlas.layout.nearestCentreIndexOf
 import ru.sla.atlas.layout.placementOf
 import ru.sla.atlas.layout.screenRectOf
 import ru.sla.atlas.layout.topLaneOf
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraPose
+import ru.sla.atlas.lod.LevelScheme
+import ru.sla.atlas.lod.fitScaleOf
+import ru.sla.atlas.lod.levelLandingOf
+import ru.sla.atlas.lod.levelSwitchOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelSwitch
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 import ru.sla.clarify.feature.chronology.ui.entity.Node
-import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
-import ru.sla.clarify.feature.chronology.ui.mapper.toRestScale
-import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
 /**
  * Состояние полотна, живущее весь срок экрана.
@@ -81,7 +82,7 @@ import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
  */
 @Composable
 internal fun rememberGraphCanvasState(graph: Graph<Node>): GraphCanvasState {
-  val state = remember { GraphCanvasState() }
+  val state = remember { GraphCanvasState(ChronologyLevels) }
   // SideEffect, а не запись в теле: отброшенная композиция не должна была подменять граф.
   SideEffect { state.setGraph(graph) }
   return state
@@ -103,7 +104,7 @@ internal fun rememberGraphCanvasState(graph: Graph<Node>): GraphCanvasState {
  * измерения.
  */
 @Stable
-internal class GraphCanvasState {
+internal class GraphCanvasState(private val levels: LevelScheme<GraphLevel>) {
 
   private var currentGraph: Graph<Node> by mutableStateOf(Graph.Empty)
 
@@ -156,14 +157,14 @@ internal class GraphCanvasState {
   // Заявка на посадку после смены уровня. Обычное поле, как `motionJob`: за ней никто не рисует —
   // её кладёт жест и разбирает ближайшее измерение. Раньше разобрать нельзя: охват нового уровня
   // выводится из его раскладки, а раскладку считает измерение.
-  private var pendingSwitch: GraphLevelSwitch? = null
+  private var pendingSwitch: LevelSwitch? = null
 
   // Заявка «вписать всё», отложенная по той же причине и ровно в тех случаях, когда вписывание
   // меняет уровень: без смены уровня новой раскладки не будет, и заявке негде разрешиться.
   private var pendingFit = false
 
   // Куда возвращает повторный двойной тап; `null` — возвращаться некуда.
-  private var restorePose: GraphCameraPose? = null
+  private var restorePose: CameraPose<GraphLevel>? = null
 
   // Засечки считаются там же, где раскладка, и по тем же узлам. Выводить их из `currentGraph` и
   // `placement` по требованию нельзя: узлы подменяются из `SideEffect`, раскладка приходит из
@@ -373,7 +374,12 @@ internal class GraphCanvasState {
     val previous = cameraScale
     val band = levelBandOf(placement, viewport)
     val requested = previous * change
-    val next = graphLevelSwitchOf(level = graphLevel, requestedScale = requested, band = band)
+    val next = levelSwitchOf(
+      level = graphLevel,
+      requestedScale = requested,
+      band = band,
+      scheme = levels
+    )
     // Пока прошлый переход не доигран, полоса уровня работает обычной стенкой: щипок упирается в её
     // край и остаётся на месте. Иначе тот же щипок увёл бы полотно обратно, не дав первому переходу
     // ни закончиться, ни показаться.
@@ -505,7 +511,7 @@ internal class GraphCanvasState {
     }
     // Поза снимается **до** вписывания и переживает только его само: любое движение камеры после
     // этого её снимает, см. `applyPan`.
-    restorePose = GraphCameraPose(
+    restorePose = CameraPose(
       level = graphLevel,
       scale = cameraScale,
       camera = camera,
@@ -538,8 +544,8 @@ internal class GraphCanvasState {
    * @param viewport размер видимой области
    * @return пределы, за которыми уровень сменяется соседним
    */
-  private fun levelBandOf(placement: Placement, viewport: IntSize): GraphLevelBand {
-    return graphLevelBandOf(graphLevel, fitScaleOf(placement.bounds, viewport))
+  private fun levelBandOf(placement: Placement, viewport: IntSize): ScaleBand {
+    return levels.bandOf(graphLevel, fitScaleOf(placement.bounds, viewport))
   }
 
   /**
@@ -558,7 +564,7 @@ internal class GraphCanvasState {
   private fun switchLevel(to: GraphLevel, focus: Offset) {
     val current = cameraAt(cameraRangeOf(placement, viewport, cameraScale))
     val point = (focus - current) / cameraScale
-    pendingSwitch = GraphLevelSwitch(
+    pendingSwitch = LevelSwitch(
       anchorIndex = nearestCentreIndexOf(placement.centres, point.x),
       anchorScreen = focus,
       spanBefore = placement.centreSpanX.endInclusive - placement.centreSpanX.start,
@@ -588,7 +594,7 @@ internal class GraphCanvasState {
    * @param placement раскладка нового уровня
    * @param viewport размер видимой области
    */
-  private fun land(switch: GraphLevelSwitch, placement: Placement, viewport: IntSize) {
+  private fun land(switch: LevelSwitch, placement: Placement, viewport: IntSize) {
     val landing = levelLandingOf(
       scaleBefore = switch.scaleBefore,
       spanBefore = switch.spanBefore,
@@ -617,7 +623,7 @@ internal class GraphCanvasState {
    */
   private fun applyFit(placement: Placement, viewport: IntSize) {
     val fit = fitScaleOf(placement.bounds, viewport)
-    val band = graphLevelBandOf(graphLevel, fit)
+    val band = levels.bandOf(graphLevel, fit)
     val fitted = fit.coerceIn(band.min, band.max)
     cameraScale = fitted
     camera = cameraAimedAt(
@@ -637,7 +643,7 @@ internal class GraphCanvasState {
    *
    * @param pose поза до вписывания
    */
-  private fun restore(pose: GraphCameraPose) {
+  private fun restore(pose: CameraPose<GraphLevel>) {
     restorePose = null
     pendingSwitch = null
     pendingFit = false
@@ -687,7 +693,7 @@ internal class GraphCanvasState {
     val startScale = cameraScale
     val targetScale = flightScaleOf(
       scale = startScale,
-      restScale = graphLevel.toRestScale(levelBandOf(placement, viewport))
+      restScale = levels.restScaleOf(graphLevel, levelBandOf(placement, viewport))
     )
     val start = cameraAt(cameraRangeOf(placement, viewport, startScale))
     animate(initialValue = 0f, targetValue = 1f, animationSpec = spec) { fraction, _ ->
@@ -850,14 +856,14 @@ internal class GraphCanvasState {
     // снапшот-полю разошлась бы с measurable'ами от старой композиции.
     val branchIds = graph.branchIds
     val nodeLanes = lanes.lanes
-    val geometry = LaneGeometry(topLane = topLaneOf(nodeLanes), laneStep = level.toLaneStep())
+    val geometry = LaneGeometry(topLane = topLaneOf(nodeLanes), laneStep = levels.laneStepOf(level))
     // Высоты дорожек считаются один раз на оба потребителя: раскладке и рёбрам нужны одни и те же
     // числа, и второй проход по узлам за тем же результатом измерение делало бы каждый свой кадр.
     val laneYs = with(density) { nodeLanes.map { geometry.laneYOf(it).toPx() } }
     val result = with(density) {
       placementOf(
         lanes = nodeLanes,
-        gaps = graph.nodes.map { it.gap.toStepWidth(level).toPx() },
+        gaps = graph.nodes.map { levels.stepWidthOf(level, it.gap).toPx() },
         laneYs = laneYs,
         sizes = nodeSizes,
         margins = margins

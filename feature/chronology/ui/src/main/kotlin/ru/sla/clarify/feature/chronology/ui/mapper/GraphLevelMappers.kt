@@ -2,8 +2,8 @@ package ru.sla.clarify.feature.chronology.ui.mapper
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import ru.sla.atlas.entity.ScaleBand
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
 
 /**
  * Шаг дорожки на этом уровне детализации.
@@ -42,9 +42,28 @@ internal fun GraphLevel.toLaneStep(): Dp {
  * @param band полоса масштаба этого уровня
  * @return масштаб, ниже которого перелёт не опускает
  */
-internal fun GraphLevel.toRestScale(band: GraphLevelBand): Float {
+internal fun GraphLevel.toRestScale(band: ScaleBand): Float {
   return when (this) {
     GraphLevel.Episodes -> 1f
     GraphLevel.Overview -> band.min
+  }
+}
+
+/**
+ * Полоса масштаба уровня: где он живёт и за какими краями сменяется соседним.
+ *
+ * Таблица брифа, как и шаг дорожки: полотно спрашивает её у схемы и своих чисел не имеет.
+ *
+ * @param fitScale масштаб, при котором граф виден целиком
+ * @return пределы, за которыми уровень сменяется соседним
+ */
+internal fun GraphLevel.toScaleBand(fitScale: Float): ScaleBand {
+  return when (this) {
+    // Диапазон §11.1 брифа, зафиксированный владельцем; уход в обзор его не сужает.
+    GraphLevel.Episodes -> ScaleBand(min = 0.4f, max = 2.5f)
+    // Нижний край обзора — «видно всё», но не глубже 0.2×. На демо-наборе это 0.305×, и упор
+    // приходится ровно на вписанный граф; на переписке в двести эпизодов вписывание потребовало бы
+    // 0.077×, где глиф 14 dp вырождается в полтора пикселя и обзор перестаёт быть картой.
+    GraphLevel.Overview -> ScaleBand(min = fitScale.coerceIn(0.2f, 0.4f), max = 2.5f)
   }
 }

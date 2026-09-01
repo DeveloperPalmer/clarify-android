@@ -149,7 +149,7 @@ class GraphFlingTest {
    * @return состояние с уже выполненной раскладкой
    */
   private fun laidOut(): GraphCanvasState {
-    val state = GraphCanvasState()
+    val state = GraphCanvasState(ChronologyLevels)
     val graph = fiveBranchGraph()
     state.setGraph(graph)
     state.layout(
