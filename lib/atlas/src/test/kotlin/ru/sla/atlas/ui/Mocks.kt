@@ -43,13 +43,13 @@ internal fun mockBaselineGraph(count: Int): Graph<MockNode> {
 /**
  * Дорожки и акценты графа, у которого нет узлов особого рода.
  *
- * За какую ветку говорит узел, здесь спрашивать не у кого: у мока родов нет, и каждый узел говорит
- * за свою собственную ветку.
+ * За какую чужую ветку говорит узел, здесь спрашивать не у кого: у мока родов нет, и каждый узел
+ * говорит за свою собственную.
  *
  * @return дорожки узлов и их акценты
  */
 internal fun Graph<MockNode>.mockLanes(): Lanes {
-  return lanesOf(this, mockBranchColors()) { _, own -> own }
+  return lanesOf(this, mockBranchColors()) { null }
 }
 
 /**

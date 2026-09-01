@@ -41,10 +41,7 @@ import ru.sla.clarify.uikit.theme.AppTheme
  * @return то, чем полотно рисует свои связи внутри слоя камеры
  */
 @Composable
-internal fun rememberEdgePainter(
-  edges: State<List<Edge>>,
-  ceremony: MergeCeremonyState
-): DrawScope.() -> Unit {
+internal fun rememberEdgePainter(edges: State<List<Edge>>, ceremony: MergeCeremonyState): DrawScope.() -> Unit {
   val colors = AppTheme.colors
   // Путь один на все рёбра и чистится `rewind()`, а не создаётся заново: он держит выделенную
   // память между вызовами, и сотня рёбер иначе рождала бы сотню нативных объектов на каждый проход.

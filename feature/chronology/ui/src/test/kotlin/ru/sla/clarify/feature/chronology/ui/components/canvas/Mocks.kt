@@ -44,7 +44,7 @@ internal fun Graph<Node>.mockBranchColors(): Map<Branch.Id, Color> {
  * @return дорожки узлов и их акценты
  */
 internal fun Graph<GraphNode>.mockLanes(): Lanes {
-  return lanesOf(this, mockBranchColors()) { node, own -> accentOwnerOf(node, own) }
+  return lanesOf(this, mockBranchColors(), ::accentOwnerOf)
 }
 
 /**

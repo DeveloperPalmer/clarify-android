@@ -172,18 +172,18 @@ fun laneCountOf(lanes: Map<Branch.Id, Int>): Int {
  * @param branchLanes номер дорожки каждой ветки, см. [laneAssignmentOf]
  * @param branchColors цвет каждой ветки графа, магистраль включая: ветки без цвета здесь быть не
  *   может, и её отсутствие — рассинхронизация наборов, а не значение по умолчанию
- * @param ownerOf ветка, за которую говорит узел; второй параметр — его собственная ветка, то есть
- *   ответ по умолчанию
+ * @param ownerOf ветка, за которую говорит узел, если это **не** его собственная; `null` — своя,
+ *   и подставить её здесь дешевле, чем заставлять каждого вызывающего дописывать `?: own`
  * @return акцент каждого узла, в порядке узлов графа
  */
 fun <N : Node> nodeAccentsOf(
   graph: Graph<N>,
   branchLanes: Map<Branch.Id, Int>,
   branchColors: Map<Branch.Id, Color>,
-  ownerOf: (node: N, own: Branch.Id) -> Branch.Id
+  ownerOf: (node: N) -> Branch.Id?
 ): List<NodeAccent> {
   return graph.nodes.mapIndexed { index, node ->
-    val owner = ownerOf(node, graph.branchIds[index])
+    val owner = ownerOf(node) ?: graph.branchIds[index]
     NodeAccent(
       lane = branchLanes[owner] ?: 0,
       color = branchColors.getValue(owner)
@@ -213,7 +213,7 @@ fun <N : Node> nodeAccentsOf(
 fun <N : Node> lanesOf(
   graph: Graph<N>,
   branchColors: Map<Branch.Id, Color>,
-  ownerOf: (node: N, own: Branch.Id) -> Branch.Id
+  ownerOf: (node: N) -> Branch.Id?
 ): Lanes {
   val branchLanes = laneAssignmentOf(
     occupancy = branchOccupancyOf(

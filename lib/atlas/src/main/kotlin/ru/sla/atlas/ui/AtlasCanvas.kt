@@ -77,8 +77,9 @@ import ru.sla.atlas.lod.counterScaleOf
  * @param crossfadeSpec кривая кроссфейда при смене уровня детализации; мгновенная подмена — это
  *   `snap`, и решает это вызывающий: полотно не знает, отказался ли зритель от движения
  * @param modifier модификатор корня полотна
- * @param accentOwnerOf за какую ветку говорит узел: у обычного — за свою, у узла ветвления и узла
- *   слияния — за ту, что от него ушла или в него вернулась. Рода узлов знает только вызывающий
+ * @param accentOwnerOf за какую **чужую** ветку говорит узел: узел ветвления и узел слияния стоят
+ *   на магистрали, а показывают ту ветку, что от них ушла или в них вернулась. `null` — узел
+ *   говорит за свою, и полотну этого довольно: рода узлов знает только вызывающий
  * @param background что нарисовать под слоем камеры
  * @param drawEdges чем нарисовать связи; зовётся внутри слоя камеры, поэтому линии масштабируются
  *   вместе с узлами
@@ -103,7 +104,7 @@ fun <N : Node, L> AtlasCanvas(
   crossfadeSpec: FiniteAnimationSpec<Float>,
   modifier: Modifier = Modifier,
   blocked: () -> Boolean = { false },
-  accentOwnerOf: (graph: Graph<N>, node: N, own: Branch.Id) -> Branch.Id = { _, _, own -> own },
+  accentOwnerOf: (node: N) -> Branch.Id? = { null },
   background: @Composable () -> Unit = { },
   drawEdges: DrawScope.() -> Unit = { },
   node: @Composable (node: N, accent: NodeAccent, level: L) -> Unit,
@@ -154,7 +155,7 @@ fun <N : Node, L> AtlasCanvas(
   // что-либо посчитает. Один и тот же результат уходит и в содержимое, и в `layout`, поэтому
   // разъехаться им нечем.
   val lanes = remember(graph, branchColors) {
-    lanesOf(graph, branchColors) { graphNode, own -> accentOwnerOf(graph, graphNode, own) }
+    lanesOf(graph, branchColors, accentOwnerOf)
   }
   Box(
     // Жест висит на всём вьюпорте, а не на слое узлов: полотно не всегда достаёт до края экрана,
