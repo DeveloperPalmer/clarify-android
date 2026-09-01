@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.layout
 
 import androidx.compose.runtime.Immutable
 
@@ -17,7 +17,7 @@ import androidx.compose.runtime.Immutable
  * @param accents цвет и направление каждого узла, в том же порядке
  */
 @Immutable
-data class GraphLanes(
+data class Lanes(
   val lanes: List<Int>,
-  val accents: List<GraphNodeAccent>
+  val accents: List<NodeAccent>
 )

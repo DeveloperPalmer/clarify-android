@@ -4,8 +4,9 @@ import androidx.compose.ui.graphics.Color
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.layout.Lanes
+import ru.sla.atlas.layout.lanesOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
@@ -40,8 +41,8 @@ internal fun Graph<BasicNode>.mockBranchColors(): Map<Branch.Id, Color> {
  *
  * @return дорожки узлов и их акценты
  */
-internal fun Graph<Node>.mockLanes(): GraphLanes {
-  return graphLanesOf(this, mockBranchColors()) { node, own -> accentOwnerOf(node, own) }
+internal fun Graph<Node>.mockLanes(): Lanes {
+  return lanesOf(this, mockBranchColors()) { node, own -> accentOwnerOf(node, own) }
 }
 
 /**

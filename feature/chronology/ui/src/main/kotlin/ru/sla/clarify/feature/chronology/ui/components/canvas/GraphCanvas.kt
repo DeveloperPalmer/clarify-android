@@ -54,11 +54,12 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.layout.Lanes
+import ru.sla.atlas.layout.NodeAccent
+import ru.sla.atlas.layout.lanesOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColors
@@ -105,7 +106,7 @@ internal fun GraphCanvas(
   ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
   blocked: () -> Boolean = { false },
-  node: @Composable (node: Node, accent: GraphNodeAccent, level: GraphLevel) -> Unit,
+  node: @Composable (node: Node, accent: NodeAccent, level: GraphLevel) -> Unit,
   overlay: @Composable BoxScope.(onBoundsChanged: (key: Any, bounds: Rect) -> Unit) -> Unit = { }
 ) {
   val telemetry = state.telemetry
@@ -158,7 +159,7 @@ internal fun GraphCanvas(
   // не трогая граф.
   val branchColors = remember(graph, colors) { graph.toBranchColors(colors) }
   val lanes = remember(graph, branchColors) {
-    graphLanesOf(graph, branchColors) { graphNode, own -> graph.accentOwnerOf(graphNode, own) }
+    lanesOf(graph, branchColors) { graphNode, own -> graph.accentOwnerOf(graphNode, own) }
   }
   Box(
     // Жест висит на всём вьюпорте, а не на слое узлов: полотно не всегда достаёт до края экрана,
@@ -237,11 +238,11 @@ internal fun GraphCanvas(
 private fun GraphNodesLayer(
   state: GraphCanvasState,
   graph: Graph<Node>,
-  lanes: GraphLanes,
+  lanes: Lanes,
   branchColors: Map<Branch.Id, Color>,
   ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
-  node: @Composable (node: Node, accent: GraphNodeAccent, level: GraphLevel) -> Unit
+  node: @Composable (node: Node, accent: NodeAccent, level: GraphLevel) -> Unit
 ) {
   val telemetry = state.telemetry
   val colors = AppTheme.colors

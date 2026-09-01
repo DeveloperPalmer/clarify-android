@@ -32,6 +32,7 @@ import kotlinx.coroutines.withContext
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.layout.Lanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraPose
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
@@ -39,7 +40,6 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelSwitch
@@ -807,7 +807,7 @@ internal class GraphCanvasState {
    *
    * @param level уровень детализации той же композиции: он задаёт зазоры и шаг дорожки
    * @param graph граф, из которого построено содержимое этой композиции: из него же считаются рёбра
-   * @param lanes дорожки и акценты той же композиции, см. [graphLanesOf]
+   * @param lanes дорожки и акценты той же композиции, см. [lanesOf]
    * @param branchColors цвет каждой ветки графа: рёбра красятся здесь, а палитру измерение не читает
    * @param viewportSize размер видимой области
    * @param nodeSizes измеренные размеры узлов, в порядке узлов графа
@@ -820,7 +820,7 @@ internal class GraphCanvasState {
   fun layout(
     level: GraphLevel,
     graph: Graph<Node>,
-    lanes: GraphLanes,
+    lanes: Lanes,
     branchColors: Map<Branch.Id, Color>,
     viewportSize: IntSize,
     nodeSizes: List<IntSize>,

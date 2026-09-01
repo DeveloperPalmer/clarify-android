@@ -1,18 +1,16 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.layout
 
 import androidx.compose.ui.graphics.Color
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
 
 /**
  * Отрезок индексов, на котором ветка держит свою дорожку.
  *
  * Считается по **индексам**, а не по X, и это не экономия: X приходит из фазы измерения, а порядок
- * узлов известен уже в композиции. Где стоят плашки, отвечает [graphPlacementOf]; здесь — только на
- * какой высоте им стоять.
+ * узлов известен уже в композиции. Где стоят плашки, отвечает раскладка; здесь — только на какой
+ * высоте им стоять.
  *
  * **Занятость шире, чем интервал собственных узлов ветки, и в этом весь смысл функции.** §6.6 брифа
  * ставит точку слияния правее последнего сообщения — «пока merge request открыт, ветка заморожена»,
@@ -43,7 +41,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
  * @return отрезок занятости для каждой ветки; ветка без единого узла и без найденной развилки
  *   в результат не попадает — занимать ей нечего
  */
-internal fun branchOccupancyOf(
+fun branchOccupancyOf(
   branches: List<Branch>,
   indexById: Map<BasicNode.Id, Int>,
   lastIndex: Int
@@ -87,7 +85,7 @@ internal fun branchOccupancyOf(
  * @param order ветки в порядке ветвления
  * @return номер дорожки для каждой ветки из [occupancy]
  */
-internal fun laneAssignmentOf(
+fun laneAssignmentOf(
   occupancy: Map<Branch.Id, IntRange>,
   order: List<Branch.Id>
 ): Map<Branch.Id, Int> {
@@ -132,7 +130,7 @@ private fun IntRange.overlaps(other: IntRange): Boolean {
  * @param lanes номер дорожки каждой ветки, см. [laneAssignmentOf]
  * @return номер дорожки каждого узла, в порядке узлов
  */
-internal fun nodeLanesOf(
+fun nodeLanesOf(
   nodeBranches: List<Branch.Id>,
   lanes: Map<Branch.Id, Int>
 ): List<Int> {
@@ -148,7 +146,7 @@ internal fun nodeLanesOf(
  * @param lanes номера дорожек веток
  * @return число различных дорожек, включая магистраль
  */
-internal fun laneCountOf(lanes: Map<Branch.Id, Int>): Int {
+fun laneCountOf(lanes: Map<Branch.Id, Int>): Int {
   var below = 0
   var above = 0
   lanes.values.forEach { lane ->
@@ -178,15 +176,15 @@ internal fun laneCountOf(lanes: Map<Branch.Id, Int>): Int {
  *   ответ по умолчанию
  * @return акцент каждого узла, в порядке узлов графа
  */
-internal fun <N : BasicNode> nodeAccentsOf(
+fun <N : BasicNode> nodeAccentsOf(
   graph: Graph<N>,
   branchLanes: Map<Branch.Id, Int>,
   branchColors: Map<Branch.Id, Color>,
   ownerOf: (node: N, own: Branch.Id) -> Branch.Id
-): List<GraphNodeAccent> {
+): List<NodeAccent> {
   return graph.nodes.mapIndexed { index, node ->
     val owner = ownerOf(node, graph.branchIds[index])
-    GraphNodeAccent(
+    NodeAccent(
       lane = branchLanes[owner] ?: 0,
       color = branchColors.getValue(owner)
     )
@@ -207,15 +205,16 @@ internal fun <N : BasicNode> nodeAccentsOf(
  * измерений на переход приходится несколько, это и было видно в счётчиках панели.
  *
  * @param graph граф: порядок узлов и состав веток
- * @param branchColors цвет каждой ветки графа, см. `Graph.toBranchColors`
+ * @param branchColors цвет каждой ветки графа: цвет спрашивают у вызывающего один раз на граф,
+ *   иначе палитру пришлось бы протаскивать в каждую точку, где он нужен
  * @param ownerOf ветка, за которую говорит узел, см. [nodeAccentsOf]
  * @return дорожки узлов и их акценты
  */
-internal fun <N : BasicNode> graphLanesOf(
+fun <N : BasicNode> lanesOf(
   graph: Graph<N>,
   branchColors: Map<Branch.Id, Color>,
   ownerOf: (node: N, own: Branch.Id) -> Branch.Id
-): GraphLanes {
+): Lanes {
   val branchLanes = laneAssignmentOf(
     occupancy = branchOccupancyOf(
       branches = graph.branches,
@@ -224,7 +223,7 @@ internal fun <N : BasicNode> graphLanesOf(
     ),
     order = graph.branches.map { it.id }
   )
-  return GraphLanes(
+  return Lanes(
     lanes = nodeLanesOf(graph.branchIds, branchLanes),
     accents = nodeAccentsOf(graph, branchLanes, branchColors, ownerOf)
   )
