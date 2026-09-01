@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.camera.cameraRangeOf
+import ru.sla.atlas.camera.cameraRestOf
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph

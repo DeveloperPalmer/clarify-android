@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.Branch
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
@@ -43,7 +44,6 @@ import ru.sla.clarify.feature.chronology.ui.components.node.GlyphNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergedRequestNode
 import ru.sla.clarify.feature.chronology.ui.components.preview.NodePreviewMorph
-import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeSelection
 import ru.sla.clarify.feature.chronology.ui.entity.Node
@@ -257,8 +257,8 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                 // Кнопки стоят в той же колонке, что панель и мини-карта, поэтому отступ «над
                 // мини-картой» из §11.1 получается сам и не зависит от её высоты числом.
                 modifier = Modifier.align(Alignment.End),
-                onStart = { canvasState.flyTo(flightScope, flightSpec, GraphAnchor.Start) },
-                onFront = { canvasState.flyTo(flightScope, flightSpec, GraphAnchor.Front) },
+                onStart = { canvasState.flyTo(flightScope, flightSpec, Anchor.Start) },
+                onFront = { canvasState.flyTo(flightScope, flightSpec, Anchor.Front) },
                 onBoundsChanged = onBoundsChanged
               )
               GraphMinimap(

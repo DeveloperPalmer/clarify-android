@@ -29,30 +29,42 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ru.sla.atlas.camera.BACKDROP_PARALLAX
+import ru.sla.atlas.camera.FlingDirection
+import ru.sla.atlas.camera.backdropScaleOf
+import ru.sla.atlas.camera.cameraAimedAt
+import ru.sla.atlas.camera.cameraPuttingPointAt
+import ru.sla.atlas.camera.cameraRangeOf
+import ru.sla.atlas.camera.cameraRestOf
+import ru.sla.atlas.camera.flightScaleOf
+import ru.sla.atlas.camera.isCameraStuck
+import ru.sla.atlas.camera.panStepOf
+import ru.sla.atlas.camera.scaleStepOf
+import ru.sla.atlas.camera.zoomedCameraOf
+import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.CameraRange
 import ru.sla.atlas.entity.CanvasMargins
 import ru.sla.atlas.entity.Edge
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Lanes
+import ru.sla.atlas.entity.PanStep
 import ru.sla.atlas.entity.Placement
+import ru.sla.atlas.entity.ZoomStep
 import ru.sla.atlas.layout.LaneGeometry
 import ru.sla.atlas.layout.edgesOf
 import ru.sla.atlas.layout.nearestCentreIndexOf
 import ru.sla.atlas.layout.placementOf
 import ru.sla.atlas.layout.screenRectOf
 import ru.sla.atlas.layout.topLaneOf
-import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraPose
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelSwitch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
-import ru.sla.clarify.feature.chronology.ui.entity.GraphZoomStep
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
 import ru.sla.clarify.feature.chronology.ui.mapper.toRestScale
@@ -353,7 +365,7 @@ internal class GraphCanvasState {
    * @param change множитель масштаба, пришедший от жеста
    * @return новый масштаб, признак упора и сдвиг, получившийся под ним
    */
-  fun zoom(focus: Offset, change: Float): GraphZoomStep {
+  fun zoom(focus: Offset, change: Float): ZoomStep {
     stopMotion()
     // Щипок — то же движение камеры, что и протяжка, и позу для возврата он снимает по той же
     // причине, см. `applyPan`.
@@ -371,7 +383,7 @@ internal class GraphCanvasState {
       // Шаг отдаётся неотвергнутым, хотя запрошенного масштаба на этом уровне и не бывает: упора
       // здесь нет — есть переход. `isRejected` заведён под тактильную отдачу на пределе зума (§11.3),
       // и объявив переход упором, полотно позвало бы её вдобавок к отклику самого перехода.
-      return GraphZoomStep(
+      return ZoomStep(
         requestedScale = previous,
         scale = previous,
         camera = cameraAt(cameraRangeOf(placement, viewport, previous))
@@ -405,7 +417,7 @@ internal class GraphCanvasState {
     camera = step.camera
     isMoved = true
     telemetry.onZoom()
-    return GraphZoomStep(
+    return ZoomStep(
       requestedScale = previous * change,
       scale = updated,
       camera = step.camera
@@ -461,7 +473,7 @@ internal class GraphCanvasState {
    * @param spec кривая перелёта, см. `AppMotion.largeTween`
    * @param anchor куда лететь
    */
-  fun flyTo(scope: CoroutineScope, spec: AnimationSpec<Float>, anchor: GraphAnchor) {
+  fun flyTo(scope: CoroutineScope, spec: AnimationSpec<Float>, anchor: Anchor) {
     stopMotion()
     if (placement.isEmpty) {
       return
@@ -671,7 +683,7 @@ internal class GraphCanvasState {
    * Шаг кладётся через [applyPan], а не записью камеры: оттуда берутся кламп на записи и параллакс
    * фона на потреблённое. Фон обязан лететь вместе с графом, иначе узор во время перелёта стоит.
    */
-  private suspend fun runFlight(spec: AnimationSpec<Float>, anchor: GraphAnchor) {
+  private suspend fun runFlight(spec: AnimationSpec<Float>, anchor: Anchor) {
     val startScale = cameraScale
     val targetScale = flightScaleOf(
       scale = startScale,
@@ -710,10 +722,10 @@ internal class GraphCanvasState {
    * @param anchor куда лететь
    * @return центр плашки в координатах полотна
    */
-  private fun anchorPointOf(anchor: GraphAnchor): Offset {
+  private fun anchorPointOf(anchor: Anchor): Offset {
     return when (anchor) {
-      GraphAnchor.Start -> placement.centres.first()
-      GraphAnchor.Front -> placement.centres.last()
+      Anchor.Start -> placement.centres.first()
+      Anchor.Front -> placement.centres.last()
     }
   }
 
@@ -768,7 +780,7 @@ internal class GraphCanvasState {
    * @param range где камере разрешено быть при текущем масштабе
    * @return сдвиг, от которого считается шаг
    */
-  private fun cameraAt(range: GraphCameraRange): Offset {
+  private fun cameraAt(range: CameraRange): Offset {
     return if (isMoved) {
       camera
     } else {
@@ -776,7 +788,7 @@ internal class GraphCanvasState {
     }
   }
 
-  private fun applyPan(delta: Offset, range: GraphCameraRange): GraphPanStep {
+  private fun applyPan(delta: Offset, range: CameraRange): PanStep {
     // Камеру повели — возвращаться больше некуда: «повторный тап» из §11.1 это тап сразу следующий,
     // а не когда-нибудь потом. Сохранённая поза, пережившая панорамирование, вернула бы к месту,
     // которого пользователь уже не помнит.

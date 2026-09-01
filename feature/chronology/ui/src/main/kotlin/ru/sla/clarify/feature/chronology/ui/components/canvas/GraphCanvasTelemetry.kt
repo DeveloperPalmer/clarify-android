@@ -115,7 +115,7 @@ class GraphCanvasTelemetry {
    * секунду совершенно законно, и красная строка на нём была бы ложной тревогой. У затухания же
    * отказной кадр может быть только один на бросок — следующим действием идёт остановка.
    *
-   * @param rejected отвергла ли камера этот кадр целиком, см. `GraphPanStep.isRejected`
+   * @param rejected отвергла ли камера этот кадр целиком, см. `PanStep.isRejected`
    */
   internal fun onFlingStep(rejected: Boolean) {
     flingSteps++

@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.camera.FlingDirection
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph

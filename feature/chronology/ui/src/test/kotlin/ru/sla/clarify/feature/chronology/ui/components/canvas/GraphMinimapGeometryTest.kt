@@ -7,9 +7,10 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.camera.cameraRangeOf
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.CameraRange
 import ru.sla.atlas.entity.Placement
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 
@@ -261,7 +262,7 @@ class GraphMinimapGeometryTest {
       scale = 1f,
       centreSpan = 0f..0f,
       viewport = VIEWPORT,
-      range = GraphCameraRange.Empty
+      range = CameraRange.Empty
     )
 
     assertEquals(0f, camera, "пустому графу двигать нечего")

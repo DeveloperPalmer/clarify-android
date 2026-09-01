@@ -14,11 +14,14 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.camera.cameraAimedAt
+import ru.sla.atlas.camera.cameraRangeOf
+import ru.sla.atlas.camera.flightScaleOf
+import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.TimeGap
-import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toRestScale
@@ -42,11 +45,11 @@ class GraphFlightTest {
     val state = laidOut()
     val before = state.offset.value
 
-    state.fly(this, GraphAnchor.Front)
+    state.fly(this, Anchor.Front)
 
     assertNotEquals(before, state.offset.value, "перелёт обязан сдвинуть камеру")
     assertEquals(
-      aimedAt(state, GraphAnchor.Front),
+      aimedAt(state, Anchor.Front),
       state.offset.value,
       "и довести её до наведения на последний эпизод, а не остановиться рядом"
     )
@@ -57,10 +60,10 @@ class GraphFlightTest {
     val state = laidOut()
     state.pan(Offset(x = -3000f, y = 0f))
 
-    state.fly(this, GraphAnchor.Start)
+    state.fly(this, Anchor.Start)
 
     assertEquals(
-      aimedAt(state, GraphAnchor.Start),
+      aimedAt(state, Anchor.Start),
       state.offset.value,
       "«к началу» приводит туда же, где камера стоит в покое: определение наведения одно на оба"
     )
@@ -69,7 +72,7 @@ class GraphFlightTest {
   @Test
   fun `a flight moves the camera gradually instead of teleporting it`() = runTest {
     val state = laidOut()
-    val trail = state.flightTrail(this, GraphAnchor.Front)
+    val trail = state.flightTrail(this, Anchor.Front)
 
     assertTrue(
       trail.size > 4,
@@ -86,7 +89,7 @@ class GraphFlightTest {
   fun `a touch takes the camera away from a running flight`() = runTest {
     val state = laidOut()
     val clock = BroadcastFrameClock()
-    state.flyTo(this + clock, tween(durationMillis = 400), GraphAnchor.Front)
+    state.flyTo(this + clock, tween(durationMillis = 400), Anchor.Front)
     runCurrent()
     clock.sendFrame(FRAME_NANOS)
     runCurrent()
@@ -112,10 +115,10 @@ class GraphFlightTest {
 
     // Оба живут в одном job, поэтому отмена достаётся даром: заведи перелёту свой, и здесь два
     // источника начали бы писать камеру наперегонки.
-    state.fly(this, GraphAnchor.Start)
+    state.fly(this, Anchor.Start)
 
     assertEquals(
-      aimedAt(state, GraphAnchor.Start),
+      aimedAt(state, Anchor.Start),
       state.offset.value,
       "перелёт обязан начаться с того, что оборвёт инерцию"
     )
@@ -126,7 +129,7 @@ class GraphFlightTest {
     val state = laidOut()
     state.zoom(focus = Offset(x = 200f, y = 100f), change = 2.5f)
 
-    state.fly(this, GraphAnchor.Front)
+    state.fly(this, Anchor.Front)
 
     assertEquals(
       1f,
@@ -142,7 +145,7 @@ class GraphFlightTest {
     state.zoom(focus = Offset(x = 200f, y = 100f), change = 0.4f)
     val zoomedOut = state.scale.value
 
-    state.fly(this, GraphAnchor.Start)
+    state.fly(this, Anchor.Start)
 
     assertEquals(
       zoomedOut,
@@ -156,7 +159,7 @@ class GraphFlightTest {
     val state = laidOut()
     state.zoom(focus = Offset(x = 200f, y = 100f), change = 2.5f)
 
-    val trail = state.scaleTrail(this, GraphAnchor.Front)
+    val trail = state.scaleTrail(this, Anchor.Front)
 
     assertTrue(trail.size > 4, "сброс обязан занять те же кадры, что и перелёт")
     assertTrue(
@@ -199,7 +202,7 @@ class GraphFlightTest {
     val state = GraphCanvasState()
     val before = state.offset.value
 
-    state.fly(this, GraphAnchor.Front)
+    state.fly(this, Anchor.Front)
 
     assertEquals(before, state.offset.value, "до первого измерения лететь некуда")
   }
@@ -211,7 +214,7 @@ class GraphFlightTest {
    * @param anchor якорь перелёта
    * @return положение камеры, зажатое её диапазоном
    */
-  private fun aimedAt(state: GraphCanvasState, anchor: GraphAnchor): Offset {
+  private fun aimedAt(state: GraphCanvasState, anchor: Anchor): Offset {
     val placement = state.layout(
       level = GraphLevel.Episodes,
       graph = state.graph,
@@ -223,8 +226,8 @@ class GraphFlightTest {
       margins = mockCanvasMargins()
     )
     val point = when (anchor) {
-      GraphAnchor.Start -> placement.centres.first()
-      GraphAnchor.Front -> placement.centres.last()
+      Anchor.Start -> placement.centres.first()
+      Anchor.Front -> placement.centres.last()
     }
     return cameraAimedAt(
       point = point,
@@ -240,7 +243,7 @@ class GraphFlightTest {
    * @param scope scope теста
    * @param anchor якорь перелёта
    */
-  private fun GraphCanvasState.fly(scope: TestScope, anchor: GraphAnchor) {
+  private fun GraphCanvasState.fly(scope: TestScope, anchor: Anchor) {
     flightTrail(scope, anchor)
   }
 
@@ -251,7 +254,7 @@ class GraphFlightTest {
    * @param anchor якорь перелёта
    * @return масштаб на каждом кадре перелёта
    */
-  private fun GraphCanvasState.scaleTrail(scope: TestScope, anchor: GraphAnchor): List<Float> {
+  private fun GraphCanvasState.scaleTrail(scope: TestScope, anchor: Anchor): List<Float> {
     val clock = BroadcastFrameClock()
     flyTo(scope + clock, tween(durationMillis = 400), anchor)
     scope.runCurrent()
@@ -276,7 +279,7 @@ class GraphFlightTest {
    * @param anchor якорь перелёта
    * @return камера на каждом кадре перелёта
    */
-  private fun GraphCanvasState.flightTrail(scope: TestScope, anchor: GraphAnchor): List<Offset> {
+  private fun GraphCanvasState.flightTrail(scope: TestScope, anchor: Anchor): List<Offset> {
     val clock = BroadcastFrameClock()
     flyTo(scope + clock, tween(durationMillis = 400), anchor)
     scope.runCurrent()

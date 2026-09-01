@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.camera
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Velocity

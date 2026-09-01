@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.camera
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Velocity
@@ -24,7 +24,7 @@ import kotlin.math.sqrt
  *
  * @param velocity скорость отпускания в пикселях в секунду
  */
-internal class FlingDirection(velocity: Velocity) {
+class FlingDirection(velocity: Velocity) {
 
   /** Модуль скорости: ровно то число, которое уходит в одномерное затухание. */
   val magnitude: Float = sqrt(velocity.x * velocity.x + velocity.y * velocity.y)

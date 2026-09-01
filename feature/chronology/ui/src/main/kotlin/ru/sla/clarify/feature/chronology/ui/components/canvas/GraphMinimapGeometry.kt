@@ -4,7 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
 import ru.sla.atlas.entity.Branch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
+import ru.sla.atlas.entity.CameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 
@@ -164,7 +164,7 @@ internal fun scrubbedCameraXOf(
   scale: Float,
   centreSpan: ClosedFloatingPointRange<Float>,
   viewport: IntSize,
-  range: GraphCameraRange
+  range: CameraRange
 ): Float {
   val world = centreSpan.endInclusive - centreSpan.start
   val point = centreSpan.start + position.coerceIn(0f, 1f) * world

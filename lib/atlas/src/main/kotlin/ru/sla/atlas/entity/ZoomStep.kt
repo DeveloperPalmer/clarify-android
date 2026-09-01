@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
@@ -9,14 +9,14 @@ import androidx.compose.ui.geometry.Offset
  * Запрошенный масштаб возвращается вместе с принятым по той же причине, по которой шаг
  * панорамирования отдаёт потреблённое: разница между ними — единственный признак упора, а вывести
  * его наблюдением за картинкой вызывающий не может. Сегодня по нему считает только отладочная
- * панель; тактильная отдача на упоре зума (§11.3 брифа) будет спрашивать ровно его.
+ * панель; тактильная отдача на упоре зума спросит ровно его.
  *
  * @param requestedScale масштаб, которого просил жест
  * @param scale масштаб после клампа
  * @param camera сдвиг содержимого после пересчёта под новый масштаб
  */
 @Immutable
-data class GraphZoomStep(
+data class ZoomStep(
   val requestedScale: Float,
   val scale: Float,
   val camera: Offset

@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
@@ -16,7 +16,7 @@ import androidx.compose.ui.geometry.Offset
  * @param consumed часть [requested], которую камера отработала
  */
 @Immutable
-data class GraphPanStep(
+data class PanStep(
   val requested: Offset,
   val camera: Offset,
   val consumed: Offset

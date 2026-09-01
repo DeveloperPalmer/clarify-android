@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.camera
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -7,8 +7,8 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.sla.atlas.entity.CameraRange
 import ru.sla.atlas.entity.Placement
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import kotlin.math.abs
 
 /**
@@ -19,7 +19,7 @@ import kotlin.math.abs
  * прижимал содержимое к краю вместо начала истории, а вырожденная ось — норма этого экрана, а не
  * краевой случай.
  */
-class GraphCameraTest {
+class CameraTest {
 
   @Test
   fun `pan range spans content wider than the viewport`() {
@@ -94,7 +94,7 @@ class GraphCameraTest {
   fun `an empty graph has nowhere to pan`() {
     val range = cameraRangeOf(Placement.Empty, IntSize(width = 1000, height = 600), scale = 1f)
 
-    assertEquals(GraphCameraRange.Empty, range)
+    assertEquals(CameraRange.Empty, range)
   }
 
   @Test
@@ -112,7 +112,7 @@ class GraphCameraTest {
   @Test
   fun `the camera rests with the first plate centred`() {
     val viewport = IntSize(width = 1000, height = 600)
-    // Содержимое выше экрана, а первая плашка — в его середине: центр экрана ей достижим.
+    // Содержимое выше экрана, а первый узел — в его середине: центр экрана ей достижим.
     val tall = placement().copy(
       bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 2000f),
       centres = listOf(Offset(x = 60f, y = 800f))
@@ -127,7 +127,7 @@ class GraphCameraTest {
   @Test
   fun `a first plate at the very top is still brought to the centre`() {
     val viewport = IntSize(width = 1000, height = 600)
-    // Первая плашка у самого верха содержимого: над ней только поле полотна.
+    // Первый узел у самого верха содержимого: над ней только поле полотна.
     val tall = placement().copy(
       bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 2000f),
       centreSpanY = 40f..40f,
@@ -148,7 +148,7 @@ class GraphCameraTest {
   fun `an empty graph rests at zero`() {
     val viewport = IntSize(width = 1000, height = 600)
 
-    val rest = cameraRestOf(Placement.Empty, viewport, GraphCameraRange.Empty, scale = 1f)
+    val rest = cameraRestOf(Placement.Empty, viewport, CameraRange.Empty, scale = 1f)
 
     assertEquals(Offset.Zero, rest)
   }
@@ -158,7 +158,7 @@ class GraphCameraTest {
     val step = panStepOf(
       camera = Offset(x = 0f, y = 0f),
       delta = Offset(x = 100f, y = 0f),
-      range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+      range = CameraRange(x = -400f..440f, y = 0f..0f)
     )
 
     assertEquals(Offset(x = 100f, y = 0f), step.camera)
@@ -170,7 +170,7 @@ class GraphCameraTest {
     val step = panStepOf(
       camera = Offset(x = -350f, y = 0f),
       delta = Offset(x = -200f, y = 0f),
-      range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+      range = CameraRange(x = -400f..440f, y = 0f..0f)
     )
 
     assertEquals(-400f, step.camera.x, "камера обязана встать ровно на границе")
@@ -182,7 +182,7 @@ class GraphCameraTest {
     val step = panStepOf(
       camera = Offset(x = -400f, y = 0f),
       delta = Offset(x = -120f, y = 0f),
-      range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+      range = CameraRange(x = -400f..440f, y = 0f..0f)
     )
 
     assertEquals(Offset.Zero, step.consumed, "нулевое потребление — это и есть сигнал упора")
@@ -193,7 +193,7 @@ class GraphCameraTest {
     val step = panStepOf(
       camera = Offset(x = 440f, y = 0f),
       delta = Offset(x = 60f, y = 90f),
-      range = GraphCameraRange(x = 440f..440f, y = 0f..0f)
+      range = CameraRange(x = 440f..440f, y = 0f..0f)
     )
 
     assertEquals(Offset(x = 440f, y = 0f), step.camera)
@@ -202,7 +202,7 @@ class GraphCameraTest {
 
   @Test
   fun `a step that moved nothing reports itself rejected`() {
-    val range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+    val range = CameraRange(x = -400f..440f, y = 0f..0f)
 
     val intoTheWall = panStepOf(camera = Offset(x = -400f, y = 0f), delta = Offset(x = -120f, y = 0f), range)
     val zeroFrame = panStepOf(camera = Offset(x = -400f, y = 0f), delta = Offset.Zero, range)
@@ -215,7 +215,7 @@ class GraphCameraTest {
 
   @Test
   fun `a rejected delta cannot be banked for later`() {
-    val range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+    val range = CameraRange(x = -400f..440f, y = 0f..0f)
     val intoTheWall = panStepOf(camera = 440f.asCamera(), delta = Offset(x = -3840f, y = 0f), range)
 
     val back = panStepOf(camera = intoTheWall.camera, delta = Offset(x = 100f, y = 0f), range)
@@ -232,7 +232,7 @@ class GraphCameraTest {
     val stuck = isCameraStuck(
       camera = Offset(x = -400f, y = 0f),
       direction = Offset(x = -0.8f, y = 0.6f),
-      range = GraphCameraRange(x = -400f..440f, y = -200f..200f)
+      range = CameraRange(x = -400f..440f, y = -200f..200f)
     )
 
     assertTrue(!stuck, "пока бросок несёт хоть одна ось, инерция едет вдоль стенки")
@@ -244,7 +244,7 @@ class GraphCameraTest {
       camera = Offset(x = -400f, y = 0f),
       direction = Offset(x = -0.8f, y = 0.6f),
       // Одна дорожка: вертикаль вырождена и нести бросок ей нечем.
-      range = GraphCameraRange(x = -400f..440f, y = 0f..0f)
+      range = CameraRange(x = -400f..440f, y = 0f..0f)
     )
 
     assertTrue(stuck)
@@ -255,7 +255,7 @@ class GraphCameraTest {
     val stuck = isCameraStuck(
       camera = Offset(x = -400f, y = 0f),
       direction = Offset(x = -1f, y = 0f),
-      range = GraphCameraRange(x = -400f..440f, y = -200f..200f)
+      range = CameraRange(x = -400f..440f, y = -200f..200f)
     )
 
     assertTrue(stuck, "запас по Y не оживляет бросок, у которого по Y нет скорости")
@@ -266,7 +266,7 @@ class GraphCameraTest {
     val stuck = isCameraStuck(
       camera = Offset(x = 0f, y = 0f),
       direction = Offset(x = -0.8f, y = 0.6f),
-      range = GraphCameraRange(x = -400f..440f, y = -200f..200f)
+      range = CameraRange(x = -400f..440f, y = -200f..200f)
     )
 
     assertTrue(!stuck, "нулевой кадр в начале затухания не должен читаться как упор")
@@ -284,13 +284,13 @@ class GraphCameraTest {
       doubled.x.endInclusive - doubled.x.start,
       "вдвое крупнее содержимое — вдвое длиннее ход камеры"
     )
-    assertEquals(500f - 120f, doubled.x.endInclusive, "покой наводится на удвоенный центр плашки")
+    assertEquals(500f - 120f, doubled.x.endInclusive, "покой наводится на удвоенный центр узла")
   }
 
   @Test
   fun `zooming in opens the margin that the plate centres alone would hide`() {
     val viewport = IntSize(width = 1000, height = 600)
-    // Одна плашка 400 шириной с полями по 100: при единичном масштабе половина плашки уже половины
+    // Один узел 400 шириной с полями по 100: при единичном масштабе его половина уже половины
     // экрана, при 2.5× — шире её.
     val single = placement().copy(
       bounds = Rect(left = 0f, top = 0f, right = 600f, bottom = 100f),
@@ -317,13 +317,13 @@ class GraphCameraTest {
   @Test
   fun `a pinch at the start of the history drifts by less than half a plate`() {
     val viewport = IntSize(width = 1133, height = 2400)
-    // Раскладка масштаба демо-набора: 22 плашки по 200 dp при плотности 2.75.
+    // Раскладка настоящего масштаба: 22 узла по 200 dp при плотности 2.75.
     val demo = placement().copy(
       bounds = Rect(left = 88f, top = -200f, right = 17930f, bottom = 4600f),
       centreSpanX = 539f..17479f,
       centres = listOf(Offset(x = 539f, y = 200f))
     )
-    // Камера в покое: первая плашка в центре экрана. Пальцы левее её, в поле полотна, — сценарий,
+    // Камера в покое: первый узел в центре экрана. Пальцы левее её, в поле полотна, — сценарий,
     // в котором кламп и отбирал у пинча его точку.
     var camera = cameraRestOf(demo, viewport, cameraRangeOf(demo, viewport, scale = 1f), scale = 1f)
     val focus = Offset(x = 300f, y = 1200f)
@@ -343,14 +343,14 @@ class GraphCameraTest {
     // 126 px против 399 px, когда диапазон считался только по центрам плашек.
     assertTrue(
       abs(point.x * scale + camera.x - focus.x) < 200f,
-      "пинч у начала истории обязан уводить точку меньше чем на половину плашки"
+      "пинч у начала истории обязан уводить точку меньше чем на половину узла"
     )
   }
 
   @Test
   fun `a pinch below the centre holds its point while the graph fits the viewport`() {
     val viewport = IntSize(width = 1000, height = 600)
-    // Граф целиком помещается по высоте — то состояние, в котором зум и уводил плашки из-под
+    // Граф целиком помещается по высоте — то состояние, в котором зум и уводил узлы из-под
     // пальцев: камере по вертикали было некуда двигаться.
     val short = placement().copy(
       bounds = Rect(left = 0f, top = 0f, right = 960f, bottom = 400f),
@@ -358,7 +358,7 @@ class GraphCameraTest {
       centres = listOf(Offset(x = 60f, y = 350f))
     )
     var camera = Offset(x = 0f, y = 100f)
-    // Пальцы разведены низко, под нижней плашкой.
+    // Пальцы разведены низко, под нижним узлом.
     val focus = Offset(x = 500f, y = 480f)
     val point = focus - camera
     var scale = 1f
@@ -374,7 +374,7 @@ class GraphCameraTest {
       focus.y,
       point.y * scale + camera.y,
       0.5f,
-      "плашка обязана расти под пальцами, а не уползать вниз от принудительного центрирования"
+      "узел обязан расти под пальцами, а не уползать вниз от принудительного центрирования"
     )
   }
 
@@ -404,7 +404,7 @@ class GraphCameraTest {
 
     val rest = cameraRestOf(tall, viewport, cameraRangeOf(tall, viewport, scale = 0.5f), scale = 0.5f)
 
-    assertEquals(500f - 30f, rest.x, "центр плашки на полотне тоже уменьшился вдвое")
+    assertEquals(500f - 30f, rest.x, "центр узла на полотне тоже уменьшился вдвое")
     assertEquals(300f - 400f, rest.y)
   }
 

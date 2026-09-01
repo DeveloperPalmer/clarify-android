@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
@@ -19,7 +19,7 @@ import androidx.compose.ui.geometry.Offset
  * @param y допустимый сдвиг содержимого по дорожкам
  */
 @Immutable
-data class GraphCameraRange(
+data class CameraRange(
   val x: ClosedFloatingPointRange<Float>,
   val y: ClosedFloatingPointRange<Float>
 ) {
@@ -37,6 +37,6 @@ data class GraphCameraRange(
   companion object {
 
     /** Пустой граф: панорамировать нечего, камера остаётся в нуле. */
-    val Empty = GraphCameraRange(x = 0f..0f, y = 0f..0f)
+    val Empty = CameraRange(x = 0f..0f, y = 0f..0f)
   }
 }

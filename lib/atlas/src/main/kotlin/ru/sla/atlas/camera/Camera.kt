@@ -1,36 +1,36 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.camera
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
+import ru.sla.atlas.entity.CameraRange
+import ru.sla.atlas.entity.PanStep
 import ru.sla.atlas.entity.Placement
-import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
-import ru.sla.clarify.feature.chronology.ui.entity.GraphPanStep
 
 /*
  * Камера полотна: где ей разрешено быть, где она стоит в покое, как на неё ложится дельта и когда
  * инерцию пора обрывать.
  *
- * Отделено от раскладки намеренно. Раскладка отвечает, где стоят плашки, и о камере не знает
+ * Отделено от раскладки намеренно. Раскладка отвечает, где стоят узлы, и о камере не знает
  * вовсе — а здесь ни одна функция не знает, как получились координаты плашек. Пока обе темы
  * лежали в одном файле, правка любой из них заставляла читать чужую.
  */
 
 /**
- * Допустимый сдвиг содержимого, при котором любой центр плашки достижим центром экрана.
+ * Допустимый сдвиг содержимого, при котором любой центр узла достижим центром экрана.
  *
  * По оси времени это и есть главная политика: в покое в центре экрана стоит самый левый узел, а
  * докрутив вправо до упора — самый правый. Кламп по одним лишь краям содержимого давал бы обратное:
  * начало истории у левой кромки, конец у правой.
  *
  * По вертикали та же политика нужна не ради покоя, а ради пинча: пока камере разрешалось лишь
- * держать содержимое прижатым к краям, зум над нижними плашками уводил их из-под пальцев — удержать
+ * держать содержимое прижатым к краям, зум над нижними узлами уводил их из-под пальцев — удержать
  * точку значило оторвать содержимое от кромки, чего кламп не позволял.
  *
  * @param centreSpan отрезок центров плашек по этой оси, в координатах полотна
  * @param viewport размер видимой области по той же оси
  * @return диапазон сдвига, вырожденный в точку при единственном узле
  */
-internal fun centrePanRangeOf(
+fun centrePanRangeOf(
   centreSpan: ClosedFloatingPointRange<Float>,
   viewport: Float
 ): ClosedFloatingPointRange<Float> {
@@ -47,8 +47,8 @@ internal fun centrePanRangeOf(
  * Когда содержимое короче экрана, границы меняются местами: содержимому разрешено гулять внутри
  * экрана, но не выходить за него. Схлопывать диапазон в одно центрирующее значение нельзя, хотя
  * такая запись и выглядит аккуратнее: защёлкнутая камера не может держать точку под пальцами, и
- * пинч над содержимым, которое помещается целиком, уводит плашку из-под разведённых пальцев тем
- * сильнее, чем дальше она от центра. На демо-наборе это начиналось ниже 0.572× — там, где граф
+ * пинч над содержимым, которое помещается целиком, уводит узел из-под разведённых пальцев тем
+ * сильнее, чем дальше она от центра. На реальном наборе это начиналось ниже 0.572× — там, где граф
  * впервые влезал в экран по высоте.
  *
  * Центрирование от этого не пропадает: куда камера смотрит, пока её не двигали, отвечает
@@ -63,7 +63,7 @@ internal fun centrePanRangeOf(
  * @return диапазон сдвига; при помещающемся содержимом — от «начало у начала экрана» до «конец у
  *   конца экрана»
  */
-internal fun panRangeOf(min: Float, max: Float, viewport: Float): ClosedFloatingPointRange<Float> {
+fun panRangeOf(min: Float, max: Float, viewport: Float): ClosedFloatingPointRange<Float> {
   if (max <= min) {
     return 0f..0f
   }
@@ -97,24 +97,24 @@ internal fun panRangeOf(min: Float, max: Float, viewport: Float): ClosedFloating
  * @param scale масштаб содержимого
  * @return диапазоны по обеим осям; вырожденные — норма, а не краевой случай
  */
-internal fun cameraRangeOf(
+fun cameraRangeOf(
   placement: Placement,
   viewport: IntSize,
   scale: Float
-): GraphCameraRange {
+): CameraRange {
   if (placement.isEmpty) {
-    return GraphCameraRange.Empty
+    return CameraRange.Empty
   }
   // На обеих осях разрешено то, что разрешает **любая** из двух политик: навести центр крайней
-  // плашки в центр экрана — или прижать край содержимого к краю экрана. Пересечения здесь быть не
+  // узла в центр экрана — или прижать край содержимого к краю экрана. Пересечения здесь быть не
   // может: каждая описывает, что камере можно, и запрет одной не отменяет разрешение другой.
   //
   // Одной политики не хватает ни там, ни там, и обе нехватки вскрылись пинчем. По времени: граница
-  // «первая плашка не правее центра экрана» уезжает вместе с масштабом, поле полотна перед плашкой
+  // «первый узел не правее центра экрана» уезжает вместе с масштабом, поле полотна перед ним
   // растёт, а показать его нельзя — точка уходила из-под пальцев на 399 px к 2.5×. По вертикали:
-  // прижатое к кромкам содержимое не давало приподнять себя, и нижние плашки уползали вниз тем
+  // прижатое к кромкам содержимое не давало приподнять себя, и нижние узлы уползали вниз тем
   // сильнее, чем мельче масштаб.
-  return GraphCameraRange(
+  return CameraRange(
     x = widestOf(
       centrePanRangeOf(
         centreSpan = placement.centreSpanX.scaledBy(scale),
@@ -171,13 +171,13 @@ private fun widestOf(
 /**
  * Где камера стоит, пока её не двигали.
  *
- * Наводится на **первую** плашку, а не прижимается к краю содержимого: экран открывают, чтобы
+ * Наводится на **первый** узел, а не прижимается к краю содержимого: экран открывают, чтобы
  * увидеть начало истории, и оно должно оказаться под глазами, а не в углу. Наведение зажимается
  * диапазоном — у короткой истории центр экрана недостижим, и тогда камера встаёт настолько близко
  * к нему, насколько содержимое позволяет.
  *
  * Который из центров первый, решается здесь, а не в раскладке: раскладка отвечает, где стоят
- * плашки, и знать о том, что одна из них — начало истории, ей незачем.
+ * узлы, и знать о том, что один из них — начало истории, ей незачем.
  *
  * @param placement последняя раскладка графа
  * @param viewport размер видимой области
@@ -185,10 +185,10 @@ private fun widestOf(
  * @param scale масштаб содержимого
  * @return положение камеры в покое
  */
-internal fun cameraRestOf(
+fun cameraRestOf(
   placement: Placement,
   viewport: IntSize,
-  range: GraphCameraRange,
+  range: CameraRange,
   scale: Float
 ): Offset {
   if (placement.isEmpty) {
@@ -218,10 +218,10 @@ internal fun cameraRestOf(
  * @param scale масштаб содержимого
  * @return положение камеры, зажатое диапазоном
  */
-internal fun cameraAimedAt(
+fun cameraAimedAt(
   point: Offset,
   viewport: IntSize,
-  range: GraphCameraRange,
+  range: CameraRange,
   scale: Float
 ): Offset {
   return cameraPuttingPointAt(
@@ -248,10 +248,10 @@ internal fun cameraAimedAt(
  * @param scale масштаб содержимого
  * @return положение камеры, зажатое диапазоном
  */
-internal fun cameraPuttingPointAt(
+fun cameraPuttingPointAt(
   point: Offset,
   screen: Offset,
-  range: GraphCameraRange,
+  range: CameraRange,
   scale: Float
 ): Offset {
   return range.clamp(screen - point * scale)
@@ -271,12 +271,12 @@ internal fun cameraPuttingPointAt(
  * @param range где камере разрешено быть
  * @return новый сдвиг и та часть [delta], которая в него уместилась
  */
-internal fun panStepOf(camera: Offset, delta: Offset, range: GraphCameraRange): GraphPanStep {
+fun panStepOf(camera: Offset, delta: Offset, range: CameraRange): PanStep {
   val moved = Offset(
     x = (camera.x + delta.x).coerceIn(range.x),
     y = (camera.y + delta.y).coerceIn(range.y)
   )
-  return GraphPanStep(
+  return PanStep(
     requested = delta,
     camera = moved,
     consumed = moved - camera
@@ -301,7 +301,7 @@ internal fun panStepOf(camera: Offset, delta: Offset, range: GraphCameraRange): 
  * @param restScale покой, к которому уровень возвращается
  * @return покой, если было приближено; тот же масштаб в остальных случаях
  */
-internal fun flightScaleOf(scale: Float, restScale: Float): Float {
+fun flightScaleOf(scale: Float, restScale: Float): Float {
   return if (scale > restScale) restScale else scale
 }
 
@@ -321,7 +321,7 @@ internal fun flightScaleOf(scale: Float, restScale: Float): Float {
  * @param range разрешённые пределы масштаба
  * @return новый масштаб внутри пределов
  */
-internal fun scaleStepOf(
+fun scaleStepOf(
   scale: Float,
   change: Float,
   range: ClosedFloatingPointRange<Float>
@@ -346,7 +346,7 @@ internal fun scaleStepOf(
  * @param to масштаб после шага
  * @return сдвиг, сохраняющий точку под фокусом
  */
-internal fun zoomedCameraOf(camera: Offset, focus: Offset, from: Float, to: Float): Offset {
+fun zoomedCameraOf(camera: Offset, focus: Offset, from: Float, to: Float): Offset {
   if (from <= 0f) {
     return camera
   }
@@ -362,7 +362,7 @@ internal fun zoomedCameraOf(camera: Offset, focus: Offset, from: Float, to: Floa
  * @param scale масштаб содержимого
  * @return масштаб узора: 0.82 при 0.4× графа, 1.45 при 2.5×
  */
-internal fun backdropScaleOf(scale: Float): Float {
+fun backdropScaleOf(scale: Float): Float {
   return 1f + (scale - 1f) * BACKDROP_PARALLAX
 }
 
@@ -389,7 +389,7 @@ internal fun backdropScaleOf(scale: Float): Float {
  * @param range где камере разрешено быть
  * @return `true`, когда двигаться некуда и затухание пора обрывать
  */
-internal fun isCameraStuck(camera: Offset, direction: Offset, range: GraphCameraRange): Boolean {
+fun isCameraStuck(camera: Offset, direction: Offset, range: CameraRange): Boolean {
   return isAxisStuck(
     camera = camera.x,
     direction = direction.x,
@@ -436,4 +436,4 @@ private fun isAxisStuck(
  * остаётся под пальцами» разрешимо лишь в двух вырожденных случаях: фон приклеен к графу или
  * неподвижен вовсе.
  */
-internal const val BACKDROP_PARALLAX = 0.3f
+const val BACKDROP_PARALLAX = 0.3f
