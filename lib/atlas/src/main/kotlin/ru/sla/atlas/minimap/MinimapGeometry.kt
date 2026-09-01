@@ -1,12 +1,12 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.minimap
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.CameraRange
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
-import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
+import ru.sla.atlas.entity.LaneMark
+import ru.sla.atlas.entity.ViewportSpan
 
 /*
  * Перевод между камерой полотна и полосой мини-карты: где камера стоит по времени, какая камера
@@ -17,7 +17,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
  * обратное неверно.
  *
  * Мир полосы — **отрезок центров крайних плашек**, а не границы содержимого. Разница не
- * косметическая: камера упирается тогда, когда в центре экрана стоит центр крайней плашки, и мир,
+ * косметическая: камера упирается тогда, когда в центре экрана стоит центр крайнего узла, и мир,
  * растянутый до краёв полей полотна, отдавал бы 2.5 % полосы у каждого края под ход, которого у
  * камеры нет. Отрезок центров от масштаба не зависит, поэтому засечки при зуме остаются на месте.
  *
@@ -39,7 +39,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
  * @param viewport размер видимой области
  * @return координата полотна по оси времени
  */
-internal fun centreXOf(camera: Offset, scale: Float, viewport: IntSize): Float {
+fun centreXOf(camera: Offset, scale: Float, viewport: IntSize): Float {
   if (scale <= 0f) {
     return 0f
   }
@@ -58,19 +58,19 @@ internal fun centreXOf(camera: Offset, scale: Float, viewport: IntSize): Float {
  * @param viewport размер видимой области
  * @return положение и ширина видимого; «видно всё» при вырожденной истории и при истории уже экрана
  */
-internal fun viewportSpanOf(
+fun viewportSpanOf(
   camera: Offset,
   scale: Float,
   centreSpan: ClosedFloatingPointRange<Float>,
   viewport: IntSize
-): GraphViewportSpan {
+): ViewportSpan {
   val world = centreSpan.endInclusive - centreSpan.start
   if (world <= 0f || scale <= 0f || viewport.width <= 0) {
-    return GraphViewportSpan.Full
+    return ViewportSpan.Full
   }
   val width = (viewport.width / (world * scale)).coerceAtMost(1f)
   val centre = centreXOf(camera = camera, scale = scale, viewport = viewport)
-  return GraphViewportSpan(
+  return ViewportSpan(
     position = ((centre - centreSpan.start) / world).coerceIn(0f, 1f),
     width = width
   )
@@ -83,16 +83,16 @@ internal fun viewportSpanOf(
  * не трогается вовсе — оно доля хода, а не координата, и ход сам укорачивается на ту ширину, что
  * рамка прибавила.
  *
- * Числа, ради которых это заведено: на демо-наборе честная рамка занимает 62 dp полосы при 0.4× и
- * 10 dp при 2.5×. Десять пикселей пальцем не берутся, поэтому выше 0.777× рамка упирается в минимум
- * и перестаёт быть пропорцией. Обратный ход, если хват окажется избыточным, — уменьшить минимум
- * до 24 dp.
+ * Числа, ради которых это заведено: на длинной истории честная рамка занимает десятки пикселей при
+ * мелком масштабе и единицы при крупном. Десять пикселей пальцем не берутся, поэтому с некоторого
+ * масштаба рамка упирается в минимум и перестаёт быть пропорцией. Какой именно минимум, решает
+ * тот, кто её рисует: это размер пальца, а не свойство графа.
  *
  * @param span честная доля видимого
  * @param minWidth наименьшая ширина рамки, долей полосы
  * @return доля с шириной не меньше [minWidth]
  */
-internal fun widenedSpanOf(span: GraphViewportSpan, minWidth: Float): GraphViewportSpan {
+fun widenedSpanOf(span: ViewportSpan, minWidth: Float): ViewportSpan {
   if (span.width >= minWidth) {
     return span
   }
@@ -110,7 +110,7 @@ internal fun widenedSpanOf(span: GraphViewportSpan, minWidth: Float): GraphViewp
  * @param width ширина рамки, долей полосы
  * @return доля полосы, где стоит центр рамки
  */
-internal fun trackCentreOf(position: Float, width: Float): Float {
+fun trackCentreOf(position: Float, width: Float): Float {
   return position.coerceIn(0f, 1f) * (1f - width) + width / 2f
 }
 
@@ -127,7 +127,7 @@ internal fun trackCentreOf(position: Float, width: Float): Float {
  * @param frameWidth ширина рамки, долей полосы
  * @return доля хода камеры, от нуля до единицы
  */
-internal fun scrubbedPositionOf(
+fun scrubbedPositionOf(
   x: Float,
   width: Float,
   padding: Float,
@@ -159,7 +159,7 @@ internal fun scrubbedPositionOf(
  * @param range где камере разрешено быть при этом масштабе
  * @return сдвиг по оси времени в пикселях экрана
  */
-internal fun scrubbedCameraXOf(
+fun scrubbedCameraXOf(
   position: Float,
   scale: Float,
   centreSpan: ClosedFloatingPointRange<Float>,
@@ -175,7 +175,7 @@ internal fun scrubbedCameraXOf(
  * Засечки веток: где по времени начинается каждая ветка, кроме магистрали.
  *
  * Группировка идёт по **ветке**, а не по дорожке, и это не педантизм: дорожка освобождается после
- * слияния и переиспользуется (§4.2 брифа), поэтому две несвязанные темы, вставшие на неё по
+ * слияния и переиспользуется, поэтому две несвязанные ветки, вставшие на неё по
  * очереди, дали бы **одну** засечку на позиции первой — и вторая тема исчезла бы с мини-карты, не
  * уронив ни теста, ни компилятора.
  *
@@ -194,25 +194,25 @@ internal fun scrubbedCameraXOf(
  * @param centreSpan отрезок центров крайних плашек
  * @return засечки в порядке возрастания позиции; пусто, когда веток нет или история вырождена
  */
-internal fun laneMarksOf(
+fun laneMarksOf(
   branchIds: List<Branch.Id>,
   lanes: List<Int>,
   nodeColors: List<Color>,
   centres: List<Offset>,
   centreSpan: ClosedFloatingPointRange<Float>
-): List<GraphLaneMark> {
+): List<LaneMark> {
   val world = centreSpan.endInclusive - centreSpan.start
   if (world <= 0f || branchIds.isEmpty()) {
     return emptyList()
   }
-  val startByBranch = HashMap<Branch.Id, GraphLaneMark>()
+  val startByBranch = HashMap<Branch.Id, LaneMark>()
   branchIds.forEachIndexed { index, branchId ->
     if (lanes[index] != 0) {
       val x = centres[index].x
       val position = ((x - centreSpan.start) / world).coerceIn(0f, 1f)
       val known = startByBranch[branchId]
       if (known == null || position < known.position) {
-        startByBranch[branchId] = GraphLaneMark(
+        startByBranch[branchId] = LaneMark(
           position = position,
           lane = lanes[index],
           color = nodeColors[index]

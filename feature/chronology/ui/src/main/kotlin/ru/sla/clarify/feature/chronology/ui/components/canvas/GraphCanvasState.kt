@@ -49,11 +49,13 @@ import ru.sla.atlas.entity.CameraRange
 import ru.sla.atlas.entity.CanvasMargins
 import ru.sla.atlas.entity.Edge
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.LaneMark
 import ru.sla.atlas.entity.Lanes
 import ru.sla.atlas.entity.LevelSwitch
 import ru.sla.atlas.entity.PanStep
 import ru.sla.atlas.entity.Placement
 import ru.sla.atlas.entity.ScaleBand
+import ru.sla.atlas.entity.ViewportSpan
 import ru.sla.atlas.entity.ZoomStep
 import ru.sla.atlas.layout.LaneGeometry
 import ru.sla.atlas.layout.edgesOf
@@ -65,10 +67,12 @@ import ru.sla.atlas.lod.LevelScheme
 import ru.sla.atlas.lod.fitScaleOf
 import ru.sla.atlas.lod.levelLandingOf
 import ru.sla.atlas.lod.levelSwitchOf
+import ru.sla.atlas.minimap.centreXOf
+import ru.sla.atlas.minimap.laneMarksOf
+import ru.sla.atlas.minimap.scrubbedCameraXOf
+import ru.sla.atlas.minimap.viewportSpanOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
@@ -170,7 +174,7 @@ internal class GraphCanvasState(private val levels: LevelScheme<GraphLevel>) {
   // `placement` по требованию нельзя: узлы подменяются из `SideEffect`, раскладка приходит из
   // измерения, и на кадре подмены длины этих списков расходятся — а засечке нужен номер дорожки из
   // одного списка и координата из другого.
-  private var marks by mutableStateOf(emptyList<GraphLaneMark>())
+  private var marks by mutableStateOf(emptyList<LaneMark>())
 
   // Обычное поле, не снапшот: за «идёт ли затухание» никто не рисует, а панель снимает по таймеру.
   //
@@ -252,7 +256,7 @@ internal class GraphCanvasState(private val levels: LevelScheme<GraphLevel>) {
    *
    * Читать в фазе рисования: пересчитывается на каждом кадре движения.
    */
-  val viewportSpan: State<GraphViewportSpan> = derivedStateOf {
+  val viewportSpan: State<ViewportSpan> = derivedStateOf {
     viewportSpanOf(
       camera = offset.value,
       scale = cameraScale,
@@ -266,7 +270,7 @@ internal class GraphCanvasState(private val levels: LevelScheme<GraphLevel>) {
    *
    * Меняются только с раскладкой, поэтому чтение в фазе рисования не стоит ничего.
    */
-  val laneMarks: State<List<GraphLaneMark>> = derivedStateOf { marks }
+  val laneMarks: State<List<LaneMark>> = derivedStateOf { marks }
 
   /**
    * Узел, ближайший к центру экрана по времени: то, чем подписывается пузырь мини-карты.

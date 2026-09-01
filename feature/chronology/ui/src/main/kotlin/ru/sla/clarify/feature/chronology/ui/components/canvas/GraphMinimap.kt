@@ -52,9 +52,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEach
+import ru.sla.atlas.entity.LaneMark
+import ru.sla.atlas.entity.ViewportSpan
+import ru.sla.atlas.minimap.scrubbedPositionOf
+import ru.sla.atlas.minimap.trackCentreOf
+import ru.sla.atlas.minimap.widenedSpanOf
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
-import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.preview.PreviewColumn
@@ -91,8 +94,8 @@ import kotlin.math.roundToInt
  */
 @Composable
 internal fun GraphMinimap(
-  span: State<GraphViewportSpan>,
-  marks: State<List<GraphLaneMark>>,
+  span: State<ViewportSpan>,
+  marks: State<List<LaneMark>>,
   label: State<String?>,
   onScrub: (fraction: Float) -> Unit,
   onBoundsChanged: (key: Any, bounds: Rect) -> Unit,
@@ -228,8 +231,8 @@ private fun MinimapDateBubble(
  * @param colors палитра активной темы
  */
 private fun DrawScope.drawMinimap(
-  span: GraphViewportSpan,
-  marks: List<GraphLaneMark>,
+  span: ViewportSpan,
+  marks: List<LaneMark>,
   colors: AppColors
 ) {
   val padding = TRACK_PADDING.toPx()
@@ -362,7 +365,7 @@ private fun GraphMinimapPreviewDark(
 private fun GraphMinimapPreviewContent(minimap: GraphMinimapPreview) {
   val colors = AppTheme.colors
   val marks = minimap.marks.map { mark ->
-    GraphLaneMark(
+    LaneMark(
       position = mark.position,
       lane = mark.lane,
       color = mark.colorIndex.toBranchColor(colors)
@@ -396,12 +399,12 @@ private fun MinimapDateBubblePreviewDark() {
 
 @Immutable
 private data class GraphMinimapPreview(
-  val span: GraphViewportSpan,
+  val span: ViewportSpan,
   val marks: List<GraphMinimapPreviewMark>
 )
 
 /**
- * Засечка кадра превью: то же, что [GraphLaneMark], но цветом ветки здесь ещё номер оттенка.
+ * Засечка кадра превью: то же, что [LaneMark], но цветом ветки здесь ещё номер оттенка.
  *
  * Провайдер композицией не является, а цвет живёт в палитре — достать её он не может. Номер
  * превращается в цвет в [GraphMinimapPreviewContent], то есть там же, где это делает настоящий
@@ -427,7 +430,7 @@ private data class GraphMinimapPreviewMark(
 private class GraphMinimapPreviewProvider : PreviewParameterProvider<GraphMinimapPreview> {
   override val values = sequenceOf(
     GraphMinimapPreview(
-      span = GraphViewportSpan(position = 0.45f, width = 0.06f),
+      span = ViewportSpan(position = 0.45f, width = 0.06f),
       marks = listOf(
         GraphMinimapPreviewMark(position = 0.08f, lane = -1, colorIndex = 1),
         GraphMinimapPreviewMark(position = 0.21f, lane = 1, colorIndex = 2),
@@ -438,14 +441,14 @@ private class GraphMinimapPreviewProvider : PreviewParameterProvider<GraphMinima
       )
     ),
     GraphMinimapPreview(
-      span = GraphViewportSpan(position = 0f, width = 0.16f),
+      span = ViewportSpan(position = 0f, width = 0.16f),
       marks = listOf(
         GraphMinimapPreviewMark(position = 0.08f, lane = -1, colorIndex = 1),
         GraphMinimapPreviewMark(position = 0.21f, lane = 1, colorIndex = 2)
       )
     ),
     GraphMinimapPreview(
-      span = GraphViewportSpan.Full,
+      span = ViewportSpan.Full,
       marks = emptyList()
     )
   )

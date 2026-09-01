@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
 
@@ -23,7 +23,7 @@ import androidx.compose.runtime.Immutable
  * @param width ширина видимого, долей полосы; единица означает «видно всю историю»
  */
 @Immutable
-data class GraphViewportSpan(
+data class ViewportSpan(
   val position: Float,
   val width: Float
 ) {
@@ -31,6 +31,6 @@ data class GraphViewportSpan(
   companion object {
 
     /** Видно всё: пустая история и содержимое, помещающееся в экран целиком. */
-    val Full = GraphViewportSpan(position = 0f, width = 1f)
+    val Full = ViewportSpan(position = 0f, width = 1f)
   }
 }

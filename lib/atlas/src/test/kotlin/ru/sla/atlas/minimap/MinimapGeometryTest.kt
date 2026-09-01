@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.minimap
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -10,9 +10,10 @@ import org.junit.jupiter.api.Test
 import ru.sla.atlas.camera.cameraRangeOf
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.CameraRange
+import ru.sla.atlas.entity.LaneMark
 import ru.sla.atlas.entity.Placement
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
-import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
+import ru.sla.atlas.entity.ViewportSpan
+import ru.sla.atlas.entity.mockLaneColor
 
 /**
  * Перевод между камерой полотна и полосой мини-карты вынесен в чистые функции затем, чтобы
@@ -28,7 +29,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphViewportSpan
  * И три вырожденных случая, каждый из которых на экране бывает: пустая история, история короче
  * экрана и вьюпорт нулевой ширины до первого измерения.
  */
-class GraphMinimapGeometryTest {
+class MinimapGeometryTest {
 
   @Test
   fun `the frame spans the whole track when the history fits the screen`() {
@@ -72,7 +73,7 @@ class GraphMinimapGeometryTest {
       viewport = VIEWPORT
     )
 
-    assertEquals(GraphViewportSpan.Full, span, "делить на длину пустой истории нечем")
+    assertEquals(ViewportSpan.Full, span, "делить на длину пустой истории нечем")
   }
 
   @Test
@@ -85,12 +86,12 @@ class GraphMinimapGeometryTest {
       viewport = IntSize.Zero
     )
 
-    assertEquals(GraphViewportSpan.Full, span)
+    assertEquals(ViewportSpan.Full, span)
   }
 
   @Test
   fun `a frame thinner than a fingertip is widened without moving the camera`() {
-    val thin = GraphViewportSpan(position = 0.5f, width = 0.02f)
+    val thin = ViewportSpan(position = 0.5f, width = 0.02f)
 
     val widened = widenedSpanOf(span = thin, minWidth = 0.1f)
 
@@ -104,7 +105,7 @@ class GraphMinimapGeometryTest {
 
   @Test
   fun `a frame wider than the minimum is left alone`() {
-    val span = GraphViewportSpan(position = 0.2f, width = 0.3f)
+    val span = ViewportSpan(position = 0.2f, width = 0.3f)
 
     assertEquals(span, widenedSpanOf(span = span, minWidth = 0.1f))
   }
@@ -285,8 +286,8 @@ class GraphMinimapGeometryTest {
 
     assertEquals(
       listOf(
-        GraphLaneMark(position = 0.2f, lane = 1, color = mockLaneColor(1)),
-        GraphLaneMark(position = 0.5f, lane = -1, color = mockLaneColor(2))
+        LaneMark(position = 0.2f, lane = 1, color = mockLaneColor(1)),
+        LaneMark(position = 0.5f, lane = -1, color = mockLaneColor(2))
       ),
       marks
     )
@@ -321,7 +322,7 @@ class GraphMinimapGeometryTest {
     )
 
     assertEquals(
-      listOf(GraphLaneMark(position = 0.3f, lane = 1, color = mockLaneColor(1))),
+      listOf(LaneMark(position = 0.3f, lane = 1, color = mockLaneColor(1))),
       marks,
       "начало ветки — самый левый её узел, а не первый в списке"
     )
