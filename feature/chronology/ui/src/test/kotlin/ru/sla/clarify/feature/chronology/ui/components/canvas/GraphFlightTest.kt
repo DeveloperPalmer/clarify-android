@@ -219,8 +219,7 @@ class GraphFlightTest {
       viewportSize = VIEWPORT,
       nodeSizes = List(state.graph.nodes.size) { NODE_SIZE },
       density = Density(density = 1f),
-      statusBar = 0f,
-      navigationBar = 0f
+      margins = mockCanvasMargins()
     )
     val point = when (anchor) {
       GraphAnchor.Start -> placement.centres.first()
@@ -308,8 +307,7 @@ class GraphFlightTest {
       viewportSize = VIEWPORT,
       nodeSizes = List(graph.nodes.size) { NODE_SIZE },
       density = Density(density = 1f),
-      statusBar = 0f,
-      navigationBar = 0f
+      margins = mockCanvasMargins()
     )
     return state
   }

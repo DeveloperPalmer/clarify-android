@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 
@@ -41,4 +42,18 @@ internal fun Graph<BasicNode>.mockBranchColors(): Map<Branch.Id, Color> {
  */
 internal fun Graph<Node>.mockLanes(): GraphLanes {
   return graphLanesOf(this, mockBranchColors()) { node, own -> accentOwnerOf(node, own) }
+}
+
+/**
+ * Поля полотна в тесте: базовый отступ и никаких системных врезок.
+ *
+ * Врезки нулевые не ради краткости, а потому что окна в юнит-тесте нет вовсе — проверяется
+ * арифметика камеры, а не то, как высоко на устройстве стоят часы. Отступ при этом настоящий: он
+ * входит в границы содержимого, и обнулив его, тест мерил бы уже не то полотно, что показывает
+ * экран.
+ *
+ * @return поля при плотности `1f`, где пиксель равен точке
+ */
+internal fun mockCanvasMargins(): GraphCanvasMargins {
+  return canvasMarginsOf(base = 64f, statusBar = 0f, navigationBar = 0f)
 }

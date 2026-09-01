@@ -6,7 +6,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphPlacement
 import kotlin.math.abs
@@ -259,5 +258,3 @@ private fun boundsOf(nodes: List<IntOffset>, sizes: List<IntSize>): Rect {
   }
   return Rect(left, top, right, bottom)
 }
-
-internal val CANVAS_PADDING: Dp = 64.dp

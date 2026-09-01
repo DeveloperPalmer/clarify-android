@@ -412,8 +412,14 @@ private fun GraphNodesLayer(
       lanes = lanes,
       branchColors = branchColors,
       density = this,
-      statusBar = statusBar.getTop(this).toFloat(),
-      navigationBar = navigationBar.getBottom(this).toFloat(),
+      // Врезки складываются с отступом здесь, а не в измерении полотна: полотно занимает весь экран
+      // под системными барами, и увести из-под них плашки обязаны поля — но чем эти бары высоки,
+      // знает окно, а не граф.
+      margins = canvasMarginsOf(
+        base = 64.dp.toPx(),
+        statusBar = statusBar.getTop(this).toFloat(),
+        navigationBar = navigationBar.getBottom(this).toFloat()
+      ),
       viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight),
       graph = graph,
       nodeSizes = placeables.fastMap { IntSize(it.width, it.height) }

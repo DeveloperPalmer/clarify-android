@@ -35,6 +35,7 @@ import ru.sla.atlas.entity.Graph
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraPose
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
+import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
@@ -811,8 +812,9 @@ internal class GraphCanvasState {
    * @param viewportSize размер видимой области
    * @param nodeSizes измеренные размеры узлов, в порядке узлов графа
    * @param density плотность экрана для перевода координат полотна в пиксели
-   * @param statusBar высота строки состояния в пикселях
-   * @param navigationBar высота навигационной полосы в пикселях
+   * @param margins поля полотна вокруг содержимого, уже в пикселях. Приходят готовыми, потому что
+   *   собраны из системных врезок: высота строки состояния — свойство окна Android, а не графа, и
+   *   измерению полотна о ней знать неоткуда
    * @return раскладка графа
    */
   fun layout(
@@ -823,8 +825,7 @@ internal class GraphCanvasState {
     viewportSize: IntSize,
     nodeSizes: List<IntSize>,
     density: Density,
-    statusBar: Float,
-    navigationBar: Float
+    margins: GraphCanvasMargins
   ): GraphPlacement {
     // Дорожки берутся из параметров, а не читаются готовыми из состояния: граф подменяется из
     // `SideEffect`, то есть между композицией и измерением того же кадра, и раскраска по
@@ -841,11 +842,7 @@ internal class GraphCanvasState {
         gaps = graph.nodes.map { it.gap.toStepWidth(level).toPx() },
         laneYs = laneYs,
         sizes = nodeSizes,
-        margins = canvasMarginsOf(
-          base = CANVAS_PADDING.toPx(),
-          statusBar = statusBar,
-          navigationBar = navigationBar
-        )
+        margins = margins
       )
     }
     viewport = viewportSize
@@ -858,9 +855,9 @@ internal class GraphCanvasState {
         positions = result.nodes,
         sizes = nodeSizes,
         // Хвост идёт до правого края содержимого, а не до края видимой области, как просит §6.8:
-        // вьюпорта раскладка не знает и знать не должна. Поля полотна из `bounds` вычтены — они
-        // отступ, а не история.
-        contentRight = result.bounds.right - CANVAS_PADDING.toPx(),
+        // вьюпорта раскладка не знает и знать не должна. Поле полотна из `bounds` вычтено — оно
+        // отступ, а не история; вычитается именно правое, то самое, которое `bounds` и раздуло.
+        contentRight = result.bounds.right - margins.right,
         // Мостик, прижатый к концу отрезка, съедается скруглением угла: между ними должно
         // остаться место и на радиус 8 dp, и на полухорду мостика 6 dp.
         hopClearance = 16.dp.toPx()
