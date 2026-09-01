@@ -3,7 +3,7 @@ package ru.sla.atlas.entity
 import androidx.compose.ui.graphics.Color
 
 /**
- * Узел вызывающего в его наименьшем виде: только то, что обещает [BasicNode].
+ * Узел вызывающего в его наименьшем виде: только то, что обещает [Node].
  *
  * Настоящий узел приносит с собой всё, что рисует, — и ничего из этого графу не нужно. Здесь
  * поэтому и лежит узел без единого собственного поля: он проверяет ровно то, на что граф вправе
@@ -13,9 +13,9 @@ import androidx.compose.ui.graphics.Color
  * @param gap пауза перед узлом; графу она безразлична, и потому у неё есть значение по умолчанию
  */
 internal data class MockNode(
-  override val id: BasicNode.Id,
+  override val id: Node.Id,
   override val gap: TimeGap = TimeGap.Minutes
-) : BasicNode
+) : Node
 
 /**
  * Узел с заданным именем.
@@ -24,7 +24,7 @@ internal data class MockNode(
  * @return узел без единого собственного поля
  */
 internal fun mockNode(id: String): MockNode {
-  return MockNode(id = BasicNode.Id(id))
+  return MockNode(id = Node.Id(id))
 }
 
 /**
@@ -61,9 +61,9 @@ internal fun mockBranch(
 ): Branch {
   return Branch(
     id = Branch.Id(id),
-    nodeIds = nodes.map { BasicNode.Id(it) },
-    forkedFrom = forkedFrom?.let { BasicNode.Id(it) },
-    mergedAt = mergedAt?.let { BasicNode.Id(it) },
+    nodeIds = nodes.map { Node.Id(it) },
+    forkedFrom = forkedFrom?.let { Node.Id(it) },
+    mergedAt = mergedAt?.let { Node.Id(it) },
     status = status,
     colorIndex = colorIndex
   )
@@ -98,6 +98,6 @@ internal fun mockLaneColor(colorIndex: Int): Color {
  *
  * @return цвет каждой ветки графа, магистраль включая
  */
-internal fun Graph<BasicNode>.mockBranchColors(): Map<Branch.Id, Color> {
+internal fun Graph<Node>.mockBranchColors(): Map<Branch.Id, Color> {
   return (listOf(baseline) + branches).associate { it.id to mockLaneColor(it.colorIndex) }
 }

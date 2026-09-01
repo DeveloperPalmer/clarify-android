@@ -12,7 +12,7 @@ import ru.sla.atlas.ui.AtlasCanvas
 import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.atlas.ui.CanvasBackdrop
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColors
 import ru.sla.clarify.uikit.theme.AppTheme
 
@@ -37,11 +37,11 @@ import ru.sla.clarify.uikit.theme.AppTheme
  */
 @Composable
 internal fun GraphCanvas(
-  state: AtlasCanvasState<Node, GraphLevel>,
+  state: AtlasCanvasState<GraphNode, GraphLevel>,
   ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
   blocked: () -> Boolean = { false },
-  node: @Composable (node: Node, accent: NodeAccent, level: GraphLevel) -> Unit,
+  node: @Composable (graphNode: GraphNode, accent: NodeAccent, level: GraphLevel) -> Unit,
   overlay: @Composable BoxScope.(onBoundsChanged: (key: Any, bounds: Rect) -> Unit) -> Unit = { }
 ) {
   val colors = AppTheme.colors

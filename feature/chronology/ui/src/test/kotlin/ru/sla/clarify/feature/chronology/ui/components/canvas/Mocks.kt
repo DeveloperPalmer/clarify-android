@@ -1,15 +1,15 @@
 package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import androidx.compose.ui.graphics.Color
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.CanvasMargins
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Lanes
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.layout.lanesOf
 import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 
 /**
  * Цвет ветки вместо палитры темы.
@@ -31,7 +31,7 @@ internal fun mockLaneColor(colorIndex: Int): Color {
  *
  * @return цвет каждой ветки графа, магистраль включая
  */
-internal fun Graph<BasicNode>.mockBranchColors(): Map<Branch.Id, Color> {
+internal fun Graph<Node>.mockBranchColors(): Map<Branch.Id, Color> {
   return (listOf(baseline) + branches).associate { it.id to mockLaneColor(it.colorIndex) }
 }
 
@@ -43,7 +43,7 @@ internal fun Graph<BasicNode>.mockBranchColors(): Map<Branch.Id, Color> {
  *
  * @return дорожки узлов и их акценты
  */
-internal fun Graph<Node>.mockLanes(): Lanes {
+internal fun Graph<GraphNode>.mockLanes(): Lanes {
   return lanesOf(this, mockBranchColors()) { node, own -> accentOwnerOf(node, own) }
 }
 
@@ -69,6 +69,6 @@ internal fun mockCanvasMargins(): CanvasMargins {
  *
  * @return состояние, каким его получает экран при открытии
  */
-internal fun mockCanvasState(): AtlasCanvasState<Node, GraphLevel> {
+internal fun mockCanvasState(): AtlasCanvasState<GraphNode, GraphLevel> {
   return AtlasCanvasState(levels = ChronologyLevels, initialLevel = GraphLevel.Episodes)
 }

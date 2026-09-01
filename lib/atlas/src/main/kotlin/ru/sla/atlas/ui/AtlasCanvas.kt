@@ -40,11 +40,11 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.CanvasMargins
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Lanes
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.NodeAccent
 import ru.sla.atlas.layout.lanesOf
 import ru.sla.atlas.lod.counterScaleOf
@@ -96,7 +96,7 @@ import ru.sla.atlas.lod.counterScaleOf
  */
 @Suppress("LongParameterList")
 @Composable
-fun <N : BasicNode, L> AtlasCanvas(
+fun <N : Node, L> AtlasCanvas(
   state: AtlasCanvasState<N, L>,
   branchColors: Map<Branch.Id, Color>,
   flingDecay: DecayAnimationSpec<Float>,
@@ -230,7 +230,7 @@ fun <N : BasicNode, L> AtlasCanvas(
  */
 @Suppress("LongParameterList")
 @Composable
-private fun <N : BasicNode, L> AtlasNodesLayer(
+private fun <N : Node, L> AtlasNodesLayer(
   state: AtlasCanvasState<N, L>,
   graph: Graph<N>,
   lanes: Lanes,

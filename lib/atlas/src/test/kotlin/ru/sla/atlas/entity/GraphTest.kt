@@ -20,7 +20,7 @@ class GraphTest {
 
     assertEquals(
       Branch.Id("a"),
-      graph.branchForkedAt(BasicNode.Id("n2")),
+      graph.branchForkedAt(Node.Id("n2")),
       "узел ветвления стоит на магистрали и называет ушедшую от него ветку"
     )
   }
@@ -31,7 +31,7 @@ class GraphTest {
 
     assertEquals(
       Branch.Id("a"),
-      graph.branchMergedAt(BasicNode.Id("n8")),
+      graph.branchMergedAt(Node.Id("n8")),
       "узел слияния называет вернувшуюся в магистраль ветку"
     )
   }
@@ -40,8 +40,8 @@ class GraphTest {
   fun `a plain node carries neither`() {
     val graph = graphOf(mockBranch(id = "a", nodes = mockNodeNames(3..5), forkedFrom = "n2", mergedAt = "n8"))
 
-    assertNull(graph.branchForkedAt(BasicNode.Id("n6")), "в обычном узле ничего не случилось")
-    assertNull(graph.branchMergedAt(BasicNode.Id("n6")), "в обычном узле ничего не случилось")
+    assertNull(graph.branchForkedAt(Node.Id("n6")), "в обычном узле ничего не случилось")
+    assertNull(graph.branchMergedAt(Node.Id("n6")), "в обычном узле ничего не случилось")
   }
 
   @Test
@@ -53,7 +53,7 @@ class GraphTest {
 
     assertEquals(
       Branch.Id("a"),
-      graph.branchForkedAt(BasicNode.Id("n2")),
+      graph.branchForkedAt(Node.Id("n2")),
       "отвечает первая по порядку ветвления; вторая не теряется — её развилку спрашивают у неё самой"
     )
   }
@@ -63,7 +63,7 @@ class GraphTest {
     val graph = graphOf(mockBranch(id = "a", nodes = mockNodeNames(3..5), forkedFrom = "n2"))
 
     assertNull(
-      graph.branchForkedAt(BasicNode.Id("n0")),
+      graph.branchForkedAt(Node.Id("n0")),
       "у магистрали ни развилки, ни слияния нет по определению — уходить ей неоткуда"
     )
   }

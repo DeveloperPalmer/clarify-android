@@ -3,10 +3,9 @@ package ru.sla.atlas.layout
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.mockBranch
 import ru.sla.atlas.entity.mockNodeNames
 
@@ -229,6 +228,6 @@ private val BASELINE = Branch.Id("baseline")
 // измерения и о ширинах не знает.
 private const val LAST_INDEX = 14
 
-private fun indexById(): Map<BasicNode.Id, Int> {
-  return List(LAST_INDEX + 1) { index -> BasicNode.Id("n$index") to index }.toMap()
+private fun indexById(): Map<Node.Id, Int> {
+  return List(LAST_INDEX + 1) { index -> Node.Id("n$index") to index }.toMap()
 }

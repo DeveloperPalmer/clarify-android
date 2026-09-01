@@ -18,8 +18,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
-import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -49,11 +49,11 @@ import ru.sla.clarify.uikit.theme.ColorTheme
 internal fun MergeNode(
   contentDescription: String,
   modifier: Modifier = Modifier,
-  state: Node.Merge.Status = Node.Merge.Status.Done,
+  state: GraphNode.Merge.Status = GraphNode.Merge.Status.Done,
   ceremony: () -> MergeCeremonyFrame? = { null }
 ) {
   val colors = AppTheme.colors
-  val restFill = if (state == Node.Merge.Status.Done) 1f else 0f
+  val restFill = if (state == GraphNode.Merge.Status.Done) 1f else 0f
   Box(
     modifier = modifier
       .clearAndSetSemantics { this.contentDescription = contentDescription }
@@ -134,7 +134,7 @@ private fun MergeNodePreviewDark(
 }
 
 @Immutable
-private data class MergeNodePreview(val state: Node.Merge.Status)
+private data class MergeNodePreview(val state: GraphNode.Merge.Status)
 
 /**
  * Кадры превью [MergeNode] — по одному на состояние.
@@ -148,7 +148,7 @@ private data class MergeNodePreview(val state: Node.Merge.Status)
 @Immutable
 private class MergeNodePreviewProvider : PreviewParameterProvider<MergeNodePreview> {
   override val values = sequenceOf(
-    MergeNodePreview(state = Node.Merge.Status.Pending),
-    MergeNodePreview(state = Node.Merge.Status.Done)
+    MergeNodePreview(state = GraphNode.Merge.Status.Pending),
+    MergeNodePreview(state = GraphNode.Merge.Status.Done)
   )
 }

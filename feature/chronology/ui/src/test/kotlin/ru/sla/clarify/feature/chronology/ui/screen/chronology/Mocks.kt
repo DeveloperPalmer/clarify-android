@@ -1,12 +1,12 @@
 package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
 import androidx.compose.runtime.Immutable
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.components.node.DEFAULT_MY_SHARE
-import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.NodePreview
 
 /**
@@ -229,15 +229,15 @@ private fun demoBranches(): List<Branch> {
       id = Branch.Id("terms"),
       nodeIds = emptyList(),
       colorIndex = 1,
-      forkedFrom = BasicNode.Id("fork-terms"),
-      mergedAt = BasicNode.Id("merge-terms"),
+      forkedFrom = Node.Id("fork-terms"),
+      mergedAt = Node.Id("merge-terms"),
       status = Branch.Status.Merged
     ),
     Branch(
       id = Branch.Id("export"),
       nodeIds = emptyList(),
       colorIndex = 2,
-      forkedFrom = BasicNode.Id("fork-export"),
+      forkedFrom = Node.Id("fork-export"),
       mergedAt = null,
       status = Branch.Status.Alive
     ),
@@ -245,7 +245,7 @@ private fun demoBranches(): List<Branch> {
       id = Branch.Id("design"),
       nodeIds = emptyList(),
       colorIndex = 3,
-      forkedFrom = BasicNode.Id("fork-design"),
+      forkedFrom = Node.Id("fork-design"),
       mergedAt = null,
       status = Branch.Status.Waiting
     ),
@@ -253,7 +253,7 @@ private fun demoBranches(): List<Branch> {
       id = Branch.Id("budget"),
       nodeIds = emptyList(),
       colorIndex = 4,
-      forkedFrom = BasicNode.Id("fork-budget"),
+      forkedFrom = Node.Id("fork-budget"),
       mergedAt = null,
       status = Branch.Status.Ready
     ),
@@ -261,15 +261,15 @@ private fun demoBranches(): List<Branch> {
       id = Branch.Id("photos"),
       nodeIds = emptyList(),
       colorIndex = 5,
-      forkedFrom = BasicNode.Id("fork-photos"),
-      mergedAt = BasicNode.Id("merge-photos"),
+      forkedFrom = Node.Id("fork-photos"),
+      mergedAt = Node.Id("merge-photos"),
       status = Branch.Status.Merged
     ),
     Branch(
       id = Branch.Id("release"),
       nodeIds = emptyList(),
       colorIndex = 6,
-      forkedFrom = BasicNode.Id("fork-release"),
+      forkedFrom = Node.Id("fork-release"),
       mergedAt = null,
       status = Branch.Status.Alive
     ),
@@ -282,7 +282,7 @@ private fun demoBranches(): List<Branch> {
       id = Branch.Id("pricing"),
       nodeIds = emptyList(),
       colorIndex = 1,
-      forkedFrom = BasicNode.Id("fork-release"),
+      forkedFrom = Node.Id("fork-release"),
       mergedAt = null,
       status = Branch.Status.Alive
     ),
@@ -637,7 +637,7 @@ private fun crowdedBranches(): List<Branch> {
       id = Branch.Id("crowd-$order"),
       nodeIds = emptyList(),
       colorIndex = 1 + (order - 1).mod(6),
-      forkedFrom = BasicNode.Id("crowd-fork-$order"),
+      forkedFrom = Node.Id("crowd-fork-$order"),
       mergedAt = null,
       status = Branch.Status.Alive
     )
@@ -719,8 +719,8 @@ private fun episode(
   exactTime: String = time
 ): MockNode {
   return MockNode(
-    node = Node.Episode(
-      id = BasicNode.Id(id),
+    graphNode = GraphNode.Episode(
+      id = Node.Id(id),
       gap = gap,
       time = time,
       count = count,
@@ -744,23 +744,23 @@ private fun episode(
  * Содержимого у неё нет вовсе — точка рисуется кругом, а не плашкой, — и с тех пор, как род узла
  * стал его типом, писать пустые строки в поля эпизода больше не приходится.
  *
- * @param node сам узел; ветка у всех трёх одна — магистраль
+ * @param graphNode сам узел; ветка у всех трёх одна — магистраль
  * @return узел набора без превью: разворачивать точке нечего
  */
-private fun point(node: Node): MockNode {
-  return MockNode(node = node, branchId = Branch.Id(BASELINE))
+private fun point(graphNode: GraphNode): MockNode {
+  return MockNode(graphNode = graphNode, branchId = Branch.Id(BASELINE))
 }
 
 private fun fork(id: String, gap: TimeGap): MockNode {
-  return point(Node.Fork(id = BasicNode.Id(id), gap = gap))
+  return point(GraphNode.Fork(id = Node.Id(id), gap = gap))
 }
 
 private fun merge(id: String, gap: TimeGap): MockNode {
-  return point(Node.Merge(id = BasicNode.Id(id), gap = gap))
+  return point(GraphNode.Merge(id = Node.Id(id), gap = gap))
 }
 
 private fun front(id: String, gap: TimeGap): MockNode {
-  return point(Node.Front(id = BasicNode.Id(id), gap = gap))
+  return point(GraphNode.Front(id = Node.Id(id), gap = gap))
 }
 
 /**
@@ -785,8 +785,8 @@ internal data class MockGraph(
 ) {
 
   /** Раскладочная часть узлов: то, что уходит на полотно. */
-  val graphNodes: List<Node>
-    get() = nodes.map { it.node }
+  val graphGraphNodes: List<GraphNode>
+    get() = nodes.map { it.graphNode }
 
   /**
    * Граф целиком: узлы и ветки с уже заполненным составом.
@@ -794,11 +794,11 @@ internal data class MockGraph(
    * Состав собирается здесь, а не пишется в [demoBranches]: ветку узлу назначает сам узел набора, и
    * второй список тех же принадлежностей разъехался бы с первым молча.
    */
-  val layout: Graph<Node>
+  val layout: Graph<GraphNode>
     get() {
-      val nodeIdsByBranch = nodes.groupBy({ it.branchId }, { it.node.id })
+      val nodeIdsByBranch = nodes.groupBy({ it.branchId }, { it.graphNode.id })
       return Graph(
-        nodes = graphNodes,
+        nodes = graphGraphNodes,
         baseline = Branch(
           id = Branch.Id(BASELINE),
           nodeIds = nodeIdsByBranch[Branch.Id(BASELINE)].orEmpty(),
@@ -812,8 +812,8 @@ internal data class MockGraph(
     }
 
   /** Содержимое превью-карточек: только у тех узлов, которые есть что разворачивать. */
-  val previewById: Map<BasicNode.Id, NodePreview>
-    get() = nodes.mapNotNull { node -> node.preview?.let { node.node.id to it } }.toMap()
+  val previewById: Map<Node.Id, NodePreview>
+    get() = nodes.mapNotNull { node -> node.preview?.let { node.graphNode.id to it } }.toMap()
 }
 
 /**
@@ -823,13 +823,13 @@ internal data class MockGraph(
  * собирает его в [MockGraph.layout] из этого поля. Превью — потому, что карточка не то, что рисует
  * узел: её содержимое живёт отдельной картой и в графе не лежит.
  *
- * @param node сам узел: род, пауза и всё, что нарисовано внутри плашки
+ * @param graphNode сам узел: род, пауза и всё, что нарисовано внутри плашки
  * @param branchId ветка, которой узел принадлежит; у точек на магистрали — корневая
  * @param preview содержимое превью-карточки; `null` у точек на линии — им нечего разворачивать
  */
 @Immutable
 internal data class MockNode(
-  val node: Node,
+  val graphNode: GraphNode,
   val branchId: Branch.Id,
   val preview: MockPreview? = null
 )

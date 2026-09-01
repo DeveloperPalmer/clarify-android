@@ -1,10 +1,10 @@
 package ru.sla.atlas.layout
 
 import androidx.compose.ui.graphics.Color
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Lanes
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.NodeAccent
 
 /**
@@ -42,7 +42,7 @@ import ru.sla.atlas.entity.NodeAccent
  */
 fun branchOccupancyOf(
   branches: List<Branch>,
-  indexById: Map<BasicNode.Id, Int>,
+  indexById: Map<Node.Id, Int>,
   lastIndex: Int
 ): Map<Branch.Id, IntRange> {
   val occupancy = HashMap<Branch.Id, IntRange>()
@@ -176,7 +176,7 @@ fun laneCountOf(lanes: Map<Branch.Id, Int>): Int {
  *   ответ по умолчанию
  * @return акцент каждого узла, в порядке узлов графа
  */
-fun <N : BasicNode> nodeAccentsOf(
+fun <N : Node> nodeAccentsOf(
   graph: Graph<N>,
   branchLanes: Map<Branch.Id, Int>,
   branchColors: Map<Branch.Id, Color>,
@@ -210,7 +210,7 @@ fun <N : BasicNode> nodeAccentsOf(
  * @param ownerOf ветка, за которую говорит узел, см. [nodeAccentsOf]
  * @return дорожки узлов и их акценты
  */
-fun <N : BasicNode> lanesOf(
+fun <N : Node> lanesOf(
   graph: Graph<N>,
   branchColors: Map<Branch.Id, Color>,
   ownerOf: (node: N, own: Branch.Id) -> Branch.Id

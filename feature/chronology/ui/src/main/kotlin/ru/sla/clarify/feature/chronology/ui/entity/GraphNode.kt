@@ -1,13 +1,13 @@
 package ru.sla.clarify.feature.chronology.ui.entity
 
 import androidx.compose.runtime.Immutable
-import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.TimeGap
 
 /**
  * Узел графа беседы: и то, из чего считается его положение, и то, что внутри него нарисовано.
  *
- * Раскладочную половину узел берёт у [BasicNode] — идентификатор и паузу, единственное, что о нём
+ * Раскладочную половину узел берёт у [Node] — идентификатор и паузу, единственное, что о нём
  * знает граф. Всё остальное живёт здесь и различается по роду узла, потому что рода различаются не
  * оттенком, а составом: у эпизода есть время, счётчик и сниппет, у точки на линии нет ничего.
  *
@@ -18,7 +18,7 @@ import ru.sla.atlas.entity.TimeGap
  * закрывает `when` без ветки `else`.
  */
 @Immutable
-sealed interface Node : BasicNode {
+sealed interface GraphNode : Node {
 
   /**
    * Место, которому есть что показать: кластер подряд идущих сообщений.
@@ -37,7 +37,7 @@ sealed interface Node : BasicNode {
    */
   @Immutable
   data class Episode(
-    override val id: BasicNode.Id,
+    override val id: Node.Id,
     override val gap: TimeGap,
     val time: String,
     val count: Int,
@@ -45,7 +45,7 @@ sealed interface Node : BasicNode {
     val myShare: Float,
     val unreadCount: Long,
     val dim: Boolean
-  ) : Node {
+  ) : GraphNode {
 
     /** Состояние сообщения: определяет иконку справа от текста и прозрачность плашки. */
     enum class Status {
@@ -67,9 +67,9 @@ sealed interface Node : BasicNode {
    */
   @Immutable
   data class Fork(
-    override val id: BasicNode.Id,
+    override val id: Node.Id,
     override val gap: TimeGap
-  ) : Node
+  ) : GraphNode
 
   /**
    * Место на магистрали, где ветка вернулась в родителя.
@@ -79,9 +79,9 @@ sealed interface Node : BasicNode {
    */
   @Immutable
   data class Merge(
-    override val id: BasicNode.Id,
+    override val id: Node.Id,
     override val gap: TimeGap
-  ) : Node {
+  ) : GraphNode {
 
     /**
      * Дошло ли слияние до конца.
@@ -114,7 +114,7 @@ sealed interface Node : BasicNode {
    */
   @Immutable
   data class Front(
-    override val id: BasicNode.Id,
+    override val id: Node.Id,
     override val gap: TimeGap
-  ) : Node
+  ) : GraphNode
 }

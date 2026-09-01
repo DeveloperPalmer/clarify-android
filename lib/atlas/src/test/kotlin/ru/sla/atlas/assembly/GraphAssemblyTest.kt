@@ -2,9 +2,9 @@ package ru.sla.atlas.assembly
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.MockNode
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.NodeDraft
 import ru.sla.atlas.entity.TimeGap
 import ru.sla.atlas.entity.mockBranch
@@ -88,11 +88,11 @@ class GraphAssemblyTest {
     )
 
     assertEquals(
-      listOf(BasicNode.Id("t1"), BasicNode.Id("t2")),
+      listOf(Node.Id("t1"), Node.Id("t2")),
       graph.baseline.nodeIds,
       "состав ветки — обратная сторона порядка узлов, и собирается он тем же проходом"
     )
-    assertEquals(Branch.Id("a"), graph.branchOf(BasicNode.Id("a1")).id)
+    assertEquals(Branch.Id("a"), graph.branchOf(Node.Id("a1")).id)
   }
 
   @Test
@@ -100,7 +100,7 @@ class GraphAssemblyTest {
     val graph = assembled(draft("t1", branch = "trunk", minutes = 0))
 
     assertEquals(
-      emptyList<BasicNode.Id>(),
+      emptyList<Node.Id>(),
       graph.branches.single { it.id == Branch.Id("a") }.nodeIds,
       "ветка, чьи узлы ещё не догружены, остаётся в графе пустой, а не роняет сборку"
     )

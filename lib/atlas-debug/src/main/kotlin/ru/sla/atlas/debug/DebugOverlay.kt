@@ -39,7 +39,7 @@ import ru.sla.atlas.debug.entity.DebugRow
 import ru.sla.atlas.debug.entity.DebugSnapshot
 import ru.sla.atlas.debug.mapper.toFactRows
 import ru.sla.atlas.debug.mapper.toPhaseRows
-import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.Telemetry
 import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.atlas.ui.peaksOf
@@ -68,7 +68,7 @@ import ru.sla.atlas.ui.ratesOf
  * @param modifier модификатор панели
  */
 @Composable
-fun <N : BasicNode, L> DebugOverlay(
+fun <N : Node, L> DebugOverlay(
   state: AtlasCanvasState<N, L>,
   levelLabelOf: (L) -> String,
   onBoundsChanged: (key: Any, bounds: Rect) -> Unit,

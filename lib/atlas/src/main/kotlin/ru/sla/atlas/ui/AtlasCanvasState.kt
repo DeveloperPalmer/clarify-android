@@ -41,7 +41,6 @@ import ru.sla.atlas.camera.isCameraStuck
 import ru.sla.atlas.camera.panStepOf
 import ru.sla.atlas.camera.scaleStepOf
 import ru.sla.atlas.camera.zoomedCameraOf
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.CameraPose
 import ru.sla.atlas.entity.CameraRange
@@ -52,6 +51,7 @@ import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.LaneMark
 import ru.sla.atlas.entity.Lanes
 import ru.sla.atlas.entity.LevelSwitch
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.PanStep
 import ru.sla.atlas.entity.Placement
 import ru.sla.atlas.entity.ScaleBand
@@ -84,7 +84,7 @@ import ru.sla.atlas.minimap.viewportSpanOf
  * @return состояние, живущее до выхода с экрана
  */
 @Composable
-fun <N : BasicNode, L> rememberAtlasCanvasState(
+fun <N : Node, L> rememberAtlasCanvasState(
   graph: Graph<N>,
   levels: LevelScheme<L>,
   initialLevel: L
@@ -111,7 +111,7 @@ fun <N : BasicNode, L> rememberAtlasCanvasState(
  * измерения.
  */
 @Stable
-class AtlasCanvasState<N : BasicNode, L>(
+class AtlasCanvasState<N : Node, L>(
   private val levels: LevelScheme<L>,
   initialLevel: L
 ) {
@@ -769,7 +769,7 @@ class AtlasCanvasState<N : BasicNode, L>(
    * @param id узел, о котором спрашивают
    * @return прямоугольник в координатах вьюпорта или `null`, если такого узла нет
    */
-  fun nodeRectOf(id: BasicNode.Id): Rect? {
+  fun nodeRectOf(id: Node.Id): Rect? {
     val index = currentGraph.nodes.indexOfFirst { it.id == id }
     if (index < 0 || index > placement.nodes.lastIndex) {
       return null

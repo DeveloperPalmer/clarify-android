@@ -1,9 +1,9 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
 import androidx.compose.ui.graphics.Color
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Node
 import ru.sla.clarify.uikit.theme.AppColors
 
 /**
@@ -48,6 +48,6 @@ internal fun Int.toBranchColor(colors: AppColors): Color {
  * @param colors палитра активной темы
  * @return цвет по идентификатору ветки; магистраль в карте есть и красится нейтральным
  */
-internal fun Graph<BasicNode>.toBranchColors(colors: AppColors): Map<Branch.Id, Color> {
+internal fun Graph<Node>.toBranchColors(colors: AppColors): Map<Branch.Id, Color> {
   return (listOf(baseline) + branches).associate { it.id to it.colorIndex.toBranchColor(colors) }
 }

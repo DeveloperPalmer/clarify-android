@@ -19,9 +19,9 @@ import androidx.compose.runtime.Immutable
  * которое ломается молча при первой же сортировке.
  *
  * **Тип узла задаёт вызывающий.** Графу от узла нужны только идентификатор и пауза — ровно то, что
- * обещает [BasicNode]; чем узел является и что внутри него нарисовано, знает та сторона, которая
- * его рисует. Держи граф сам [BasicNode] — и вызывающий получал бы свои узлы обратно приведением
- * типа на каждом обращении, то есть там, где ошибка видна позже всего.
+ * обещает [Node]; чем узел является и что внутри него нарисовано, знает та сторона, которая его
+ * рисует. Держи граф список самих [Node] вместо [N] — и вызывающий получал бы свои узлы обратно
+ * приведением типа на каждом обращении, то есть там, где ошибка видна позже всего.
  *
  * @param N узел вызывающего
  * @param nodes узлы в хронологическом порядке; порядок и есть ось X
@@ -29,33 +29,33 @@ import androidx.compose.runtime.Immutable
  * @param branches ветки, кроме магистрали, в порядке ветвления — в этом же порядке идёт жадная раскладка дорожек
  */
 @Immutable
-data class Graph<out N : BasicNode>(
+data class Graph<out N : Node>(
   val nodes: List<N>,
   val baseline: Branch,
   val branches: List<Branch>
 ) {
 
   /** Порядковый номер каждого узла: порядок — свойство графа, и считается он один раз. */
-  val nodeIndexesById: Map<BasicNode.Id, Int> = nodes
+  val nodeIndexesById: Map<Node.Id, Int> = nodes
     .withIndex()
     .associate { (index, node) -> node.id to index }
 
   /** Ветка каждого узла, в порядке [nodes]: обратная сторона [Branch.nodeIds]. */
   val branchIds: List<Branch.Id>
 
-  private val branchIdByNode: Map<BasicNode.Id, Branch.Id>
+  private val branchIdByNode: Map<Node.Id, Branch.Id>
 
   private val branchesById: Map<Branch.Id, Branch> = (listOf(baseline) + branches).associateBy { it.id }
 
   // Обратная сторона [Branch.forkedFrom] и [Branch.mergedAt]: ветка помнит свой узел, а спрашивают
   // обычно наоборот — «что случилось в этом узле». Считаются один раз, как [nodeIndexesById]: иначе
   // каждый спрашивающий строил бы их заново, а спрашивают на каждый узел графа.
-  private val branchByFork: Map<BasicNode.Id, Branch.Id> = branchIndexOf(branches) { it.forkedFrom }
+  private val branchByFork: Map<Node.Id, Branch.Id> = branchIndexOf(branches) { it.forkedFrom }
 
-  private val branchByMerge: Map<BasicNode.Id, Branch.Id> = branchIndexOf(branches) { it.mergedAt }
+  private val branchByMerge: Map<Node.Id, Branch.Id> = branchIndexOf(branches) { it.mergedAt }
 
   init {
-    val owners = HashMap<BasicNode.Id, Branch.Id>(nodes.size)
+    val owners = HashMap<Node.Id, Branch.Id>(nodes.size)
     branchesById.values.forEach { branch ->
       branch.nodeIds.forEach { nodeId ->
         require(nodeIndexesById.containsKey(nodeId)) {
@@ -84,7 +84,7 @@ data class Graph<out N : BasicNode>(
    * @return его ветка; для узла не из этого графа — ошибка, потому что чужой узел здесь означает
    *   рассинхронизацию наборов, а не отсутствующее значение
    */
-  fun branchOf(nodeId: BasicNode.Id): Branch {
+  fun branchOf(nodeId: Node.Id): Branch {
     return branchesById.getValue(branchIdByNode.getValue(nodeId))
   }
 
@@ -101,7 +101,7 @@ data class Graph<out N : BasicNode>(
    * @param nodeId узел графа
    * @return ветка, чья развилка стоит на этом узле; `null` — обычный узел
    */
-  fun branchForkedAt(nodeId: BasicNode.Id): Branch.Id? {
+  fun branchForkedAt(nodeId: Node.Id): Branch.Id? {
     return branchByFork[nodeId]
   }
 
@@ -113,7 +113,7 @@ data class Graph<out N : BasicNode>(
    * @param nodeId узел графа
    * @return ветка, чьё слияние стоит на этом узле; `null` — обычный узел
    */
-  fun branchMergedAt(nodeId: BasicNode.Id): Branch.Id? {
+  fun branchMergedAt(nodeId: Node.Id): Branch.Id? {
     return branchByMerge[nodeId]
   }
 
@@ -152,9 +152,9 @@ data class Graph<out N : BasicNode>(
  */
 private fun branchIndexOf(
   branches: List<Branch>,
-  nodeOf: (Branch) -> BasicNode.Id?
-): Map<BasicNode.Id, Branch.Id> {
-  val index = HashMap<BasicNode.Id, Branch.Id>()
+  nodeOf: (Branch) -> Node.Id?
+): Map<Node.Id, Branch.Id> {
+  val index = HashMap<Node.Id, Branch.Id>()
   branches.forEach { branch ->
     nodeOf(branch)?.let { index.putIfAbsent(it, branch.id) }
   }

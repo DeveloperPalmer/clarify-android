@@ -6,11 +6,11 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Edge
 import ru.sla.atlas.entity.EdgeRole
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.Vertical
 import ru.sla.atlas.entity.mockBranch
 import ru.sla.atlas.entity.mockBranchColors
@@ -360,7 +360,7 @@ private val SIZE = IntSize(width = 200, height = 72)
 
 @Suppress("LongParameterList")
 private fun mockEdgesOf(
-  nodes: List<BasicNode>,
+  nodes: List<Node>,
   positions: List<IntOffset>,
   sizes: List<IntSize>,
   laneYs: List<Float> = List(nodes.size) { 0f },
@@ -373,7 +373,7 @@ private fun mockEdgesOf(
     // Всё, что ветки не разобрали, стоит на магистрали — как и в настоящем графе.
     baseline = mockBranch(
       id = "baseline",
-      nodes = nodes.map { it.id.value }.filterNot { owned.contains(BasicNode.Id(it)) },
+      nodes = nodes.map { it.id.value }.filterNot { owned.contains(Node.Id(it)) },
       colorIndex = 0
     ),
     branches = branches

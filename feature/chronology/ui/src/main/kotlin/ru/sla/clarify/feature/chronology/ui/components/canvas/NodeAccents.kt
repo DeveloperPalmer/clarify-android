@@ -2,7 +2,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
-import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 
 /**
  * Ветка, за которую говорит узел беседы: своя у плашки, чужая у точки ветвления и точки слияния.
@@ -15,15 +15,15 @@ import ru.sla.clarify.feature.chronology.ui.entity.Node
  * акцент точке задаёт первая из них, а остальные получают свои собственные точки ветвления — по
  * одной на ветку.
  *
- * @param node узел графа
+ * @param graphNode узел графа
  * @param own собственная ветка узла: ответ по умолчанию
  * @return ветка, чьи цвет и направление узел показывает
  */
-internal fun Graph<Node>.accentOwnerOf(node: Node, own: Branch.Id): Branch.Id {
-  return when (node) {
-    is Node.Fork -> branchForkedAt(node.id) ?: own
-    is Node.Merge -> branchMergedAt(node.id) ?: own
-    is Node.Episode,
-    is Node.Front -> own
+internal fun Graph<GraphNode>.accentOwnerOf(graphNode: GraphNode, own: Branch.Id): Branch.Id {
+  return when (graphNode) {
+    is GraphNode.Fork -> branchForkedAt(graphNode.id) ?: own
+    is GraphNode.Merge -> branchMergedAt(graphNode.id) ?: own
+    is GraphNode.Episode,
+    is GraphNode.Front -> own
   }
 }

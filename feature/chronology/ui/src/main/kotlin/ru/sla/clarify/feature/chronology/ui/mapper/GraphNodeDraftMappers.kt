@@ -1,8 +1,8 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
 import ru.sla.atlas.entity.NodeDraft
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeDraft
-import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Черновик узла беседы — в черновик, из которого собирается граф.
@@ -13,12 +13,12 @@ import ru.sla.clarify.feature.chronology.ui.entity.Node
  *
  * @return черновик с разрешением спора внутри одного момента
  */
-internal fun GraphNodeDraft.toNodeDraft(): NodeDraft<Node> {
+internal fun GraphNodeDraft.toNodeDraft(): NodeDraft<GraphNode> {
   return NodeDraft(
-    node = node,
+    node = graphNode,
     branchId = branchId,
     at = at,
-    order = node.toSortOrder()
+    order = graphNode.toSortOrder()
   )
 }
 
@@ -33,11 +33,11 @@ internal fun GraphNodeDraft.toNodeDraft(): NodeDraft<Node> {
  *
  * @return ключ сортировки внутри одного момента
  */
-private fun Node.toSortOrder(): Int {
+private fun GraphNode.toSortOrder(): Int {
   return when (this) {
-    is Node.Episode -> 0
-    is Node.Fork -> 1
-    is Node.Merge -> 2
-    is Node.Front -> 3
+    is GraphNode.Episode -> 0
+    is GraphNode.Fork -> 1
+    is GraphNode.Merge -> 2
+    is GraphNode.Front -> 3
   }
 }

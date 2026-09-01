@@ -23,7 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconResId
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.preview.PreviewColumn
@@ -56,7 +56,7 @@ internal fun MessageNode(
   isMine: Boolean,
   contentDescription: String,
   modifier: Modifier = Modifier,
-  state: Node.Episode.Status = Node.Episode.Status.Normal,
+  state: GraphNode.Episode.Status = GraphNode.Episode.Status.Normal,
   onClick: (() -> Unit)? = null
 ) {
   val background = if (isMine) {
@@ -72,7 +72,7 @@ internal fun MessageNode(
         this.contentDescription = contentDescription
         if (onClick != null) role = Role.Button
       }
-      .graphicsLayer { alpha = if (state == Node.Episode.Status.Sending) 0.6f else 1f }
+      .graphicsLayer { alpha = if (state == GraphNode.Episode.Status.Sending) 0.6f else 1f }
       .widthIn(max = 180.dp)
       .defaultMinSize(minHeight = 28.dp)
       // `surface`, а не `background`: тень при нулевой высоте ничего не рисует, зато клип и клик
@@ -143,7 +143,7 @@ private fun MessageNodePreviewDark(
 private data class MessageNodePreview(
   val text: String,
   val isMine: Boolean,
-  val state: Node.Episode.Status = Node.Episode.Status.Normal
+  val state: GraphNode.Episode.Status = GraphNode.Episode.Status.Normal
 )
 
 /**
@@ -166,17 +166,17 @@ private class MessageNodePreviewProvider : PreviewParameterProvider<MessageNodeP
     MessageNodePreview(
       text = "Выношу в ветку",
       isMine = true,
-      state = Node.Episode.Status.Edited
+      state = GraphNode.Episode.Status.Edited
     ),
     MessageNodePreview(
       text = "Готово, ветка тут",
       isMine = false,
-      state = Node.Episode.Status.Quoted
+      state = GraphNode.Episode.Status.Quoted
     ),
     MessageNodePreview(
       text = "Фиксируем 14-е",
       isMine = true,
-      state = Node.Episode.Status.Sending
+      state = GraphNode.Episode.Status.Sending
     ),
     MessageNodePreview(
       text = "Очень длинный текст сообщения, который обязан обрезаться эллипсисом",

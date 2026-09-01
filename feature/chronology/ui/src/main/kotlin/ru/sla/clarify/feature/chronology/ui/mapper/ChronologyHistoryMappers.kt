@@ -1,7 +1,7 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
 import ru.sla.atlas.assembly.graphOf
-import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.core.domain.date.DATE_TIME_FORMATTER_DAY_MONTH_TIME
 import ru.sla.clarify.entity.chat.Branch
@@ -9,9 +9,9 @@ import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
 import ru.sla.clarify.feature.chronology.ui.entity.ChronologyGraph
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeDraft
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodePreview
-import ru.sla.clarify.feature.chronology.ui.entity.Node
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
@@ -51,7 +51,7 @@ internal fun ChronologyHistory.toChronologyGraph(): ChronologyGraph {
   // правый узел магистрали, а пустота между последним сообщением и текущей минутой — это не история.
   baseline.commits.lastOrNull()?.let { last ->
     drafts += GraphNodeDraft(
-      node = Node.Front(id = BasicNode.Id("front"), gap = UNSET_GAP),
+      graphNode = GraphNode.Front(id = Node.Id("front"), gap = UNSET_GAP),
       branchId = baselineBranchId,
       at = last.timestamp
     )
@@ -87,8 +87,8 @@ internal fun ChronologyHistory.toChronologyGraph(): ChronologyGraph {
         // Шесть оттенков идентичности — `graphLane1`…`graphLane6`, см. `Int.toBranchColor`.
         paletteSize = 6
       ),
-      forkedFrom = fork?.node?.id,
-      mergedAt = merge?.node?.id,
+      forkedFrom = fork?.graphNode?.id,
+      mergedAt = merge?.graphNode?.id,
       status = status
     )
   }
@@ -113,7 +113,7 @@ internal fun ChronologyHistory.toChronologyGraph(): ChronologyGraph {
     branchNames = branches.associate { GraphBranch.Id(it.branch.id.value) to it.branch.name },
     // Карточка адресуется идентификатором узла, а он сборку переживает: пауза меняется, тождество
     // нет. Поэтому карту можно собрать по черновикам, не дожидаясь готовых узлов.
-    previewById = drafts.mapNotNull { draft -> draft.preview?.let { draft.node.id to it } }.toMap()
+    previewById = drafts.mapNotNull { draft -> draft.preview?.let { draft.graphNode.id to it } }.toMap()
   )
 }
 
@@ -141,11 +141,11 @@ private fun episodeDraftsOf(
     val last = cluster.last()
     val author = membersById[last.senderId.value]
     GraphNodeDraft(
-      node = Node.Episode(
+      graphNode = GraphNode.Episode(
         // Идентификатор первого сообщения кластера, а не порядковый номер: номер съезжает, стоит
         // приехать сообщению в середину истории, и вместе с ним съезжает выбранный узел под
         // открытой карточкой.
-        id = BasicNode.Id(first.id.value),
+        id = Node.Id(first.id.value),
         gap = UNSET_GAP,
         time = first.timestamp.format(DATE_TIME_FORMATTER_DAY_MONTH_TIME),
         count = cluster.size,
@@ -197,7 +197,7 @@ private fun forkDraftOf(
     ?: branch.createdAt.takeIf { it > 0 }?.toBranchTime()
     ?: return null
   return GraphNodeDraft(
-    node = Node.Fork(id = BasicNode.Id("fork-${branch.id.value}"), gap = UNSET_GAP),
+    graphNode = GraphNode.Fork(id = Node.Id("fork-${branch.id.value}"), gap = UNSET_GAP),
     branchId = baselineBranchId,
     at = at
   )
@@ -224,7 +224,7 @@ private fun mergeDraftOf(
   }
   val at = branch.mergeRequest?.mergedAt?.takeIf { it > 0 }?.toBranchTime() ?: return null
   return GraphNodeDraft(
-    node = Node.Merge(id = BasicNode.Id("merge-${branch.id.value}"), gap = UNSET_GAP),
+    graphNode = GraphNode.Merge(id = Node.Id("merge-${branch.id.value}"), gap = UNSET_GAP),
     branchId = baselineBranchId,
     at = at
   )
@@ -240,12 +240,12 @@ private fun mergeDraftOf(
  * @param gap пауза, посчитанная по соседу слева
  * @return узел, готовый попасть в граф
  */
-private fun Node.withGap(gap: TimeGap): Node {
+private fun GraphNode.withGap(gap: TimeGap): GraphNode {
   return when (this) {
-    is Node.Episode -> copy(gap = gap)
-    is Node.Fork -> copy(gap = gap)
-    is Node.Merge -> copy(gap = gap)
-    is Node.Front -> copy(gap = gap)
+    is GraphNode.Episode -> copy(gap = gap)
+    is GraphNode.Fork -> copy(gap = gap)
+    is GraphNode.Merge -> copy(gap = gap)
+    is GraphNode.Front -> copy(gap = gap)
   }
 }
 

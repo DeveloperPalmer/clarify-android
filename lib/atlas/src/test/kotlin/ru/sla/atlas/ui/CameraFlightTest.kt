@@ -17,12 +17,9 @@ import org.junit.jupiter.api.Test
 import ru.sla.atlas.camera.cameraAimedAt
 import ru.sla.atlas.camera.cameraRangeOf
 import ru.sla.atlas.camera.flightScaleOf
-import ru.sla.atlas.entity.BasicNode
-import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.MockNode
 import ru.sla.atlas.entity.Placement
-import ru.sla.atlas.entity.TimeGap
 import ru.sla.atlas.entity.mockBranch
 import ru.sla.atlas.entity.mockNode
 import ru.sla.atlas.lod.MockLevel

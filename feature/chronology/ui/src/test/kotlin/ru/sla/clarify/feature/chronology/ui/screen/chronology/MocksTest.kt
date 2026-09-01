@@ -19,7 +19,7 @@ import ru.sla.clarify.feature.chronology.ui.components.canvas.ChronologyLevels
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockBranchColors
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockLanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
 import ru.sla.clarify.feature.chronology.ui.mapper.toStepWidth
 
@@ -118,7 +118,7 @@ class MocksTest {
   @Test
   fun `the set keeps a branch node standing later than the front`() {
     val graph = mockGraph().layout
-    val frontIndex = graph.nodes.indexOfFirst { it is Node.Front }
+    val frontIndex = graph.nodes.indexOfFirst { it is GraphNode.Front }
 
     assertTrue(
       graph.nodes.drop(frontIndex + 1).any { graph.branchOf(it.id).id != Branch.Id("baseline") },
@@ -129,7 +129,7 @@ class MocksTest {
 
   @Test
   fun `every fork and merge of a branch is a node of the set`() {
-    val ids = mockGraph().graphNodes.map { it.id }.toSet()
+    val ids = mockGraph().graphGraphNodes.map { it.id }.toSet()
     val anchors = mockGraph().branches.flatMap { listOfNotNull(it.forkedFrom, it.mergedAt) }
 
     assertTrue(
@@ -230,10 +230,10 @@ class MocksTest {
 
   @Test
   fun `every node role and every time gap is present`() {
-    val nodes = mockGraph().graphNodes
+    val nodes = mockGraph().graphGraphNodes
 
     assertEquals(
-      setOf(Node.Episode::class, Node.Fork::class, Node.Merge::class, Node.Front::class),
+      setOf(GraphNode.Episode::class, GraphNode.Fork::class, GraphNode.Merge::class, GraphNode.Front::class),
       nodes.map { it::class }.toSet(),
       "род узла решает, что рисовать, и каждый из четырёх обязан быть в наборе"
     )
@@ -247,7 +247,7 @@ class MocksTest {
 
   @Test
   fun `episode content covers what the card draws differently`() {
-    val episodes = mockGraph().graphNodes.filterIsInstance<Node.Episode>()
+    val episodes = mockGraph().graphGraphNodes.filterIsInstance<GraphNode.Episode>()
 
     assertTrue(episodes.any { it.dim }, "эпизод внутри слитой ветки рисуется приглушённым")
     assertTrue(
@@ -277,7 +277,7 @@ class MocksTest {
   fun `the empty graph lays out nothing`() {
     val graph = mockEmptyGraph()
 
-    assertTrue(graph.graphNodes.isEmpty(), "пустая переписка — это переписка без истории, §13")
+    assertTrue(graph.graphGraphNodes.isEmpty(), "пустая переписка — это переписка без истории, §13")
     assertTrue(
       edgesOf(
         graph = graph.layout,
@@ -296,7 +296,7 @@ class MocksTest {
   fun `the single episode graph stays on the baseline`() {
     val graph = mockSingleEpisodeGraph()
 
-    assertEquals(1, graph.graphNodes.size, "одно сообщение и есть весь граф — §15 п. 1")
+    assertEquals(1, graph.graphGraphNodes.size, "одно сообщение и есть весь граф — §15 п. 1")
     assertEquals(
       listOf(0),
       graph.layout.mockLanes().lanes,
@@ -316,7 +316,7 @@ class MocksTest {
         "высоте, а не оставить место под пустые ряды"
     )
     assertTrue(
-      graph.graphNodes.any { it is Node.Front },
+      graph.graphGraphNodes.any { it is GraphNode.Front },
       "фронт рисуется на любом уровне и в любом состоянии — он часть скелета смысла, §5"
     )
   }
@@ -345,7 +345,7 @@ class MocksTest {
   @Test
   fun `every episode of the set has a card to open`() {
     val graph = mockGraph()
-    val episodes = graph.graphNodes.filterIsInstance<Node.Episode>()
+    val episodes = graph.graphGraphNodes.filterIsInstance<GraphNode.Episode>()
 
     assertEquals(
       episodes.map { it.id }.toSet(),
@@ -378,7 +378,7 @@ class MocksTest {
   @Test
   fun `the demo graph still fits the overview at its own floor`() {
     val graph = mockGraph()
-    val nodes = graph.graphNodes
+    val nodes = graph.graphGraphNodes
     val lanes = graph.layout.mockLanes().lanes
     val geometry = LaneGeometry(topLaneOf(lanes), GraphLevel.Overview.toLaneStep())
     val placement = placementOf(
@@ -403,11 +403,11 @@ class MocksTest {
   }
 
   /** Размер узла на обзоре: плашка вырождается в глиф, точки на линии остаются собой. */
-  private fun Node.toOverviewSize(): IntSize {
+  private fun GraphNode.toOverviewSize(): IntSize {
     return when (this) {
-      is Node.Episode -> IntSize(width = 14, height = 14)
-      is Node.Fork, is Node.Merge -> IntSize(width = 24, height = 24)
-      is Node.Front -> IntSize(width = 12, height = 12)
+      is GraphNode.Episode -> IntSize(width = 14, height = 14)
+      is GraphNode.Fork, is GraphNode.Merge -> IntSize(width = 24, height = 24)
+      is GraphNode.Front -> IntSize(width = 12, height = 12)
     }
   }
 
@@ -425,7 +425,7 @@ class MocksTest {
    */
   private fun demoEdges(): List<Edge> {
     val graph = mockGraph()
-    val nodes = graph.graphNodes
+    val nodes = graph.graphGraphNodes
     val lanes = graph.layout.mockLanes().lanes
     return edgesOf(
       graph = graph.layout,

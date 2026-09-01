@@ -4,11 +4,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Edge
 import ru.sla.atlas.entity.EdgeRole
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.Vertical
 
 /**
@@ -35,7 +35,7 @@ import ru.sla.atlas.entity.Vertical
  */
 @Suppress("LongParameterList")
 fun edgesOf(
-  graph: Graph<BasicNode>,
+  graph: Graph<Node>,
   branchColors: Map<Branch.Id, Color>,
   laneYs: List<Float>,
   positions: List<IntOffset>,
@@ -145,7 +145,7 @@ fun hopsOf(
  * высоты центры расходились на пиксель.
  */
 private fun horizontalEdgesOf(
-  graph: Graph<BasicNode>,
+  graph: Graph<Node>,
   branchColors: Map<Branch.Id, Color>,
   laneYs: List<Float>,
   positions: List<IntOffset>,
@@ -192,7 +192,7 @@ private fun horizontalEdgesOf(
  */
 @Suppress("LongParameterList")
 private fun forkAndMergeEdgesOf(
-  graph: Graph<BasicNode>,
+  graph: Graph<Node>,
   branchColors: Map<Branch.Id, Color>,
   laneYs: List<Float>,
   positions: List<IntOffset>,
@@ -248,7 +248,7 @@ private fun forkAndMergeEdgesOf(
  * Длину растворения задаёт рисование: раскладке довольно того, где хвост начинается и где кончается.
  */
 private fun tailEdgesOf(
-  graph: Graph<BasicNode>,
+  graph: Graph<Node>,
   branchColors: Map<Branch.Id, Color>,
   laneYs: List<Float>,
   positions: List<IntOffset>,

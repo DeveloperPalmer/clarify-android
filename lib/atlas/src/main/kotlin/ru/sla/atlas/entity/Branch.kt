@@ -27,9 +27,9 @@ import androidx.compose.runtime.Immutable
 @Immutable
 data class Branch(
   val id: Id,
-  val nodeIds: List<BasicNode.Id>,
-  val forkedFrom: BasicNode.Id?,
-  val mergedAt: BasicNode.Id?,
+  val nodeIds: List<Node.Id>,
+  val forkedFrom: Node.Id?,
+  val mergedAt: Node.Id?,
   val status: Status,
   val colorIndex: Int
 ) {

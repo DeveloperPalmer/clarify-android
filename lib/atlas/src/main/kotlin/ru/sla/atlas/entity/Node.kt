@@ -10,7 +10,7 @@ import androidx.compose.runtime.Immutable
  * знает вызывающий: свой тип узла он подставляет в [Graph] сам.
  */
 @Immutable
-interface BasicNode {
+interface Node {
 
   /** Идентификатор узла. */
   val id: Id
@@ -21,7 +21,7 @@ interface BasicNode {
   /**
    * Идентификатор узла.
    *
-   * Объявлен у базового узла, а не у наследника: ссылаются по нему [Branch] и [Graph] — та половина
+   * Объявлен здесь, а не у наследника: ссылаются по нему [Branch] и [Graph] — та половина
    * графа, которая о наследнике ничего не знает.
    */
   @JvmInline

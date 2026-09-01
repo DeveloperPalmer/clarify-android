@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 
 /**
  * Связная подпись узла для скринридера — §14 брифа.
@@ -21,10 +21,10 @@ import ru.sla.clarify.feature.chronology.ui.entity.Node
  * @return готовая к озвучиванию строка
  */
 @Composable
-internal fun Node.toDescription(branchName: String?): String {
+internal fun GraphNode.toDescription(branchName: String?): String {
   val branch = branchName?.let { stringResource(R.string.chronology_node_branch, it) }
   return when (this) {
-    is Node.Episode -> nodeDescriptionOf(
+    is GraphNode.Episode -> nodeDescriptionOf(
       listOf(
         stringResource(R.string.chronology_node_episode),
         pluralStringResource(R.plurals.chronology_episode_messages_count, count, count),
@@ -35,14 +35,14 @@ internal fun Node.toDescription(branchName: String?): String {
         }
       )
     )
-    is Node.Fork -> nodeDescriptionOf(
+    is GraphNode.Fork -> nodeDescriptionOf(
       listOf(stringResource(R.string.chronology_node_fork), branch)
     )
-    is Node.Merge -> nodeDescriptionOf(
+    is GraphNode.Merge -> nodeDescriptionOf(
       listOf(stringResource(R.string.chronology_node_merge), branch)
     )
     // Фронт — единственный узел, у которого нет ни данных, ни ветки: он и есть «сейчас».
-    is Node.Front -> stringResource(R.string.chronology_front_caption)
+    is GraphNode.Front -> stringResource(R.string.chronology_front_caption)
   }
 }
 

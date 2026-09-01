@@ -1,9 +1,9 @@
 package ru.sla.clarify.feature.chronology.ui.entity
 
 import androidx.compose.runtime.Immutable
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Node
 
 /**
  * Граф беседы целиком: раскладка, имена веток и содержимое превью-карточек.
@@ -12,7 +12,7 @@ import ru.sla.atlas.entity.Graph
  * узлов, и карта, разъехавшаяся с графом хотя бы на кадр, дала бы карточку с чужим текстом —
  * **молча**. Что порознь нельзя подменить сами узлы и ветки, стережёт уже [Graph].
  *
- * @param layout раскладка: порядок узлов и состав веток. Узел здесь свой, [Node], а не базовый:
+ * @param layout раскладка: порядок узлов и состав веток. Узел здесь свой, [GraphNode], а не базовый:
  *   всё, что плашка рисует, лежит внутри него
  * @param branchNames имя каждой ветки. Отдельной картой, а не полем [Branch]: та — сущность
  *   раскладки, и имя в ней было бы содержимым, попавшим не в свой слой. Магистрали в карте нет, и
@@ -22,7 +22,7 @@ import ru.sla.atlas.entity.Graph
  */
 @Immutable
 data class ChronologyGraph(
-  val layout: Graph<Node> = Graph.Empty,
+  val layout: Graph<GraphNode> = Graph.Empty,
   val branchNames: Map<Branch.Id, String> = emptyMap(),
-  val previewById: Map<BasicNode.Id, NodePreview> = emptyMap()
+  val previewById: Map<Node.Id, NodePreview> = emptyMap()
 )

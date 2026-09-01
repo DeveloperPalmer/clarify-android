@@ -1,8 +1,8 @@
 package ru.sla.atlas.assembly
 
-import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.NodeDraft
 import ru.sla.atlas.entity.TimeGap
 import java.time.Duration
@@ -36,7 +36,7 @@ import java.time.Duration
  *   по нему ветки и находят свои узлы
  * @return граф, прошедший проверку состава
  */
-fun <N : BasicNode> graphOf(
+fun <N : Node> graphOf(
   drafts: List<NodeDraft<N>>,
   baseline: Branch,
   branches: List<Branch>,

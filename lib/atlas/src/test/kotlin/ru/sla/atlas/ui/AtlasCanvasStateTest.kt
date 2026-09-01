@@ -11,12 +11,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.atlas.camera.cameraRangeOf
 import ru.sla.atlas.camera.cameraRestOf
-import ru.sla.atlas.entity.BasicNode
-import ru.sla.atlas.entity.Branch
-import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.MockNode
+import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.Placement
-import ru.sla.atlas.entity.TimeGap
 import ru.sla.atlas.layout.nearestCentreIndexOf
 import ru.sla.atlas.lod.MockLevel
 import ru.sla.atlas.lod.MockLevels
@@ -333,7 +330,7 @@ class AtlasCanvasStateTest {
     state.fill(count = 9, level = state.level.value)
 
     assertEquals(MockLevel.Coarse, state.level.value, "щипок ниже полосы уводит на обзорный уровень")
-    val landed = state.nodeRectOf(BasicNode.Id("n$anchor"))
+    val landed = state.nodeRectOf(Node.Id("n$anchor"))
     assertNotNull(landed, "якорный узел обязан найтись и на новом уровне: список узлов уровень не меняет")
     assertEquals(
       focus.x,
@@ -468,7 +465,7 @@ class AtlasCanvasStateTest {
     val state = mockCanvasState()
     val placement = state.fill(count = 3)
 
-    val rect = state.nodeRectOf(BasicNode.Id("n1"))
+    val rect = state.nodeRectOf(Node.Id("n1"))
 
     assertEquals(
       placement.nodes[1].x + state.offset.value.x,
@@ -482,13 +479,13 @@ class AtlasCanvasStateTest {
   fun `a node rect follows the camera`() {
     val state = mockCanvasState()
     state.fill(count = 3)
-    val resting = state.nodeRectOf(BasicNode.Id("n1"))
+    val resting = state.nodeRectOf(Node.Id("n1"))
 
     state.pan(Offset(x = -100f, y = 0f))
 
     assertEquals(
       resting!!.left - 100f,
-      state.nodeRectOf(BasicNode.Id("n1"))?.left,
+      state.nodeRectOf(Node.Id("n1"))?.left,
       "то, что растёт из узла, обязано начаться там, где он лежит сейчас, а не в его покое"
     )
   }
@@ -499,7 +496,7 @@ class AtlasCanvasStateTest {
     state.fill(count = 3)
 
     assertNull(
-      state.nodeRectOf(BasicNode.Id("no-such-node")),
+      state.nodeRectOf(Node.Id("no-such-node")),
       "узел, которого в раскладке ещё нет, обязан не находиться, а не индексироваться за конец"
     )
   }

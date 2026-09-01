@@ -45,8 +45,8 @@ import ru.sla.clarify.feature.chronology.ui.components.node.MergeNode
 import ru.sla.clarify.feature.chronology.ui.components.node.MergedRequestNode
 import ru.sla.clarify.feature.chronology.ui.components.preview.NodePreviewMorph
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeSelection
-import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toDebugLabel
 import ru.sla.clarify.feature.chronology.ui.mapper.toDescription
 import ru.sla.clarify.feature.chronology.ui.mapper.toNodeDescription
@@ -87,7 +87,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
       val minimapLabel = remember(canvasState) {
         // Время есть только у эпизода: над точкой на линии пузырь остаётся без подписи, а не берёт
         // её у соседа.
-        derivedStateOf { (canvasState.centralNode.value as? Node.Episode)?.time }
+        derivedStateOf { (canvasState.centralNode.value as? GraphNode.Episode)?.time }
       }
       // Перелёт доигрывает после того, как кнопка могла уйти с экрана вместе с панелью, поэтому
       // scope берётся у экрана, а не у неё. Кривая — из темы: 400 мс, затухание без разгона.
@@ -117,7 +117,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
             // Род узла решает, что рисовать, и решает здесь, а не в полотне: полотну безразлично,
             // плашка перед ним или круг, — оно ставит по одному элементу на узел.
             when (graphNode) {
-              is Node.Episode -> when (level) {
+              is GraphNode.Episode -> when (level) {
                 // На обзоре от плашки остаётся глиф: читать на этом уровне нечего, по глифам
                 // прослеживают форму разговора. Приглушение слитой ветки при этом остаётся —
                 // гаснет узел целиком, вместе с гало, ровно как гаснет плашка.
@@ -169,14 +169,14 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
               // Точка ветвления показывает **уходящую** ветку, поэтому цвет берётся из акцента, а не
               // из самого узла: сам он стоит на магистрали. Направления узел не показывает — его
               // показывает ребро ухода, а время на графе всегда идёт слева направо.
-              is Node.Fork -> ForkNode(
+              is GraphNode.Fork -> ForkNode(
                 laneColor = accent.color,
                 contentDescription = description
               )
               // Чип «Закрыта» висит с той стороны магистрали, откуда ветка **не** возвращается.
               // Иначе вертикаль возврата прошла бы сквозь него: она стоит на том же X, что и точка
               // слияния, а чип в накопительную ось не входит и перекрыть её не может ничем.
-              is Node.Merge -> Box(contentAlignment = Alignment.Center) {
+              is GraphNode.Merge -> Box(contentAlignment = Alignment.Center) {
                 // Какая ветка вернулась в магистраль в этом узле. Точка слияния стоит **на
                 // магистрали**, то есть её собственный `branchId` — корневой, и спросить
                 // сливающуюся ветку у самого узла нельзя: связь идёт с другой стороны, от
@@ -224,7 +224,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                   )
                 }
               }
-              is Node.Front -> FrontNode(
+              is GraphNode.Front -> FrontNode(
                 contentDescription = description,
                 hasCaption = level == GraphLevel.Episodes
               )

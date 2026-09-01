@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.sla.atlas.entity.BasicNode
+import ru.sla.atlas.entity.Node
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
@@ -15,7 +15,7 @@ import ru.sla.clarify.feature.chronology.domain.entity.BaselineHistory
 import ru.sla.clarify.feature.chronology.domain.entity.BranchHistory
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
 import ru.sla.clarify.feature.chronology.ui.entity.ChronologyGraph
-import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import java.time.LocalDateTime
 import java.time.ZoneId
 import ru.sla.atlas.entity.Branch as GraphBranch
@@ -129,9 +129,9 @@ class ChronologyHistoryMappersTest {
 
     val branch = graph.layout.branches.single()
     assertEquals(GraphBranch.Status.Merged, branch.status)
-    assertEquals(BasicNode.Id("merge-b"), branch.mergedAt)
+    assertEquals(Node.Id("merge-b"), branch.mergedAt)
     assertTrue(
-      graph.layout.nodes.single { it.id == BasicNode.Id("merge-b") } is Node.Merge,
+      graph.layout.nodes.single { it.id == Node.Id("merge-b") } is GraphNode.Merge,
       "точка слияния обязана быть настоящим узлом списка, иначе её вертикаль пройдёт по чужой плашке"
     )
     assertTrue(
@@ -164,7 +164,7 @@ class ChronologyHistoryMappersTest {
       graph.layout.branches.single().mergedAt,
       "до финализации точки на магистрали нет вовсе: ветка заморожена, но не вернулась"
     )
-    assertTrue(graph.layout.nodes.none { it is Node.Merge })
+    assertTrue(graph.layout.nodes.none { it is GraphNode.Merge })
   }
 
   @Test
@@ -202,7 +202,7 @@ class ChronologyHistoryMappersTest {
     ).toChronologyGraph()
 
     assertEquals(
-      BasicNode.Id("fork-b"),
+      Node.Id("fork-b"),
       graph.layout.branches.single().forkedFrom,
       "лента страничится с конца, и сообщение-развилка бывает ещё не догружено — ветка от этого " +
         "не перестаёт существовать"
@@ -223,7 +223,7 @@ class ChronologyHistoryMappersTest {
 
     assertNull(graph.layout.branches.single().forkedFrom)
     assertTrue(
-      graph.layout.nodes.none { it is Node.Fork },
+      graph.layout.nodes.none { it is GraphNode.Fork },
       "узел в нулевой секунде эпохи утянул бы начало графа в 1970 год и сжал бы историю в точку"
     )
   }
@@ -254,7 +254,7 @@ class ChronologyHistoryMappersTest {
     ).toChronologyGraph()
 
     assertEquals(
-      listOf(Node.Episode::class, Node.Front::class),
+      listOf(GraphNode.Episode::class, GraphNode.Front::class),
       graph.layout.nodes.map { it::class },
       "фронт стоит на времени последнего сообщения, и на одиночном эпизоде обе величины совпадают"
     )
@@ -304,14 +304,14 @@ class ChronologyHistoryMappersTest {
     assertEquals("и правда последнее", episode.snippet)
     assertEquals(0.5f, episode.myShare)
 
-    val preview = graph.previewById.getValue(BasicNode.Id("a"))
+    val preview = graph.previewById.getValue(Node.Id("a"))
     assertEquals("Анна", preview.authorName, "карточка разворачивает последнее сообщение кластера")
     assertEquals("и правда последнее", preview.text)
   }
 }
 
-private fun ChronologyGraph.episodes(): List<Node.Episode> {
-  return layout.nodes.filterIsInstance<Node.Episode>()
+private fun ChronologyGraph.episodes(): List<GraphNode.Episode> {
+  return layout.nodes.filterIsInstance<GraphNode.Episode>()
 }
 
 private fun ChronologyGraph.episodeCount(): Int {
@@ -324,7 +324,7 @@ private fun ChronologyGraph.episodeCount(): Int {
  * @param id идентификатор узла
  * @return узел-эпизод; его отсутствие — ошибка теста, а не проверяемое значение
  */
-private fun ChronologyGraph.episode(id: String): Node.Episode {
+private fun ChronologyGraph.episode(id: String): GraphNode.Episode {
   return episodes().single { it.id.value == id }
 }
 
