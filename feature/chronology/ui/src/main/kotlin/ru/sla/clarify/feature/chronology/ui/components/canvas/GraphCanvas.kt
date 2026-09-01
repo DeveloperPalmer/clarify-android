@@ -63,6 +63,7 @@ import ru.sla.atlas.layout.lanesOf
 import ru.sla.atlas.lod.counterScaleOf
 import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.atlas.ui.CanvasBackdrop
+import ru.sla.atlas.ui.addOrthogonalRoute
 import ru.sla.atlas.ui.detectCameraGestures
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
@@ -70,7 +71,6 @@ import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColors
 import ru.sla.clarify.uikit.theme.AppColors
 import ru.sla.clarify.uikit.theme.AppTheme
-import kotlin.math.abs
 
 /**
  * Полотно хронологии: фон, узлы графа и связи между ними, по которому можно панорамировать.
@@ -547,11 +547,8 @@ private fun rememberDashPhase(period: Float, isRunning: Boolean): State<Float>? 
  * `Path` приходит снаружи и чистится `rewind()`: он переиспользуется между рёбрами, иначе каждый
  * проход слоя рождал бы по нативному объекту на ребро.
  *
- * Углы скругляются вручную квадратичной Безье, а не `PathEffect.cornerPathEffect`, и это решение с
- * причиной. Эффект скругляет **все** вершины контура, включая полученные из дуги мостика, — то есть
- * портит ровно тот приём, ради которого мостик заведён; вдобавок он молча ужимает радиус до
- * половины сегмента, чего в его документации нет. Отклонение параболы от настоящей дуги при радиусе
- * 8 dp — 0.49 dp, и увидеть его нельзя.
+ * Маршрут собирает [addOrthogonalRoute]: где линия поворачивает и где горбится, знает геометрия, а
+ * здесь решается только, чем её провести.
  *
  * @param edge ребро в координатах полотна
  * @param path переиспользуемый путь
@@ -585,7 +582,7 @@ private fun DrawScope.drawGraphEdge(
     return
   }
   path.rewind()
-  path.addGraphRoute(edge, cornerRadius, hopRadius)
+  path.addOrthogonalRoute(edge, cornerRadius, hopRadius)
   val identity = edge.color
   // Кадр 1 уводит цвет в золото, кадр 7 возвращает его ветке: золото по §7 — событие, а не
   // идентичность, и линия, оставшаяся золотой, соврала бы о том, чья она.
@@ -687,81 +684,9 @@ private fun DrawScope.drawMergeWave(
       return@fastForEach
     }
     path.rewind()
-    path.addGraphRoute(edge, cornerRadius, hopRadius)
+    path.addOrthogonalRoute(edge, cornerRadius, hopRadius)
     drawPath(path = path, brush = brush, style = style)
   }
-}
-
-/**
- * Достраивает путь по точкам излома ребра: прямые, скруглённые углы и мостики.
- *
- * @param edge ребро в координатах полотна
- * @param cornerRadius радиус скругления углов
- * @param hopRadius радиус мостика
- */
-private fun Path.addGraphRoute(edge: Edge, cornerRadius: Float, hopRadius: Float) {
-  val points = edge.points
-  moveTo(points.first().x, points.first().y)
-  points.indices.drop(1).forEach { index ->
-    val target = points[index]
-    val previous = points[index - 1]
-    val isLast = index == points.lastIndex
-    // Угол срезается на радиус с обеих сторон: до угла ведёт прямая, сам угол — контрольная точка
-    // квадратичной Безье, ровно как в прототипе.
-    val corner = if (isLast) 0f else minOf(cornerRadius, distanceTo(target, points[index + 1]) / 2f)
-    val approach = shortenedTowards(previous, target, corner)
-    if (previous.y == target.y) {
-      addHorizontalWithHops(previous, approach, edge.hops, hopRadius)
-    } else {
-      lineTo(approach.x, approach.y)
-    }
-    if (!isLast) {
-      val departure = shortenedTowards(points[index + 1], target, corner)
-      quadraticTo(target.x, target.y, departure.x, departure.y)
-    }
-  }
-}
-
-/**
- * Ведёт горизонтальный участок, поднимая полукруглый мостик над каждой чужой вертикалью.
- *
- * Мостик — ровно полуокружность: хорда 12 dp при радиусе 6 равна двум радиусам, поэтому дуга
- * поднимается на 6 dp и возвращается на линию. Дуга идёт вверх независимо от направления линии —
- * так же, как в схемах метро и в git-графах, откуда приём и взят.
- */
-private fun Path.addHorizontalWithHops(
-  from: Offset,
-  to: Offset,
-  hops: List<Float>,
-  hopRadius: Float
-) {
-  val forward = to.x >= from.x
-  val inside = hops.filter { hop ->
-    if (forward) {
-      hop > from.x + hopRadius && hop < to.x - hopRadius
-    } else {
-      hop < from.x - hopRadius && hop > to.x + hopRadius
-    }
-  }
-  val ordered = if (forward) inside.sorted() else inside.sortedDescending()
-  ordered.forEach { hop ->
-    val entry = if (forward) hop - hopRadius else hop + hopRadius
-    val exit = if (forward) hop + hopRadius else hop - hopRadius
-    lineTo(entry, from.y)
-    arcTo(
-      rect = Rect(
-        left = hop - hopRadius,
-        top = from.y - hopRadius,
-        right = hop + hopRadius,
-        bottom = from.y + hopRadius
-      ),
-      startAngleDegrees = if (forward) 180f else 0f,
-      sweepAngleDegrees = if (forward) 180f else -180f,
-      forceMoveTo = false
-    )
-    lineTo(exit, from.y)
-  }
-  lineTo(to.x, to.y)
 }
 
 /**
@@ -796,17 +721,4 @@ private fun Branch.Status.toPathEffect(dash: PathEffect, runningDash: PathEffect
     Branch.Status.Ready -> runningDash ?: dash
     Branch.Status.Alive, Branch.Status.Merged -> null
   }
-}
-
-/** Точка на отрезке `from → to`, отступающая от `to` на `distance`. */
-private fun shortenedTowards(from: Offset, to: Offset, distance: Float): Offset {
-  return when {
-    from.x == to.x -> Offset(to.x, to.y + distance * if (from.y > to.y) 1f else -1f)
-    else -> Offset(to.x + distance * if (from.x > to.x) 1f else -1f, to.y)
-  }
-}
-
-/** Длина отрезка между соседними точками ортогональной ломаной. */
-private fun distanceTo(from: Offset, to: Offset): Float {
-  return abs(to.x - from.x) + abs(to.y - from.y)
 }
