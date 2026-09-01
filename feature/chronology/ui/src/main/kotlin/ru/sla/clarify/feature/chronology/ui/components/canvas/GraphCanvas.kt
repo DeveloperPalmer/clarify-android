@@ -61,6 +61,7 @@ import ru.sla.atlas.entity.Lanes
 import ru.sla.atlas.entity.NodeAccent
 import ru.sla.atlas.layout.lanesOf
 import ru.sla.atlas.lod.counterScaleOf
+import ru.sla.atlas.ui.CanvasBackdrop
 import ru.sla.atlas.ui.detectCameraGestures
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
@@ -199,9 +200,14 @@ internal fun GraphCanvas(
         )
       }
   ) {
-    GraphBackdrop(
+    CanvasBackdrop(
       modifier = Modifier.fillMaxSize(),
-      state = state
+      offset = state.backdropOffset,
+      scale = state.backdropScale,
+      // Паттерн рисуется `contentPrimary` с очень низкой альфой, а не `cardQuinary`: в тёмной теме
+      // `cardQuinary` равен `cardPrimary`, и узлы слились бы с фоном.
+      color = colors.contentPrimary.copy(alpha = 0.04f),
+      telemetry = telemetry
     )
     GraphNodesLayer(
       state = state,

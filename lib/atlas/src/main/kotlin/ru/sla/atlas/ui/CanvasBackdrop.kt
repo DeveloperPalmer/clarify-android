@@ -1,14 +1,14 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import ru.sla.clarify.uikit.theme.AppTheme
 import kotlin.math.floor
 import kotlin.math.sqrt
 
@@ -16,35 +16,39 @@ import kotlin.math.sqrt
  * Фон полотна: ромбовидный паттерн.
  *
  * Паттерн двигается и укрупняется медленнее графа — это даёт ощущение глубины и опору взгляду при
- * панорамировании. Своей камеры фон здесь не считает: она живёт в состоянии рядом с камерой графа,
- * потому что правильное смещение при зуме из камеры графа не выводится, см. `BACKDROP_PARALLAX`.
+ * панорамировании. Своей камеры фон не считает: она живёт рядом с камерой графа, потому что
+ * правильное смещение при зуме из камеры графа не выводится, см. `BACKDROP_PARALLAX`.
  *
  * Дорожки на фоне не рисуются. Дорожка — это приём раскладки, а не сведение для читающего: где
  * проходит ветка, видно по самим узлам и связям между ними, а лишняя горизонтальная сетка спорила
  * бы с графом за внимание и превращала бы карту в разлинованный лист. Технически дорожки есть,
  * визуально их нет.
  *
- * Паттерн рисуется `contentPrimary` с очень низкой альфой, а не `cardQuinary`: в тёмной теме
- * `cardQuinary` равен `cardPrimary`, и узлы слились бы с фоном.
+ * Сдвиг и масштаб читаются внутри `Canvas`, а не в композиции: иначе фон перерисовывался бы через
+ * рекомпозицию на каждом кадре панорамирования. Поэтому они и приходят как [State], а не готовыми
+ * числами.
  *
- * Камера читается внутри `Canvas`, а не в композиции: иначе фон перерисовывался бы через
- * рекомпозицию на каждом кадре панорамирования.
- *
- * @param state камера полотна
+ * @param offset сдвиг паттерна: собственная камера фона
+ * @param scale масштаб паттерна: он же отстаёт от масштаба графа
+ * @param color цвет линий, уже с нужной прозрачностью: какой оттенок не сольёт узлы с фоном, знает
+ *   тот, у кого есть палитра
+ * @param telemetry счётчики полотна: перерисовку фона считает он сам, за него это сделать некому
  * @param modifier модификатор фона
  */
 @Composable
-internal fun GraphBackdrop(
-  state: GraphCanvasState,
+fun CanvasBackdrop(
+  offset: State<Offset>,
+  scale: State<Float>,
+  color: Color,
+  telemetry: CanvasTelemetry,
   modifier: Modifier = Modifier
 ) {
-  val patternColor = AppTheme.colors.contentPrimary.copy(alpha = PATTERN_ALPHA)
   Canvas(modifier = modifier) {
-    state.telemetry.onBackdropDraw()
+    telemetry.onBackdropDraw()
     drawDiamondPattern(
-      color = patternColor,
-      offset = state.backdropOffset.value,
-      spacing = PATTERN_SPACING.toPx() * state.backdropScale.value
+      color = color,
+      offset = offset.value,
+      spacing = PATTERN_SPACING.toPx() * scale.value
     )
   }
 }
@@ -142,6 +146,5 @@ private fun phase(value: Float, step: Float): Float {
   return value - step * floor(value / step)
 }
 
-private const val PATTERN_ALPHA = 0.04f
 private val PATTERN_SPACING: Dp = 120.dp
 private val LINE_WIDTH: Dp = 1.dp

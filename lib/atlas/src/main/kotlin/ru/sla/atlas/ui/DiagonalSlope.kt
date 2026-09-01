@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.ui
 
 /**
  * Наклон семейства диагоналей ромбовидного фона.
@@ -6,7 +6,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
  * Два семейства различаются знаком в уравнении прямой, и от него же зависит, с какого края линии
  * въезжают во вьюпорт при панорамировании.
  */
-internal enum class DiagonalSlope {
+enum class DiagonalSlope {
 
   /** Вниз-вправо: прямая задаётся `x - y = c`. */
   DownRight,
