@@ -214,7 +214,7 @@ class GraphFlightTest {
     val placement = state.layout(
       level = GraphLevel.Episodes,
       graph = state.graph,
-      lanes = graphLanesOf(state.graph, state.graph.mockBranchColors()),
+      lanes = state.graph.mockLanes(),
       branchColors = state.graph.mockBranchColors(),
       viewportSize = VIEWPORT,
       nodeSizes = List(state.graph.nodes.size) { NODE_SIZE },
@@ -303,7 +303,7 @@ class GraphFlightTest {
     state.layout(
       level = GraphLevel.Episodes,
       graph = graph,
-      lanes = graphLanesOf(graph, graph.mockBranchColors()),
+      lanes = graph.mockLanes(),
       branchColors = graph.mockBranchColors(),
       viewportSize = VIEWPORT,
       nodeSizes = List(graph.nodes.size) { NODE_SIZE },

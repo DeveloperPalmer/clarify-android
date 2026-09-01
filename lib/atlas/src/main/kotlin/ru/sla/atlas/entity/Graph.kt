@@ -47,6 +47,13 @@ data class Graph<out N : BasicNode>(
 
   private val branchesById: Map<Branch.Id, Branch> = (listOf(baseline) + branches).associateBy { it.id }
 
+  // Обратная сторона [Branch.forkedFrom] и [Branch.mergedAt]: ветка помнит свой узел, а спрашивают
+  // обычно наоборот — «что случилось в этом узле». Считаются один раз, как [nodeIndexesById]: иначе
+  // каждый спрашивающий строил бы их заново, а спрашивают на каждый узел графа.
+  private val branchByFork: Map<BasicNode.Id, Branch.Id> = branchIndexOf(branches) { it.forkedFrom }
+
+  private val branchByMerge: Map<BasicNode.Id, Branch.Id> = branchIndexOf(branches) { it.mergedAt }
+
   init {
     val owners = HashMap<BasicNode.Id, Branch.Id>(nodes.size)
     branchesById.values.forEach { branch ->
@@ -81,6 +88,35 @@ data class Graph<out N : BasicNode>(
     return branchesById.getValue(branchIdByNode.getValue(nodeId))
   }
 
+  /**
+   * Ветка, ушедшая от этого узла.
+   *
+   * От одного узла ветка уходит не обязательно одна, а ответ здесь один: отвечает первая по порядку
+   * ветвления. Остальные не теряются — у каждой ветки развилка своя, и спрашивают о ней по её
+   * собственному [Branch.forkedFrom].
+   *
+   * Отдаётся тождество, а не ветка, в отличие от [branchOf]: по этому ответу ищут дорожку и цвет,
+   * то есть спрашивают именно «чья», а не «какая».
+   *
+   * @param nodeId узел графа
+   * @return ветка, чья развилка стоит на этом узле; `null` — обычный узел
+   */
+  fun branchForkedAt(nodeId: BasicNode.Id): Branch.Id? {
+    return branchByFork[nodeId]
+  }
+
+  /**
+   * Ветка, вернувшаяся в родителя в этом узле.
+   *
+   * Парная к [branchForkedAt] и с тем же правилом на совпадение.
+   *
+   * @param nodeId узел графа
+   * @return ветка, чьё слияние стоит на этом узле; `null` — обычный узел
+   */
+  fun branchMergedAt(nodeId: BasicNode.Id): Branch.Id? {
+    return branchByMerge[nodeId]
+  }
+
   companion object {
 
     /**
@@ -102,4 +138,25 @@ data class Graph<out N : BasicNode>(
       branches = emptyList()
     )
   }
+}
+
+/**
+ * Индекс «узел → ветка» по одному из узлов-ориентиров ветки.
+ *
+ * Первая ветка выигрывает: от одного узла может уйти несколько веток, и отдать точке ветвления
+ * нужно одну — ту, что ушла раньше по порядку ветвления.
+ *
+ * @param branches ветки графа, кроме магистрали: у неё ни развилки, ни слияния нет по определению
+ * @param nodeOf узел-ориентир ветки — развилка или слияние
+ * @return ветка по её узлу-ориентиру
+ */
+private fun branchIndexOf(
+  branches: List<Branch>,
+  nodeOf: (Branch) -> BasicNode.Id?
+): Map<BasicNode.Id, Branch.Id> {
+  val index = HashMap<BasicNode.Id, Branch.Id>()
+  branches.forEach { branch ->
+    nodeOf(branch)?.let { index.putIfAbsent(it, branch.id) }
+  }
+  return index
 }

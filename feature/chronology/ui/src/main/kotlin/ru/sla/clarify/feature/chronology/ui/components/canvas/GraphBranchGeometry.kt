@@ -6,7 +6,6 @@ import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeAccent
-import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Отрезок индексов, на котором ветка держит свою дорожку.
@@ -183,35 +182,27 @@ internal fun laneCountOf(lanes: Map<Branch.Id, Int>): Int {
  * магистрали, а показывают ветку, которая от них уходит или в них возвращается. Поэтому функция и
  * существует: вывести это на месте отрисовки нельзя — узел не знает ни своей дорожки, ни чужой.
  *
- * Ветка ищется по идентификатору узла, а не по порядку, потому что от одного коммита может уйти
- * несколько веток: тогда первая из них и задаёт акцент точке, а остальные получат свои собственные
- * точки ветвления — по одной на ветку.
+ * **Какой род узла за какую ветку говорит, решает вызывающий, а не эта функция.** Родов узлов
+ * раскладка не знает вовсе: ей известно, что в узле случилось ветвление или слияние
+ * ([Graph.branchForkedAt]), но не то, рисует ли это узел собой. Пока выбор жил здесь, раскладка
+ * перечисляла запечатанный тип фичи — то есть была верна ровно для одного набора узлов.
  *
  * @param graph граф целиком: акцент выводится из узла, его ветки и веток, что от него уходят
  * @param branchLanes номер дорожки каждой ветки, см. [laneAssignmentOf]
  * @param branchColors цвет каждой ветки графа, магистраль включая: ветки без цвета здесь быть не
  *   может, и её отсутствие — рассинхронизация наборов, а не значение по умолчанию
+ * @param ownerOf ветка, за которую говорит узел; второй параметр — его собственная ветка, то есть
+ *   ответ по умолчанию
  * @return акцент каждого узла, в порядке узлов графа
  */
-internal fun nodeAccentsOf(
-  graph: Graph<Node>,
+internal fun <N : BasicNode> nodeAccentsOf(
+  graph: Graph<N>,
   branchLanes: Map<Branch.Id, Int>,
-  branchColors: Map<Branch.Id, Color>
+  branchColors: Map<Branch.Id, Color>,
+  ownerOf: (node: N, own: Branch.Id) -> Branch.Id
 ): List<GraphNodeAccent> {
-  val forkedAt = HashMap<BasicNode.Id, Branch.Id>()
-  val mergedAt = HashMap<BasicNode.Id, Branch.Id>()
-  graph.branches.forEach { branch ->
-    branch.forkedFrom?.let { forkedAt.putIfAbsent(it, branch.id) }
-    branch.mergedAt?.let { mergedAt.putIfAbsent(it, branch.id) }
-  }
   return graph.nodes.mapIndexed { index, node ->
-    val own = graph.branchIds[index]
-    val owner = when (node) {
-      is Node.Fork -> forkedAt[node.id] ?: own
-      is Node.Merge -> mergedAt[node.id] ?: own
-      is Node.Episode,
-      is Node.Front -> own
-    }
+    val owner = ownerOf(node, graph.branchIds[index])
     GraphNodeAccent(
       lane = branchLanes[owner] ?: 0,
       color = branchColors.getValue(owner)
@@ -234,11 +225,13 @@ internal fun nodeAccentsOf(
  *
  * @param graph граф: порядок узлов и состав веток
  * @param branchColors цвет каждой ветки графа, см. `Graph.toBranchColors`
+ * @param ownerOf ветка, за которую говорит узел, см. [nodeAccentsOf]
  * @return дорожки узлов и их акценты
  */
-internal fun graphLanesOf(
-  graph: Graph<Node>,
-  branchColors: Map<Branch.Id, Color>
+internal fun <N : BasicNode> graphLanesOf(
+  graph: Graph<N>,
+  branchColors: Map<Branch.Id, Color>,
+  ownerOf: (node: N, own: Branch.Id) -> Branch.Id
 ): GraphLanes {
   val branchLanes = laneAssignmentOf(
     occupancy = branchOccupancyOf(
@@ -250,6 +243,6 @@ internal fun graphLanesOf(
   )
   return GraphLanes(
     lanes = nodeLanesOf(graph.branchIds, branchLanes),
-    accents = nodeAccentsOf(graph, branchLanes, branchColors)
+    accents = nodeAccentsOf(graph, branchLanes, branchColors, ownerOf)
   )
 }

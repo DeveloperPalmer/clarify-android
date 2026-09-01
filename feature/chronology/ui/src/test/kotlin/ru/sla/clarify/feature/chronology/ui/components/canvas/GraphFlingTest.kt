@@ -154,7 +154,7 @@ class GraphFlingTest {
     state.layout(
       level = GraphLevel.Episodes,
       graph = graph,
-      lanes = graphLanesOf(graph, graph.mockBranchColors()),
+      lanes = graph.mockLanes(),
       branchColors = graph.mockBranchColors(),
       viewportSize = IntSize(width = 400, height = 200),
       nodeSizes = List(graph.nodes.size) { IntSize(width = 120, height = 28) },

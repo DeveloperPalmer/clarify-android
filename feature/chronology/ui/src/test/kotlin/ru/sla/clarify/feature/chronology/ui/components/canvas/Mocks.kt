@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.Color
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLanes
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Цвет ветки вместо палитры темы.
@@ -27,4 +29,16 @@ internal fun mockLaneColor(colorIndex: Int): Color {
  */
 internal fun Graph<BasicNode>.mockBranchColors(): Map<Branch.Id, Color> {
   return (listOf(baseline) + branches).associate { it.id to mockLaneColor(it.colorIndex) }
+}
+
+/**
+ * Дорожки и акценты графа беседы — ровно то, что считает полотно.
+ *
+ * Заведено затем, чтобы тест не пересказывал в каждом вызове, какой род узла за какую ветку
+ * говорит: это знание фичи, и живёт оно в одном месте — [accentOwnerOf].
+ *
+ * @return дорожки узлов и их акценты
+ */
+internal fun Graph<Node>.mockLanes(): GraphLanes {
+  return graphLanesOf(this, mockBranchColors()) { node, own -> accentOwnerOf(node, own) }
 }

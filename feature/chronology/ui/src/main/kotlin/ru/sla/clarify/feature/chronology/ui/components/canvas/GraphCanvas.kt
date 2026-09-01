@@ -157,7 +157,9 @@ internal fun GraphCanvas(
   // знают — они получают готовый цвет. Палитра стоит в ключе, потому что смена темы меняет цвета,
   // не трогая граф.
   val branchColors = remember(graph, colors) { graph.toBranchColors(colors) }
-  val lanes = remember(graph, branchColors) { graphLanesOf(graph, branchColors) }
+  val lanes = remember(graph, branchColors) {
+    graphLanesOf(graph, branchColors) { graphNode, own -> graph.accentOwnerOf(graphNode, own) }
+  }
   Box(
     // Жест висит на всём вьюпорте, а не на слое узлов: полотно не всегда достаёт до края экрана,
     // и панорамирование не работало бы там, где его нет.

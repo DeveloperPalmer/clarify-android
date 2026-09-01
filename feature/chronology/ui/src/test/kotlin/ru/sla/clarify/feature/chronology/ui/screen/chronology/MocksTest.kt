@@ -10,10 +10,10 @@ import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphGeometry
 import ru.sla.clarify.feature.chronology.ui.components.canvas.fitScaleOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphEdgesOf
-import ru.sla.clarify.feature.chronology.ui.components.canvas.graphLanesOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphLevelBandOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphPlacementOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockBranchColors
+import ru.sla.clarify.feature.chronology.ui.components.canvas.mockLanes
 import ru.sla.clarify.feature.chronology.ui.components.canvas.topLaneOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
@@ -299,7 +299,7 @@ class MocksTest {
     assertEquals(1, graph.graphNodes.size, "одно сообщение и есть весь граф — §15 п. 1")
     assertEquals(
       listOf(0),
-      graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes,
+      graph.layout.mockLanes().lanes,
       "единственный узел стоит на магистрали: обе оси камеры вырождаются в точку, и упор обязан " +
         "считаться упором, а не ошибкой"
     )
@@ -311,7 +311,7 @@ class MocksTest {
 
     assertTrue(graph.branches.isEmpty(), "переписка без веток — самый частый случай, §13")
     assertTrue(
-      graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes.all { it == 0 },
+      graph.layout.mockLanes().lanes.all { it == 0 },
       "граф вырождается в прямую линию: дорожка у всех нулевая, и полотно обязано схлопнуться по " +
         "высоте, а не оставить место под пустые ряды"
     )
@@ -324,7 +324,7 @@ class MocksTest {
   @Test
   fun `the crowded graph takes a lane past the ceiling`() {
     val graph = mockCrowdedGraph()
-    val lanes = graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes.filter { it != 0 }.distinct()
+    val lanes = graph.layout.mockLanes().lanes.filter { it != 0 }.distinct()
 
     assertEquals(
       graph.branches.size,
@@ -379,7 +379,7 @@ class MocksTest {
   fun `the demo graph still fits the overview at its own floor`() {
     val graph = mockGraph()
     val nodes = graph.graphNodes
-    val lanes = graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes
+    val lanes = graph.layout.mockLanes().lanes
     val geometry = GraphGeometry(topLaneOf(lanes), GraphLevel.Overview.toLaneStep())
     val placement = graphPlacementOf(
       lanes = lanes,
@@ -414,7 +414,7 @@ class MocksTest {
   /** Дорожка каждой ветки демо-набора, включая магистраль. */
   private fun demoLanes(): Map<Branch.Id, Int> {
     val graph = mockGraph().layout
-    return graph.branchIds.zip(graphLanesOf(graph, graph.mockBranchColors()).lanes).toMap()
+    return graph.branchIds.zip(graph.mockLanes().lanes).toMap()
   }
 
   /**
@@ -426,7 +426,7 @@ class MocksTest {
   private fun demoEdges(): List<GraphEdge> {
     val graph = mockGraph()
     val nodes = graph.graphNodes
-    val lanes = graphLanesOf(graph.layout, graph.layout.mockBranchColors()).lanes
+    val lanes = graph.layout.mockLanes().lanes
     return graphEdgesOf(
       graph = graph.layout,
       branchColors = graph.layout.mockBranchColors(),

@@ -72,14 +72,6 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
     ScreenScaffold(state = scaffoldState) {
       val canvasState = rememberGraphCanvasState(graph = state.graph.layout)
       val ceremonyState = rememberMergeCeremonyState()
-      // Какая ветка вернулась в магистраль в этом узле. Точка слияния стоит **на магистрали**, то
-      // есть её собственный `branchId` — корневой, и спросить сливающуюся ветку у самого узла
-      // нельзя: связь идёт с другой стороны, от `mergedAt` ветки.
-      val mergedBranchByNode = remember(state.graph.layout) {
-        state.graph.layout.branches.mapNotNull { branch ->
-          branch.mergedAt?.let { it to branch.id }
-        }.toMap()
-      }
       // Церемония доигрывает после того, как композиция чипа уже могла уйти, поэтому scope свой.
       val ceremonyScope = rememberCoroutineScope()
       val haptics = LocalHapticFeedback.current
@@ -180,7 +172,11 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
               // Иначе вертикаль возврата прошла бы сквозь него: она стоит на том же X, что и точка
               // слияния, а чип в накопительную ось не входит и перекрыть её не может ничем.
               is Node.Merge -> Box(contentAlignment = Alignment.Center) {
-                val mergedBranch = mergedBranchByNode[graphNode.id]
+                // Какая ветка вернулась в магистраль в этом узле. Точка слияния стоит **на
+                // магистрали**, то есть её собственный `branchId` — корневой, и спросить
+                // сливающуюся ветку у самого узла нельзя: связь идёт с другой стороны, от
+                // `mergedAt` ветки.
+                val mergedBranch = state.graph.layout.branchMergedAt(graphNode.id)
                 MergeNode(
                   contentDescription = description,
                   // Кадр читается лямбдой, то есть в фазе рисования: значение, взятое здесь,

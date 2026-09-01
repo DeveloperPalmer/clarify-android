@@ -523,7 +523,7 @@ class GraphCanvasStateTest {
     return layout(
       level = level,
       graph = graph,
-      lanes = graphLanesOf(graph, graph.mockBranchColors()),
+      lanes = graph.mockLanes(),
       branchColors = graph.mockBranchColors(),
       viewportSize = VIEWPORT,
       nodeSizes = List(count) { IntSize(width = 120, height = 28) },
