@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chronology.ui.entity
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Velocity
+import ru.sla.atlas.entity.DebugInfo
 import ru.sla.atlas.entity.Telemetry
 
 /**
@@ -24,7 +25,7 @@ import ru.sla.atlas.entity.Telemetry
 data class GraphDebugSnapshot(
   val rates: Telemetry,
   val totals: Telemetry,
-  val info: GraphDebugInfo,
+  val info: DebugInfo<GraphLevel>,
   val lastPan: Offset,
   val lastFling: Velocity
 )

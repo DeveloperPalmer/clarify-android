@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.chronology.ui.mapper
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Velocity
-import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
+import ru.sla.atlas.entity.DebugInfo
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import kotlin.math.roundToInt
@@ -19,7 +19,7 @@ import kotlin.math.roundToInt
  * @param tickMillis период, с которым панель снимает счётчики
  * @return строки правой колонки панели
  */
-internal fun GraphDebugInfo.toFactRows(
+internal fun DebugInfo<GraphLevel>.toFactRows(
   lastPan: Offset,
   lastFling: Velocity,
   tickMillis: Long

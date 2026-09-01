@@ -22,6 +22,7 @@ import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.TimeGap
+import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toRestScale
@@ -199,7 +200,7 @@ class GraphFlightTest {
 
   @Test
   fun `a flight over an empty graph does nothing`() = runTest {
-    val state = GraphCanvasState(ChronologyLevels)
+    val state = mockCanvasState()
     val before = state.offset.value
 
     state.fly(this, Anchor.Front)
@@ -214,7 +215,7 @@ class GraphFlightTest {
    * @param anchor якорь перелёта
    * @return положение камеры, зажатое её диапазоном
    */
-  private fun aimedAt(state: GraphCanvasState, anchor: Anchor): Offset {
+  private fun aimedAt(state: AtlasCanvasState<Node, GraphLevel>, anchor: Anchor): Offset {
     val placement = state.layout(
       level = GraphLevel.Episodes,
       graph = state.graph,
@@ -243,7 +244,7 @@ class GraphFlightTest {
    * @param scope scope теста
    * @param anchor якорь перелёта
    */
-  private fun GraphCanvasState.fly(scope: TestScope, anchor: Anchor) {
+  private fun AtlasCanvasState<Node, GraphLevel>.fly(scope: TestScope, anchor: Anchor) {
     flightTrail(scope, anchor)
   }
 
@@ -254,7 +255,7 @@ class GraphFlightTest {
    * @param anchor якорь перелёта
    * @return масштаб на каждом кадре перелёта
    */
-  private fun GraphCanvasState.scaleTrail(scope: TestScope, anchor: Anchor): List<Float> {
+  private fun AtlasCanvasState<Node, GraphLevel>.scaleTrail(scope: TestScope, anchor: Anchor): List<Float> {
     val clock = BroadcastFrameClock()
     flyTo(scope + clock, tween(durationMillis = 400), anchor)
     scope.runCurrent()
@@ -279,7 +280,7 @@ class GraphFlightTest {
    * @param anchor якорь перелёта
    * @return камера на каждом кадре перелёта
    */
-  private fun GraphCanvasState.flightTrail(scope: TestScope, anchor: Anchor): List<Offset> {
+  private fun AtlasCanvasState<Node, GraphLevel>.flightTrail(scope: TestScope, anchor: Anchor): List<Offset> {
     val clock = BroadcastFrameClock()
     flyTo(scope + clock, tween(durationMillis = 400), anchor)
     scope.runCurrent()
@@ -299,8 +300,8 @@ class GraphFlightTest {
    *
    * @return состояние с уже выполненной раскладкой
    */
-  private fun laidOut(): GraphCanvasState {
-    val state = GraphCanvasState(ChronologyLevels)
+  private fun laidOut(): AtlasCanvasState<Node, GraphLevel> {
+    val state = mockCanvasState()
     val graph = fiveBranchGraph()
     state.setGraph(graph)
     state.layout(

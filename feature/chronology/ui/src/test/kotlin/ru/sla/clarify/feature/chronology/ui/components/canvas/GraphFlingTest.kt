@@ -18,6 +18,7 @@ import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.TimeGap
+import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 
@@ -128,7 +129,7 @@ class GraphFlingTest {
    * @param velocity скорость отпускания
    * @return камера на каждом кадре затухания
    */
-  private fun GraphCanvasState.flingTrail(scope: TestScope, velocity: Velocity): List<Offset> {
+  private fun AtlasCanvasState<Node, GraphLevel>.flingTrail(scope: TestScope, velocity: Velocity): List<Offset> {
     val clock = BroadcastFrameClock()
     fling(scope + clock, velocity, exponentialDecay())
     scope.runCurrent()
@@ -148,8 +149,8 @@ class GraphFlingTest {
    *
    * @return состояние с уже выполненной раскладкой
    */
-  private fun laidOut(): GraphCanvasState {
-    val state = GraphCanvasState(ChronologyLevels)
+  private fun laidOut(): AtlasCanvasState<Node, GraphLevel> {
+    val state = mockCanvasState()
     val graph = fiveBranchGraph()
     state.setGraph(graph)
     state.layout(

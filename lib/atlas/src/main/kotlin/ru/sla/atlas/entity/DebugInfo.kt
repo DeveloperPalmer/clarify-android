@@ -1,9 +1,8 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import ru.sla.atlas.entity.ScaleBand
 
 /**
  * Снимок состояния полотна для отладочной панели.
@@ -17,6 +16,7 @@ import ru.sla.atlas.entity.ScaleBand
  * @param camera сдвиг содержимого после клампа
  * @param scale масштаб содержимого: `экран = полотно · scale + камера`
  * @param isCameraMoved двигали ли камеру хоть раз
+ * @param L уровень детализации вызывающего
  * @param level уровень детализации: он же объясняет, почему тот же масштаб показывает разное
  * @param levelBand полоса масштаба этого уровня — за её краями уровень сменяется соседним
  * @param centreSpanX отрезок центров плашек, по которому ходит камера
@@ -24,14 +24,14 @@ import ru.sla.atlas.entity.ScaleBand
  * @param edgeCount число выведенных связей
  */
 @Immutable
-data class GraphDebugInfo(
+data class DebugInfo<out L>(
   val viewportWidth: Int,
   val viewportHeight: Int,
   val contentBounds: Rect,
   val camera: Offset,
   val scale: Float,
   val isCameraMoved: Boolean,
-  val level: GraphLevel,
+  val level: L,
   val levelBand: ScaleBand,
   val centreSpanX: ClosedFloatingPointRange<Float>,
   val nodeCount: Int,

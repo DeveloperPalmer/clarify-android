@@ -7,6 +7,8 @@ import ru.sla.atlas.entity.CanvasMargins
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Lanes
 import ru.sla.atlas.layout.lanesOf
+import ru.sla.atlas.ui.AtlasCanvasState
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
@@ -57,4 +59,16 @@ internal fun Graph<Node>.mockLanes(): Lanes {
  */
 internal fun mockCanvasMargins(): CanvasMargins {
   return CanvasMargins(left = 64f, top = 64f, right = 64f, bottom = 64f)
+}
+
+/**
+ * Полотно хронологии в исходном состоянии: свои уровни детализации и эпизоды на старте.
+ *
+ * Заведено затем, чтобы тест не повторял в каждом вызове оба параметра типа и обе величины: чем
+ * полотно этой фичи отличается от любого другого, сказано в одном месте.
+ *
+ * @return состояние, каким его получает экран при открытии
+ */
+internal fun mockCanvasState(): AtlasCanvasState<Node, GraphLevel> {
+  return AtlasCanvasState(levels = ChronologyLevels, initialLevel = GraphLevel.Episodes)
 }

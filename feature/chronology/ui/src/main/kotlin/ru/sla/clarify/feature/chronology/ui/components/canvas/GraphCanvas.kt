@@ -61,6 +61,7 @@ import ru.sla.atlas.entity.Lanes
 import ru.sla.atlas.entity.NodeAccent
 import ru.sla.atlas.layout.lanesOf
 import ru.sla.atlas.lod.counterScaleOf
+import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.atlas.ui.CanvasBackdrop
 import ru.sla.atlas.ui.detectCameraGestures
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
@@ -75,7 +76,7 @@ import kotlin.math.abs
  * Полотно хронологии: фон, узлы графа и связи между ними, по которому можно панорамировать.
  *
  * Композабл здесь ничего не считает — только композирует, принимает жест и рисует. Где узлы стоят,
- * считает [placementOf]; камеру и результат раскладки держит [GraphCanvasState]; события
+ * считает [placementOf]; камеру и результат раскладки держит [AtlasCanvasState]; события
  * пальцев разбирает [detectCameraGestures].
  *
  * Масштаб — свойство камеры, а не раскладки: он применяется слоем и потому не стоит ни измерения,
@@ -106,7 +107,7 @@ import kotlin.math.abs
  */
 @Composable
 internal fun GraphCanvas(
-  state: GraphCanvasState,
+  state: AtlasCanvasState<Node, GraphLevel>,
   ceremony: MergeCeremonyState,
   modifier: Modifier = Modifier,
   blocked: () -> Boolean = { false },
@@ -245,7 +246,7 @@ internal fun GraphCanvas(
  */
 @Composable
 private fun GraphNodesLayer(
-  state: GraphCanvasState,
+  state: AtlasCanvasState<Node, GraphLevel>,
   graph: Graph<Node>,
   lanes: Lanes,
   branchColors: Map<Branch.Id, Color>,

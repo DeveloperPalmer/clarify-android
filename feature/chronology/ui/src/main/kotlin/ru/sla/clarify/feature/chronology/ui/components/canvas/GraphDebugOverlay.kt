@@ -32,10 +32,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import kotlinx.coroutines.delay
 import ru.sla.atlas.entity.Telemetry
+import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.atlas.ui.peaksOf
 import ru.sla.atlas.ui.ratesOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugRow
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugSnapshot
+import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
+import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toFactRows
 import ru.sla.clarify.feature.chronology.ui.mapper.toPhaseRows
 import ru.sla.clarify.uikit.component.AppPager
@@ -67,7 +70,7 @@ import ru.sla.clarify.uikit.theme.VSpacer
  */
 @Composable
 internal fun GraphDebugOverlay(
-  state: GraphCanvasState,
+  state: AtlasCanvasState<Node, GraphLevel>,
   onBoundsChanged: (key: Any, bounds: Rect) -> Unit,
   modifier: Modifier = Modifier
 ) {
