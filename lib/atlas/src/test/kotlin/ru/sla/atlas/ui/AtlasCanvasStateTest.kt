@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.ui
 
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.geometry.Offset
@@ -14,13 +14,13 @@ import ru.sla.atlas.camera.cameraRestOf
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.MockNode
 import ru.sla.atlas.entity.Placement
 import ru.sla.atlas.entity.TimeGap
 import ru.sla.atlas.layout.nearestCentreIndexOf
+import ru.sla.atlas.lod.MockLevel
+import ru.sla.atlas.lod.MockLevels
 import ru.sla.atlas.lod.fitScaleOf
-import ru.sla.atlas.ui.AtlasCanvasState
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.Node
 
 /**
  * Держатель проверяется без Compose: `mutableStateOf` и `derivedStateOf` работают и вне композиции,
@@ -30,7 +30,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.Node
  * стоял только на чтении. Пока это было так, упор в стенку банковал мёртвую зону, жест обратно
  * сначала выбирал её вхолостую, а следующая раскладка отдавала накопленное одним прыжком.
  */
-class GraphCanvasStateTest {
+class AtlasCanvasStateTest {
 
   @Test
   fun `a rejected delta cannot be banked for later`() {
@@ -171,19 +171,23 @@ class GraphCanvasStateTest {
     state.zoom(focus = focus, change = 100f)
     val zoomedIn = state.zoom(focus = focus, change = 2f)
 
-    assertEquals(2.5f, zoomedIn.scale, "потолок §11.1 общий у обоих уровней: выше эпизодов уровня нет")
+    assertEquals(
+      MockLevels.bandOf(MockLevel.Fine, fitScale = 1f).max,
+      zoomedIn.scale,
+      "потолок общий у обоих уровней: выше самого подробного уровня нет"
+    )
     assertTrue(zoomedIn.isRejected, "упор в предел — это свойство шага, а не догадка вызывающего")
 
-    // Вниз с уровня эпизодов масштаб не упирается, а уводит в обзор: это проверяют тесты перехода.
-    // Ниже обзора уровня нет, и вот там упор настоящий.
+    // Вниз с подробного уровня масштаб не упирается, а уводит на обзорный: это проверяют тесты
+    // перехода. Ниже самого обзорного уровня нет, и вот там упор настоящий.
     state.fitAll()
     val overview = state.place(count = 6, level = state.level.value)
     state.zoom(focus = focus, change = 0.001f)
 
     assertEquals(
-      ChronologyLevels.bandOf(GraphLevel.Overview, fitScaleOf(overview.bounds, VIEWPORT)).min,
+      MockLevels.bandOf(MockLevel.Coarse, fitScaleOf(overview.bounds, VIEWPORT)).min,
       state.scale.value,
-      "ниже обзора уровня нет: там масштаб упирается в нижний край его полосы"
+      "ниже самого обзорного уровня нет: там масштаб упирается в нижний край его полосы"
     )
   }
 
@@ -213,7 +217,7 @@ class GraphCanvasStateTest {
     assertEquals(
       atTheWall,
       state.backdropOffset.value,
-      "у стенки граф стоит, и узор обязан стоять вместе с ним, а не ползти под плашками"
+      "у стенки граф стоит, и узор обязан стоять вместе с ним, а не ползти под узлами"
     )
   }
 
@@ -310,7 +314,7 @@ class GraphCanvasStateTest {
   }
 
   /**
-   * Смена уровня меняет раскладку скачком: зазоры ужимаются вчетверо, плашка вырождается в глиф.
+   * Смена уровня меняет раскладку скачком: зазоры и дорожки сжимаются, узел мельчает.
    * Единственное, что удерживает переход от телепорта, — якорь: узел под пальцами обязан остаться под
    * пальцами, а охват — прежним.
    */
@@ -328,7 +332,7 @@ class GraphCanvasStateTest {
     state.zoom(focus = focus, change = 0.3f)
     state.fill(count = 9, level = state.level.value)
 
-    assertEquals(GraphLevel.Overview, state.level.value, "щипок ниже полосы уровня уводит в обзор")
+    assertEquals(MockLevel.Coarse, state.level.value, "щипок ниже полосы уводит на обзорный уровень")
     val landed = state.nodeRectOf(BasicNode.Id("n$anchor"))
     assertNotNull(landed, "якорный узел обязан найтись и на новом уровне: список узлов уровень не меняет")
     assertEquals(
@@ -348,7 +352,7 @@ class GraphCanvasStateTest {
     state.zoom(focus = Offset(x = 700f, y = 300f), change = 0.3f)
     val placement = state.fill(count = 9, level = state.level.value)
 
-    val band = ChronologyLevels.bandOf(GraphLevel.Overview, fitScaleOf(placement.bounds, VIEWPORT))
+    val band = MockLevels.bandOf(MockLevel.Coarse, fitScaleOf(placement.bounds, VIEWPORT))
     assertTrue(
       state.scale.value >= band.min && state.scale.value <= band.max,
       "масштаб посадки обязан лежать в полосе нового уровня, а не в полосе покинутого"
@@ -378,7 +382,7 @@ class GraphCanvasStateTest {
     state.zoom(focus = focus, change = 2f)
 
     assertEquals(
-      GraphLevel.Overview,
+      MockLevel.Coarse,
       state.level.value,
       "пока кроссфейд не доигран, край полосы работает стенкой, а не переходом: иначе быстрый щипок " +
         "мигал бы уровнем, ни разу его не показав"
@@ -388,7 +392,7 @@ class GraphCanvasStateTest {
     state.zoom(focus = focus, change = 2f)
 
     assertEquals(
-      GraphLevel.Episodes,
+      MockLevel.Fine,
       state.level.value,
       "доигранный переход отпускает уровень: тот же щипок обязан увести обратно"
     )
@@ -401,7 +405,7 @@ class GraphCanvasStateTest {
 
     val readWhileMeasuring = mutableSetOf<Any>()
     Snapshot.observe(readObserver = { readWhileMeasuring += it }) {
-      state.place(count = 3, level = GraphLevel.Overview)
+      state.place(count = 3, level = MockLevel.Coarse)
     }
     val writtenByGesture = mutableSetOf<Any>()
     Snapshot.observe(writeObserver = { writtenByGesture += it }) {
@@ -411,7 +415,7 @@ class GraphCanvasStateTest {
     assertTrue(
       readWhileMeasuring.intersect(writtenByGesture).isEmpty(),
       "уровень приходит в измерение параметром: прочитав его состоянием, измерение взяло бы зазоры " +
-        "обзора к плашкам, которые композиция построила эпизодами"
+        "одного уровня к узлам, которые композиция построила по другому"
     )
   }
 
@@ -426,7 +430,7 @@ class GraphCanvasStateTest {
 
     state.fitAll()
     state.fill(count = 9, level = state.level.value)
-    assertEquals(GraphLevel.Overview, state.level.value, "двойной тап уводит в обзор и вписывает всё")
+    assertEquals(MockLevel.Coarse, state.level.value, "вписывание уводит на самый обзорный уровень")
 
     state.fitAll()
     state.fill(count = 9, level = state.level.value)
@@ -444,11 +448,15 @@ class GraphCanvasStateTest {
     state.fitAll()
 
     assertEquals(
-      GraphLevel.Episodes,
+      MockLevel.Fine,
       state.level.value,
-      "уводить в обзор нечего: на пустом полотне ни якоря, ни охвата не существует"
+      "уводить некуда: на пустом полотне ни якоря, ни охвата не существует"
     )
-    assertEquals(0.4f, state.scale.value, "масштаб при этом обязан упереться в нижний край полосы")
+    assertEquals(
+      MockLevels.bandOf(MockLevel.Fine, fitScale = 1f).min,
+      state.scale.value,
+      "масштаб при этом обязан упереться в нижний край полосы"
+    )
   }
 
   /**
@@ -465,7 +473,7 @@ class GraphCanvasStateTest {
     assertEquals(
       placement.nodes[1].x + state.offset.value.x,
       rect?.left,
-      "плашка нарисована там, куда её поставила раскладка, сдвинутая камерой"
+      "узел нарисован там, куда его поставила раскладка, сдвинутая камерой"
     )
     assertEquals(120f, rect?.width, "ширина — измеренная, пока масштаб единичный")
   }
@@ -481,7 +489,7 @@ class GraphCanvasStateTest {
     assertEquals(
       resting!!.left - 100f,
       state.nodeRectOf(BasicNode.Id("n1"))?.left,
-      "карточка обязана вырасти из того места, где плашка лежит сейчас, а не из места её покоя"
+      "то, что растёт из узла, обязано начаться там, где он лежит сейчас, а не в его покое"
     )
   }
 
@@ -504,12 +512,12 @@ class GraphCanvasStateTest {
    * @param level уровень детализации, которым меряем
    * @return получившаяся раскладка
    */
-  private fun AtlasCanvasState<Node, GraphLevel>.fill(
+  private fun AtlasCanvasState<MockNode, MockLevel>.fill(
     count: Int,
-    level: GraphLevel = GraphLevel.Episodes
+    level: MockLevel = MockLevel.Fine
   ): Placement {
     val placement = place(count, level)
-    setGraph(baselineGraph(count))
+    setGraph(mockBaselineGraph(count))
     return placement
   }
 
@@ -520,16 +528,16 @@ class GraphCanvasStateTest {
    * @param level уровень детализации, которым меряем
    * @return раскладка, которую держатель только что запомнил
    */
-  private fun AtlasCanvasState<Node, GraphLevel>.place(
+  private fun AtlasCanvasState<MockNode, MockLevel>.place(
     count: Int,
-    level: GraphLevel = GraphLevel.Episodes
+    level: MockLevel = MockLevel.Fine
   ): Placement {
-    val graph = baselineGraph(count)
+    val graph = mockBaselineGraph(count)
     return layout(
       level = level,
       graph = graph,
       lanes = graph.mockLanes(),
-      branchColors = graph.mockBranchColors(),
+      branchColors = graph.mockColors(),
       viewportSize = VIEWPORT,
       nodeSizes = List(count) { IntSize(width = 120, height = 28) },
       density = Density(density = 1f),
@@ -539,36 +547,3 @@ class GraphCanvasStateTest {
 }
 
 private val VIEWPORT = IntSize(width = 1000, height = 600)
-
-/**
- * Граф из цепочки узлов на одной магистрали.
- *
- * @param count сколько узлов нужно
- * @return граф: узлы в хронологическом порядке, все — магистральные
- */
-private fun baselineGraph(count: Int): Graph<Node> {
-  val nodes = List(count) { index ->
-    Node.Episode(
-      id = BasicNode.Id("n$index"),
-      gap = TimeGap.Hour,
-      time = "6 мар, 10:00",
-      count = 1,
-      snippet = "",
-      myShare = 0f,
-      unreadCount = 0,
-      dim = false
-    )
-  }
-  return Graph(
-    nodes = nodes,
-    baseline = Branch(
-      id = Branch.Id("baseline"),
-      nodeIds = nodes.map { it.id },
-      colorIndex = 0,
-      forkedFrom = null,
-      mergedAt = null,
-      status = Branch.Status.Alive
-    ),
-    branches = emptyList()
-  )
-}

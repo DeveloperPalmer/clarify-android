@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.ui
 
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.runtime.BroadcastFrameClock
@@ -17,10 +17,11 @@ import ru.sla.atlas.camera.FlingDirection
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.MockNode
 import ru.sla.atlas.entity.TimeGap
-import ru.sla.atlas.ui.AtlasCanvasState
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.Node
+import ru.sla.atlas.entity.mockBranch
+import ru.sla.atlas.entity.mockNode
+import ru.sla.atlas.lod.MockLevel
 
 /**
  * Цикл затухания целиком, на управляемых часах и без Compose-рантайма: `BroadcastFrameClock` лежит в
@@ -32,7 +33,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.Node
  * сверяется на устройстве. Для структуры кривая безразлична: направление задаёт [FlingDirection],
  * а не спека.
  */
-class GraphFlingTest {
+class CameraFlingTest {
 
   @Test
   fun `a diagonal fling keeps its direction`() = runTest {
@@ -129,7 +130,7 @@ class GraphFlingTest {
    * @param velocity скорость отпускания
    * @return камера на каждом кадре затухания
    */
-  private fun AtlasCanvasState<Node, GraphLevel>.flingTrail(scope: TestScope, velocity: Velocity): List<Offset> {
+  private fun AtlasCanvasState<MockNode, MockLevel>.flingTrail(scope: TestScope, velocity: Velocity): List<Offset> {
     val clock = BroadcastFrameClock()
     fling(scope + clock, velocity, exponentialDecay())
     scope.runCurrent()
@@ -149,15 +150,15 @@ class GraphFlingTest {
    *
    * @return состояние с уже выполненной раскладкой
    */
-  private fun laidOut(): AtlasCanvasState<Node, GraphLevel> {
+  private fun laidOut(): AtlasCanvasState<MockNode, MockLevel> {
     val state = mockCanvasState()
     val graph = fiveBranchGraph()
     state.setGraph(graph)
     state.layout(
-      level = GraphLevel.Episodes,
+      level = MockLevel.Fine,
       graph = graph,
       lanes = graph.mockLanes(),
-      branchColors = graph.mockBranchColors(),
+      branchColors = graph.mockColors(),
       viewportSize = IntSize(width = 400, height = 200),
       nodeSizes = List(graph.nodes.size) { IntSize(width = 120, height = 28) },
       density = Density(density = 1f),
@@ -177,38 +178,23 @@ private const val FRAME_NANOS = 16_666_666L
  *
  * @return граф из двенадцати узлов, разобранных ветками без остатка
  */
-private fun fiveBranchGraph(): Graph<Node> {
+private fun fiveBranchGraph(): Graph<MockNode> {
   val nodes = List(12) { index ->
-    Node.Episode(
-      id = BasicNode.Id("n$index"),
-      gap = TimeGap.Long,
-      time = "6 мар, 10:00",
-      count = 1,
-      snippet = "",
-      myShare = 0f,
-      unreadCount = 0,
-      dim = false
-    )
+    mockNode("n$index")
   }
   val nodeIdsByBranch = nodes.withIndex().groupBy({ it.index % 5 }, { it.value.id })
   return Graph(
     nodes = nodes,
-    baseline = Branch(
-      id = Branch.Id("b0"),
-      nodeIds = nodeIdsByBranch.getValue(0),
-      colorIndex = 0,
-      forkedFrom = null,
-      mergedAt = null,
-      status = Branch.Status.Alive
+    baseline = mockBranch(
+      id = "b0",
+      nodes = nodeIdsByBranch.getValue(0).map { it.value },
+      colorIndex = 0
     ),
     branches = (1..4).map { index ->
-      Branch(
-        id = Branch.Id("b$index"),
-        nodeIds = nodeIdsByBranch.getValue(index),
-        colorIndex = index,
-        forkedFrom = null,
-        mergedAt = null,
-        status = Branch.Status.Alive
+      mockBranch(
+        id = "b$index",
+        nodes = nodeIdsByBranch.getValue(index).map { it.value },
+        colorIndex = index
       )
     }
   )

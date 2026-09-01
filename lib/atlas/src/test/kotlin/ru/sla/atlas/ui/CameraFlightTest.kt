@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.ui
 
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.BroadcastFrameClock
@@ -21,11 +21,12 @@ import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.entity.MockNode
 import ru.sla.atlas.entity.TimeGap
-import ru.sla.atlas.ui.AtlasCanvasState
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
-import ru.sla.clarify.feature.chronology.ui.entity.Node
-import ru.sla.clarify.feature.chronology.ui.mapper.toRestScale
+import ru.sla.atlas.entity.mockBranch
+import ru.sla.atlas.entity.mockNode
+import ru.sla.atlas.lod.MockLevel
+import ru.sla.atlas.lod.MockLevels
 
 /**
  * Перелёт камеры по кнопке: третий источник её движения после жеста и затухания.
@@ -39,7 +40,7 @@ import ru.sla.clarify.feature.chronology.ui.mapper.toRestScale
  * ему свой, как отмена начнёт работать через раз. И он не должен пытаться лететь там, где графа ещё
  * нет: пустая раскладка — обычное состояние экрана до первого измерения.
  */
-class GraphFlightTest {
+class CameraFlightTest {
 
   @Test
   fun `a flight lands on the front of the conversation`() = runTest {
@@ -52,7 +53,7 @@ class GraphFlightTest {
     assertEquals(
       aimedAt(state, Anchor.Front),
       state.offset.value,
-      "и довести её до наведения на последний эпизод, а не остановиться рядом"
+      "и довести её до наведения на последний узел, а не остановиться рядом"
     )
   }
 
@@ -143,7 +144,9 @@ class GraphFlightTest {
   @Test
   fun `a flight leaves a zoomed-out camera at its own scale`() = runTest {
     val state = laidOut()
-    state.zoom(focus = Offset(x = 200f, y = 100f), change = 0.4f)
+    // Внутри полосы уровня: щипок за её край — это уже переход, а не отдаление, и проверялось бы
+    // тогда не то.
+    state.zoom(focus = Offset(x = 200f, y = 100f), change = 0.6f)
     val zoomedOut = state.scale.value
 
     state.fly(this, Anchor.Start)
@@ -172,27 +175,27 @@ class GraphFlightTest {
 
   @Test
   fun `the default scale is only restored from above`() {
-    val episodesRest = GraphLevel.Episodes.toRestScale(ChronologyLevels.bandOf(GraphLevel.Episodes, fitScale = 0.05f))
+    val fineRest = MockLevels.restScaleOf(MockLevel.Fine, MockLevels.bandOf(MockLevel.Fine, fitScale = 0.05f))
 
-    assertEquals(1f, flightScaleOf(2.5f, episodesRest))
-    assertEquals(1f, flightScaleOf(1.0001f, episodesRest))
-    assertEquals(1f, flightScaleOf(1f, episodesRest), "на самой единице сбрасывать нечего")
-    assertEquals(0.4f, flightScaleOf(0.4f, episodesRest))
+    assertEquals(1f, flightScaleOf(2.5f, fineRest))
+    assertEquals(1f, flightScaleOf(1.0001f, fineRest))
+    assertEquals(1f, flightScaleOf(1f, fineRest), "на самой единице сбрасывать нечего")
+    assertEquals(0.4f, flightScaleOf(0.4f, fineRest), "ниже покоя перелёт масштаб не трогает")
   }
 
   @Test
-  fun `the overview returns to its own rest, not to the unit scale`() {
-    val overviewRest = GraphLevel.Overview.toRestScale(ChronologyLevels.bandOf(GraphLevel.Overview, fitScale = 0.305f))
+  fun `a coarse level returns to its own rest, not to the unit scale`() {
+    val coarseRest = MockLevels.restScaleOf(MockLevel.Coarse, MockLevels.bandOf(MockLevel.Coarse, fitScale = 0.305f))
 
     assertEquals(
       0.305f,
-      flightScaleOf(2.3f, overviewRest),
+      flightScaleOf(2.3f, coarseRest),
       1e-4f,
-      "покой обзора — это «видно всё», а единица там не значит ничего"
+      "покой обзорного уровня — это «видно всё», а единица там не значит ничего"
     )
     assertEquals(
       0.305f,
-      flightScaleOf(0.305f, overviewRest),
+      flightScaleOf(0.305f, coarseRest),
       1e-4f,
       "на самом покое сбрасывать нечего"
     )
@@ -215,12 +218,12 @@ class GraphFlightTest {
    * @param anchor якорь перелёта
    * @return положение камеры, зажатое её диапазоном
    */
-  private fun aimedAt(state: AtlasCanvasState<Node, GraphLevel>, anchor: Anchor): Offset {
+  private fun aimedAt(state: AtlasCanvasState<MockNode, MockLevel>, anchor: Anchor): Offset {
     val placement = state.layout(
-      level = GraphLevel.Episodes,
+      level = MockLevel.Fine,
       graph = state.graph,
       lanes = state.graph.mockLanes(),
-      branchColors = state.graph.mockBranchColors(),
+      branchColors = state.graph.mockColors(),
       viewportSize = VIEWPORT,
       nodeSizes = List(state.graph.nodes.size) { NODE_SIZE },
       density = Density(density = 1f),
@@ -244,7 +247,7 @@ class GraphFlightTest {
    * @param scope scope теста
    * @param anchor якорь перелёта
    */
-  private fun AtlasCanvasState<Node, GraphLevel>.fly(scope: TestScope, anchor: Anchor) {
+  private fun AtlasCanvasState<MockNode, MockLevel>.fly(scope: TestScope, anchor: Anchor) {
     flightTrail(scope, anchor)
   }
 
@@ -255,7 +258,7 @@ class GraphFlightTest {
    * @param anchor якорь перелёта
    * @return масштаб на каждом кадре перелёта
    */
-  private fun AtlasCanvasState<Node, GraphLevel>.scaleTrail(scope: TestScope, anchor: Anchor): List<Float> {
+  private fun AtlasCanvasState<MockNode, MockLevel>.scaleTrail(scope: TestScope, anchor: Anchor): List<Float> {
     val clock = BroadcastFrameClock()
     flyTo(scope + clock, tween(durationMillis = 400), anchor)
     scope.runCurrent()
@@ -280,7 +283,7 @@ class GraphFlightTest {
    * @param anchor якорь перелёта
    * @return камера на каждом кадре перелёта
    */
-  private fun AtlasCanvasState<Node, GraphLevel>.flightTrail(scope: TestScope, anchor: Anchor): List<Offset> {
+  private fun AtlasCanvasState<MockNode, MockLevel>.flightTrail(scope: TestScope, anchor: Anchor): List<Offset> {
     val clock = BroadcastFrameClock()
     flyTo(scope + clock, tween(durationMillis = 400), anchor)
     scope.runCurrent()
@@ -300,15 +303,15 @@ class GraphFlightTest {
    *
    * @return состояние с уже выполненной раскладкой
    */
-  private fun laidOut(): AtlasCanvasState<Node, GraphLevel> {
+  private fun laidOut(): AtlasCanvasState<MockNode, MockLevel> {
     val state = mockCanvasState()
     val graph = fiveBranchGraph()
     state.setGraph(graph)
     state.layout(
-      level = GraphLevel.Episodes,
+      level = MockLevel.Fine,
       graph = graph,
       lanes = graph.mockLanes(),
-      branchColors = graph.mockBranchColors(),
+      branchColors = graph.mockColors(),
       viewportSize = VIEWPORT,
       nodeSizes = List(graph.nodes.size) { NODE_SIZE },
       density = Density(density = 1f),
@@ -330,38 +333,23 @@ private val NODE_SIZE = IntSize(width = 120, height = 28)
  *
  * @return граф из двенадцати узлов, разобранных ветками без остатка
  */
-private fun fiveBranchGraph(): Graph<Node> {
+private fun fiveBranchGraph(): Graph<MockNode> {
   val nodes = List(12) { index ->
-    Node.Episode(
-      id = BasicNode.Id("n$index"),
-      gap = TimeGap.Long,
-      time = "6 мар, 10:00",
-      count = 1,
-      snippet = "",
-      myShare = 0f,
-      unreadCount = 0,
-      dim = false
-    )
+    mockNode("n$index")
   }
   val nodeIdsByBranch = nodes.withIndex().groupBy({ it.index % 5 }, { it.value.id })
   return Graph(
     nodes = nodes,
-    baseline = Branch(
-      id = Branch.Id("b0"),
-      nodeIds = nodeIdsByBranch.getValue(0),
-      colorIndex = 0,
-      forkedFrom = null,
-      mergedAt = null,
-      status = Branch.Status.Alive
+    baseline = mockBranch(
+      id = "b0",
+      nodes = nodeIdsByBranch.getValue(0).map { it.value },
+      colorIndex = 0
     ),
     branches = (1..4).map { index ->
-      Branch(
-        id = Branch.Id("b$index"),
-        nodeIds = nodeIdsByBranch.getValue(index),
-        colorIndex = index,
-        forkedFrom = null,
-        mergedAt = null,
-        status = Branch.Status.Alive
+      mockBranch(
+        id = "b$index",
+        nodes = nodeIdsByBranch.getValue(index).map { it.value },
+        colorIndex = index
       )
     }
   )
