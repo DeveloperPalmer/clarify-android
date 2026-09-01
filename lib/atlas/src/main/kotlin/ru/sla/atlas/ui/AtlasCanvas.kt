@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
@@ -401,15 +400,8 @@ private fun <L> LevelCrossfade(
     if (exit != null) {
       Box(
         modifier = Modifier
-          .layout { measurable, _ ->
-            // Ноль вместо размера: коробку узла задаёт целевое представление, а уходящее только
-            // рисуется. Родитель выравнивает нулевой размер по центру, поэтому смещение на половину
-            // ставит уходящее центром в центр целевого.
-            val placeable = measurable.measure(Constraints())
-            layout(width = 0, height = 0) {
-              placeable.place(x = -placeable.width / 2, y = -placeable.height / 2)
-            }
-          }
+          // Коробку узла задаёт целевое представление, а уходящее только рисуется поверх.
+          .drawnOnly()
           .graphicsLayer {
             alpha = exit.alpha.value
             val counter = counterScaleOf(from = exitScale.value, to = scale.value)

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
@@ -19,15 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import ru.sla.atlas.debug.DebugOverlay
 import ru.sla.atlas.entity.Anchor
 import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.ui.drawnOnly
 import ru.sla.atlas.ui.rememberAtlasCanvasState
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.core.ui.screen.MviComponent
@@ -200,23 +200,13 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                     // Подпись у чипа своя: он говорит «эта тема закрыта», а точка под ним — «здесь
                     // ветка вернулась в магистраль». Одной фразой на двоих это не сказать.
                     contentDescription = Branch.Status.Merged.toNodeDescription(branchName),
-                    modifier = Modifier.layout { measurable, _ ->
-                      // Ноль вместо размера: коробку узла задаёт точка слияния, а чип рядом с ней
-                      // только рисуется. Мерился бы он вместе с ней — коробка узла стала бы шириной
-                      // в чип, а горизонтали дорожки начинаются у её края: линия подходила бы к
-                      // точке с пробелом в полчипа с каждой стороны.
-                      val placeable = measurable.measure(Constraints())
-                      // Родитель выравнивает нулевой размер по центру точки, поэтому смещение на
-                      // половину ставит чип центром в центр узла, а отступ уводит его на свою
-                      // сторону магистрали.
-                      val shift = if (accent.lane < 0) 34.dp.roundToPx() else -34.dp.roundToPx()
-                      layout(width = 0, height = 0) {
-                        placeable.place(
-                          x = -placeable.width / 2,
-                          y = -placeable.height / 2 + shift
-                        )
-                      }
-                    },
+                    // Чип в коробку узла не входит: мерился бы он вместе с точкой слияния — коробка
+                    // стала бы шириной в чип, а горизонтали дорожки начинаются у её края, и линия
+                    // подходила бы к точке с пробелом в полчипа с каждой стороны. Отступ уводит чип
+                    // на ту сторону магистрали, откуда ветка **не** возвращается.
+                    modifier = Modifier
+                      .offset(y = if (accent.lane < 0) 34.dp else (-34).dp)
+                      .drawnOnly(),
                     onClick = mergedBranch?.let { branchId ->
                       {
                         ceremonyState.play(
