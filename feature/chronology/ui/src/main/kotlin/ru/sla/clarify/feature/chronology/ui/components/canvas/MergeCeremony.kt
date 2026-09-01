@@ -3,7 +3,7 @@ package ru.sla.clarify.feature.chronology.ui.components.canvas
 import androidx.compose.animation.core.Easing
 import androidx.compose.ui.util.fastAny
 import ru.sla.atlas.entity.Branch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
+import ru.sla.atlas.layout.Edge
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 
 /** Полная длина церемонии слияния, мс: семь кадров §12 на одной шкале. */
@@ -104,7 +104,7 @@ private fun spanFractionOf(elapsed: Float, from: Float, to: Float): Float {
  * @param ceremonyPlaying играет ли церемония слияния
  * @return нужна ли фаза бегущего пунктира
  */
-internal fun isDashRunning(edges: List<GraphEdge>, ceremonyPlaying: Boolean): Boolean {
+internal fun isDashRunning(edges: List<Edge>, ceremonyPlaying: Boolean): Boolean {
   return ceremonyPlaying || edges.fastAny { it.status == Branch.Status.Ready }
 }
 
@@ -112,13 +112,13 @@ internal fun isDashRunning(edges: List<GraphEdge>, ceremonyPlaying: Boolean): Bo
  * Играет ли церемония судьбу этого ребра.
  *
  * Спрашивается идентификатор, а не цвет: оттенков шесть, и по цвету в ответ попала бы каждая шестая
- * ветка переписки заодно — см. KDoc [GraphEdge].
+ * ветка переписки заодно — см. KDoc [Edge].
  *
  * @param edge проверяемое ребро
  * @param ceremonyBranch ветка играющей церемонии; `null` — церемония не играет
  * @return принадлежит ли ребро сливающейся ветке
  */
-internal fun isCeremonyEdge(edge: GraphEdge, ceremonyBranch: Branch.Id?): Boolean {
+internal fun isCeremonyEdge(edge: Edge, ceremonyBranch: Branch.Id?): Boolean {
   return ceremonyBranch != null && edge.branchId == ceremonyBranch
 }
 

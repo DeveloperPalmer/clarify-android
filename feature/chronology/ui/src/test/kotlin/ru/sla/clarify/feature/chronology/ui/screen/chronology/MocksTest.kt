@@ -7,17 +7,17 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.TimeGap
+import ru.sla.atlas.layout.Edge
+import ru.sla.atlas.layout.EdgeRole
+import ru.sla.atlas.layout.edgesOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.GraphGeometry
 import ru.sla.clarify.feature.chronology.ui.components.canvas.fitScaleOf
-import ru.sla.clarify.feature.chronology.ui.components.canvas.graphEdgesOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphLevelBandOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.graphPlacementOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockBranchColors
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockLanes
 import ru.sla.clarify.feature.chronology.ui.components.canvas.topLaneOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.Node
 import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
@@ -183,7 +183,7 @@ class MocksTest {
   @Test
   fun `every unmerged branch of the set ends in a tail`() {
     val unmerged = mockGraph().branches.count { it.mergedAt == null }
-    val tails = demoEdges().filter { it.role == GraphEdgeRole.Tail }
+    val tails = demoEdges().filter { it.role == EdgeRole.Tail }
 
     assertEquals(
       unmerged,
@@ -279,7 +279,7 @@ class MocksTest {
 
     assertTrue(graph.graphNodes.isEmpty(), "пустая переписка — это переписка без истории, §13")
     assertTrue(
-      graphEdgesOf(
+      edgesOf(
         graph = graph.layout,
         branchColors = graph.layout.mockBranchColors(),
         laneYs = emptyList(),
@@ -423,11 +423,11 @@ class MocksTest {
    * Плашки одной ширины и стоят с одинаковым шагом: проверяются пересечения и хвосты, а не
    * измерение, — а настоящие размеры пришли бы только из Compose.
    */
-  private fun demoEdges(): List<GraphEdge> {
+  private fun demoEdges(): List<Edge> {
     val graph = mockGraph()
     val nodes = graph.graphNodes
     val lanes = graph.layout.mockLanes().lanes
-    return graphEdgesOf(
+    return edgesOf(
       graph = graph.layout,
       branchColors = graph.layout.mockBranchColors(),
       laneYs = lanes.map { it * 104f },

@@ -1,5 +1,7 @@
 package ru.sla.atlas.entity
 
+import androidx.compose.ui.graphics.Color
+
 /**
  * Узел вызывающего в его наименьшем виде: только то, что обещает [BasicNode].
  *
@@ -16,20 +18,33 @@ internal data class MockNode(
 ) : BasicNode
 
 /**
+ * Узел с заданным именем.
+ *
+ * @param id идентификатор узла
+ * @return узел без единого собственного поля
+ */
+internal fun mockNode(id: String): MockNode {
+  return MockNode(id = BasicNode.Id(id))
+}
+
+/**
  * Узлы подряд, с именами `n0`, `n1`, … — история, в которой важен только порядок.
  *
  * @param count сколько узлов в истории
  * @return узлы в порядке их индексов
  */
 internal fun mockNodes(count: Int): List<MockNode> {
-  return List(count) { index -> MockNode(id = BasicNode.Id("n$index")) }
+  return List(count) { index -> mockNode("n$index") }
 }
 
 /**
- * Ветка с её составом, перечисленным отрезком индексов истории.
+ * Ветка с её составом, перечисленным именами узлов.
+ *
+ * Состав задаётся именами, а не отрезком индексов: узлы ветки не обязаны идти подряд, и отрезок
+ * подсказывал бы обратное там, где как раз проверяется, что ветка держит дорожку и в промежутках.
  *
  * @param id идентификатор ветки
- * @param nodes отрезок собственных узлов; `null` — узлов у ветки нет вовсе
+ * @param nodes имена собственных узлов; пусто — узлов у ветки нет вовсе
  * @param forkedFrom узел магистрали, от которого ветка ушла
  * @param mergedAt узел магистрали, в котором ветка слилась
  * @param status что с веткой происходит
@@ -38,7 +53,7 @@ internal fun mockNodes(count: Int): List<MockNode> {
  */
 internal fun mockBranch(
   id: String,
-  nodes: IntRange? = null,
+  nodes: List<String> = emptyList(),
   forkedFrom: String? = null,
   mergedAt: String? = null,
   status: Branch.Status = Branch.Status.Alive,
@@ -46,10 +61,43 @@ internal fun mockBranch(
 ): Branch {
   return Branch(
     id = Branch.Id(id),
-    nodeIds = nodes?.map { BasicNode.Id("n$it") }.orEmpty(),
+    nodeIds = nodes.map { BasicNode.Id(it) },
     forkedFrom = forkedFrom?.let { BasicNode.Id(it) },
     mergedAt = mergedAt?.let { BasicNode.Id(it) },
     status = status,
     colorIndex = colorIndex
   )
+}
+
+/**
+ * Имена узлов истории по их индексам: `3..5` — это `n3`, `n4`, `n5`.
+ *
+ * @param range отрезок индексов
+ * @return имена узлов в порядке индексов
+ */
+internal fun mockNodeNames(range: IntRange): List<String> {
+  return range.map { "n$it" }
+}
+
+/**
+ * Цвет ветки вместо палитры темы.
+ *
+ * Настоящий цвет приходит от вызывающего, которого в юнит-тесте нет и заводить незачем: раскладка
+ * цвет не толкует, а только переносит из ветки в ребро и в засечку. Здесь поэтому важно одно —
+ * чтобы у веток с разными оттенками цвета были разные, а у веток с одним оттенком одинаковые.
+ *
+ * @param colorIndex номер оттенка ветки
+ * @return цвет, однозначно соответствующий номеру
+ */
+internal fun mockLaneColor(colorIndex: Int): Color {
+  return Color(red = colorIndex * 20, green = 0, blue = 0)
+}
+
+/**
+ * Цвета всех веток графа: то, что настоящему полотну отдаёт вызывающий.
+ *
+ * @return цвет каждой ветки графа, магистраль включая
+ */
+internal fun Graph<BasicNode>.mockBranchColors(): Map<Branch.Id, Color> {
+  return (listOf(baseline) + branches).associate { it.id to mockLaneColor(it.colorIndex) }
 }

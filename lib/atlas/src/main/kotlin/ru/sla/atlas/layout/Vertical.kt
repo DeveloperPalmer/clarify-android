@@ -1,4 +1,4 @@
-package ru.sla.clarify.feature.chronology.ui.entity
+package ru.sla.atlas.layout
 
 import androidx.compose.runtime.Immutable
 
@@ -14,7 +14,7 @@ import androidx.compose.runtime.Immutable
  * @param toY конец отрезка по вертикали
  */
 @Immutable
-data class GraphVertical(
+data class Vertical(
   val x: Float,
   val fromY: Float,
   val toY: Float

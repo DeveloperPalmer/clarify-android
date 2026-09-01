@@ -32,13 +32,14 @@ import kotlinx.coroutines.withContext
 import ru.sla.atlas.entity.BasicNode
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.layout.Edge
 import ru.sla.atlas.layout.Lanes
+import ru.sla.atlas.layout.edgesOf
 import ru.sla.clarify.feature.chronology.ui.entity.GraphAnchor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraPose
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCameraRange
 import ru.sla.clarify.feature.chronology.ui.entity.GraphCanvasMargins
 import ru.sla.clarify.feature.chronology.ui.entity.GraphDebugInfo
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLaneMark
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevelBand
@@ -88,7 +89,7 @@ internal class GraphCanvasState {
 
   private var currentGraph: Graph<Node> by mutableStateOf(Graph.Empty)
 
-  private var graphEdges by mutableStateOf(emptyList<GraphEdge>())
+  private var graphEdges by mutableStateOf(emptyList<Edge>())
 
   // Камера хранится уже зажатой. Незажатый сдвиг заводился ради оттяжки за край и затухания —
   // обоим он оказался не нужен: оттяжка держит своё состояние сама, а затуханию нужен признак
@@ -222,7 +223,7 @@ internal class GraphCanvasState {
   val backdropScale: State<Float> = derivedStateOf { backdropScaleOf(cameraScale) }
 
   /** Рёбра графа в координатах полотна: горизонтали дорожек, уходы, возвраты и хвосты. */
-  val edges: State<List<GraphEdge>> = derivedStateOf { graphEdges }
+  val edges: State<List<Edge>> = derivedStateOf { graphEdges }
 
   /**
    * Какая доля содержимого по времени видна сейчас.
@@ -848,7 +849,7 @@ internal class GraphCanvasState {
     viewport = viewportSize
     placement = result
     graphEdges = with(density) {
-      graphEdgesOf(
+      edgesOf(
         graph = graph,
         branchColors = branchColors,
         laneYs = laneYs,

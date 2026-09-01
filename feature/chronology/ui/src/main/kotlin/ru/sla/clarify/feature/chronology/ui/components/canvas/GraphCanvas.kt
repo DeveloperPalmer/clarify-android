@@ -54,11 +54,11 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.Graph
+import ru.sla.atlas.layout.Edge
+import ru.sla.atlas.layout.EdgeRole
 import ru.sla.atlas.layout.Lanes
 import ru.sla.atlas.layout.NodeAccent
 import ru.sla.atlas.layout.lanesOf
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 import ru.sla.clarify.feature.chronology.ui.entity.Node
@@ -359,7 +359,7 @@ private fun GraphNodesLayer(
         // Спрашивать её у раскладки значило бы завести второй источник того же числа.
         val mergePoint = frame?.let {
           edges.firstOrNull { edge ->
-            edge.role == GraphEdgeRole.Merge && isCeremonyEdge(edge, ceremonyBranch)
+            edge.role == EdgeRole.Merge && isCeremonyEdge(edge, ceremonyBranch)
           }?.points?.last()
         }
         edges.fastForEach { edge ->
@@ -557,7 +557,7 @@ private fun rememberDashPhase(period: Float, isRunning: Boolean): State<Float>? 
  */
 @Suppress("LongParameterList", "CyclomaticComplexMethod")
 private fun DrawScope.drawGraphEdge(
-  edge: GraphEdge,
+  edge: Edge,
   path: Path,
   colors: AppColors,
   dashEffect: PathEffect,
@@ -570,7 +570,7 @@ private fun DrawScope.drawGraphEdge(
   pathMeasure: PathMeasure? = null
 ) {
   // Кадр 4 рисует возврат по частям, и до его начала рисовать нечего вовсе.
-  if (frame != null && edge.role == GraphEdgeRole.Merge && frame.reach <= 0f) {
+  if (frame != null && edge.role == EdgeRole.Merge && frame.reach <= 0f) {
     return
   }
   path.rewind()
@@ -580,9 +580,9 @@ private fun DrawScope.drawGraphEdge(
   // идентичность, и линия, оставшаяся золотой, соврала бы о том, чья она.
   val color = frame?.let { lerp(identity, colors.contentGoldPrimary, it.gold) } ?: identity
   val width = when (edge.role) {
-    GraphEdgeRole.Baseline -> 2.dp.toPx()
+    EdgeRole.Baseline -> 2.dp.toPx()
     // Слой ответов §7 рисуется 1 dp, но его здесь нет: он живёт только внутри раскрытого эпизода.
-    GraphEdgeRole.Branch, GraphEdgeRole.Fork, GraphEdgeRole.Merge, GraphEdgeRole.Tail -> 1.5.dp.toPx()
+    EdgeRole.Branch, EdgeRole.Fork, EdgeRole.Merge, EdgeRole.Tail -> 1.5.dp.toPx()
   }
   // На время церемонии ветка показывается готовой к слиянию: у слитой штрих сплошной, и кадру 1
   // нечего было бы ускорять. Покой возвращает выдох, а не конец шкалы.
@@ -597,7 +597,7 @@ private fun DrawScope.drawGraphEdge(
     join = StrokeJoin.Round,
     pathEffect = status.toPathEffect(dashEffect, runningDashEffect)
   )
-  if (frame != null && edge.role == GraphEdgeRole.Merge && reachedPath != null && pathMeasure != null) {
+  if (frame != null && edge.role == EdgeRole.Merge && reachedPath != null && pathMeasure != null) {
     // Кадр 4: конец линии идёт по маршруту к кольцу. Отметка 0 у мерки лежит у последнего узла
     // ветки, длина — на магистрали, поэтому отрезок `[0, длина · reach]` и есть пройденный путь.
     pathMeasure.setPath(path, false)
@@ -606,7 +606,7 @@ private fun DrawScope.drawGraphEdge(
     drawPath(path = reachedPath, color = color, alpha = alpha, style = style)
     return
   }
-  if (edge.role == GraphEdgeRole.Tail) {
+  if (edge.role == EdgeRole.Tail) {
     // Хвост растворяется у своего конца: линия не обрывается стеной, а «продолжается в будущее».
     val end = edge.points.last()
     drawPath(
@@ -647,7 +647,7 @@ private fun DrawScope.drawGraphEdge(
  */
 @Suppress("LongParameterList")
 private fun DrawScope.drawMergeWave(
-  edges: List<GraphEdge>,
+  edges: List<Edge>,
   path: Path,
   colors: AppColors,
   frame: MergeCeremonyFrame,
@@ -672,7 +672,7 @@ private fun DrawScope.drawMergeWave(
     endX = mergePoint.x + reach
   )
   edges.fastForEach { edge ->
-    if (edge.role != GraphEdgeRole.Baseline) {
+    if (edge.role != EdgeRole.Baseline) {
       return@fastForEach
     }
     path.rewind()
@@ -688,7 +688,7 @@ private fun DrawScope.drawMergeWave(
  * @param cornerRadius радиус скругления углов
  * @param hopRadius радиус мостика
  */
-private fun Path.addGraphRoute(edge: GraphEdge, cornerRadius: Float, hopRadius: Float) {
+private fun Path.addGraphRoute(edge: Edge, cornerRadius: Float, hopRadius: Float) {
   val points = edge.points
   moveTo(points.first().x, points.first().y)
   points.indices.drop(1).forEach { index ->

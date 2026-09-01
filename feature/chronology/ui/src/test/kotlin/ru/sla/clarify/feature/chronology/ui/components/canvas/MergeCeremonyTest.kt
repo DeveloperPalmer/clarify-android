@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.sla.atlas.entity.Branch
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdge
-import ru.sla.clarify.feature.chronology.ui.entity.GraphEdgeRole
+import ru.sla.atlas.layout.Edge
+import ru.sla.atlas.layout.EdgeRole
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
 
 /**
@@ -189,13 +189,13 @@ class CeremonyEdgeTest {
   }
 }
 
-private fun edge(status: Branch.Status): GraphEdge {
-  return GraphEdge(
+private fun edge(status: Branch.Status): Edge {
+  return Edge(
     points = listOf(Offset.Zero, Offset(100f, 0f)),
     hops = emptyList(),
     branchId = Branch.Id("a"),
     color = mockLaneColor(1),
-    role = GraphEdgeRole.Branch,
+    role = EdgeRole.Branch,
     status = status
   )
 }

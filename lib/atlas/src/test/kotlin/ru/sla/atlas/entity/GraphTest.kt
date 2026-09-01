@@ -16,7 +16,7 @@ class GraphTest {
 
   @Test
   fun `a node carrying a fork names the branch that left it`() {
-    val graph = graphOf(mockBranch(id = "a", nodes = 3..5, forkedFrom = "n2"))
+    val graph = graphOf(mockBranch(id = "a", nodes = mockNodeNames(3..5), forkedFrom = "n2"))
 
     assertEquals(
       Branch.Id("a"),
@@ -27,7 +27,7 @@ class GraphTest {
 
   @Test
   fun `a node carrying a merge names the branch that came back`() {
-    val graph = graphOf(mockBranch(id = "a", nodes = 3..5, forkedFrom = "n2", mergedAt = "n8"))
+    val graph = graphOf(mockBranch(id = "a", nodes = mockNodeNames(3..5), forkedFrom = "n2", mergedAt = "n8"))
 
     assertEquals(
       Branch.Id("a"),
@@ -38,7 +38,7 @@ class GraphTest {
 
   @Test
   fun `a plain node carries neither`() {
-    val graph = graphOf(mockBranch(id = "a", nodes = 3..5, forkedFrom = "n2", mergedAt = "n8"))
+    val graph = graphOf(mockBranch(id = "a", nodes = mockNodeNames(3..5), forkedFrom = "n2", mergedAt = "n8"))
 
     assertNull(graph.branchForkedAt(BasicNode.Id("n6")), "в обычном узле ничего не случилось")
     assertNull(graph.branchMergedAt(BasicNode.Id("n6")), "в обычном узле ничего не случилось")
@@ -47,8 +47,8 @@ class GraphTest {
   @Test
   fun `two branches leaving one node answer with the earlier one`() {
     // Два ответа на один вопрос дать нельзя, а веток от одного коммита уходит сколько угодно.
-    val first = mockBranch(id = "a", nodes = 3..4, forkedFrom = "n2")
-    val second = mockBranch(id = "b", nodes = 5..6, forkedFrom = "n2")
+    val first = mockBranch(id = "a", nodes = mockNodeNames(3..4), forkedFrom = "n2")
+    val second = mockBranch(id = "b", nodes = mockNodeNames(5..6), forkedFrom = "n2")
     val graph = graphOf(first, second)
 
     assertEquals(
@@ -60,7 +60,7 @@ class GraphTest {
 
   @Test
   fun `the baseline carries no fork of its own`() {
-    val graph = graphOf(mockBranch(id = "a", nodes = 3..5, forkedFrom = "n2"))
+    val graph = graphOf(mockBranch(id = "a", nodes = mockNodeNames(3..5), forkedFrom = "n2"))
 
     assertNull(
       graph.branchForkedAt(BasicNode.Id("n0")),
