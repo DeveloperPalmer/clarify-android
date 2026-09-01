@@ -1,0 +1,18 @@
+plugins {
+  id 'android-library-convention'
+  id 'android-compose-convention'
+}
+
+android {
+  namespace "ru.sla.atlas.debug"
+}
+
+dependencies {
+  // api — панель показывает то, что считает движок: его снимок и его счётчики выходят наружу.
+  // Обратной зависимости нет и быть не должно: полотно не знает, что его кто-то показывает.
+  api project(":lib:atlas")
+
+  testImplementation libs.bundles.unittest
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.platform.launcher
+}
