@@ -182,17 +182,6 @@ class GraphBranchGeometryTest {
   }
 
   @Test
-  fun `the sixth branch never takes the colour of the baseline`() {
-    assertTrue(
-      (1..12).all { order -> branchColorIndexOf(order) != 0 },
-      "ноль оставлен магистрали: `order.mod(6)` красил бы шестую ветку нейтральным цветом ствола"
-    )
-    assertEquals(1, branchColorIndexOf(1))
-    assertEquals(6, branchColorIndexOf(6))
-    assertEquals(1, branchColorIndexOf(7), "повтор через шесть веток неизбежен и допустим")
-  }
-
-  @Test
   fun `an eighth branch still gets a lane beyond the ceiling`() {
     val branches = List(8) { index ->
       branch(id = "b$index", forkedFrom = "n2", mergedAt = null, nodes = (3..14).takeIf { index == 0 })

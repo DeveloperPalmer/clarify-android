@@ -8,7 +8,6 @@ import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
-import ru.sla.clarify.feature.chronology.ui.components.canvas.branchColorIndexOf
 import ru.sla.clarify.feature.chronology.ui.entity.ChronologyGraph
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeDraft
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodePreview
@@ -85,7 +84,11 @@ internal fun ChronologyHistory.toChronologyGraph(): ChronologyGraph {
       nodeIds = emptyList(),
       // Порядковый номер по времени ветвления, а не номер дорожки: дорожка переиспользуется после
       // слияния, и цвет, взятый из неё, означал бы «номер ряда», а не «какая это тема».
-      colorIndex = branchColorIndexOf(index + 1),
+      colorIndex = GraphBranch.colorIndexOf(
+        order = index + 1,
+        // Шесть оттенков идентичности — `graphLane1`…`graphLane6`, см. `Int.toBranchColor`.
+        paletteSize = 6
+      ),
       forkedFrom = fork?.node?.id,
       mergedAt = merge?.node?.id,
       status = status
