@@ -8,7 +8,7 @@ import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
-import ru.sla.clarify.feature.chronology.ui.entity.ChronologyGraph
+import ru.sla.clarify.feature.chronology.ui.entity.Chronology
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeDraft
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodePreview
@@ -19,7 +19,7 @@ import java.time.ZoneId
 import ru.sla.atlas.entity.Branch as GraphBranch
 
 /**
- * История беседы — в граф, который рисует полотно.
+ * История беседы — в хронологию, которую рисует полотно.
  *
  * Порядок узлов, паузы между ними и состав веток сводит `graphOf`: три величины, которые обязаны
  * сойтись, собирает тот, кто их и проверяет. Здесь остаётся то, чего библиотека знать не может, —
@@ -32,9 +32,9 @@ import ru.sla.atlas.entity.Branch as GraphBranch
  * Дорожек, цветов дорожек и координат здесь нет: дорожка — результат раскладки, а не свойство узла,
  * и считает её `lanesOf` по занятости. Отсюда уходит только идентичность ветки — её оттенок.
  *
- * @return граф целиком: узлы, ветки и содержимое узлов, которые нельзя подменять порознь
+ * @return хронология целиком: узлы, ветки и содержимое узлов, которые нельзя подменять порознь
  */
-internal fun ChronologyHistory.toChronologyGraph(): ChronologyGraph {
+internal fun ChronologyHistory.toChronology(): Chronology {
   val membersById = members.associateBy { it.id.value }
   val baselineBranchId = GraphBranch.Id(baseline.id.value)
   val baselineTimeByCommit = baseline.commits.associate { it.id to it.timestamp }
@@ -93,8 +93,8 @@ internal fun ChronologyHistory.toChronologyGraph(): ChronologyGraph {
     )
   }
 
-  return ChronologyGraph(
-    layout = graphOf(
+  return Chronology(
+    graph = graphOf(
       drafts = drafts.map { it.toNodeDraft() },
       // Магистраль — такая же ветка, как остальные, и в графе она названа отдельно: её узлы иначе
       // не принадлежали бы никому. Цвет нулевой, развилки и слияния у неё нет по определению.

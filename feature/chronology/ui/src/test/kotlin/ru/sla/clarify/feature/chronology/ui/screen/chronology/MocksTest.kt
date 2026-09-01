@@ -117,7 +117,7 @@ class MocksTest {
 
   @Test
   fun `the set keeps a branch node standing later than the front`() {
-    val graph = mockGraph().layout
+    val graph = mockGraph().graph
     val frontIndex = graph.nodes.indexOfFirst { it is GraphNode.Front }
 
     assertTrue(
@@ -129,7 +129,7 @@ class MocksTest {
 
   @Test
   fun `every fork and merge of a branch is a node of the set`() {
-    val ids = mockGraph().graphGraphNodes.map { it.id }.toSet()
+    val ids = mockGraph().graphNodes.map { it.id }.toSet()
     val anchors = mockGraph().branches.flatMap { listOfNotNull(it.forkedFrom, it.mergedAt) }
 
     assertTrue(
@@ -230,7 +230,7 @@ class MocksTest {
 
   @Test
   fun `every node role and every time gap is present`() {
-    val nodes = mockGraph().graphGraphNodes
+    val nodes = mockGraph().graphNodes
 
     assertEquals(
       setOf(GraphNode.Episode::class, GraphNode.Fork::class, GraphNode.Merge::class, GraphNode.Front::class),
@@ -247,7 +247,7 @@ class MocksTest {
 
   @Test
   fun `episode content covers what the card draws differently`() {
-    val episodes = mockGraph().graphGraphNodes.filterIsInstance<GraphNode.Episode>()
+    val episodes = mockGraph().graphNodes.filterIsInstance<GraphNode.Episode>()
 
     assertTrue(episodes.any { it.dim }, "эпизод внутри слитой ветки рисуется приглушённым")
     assertTrue(
@@ -275,13 +275,13 @@ class MocksTest {
 
   @Test
   fun `the empty graph lays out nothing`() {
-    val graph = mockEmptyGraph()
+    val mock = mockEmptyGraph()
 
-    assertTrue(graph.graphGraphNodes.isEmpty(), "пустая переписка — это переписка без истории, §13")
+    assertTrue(mock.graphNodes.isEmpty(), "пустая переписка — это переписка без истории, §13")
     assertTrue(
       edgesOf(
-        graph = graph.layout,
-        branchColors = graph.layout.mockBranchColors(),
+        graph = mock.graph,
+        branchColors = mock.graph.mockBranchColors(),
         laneYs = emptyList(),
         positions = emptyList(),
         sizes = emptyList(),
@@ -294,12 +294,12 @@ class MocksTest {
 
   @Test
   fun `the single episode graph stays on the baseline`() {
-    val graph = mockSingleEpisodeGraph()
+    val mock = mockSingleEpisodeGraph()
 
-    assertEquals(1, graph.graphGraphNodes.size, "одно сообщение и есть весь граф — §15 п. 1")
+    assertEquals(1, mock.graphNodes.size, "одно сообщение и есть весь граф — §15 п. 1")
     assertEquals(
       listOf(0),
-      graph.layout.mockLanes().lanes,
+      mock.graph.mockLanes().lanes,
       "единственный узел стоит на магистрали: обе оси камеры вырождаются в точку, и упор обязан " +
         "считаться упором, а не ошибкой"
     )
@@ -307,27 +307,27 @@ class MocksTest {
 
   @Test
   fun `the linear graph keeps every node on the baseline`() {
-    val graph = mockLinearGraph()
+    val mock = mockLinearGraph()
 
-    assertTrue(graph.branches.isEmpty(), "переписка без веток — самый частый случай, §13")
+    assertTrue(mock.branches.isEmpty(), "переписка без веток — самый частый случай, §13")
     assertTrue(
-      graph.layout.mockLanes().lanes.all { it == 0 },
+      mock.graph.mockLanes().lanes.all { it == 0 },
       "граф вырождается в прямую линию: дорожка у всех нулевая, и полотно обязано схлопнуться по " +
         "высоте, а не оставить место под пустые ряды"
     )
     assertTrue(
-      graph.graphGraphNodes.any { it is GraphNode.Front },
+      mock.graphNodes.any { it is GraphNode.Front },
       "фронт рисуется на любом уровне и в любом состоянии — он часть скелета смысла, §5"
     )
   }
 
   @Test
   fun `the crowded graph takes a lane past the ceiling`() {
-    val graph = mockCrowdedGraph()
-    val lanes = graph.layout.mockLanes().lanes.filter { it != 0 }.distinct()
+    val mock = mockCrowdedGraph()
+    val lanes = mock.graph.mockLanes().lanes.filter { it != 0 }.distinct()
 
     assertEquals(
-      graph.branches.size,
+      mock.branches.size,
       lanes.size,
       "ни одна ветка набора не закрыта и не брошена, поэтому переиспользовать дорожку нечем"
     )
@@ -344,12 +344,12 @@ class MocksTest {
    */
   @Test
   fun `every episode of the set has a card to open`() {
-    val graph = mockGraph()
-    val episodes = graph.graphGraphNodes.filterIsInstance<GraphNode.Episode>()
+    val mock = mockGraph()
+    val episodes = mock.graphNodes.filterIsInstance<GraphNode.Episode>()
 
     assertEquals(
       episodes.map { it.id }.toSet(),
-      graph.previewById.keys,
+      mock.previewById.keys,
       "эпизод без превью перестаёт нажиматься, и заметить это можно только тапнув по нему"
     )
   }
@@ -360,11 +360,11 @@ class MocksTest {
    */
   @Test
   fun `every branch of the set has a name`() {
-    val graph = mockGraph()
+    val mock = mockGraph()
 
     assertEquals(
-      graph.branches.map { it.id }.toSet(),
-      graph.branchNames.keys,
+      mock.branches.map { it.id }.toSet(),
+      mock.branchNames.keys,
       "ветка без имени озвучится скринридеру как безымянная, и заметить это можно только вслух"
     )
   }
@@ -377,9 +377,9 @@ class MocksTest {
    */
   @Test
   fun `the demo graph still fits the overview at its own floor`() {
-    val graph = mockGraph()
-    val nodes = graph.graphGraphNodes
-    val lanes = graph.layout.mockLanes().lanes
+    val mock = mockGraph()
+    val nodes = mock.graphNodes
+    val lanes = mock.graph.mockLanes().lanes
     val geometry = LaneGeometry(topLaneOf(lanes), GraphLevel.Overview.toLaneStep())
     val placement = placementOf(
       lanes = lanes,
@@ -413,7 +413,7 @@ class MocksTest {
 
   /** Дорожка каждой ветки демо-набора, включая магистраль. */
   private fun demoLanes(): Map<Branch.Id, Int> {
-    val graph = mockGraph().layout
+    val graph = mockGraph().graph
     return graph.branchIds.zip(graph.mockLanes().lanes).toMap()
   }
 
@@ -424,12 +424,12 @@ class MocksTest {
    * измерение, — а настоящие размеры пришли бы только из Compose.
    */
   private fun demoEdges(): List<Edge> {
-    val graph = mockGraph()
-    val nodes = graph.graphGraphNodes
-    val lanes = graph.layout.mockLanes().lanes
+    val mock = mockGraph()
+    val nodes = mock.graphNodes
+    val lanes = mock.graph.mockLanes().lanes
     return edgesOf(
-      graph = graph.layout,
-      branchColors = graph.layout.mockBranchColors(),
+      graph = mock.graph,
+      branchColors = mock.graph.mockBranchColors(),
       laneYs = lanes.map { it * 104f },
       positions = nodes.indices.map { index -> IntOffset(x = index * 340, y = 0) },
       sizes = List(nodes.size) { IntSize(width = 200, height = 72) },

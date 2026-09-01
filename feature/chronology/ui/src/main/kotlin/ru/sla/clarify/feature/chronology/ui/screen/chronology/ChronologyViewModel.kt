@@ -11,7 +11,7 @@ import ru.sla.clarify.core.domain.toggle.isFeatureEnabledLive
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.feature.chronology.domain.ChronologyModel
-import ru.sla.clarify.feature.chronology.ui.mapper.toChronologyGraph
+import ru.sla.clarify.feature.chronology.ui.mapper.toChronology
 import ru.sla.clarify.feature.chronology.ui.routing.FlowEvent
 
 class ChronologyViewModel @Inject constructor(
@@ -29,27 +29,16 @@ class ChronologyViewModel @Inject constructor(
       }
     }
 
-    configureNodePreview()
-
-    // Граф собирается в потоке, а не в переходе: сборка обходит ленты всех веток, а переход
-    // выполняется там же, где обновляется состояние экрана.
-    //
-    // Пустая история — не пустой экран и не ошибка: §13 брифа требует, чтобы переписка без веток и
-    // даже без сообщений выглядела осмысленно, поэтому состояние загрузки здесь и не заводится.
-    onEach(chronologyModel.history.map { it.toChronologyGraph() }) {
-      transitionTo { state, graph -> state.copy(graph = graph) }
+    onEach(chronologyModel.history.map { it.toChronology() }) {
+      transitionTo { state, chronology ->
+        state.copy(chronology = chronology)
+      }
     }
 
+    configureNodePreview()
     configureDebugOverlay()
   }
 
-  /**
-   * Выбор узла: что открыто и откуда оно выросло.
-   *
-   * Прямоугольник плашки приходит сюда готовым, из экрана, и это осознанная цена: пиксели во
-   * `ViewState` выглядят чужеродно, но «какой узел выбран» и «откуда морфится карточка» — один факт,
-   * и разложенный по двум домам он разъехался бы молча.
-   */
   private fun MachineDsl<ViewState>.configureNodePreview() {
     onEach(intent(ViewIntents::selectNode)) {
       transitionTo { state, selection ->

@@ -221,7 +221,7 @@ private fun demoBranchNames(): Map<Branch.Id, String> {
  * @return восемь веток демо-графа
  */
 private fun demoBranches(): List<Branch> {
-  // Состав веток заполняется в [MockGraph.layout] — там же, где и в настоящей сборке: ветку узлу
+  // Состав веток заполняется в [MockGraph.graph] — там же, где и в настоящей сборке: ветку узлу
   // назначает сам узел набора, и переписывать одно и то же двумя списками значило бы завести вторую
   // истину о принадлежности.
   return listOf(
@@ -773,9 +773,9 @@ private fun front(id: String, gap: TimeGap): MockNode {
  *
  * @param nodes узлы в хронологическом порядке
  * @param branches ветки, кроме магистрали, в порядке ветвления
- * @param branchNames имя каждой ветки. Отдельной картой, а не полем [Branch]: та — сущность
- *   раскладки, и имя в ней было бы содержимым, попавшим не в свой слой. Магистрали в карте нет, и
- *   это не пропуск: у неё нет темы, о которой можно сказать «ветка такая-то»
+ * @param branchNames имя каждой ветки. Отдельной картой, а не полем [Branch]: та — сущность графа,
+ *   и имя в ней было бы содержимым, попавшим не в свой слой. Магистрали в карте нет, и это не
+ *   пропуск: у неё нет темы, о которой можно сказать «ветка такая-то»
  */
 @Immutable
 internal data class MockGraph(
@@ -784,8 +784,8 @@ internal data class MockGraph(
   val branchNames: Map<Branch.Id, String> = emptyMap()
 ) {
 
-  /** Раскладочная часть узлов: то, что уходит на полотно. */
-  val graphGraphNodes: List<GraphNode>
+  /** Сами узлы графа: обвязка набора — ветка и карточка — остаётся снаружи. */
+  val graphNodes: List<GraphNode>
     get() = nodes.map { it.graphNode }
 
   /**
@@ -794,11 +794,11 @@ internal data class MockGraph(
    * Состав собирается здесь, а не пишется в [demoBranches]: ветку узлу назначает сам узел набора, и
    * второй список тех же принадлежностей разъехался бы с первым молча.
    */
-  val layout: Graph<GraphNode>
+  val graph: Graph<GraphNode>
     get() {
       val nodeIdsByBranch = nodes.groupBy({ it.branchId }, { it.graphNode.id })
       return Graph(
-        nodes = graphGraphNodes,
+        nodes = graphNodes,
         baseline = Branch(
           id = Branch.Id(BASELINE),
           nodeIds = nodeIdsByBranch[Branch.Id(BASELINE)].orEmpty(),
@@ -820,7 +820,7 @@ internal data class MockGraph(
  * Узел демо-графа вместе с тем, чего сам узел не знает: своей веткой и своей карточкой.
  *
  * Ветка здесь потому, что узел её не знает по построению — состав принадлежит ветке, и набор
- * собирает его в [MockGraph.layout] из этого поля. Превью — потому, что карточка не то, что рисует
+ * собирает его в [MockGraph.graph] из этого поля. Превью — потому, что карточка не то, что рисует
  * узел: её содержимое живёт отдельной картой и в графе не лежит.
  *
  * @param graphNode сам узел: род, пауза и всё, что нарисовано внутри плашки

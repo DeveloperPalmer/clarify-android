@@ -71,7 +71,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
     )
     ScreenScaffold(state = scaffoldState) {
       val canvasState = rememberAtlasCanvasState(
-        graph = state.graph.layout,
+        graph = state.chronology.graph,
         levels = ChronologyLevels,
         initialLevel = GraphLevel.Episodes
       )
@@ -110,7 +110,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
             // Имя ветки в узел не приходит: узлу оно не нужно ни для чего, кроме подписи, а подпись
             // собирается здесь — там, где имя вообще есть. У магистрали имени нет, и подпись про
             // ветку тогда не произносится вовсе.
-            val branchName = state.graph.branchNames[state.graph.layout.branchOf(graphNode.id).id]
+            val branchName = state.chronology.branchNames[state.chronology.graph.branchOf(graphNode.id).id]
             val description = graphNode.toDescription(branchName = branchName)
             // Род узла решает, что рисовать, и решает здесь, а не в полотне: полотну безразлично,
             // плашка перед ним или круг, — оно ставит по одному элементу на узел.
@@ -128,7 +128,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                   )
                 }
                 GraphLevel.Episodes -> {
-                  val preview = state.graph.previewById[graphNode.id]
+                  val preview = state.chronology.previewById[graphNode.id]
                   EpisodeNode(
                     // Выбранная плашка гасится, а не убирается: поверхность обязана уехать в карточку,
                     // а не размножиться копией, оставшейся лежать на полотне. Место в раскладке узел
@@ -179,7 +179,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
                 // магистрали**, то есть её собственный `branchId` — корневой, и спросить
                 // сливающуюся ветку у самого узла нельзя: связь идёт с другой стороны, от
                 // `mergedAt` ветки.
-                val mergedBranch = state.graph.layout.branchMergedAt(graphNode.id)
+                val mergedBranch = state.chronology.graph.branchMergedAt(graphNode.id)
                 MergeNode(
                   contentDescription = description,
                   // Кадр читается лямбдой, то есть в фазе рисования: значение, взятое здесь,

@@ -14,7 +14,7 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.domain.entity.BaselineHistory
 import ru.sla.clarify.feature.chronology.domain.entity.BranchHistory
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
-import ru.sla.clarify.feature.chronology.ui.entity.ChronologyGraph
+import ru.sla.clarify.feature.chronology.ui.entity.Chronology
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -31,7 +31,7 @@ class ChronologyHistoryMappersTest {
 
   @Test
   fun `nodes stand in the order of time, not in the order of branches`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       baselineCommits = listOf(messageOf(id = "t-1", at = at(hour = 12))),
       branches = listOf(
         BranchHistory(
@@ -39,11 +39,11 @@ class ChronologyHistoryMappersTest {
           commits = listOf(messageOf(id = "b-1", at = at(hour = 10)))
         )
       )
-    ).toChronologyGraph()
+    ).toChronology()
 
     assertEquals(
       listOf("fork-b", "b-1", "t-1", "front"),
-      graph.layout.nodes.map { it.id.value },
+      chronology.graph.nodes.map { it.id.value },
       "ось X накапливается по порядку списка: ветка от десяти часов, поставленная после " +
         "магистрали от двенадцати, уехала бы на графе правее неё"
     )
@@ -56,13 +56,13 @@ class ChronologyHistoryMappersTest {
         messageOf(id = "a", at = at(hour = 10)),
         messageOf(id = "b", at = at(hour = 12))
       )
-    ).toChronologyGraph()
+    ).toChronology()
     val apart = historyOf(
       baselineCommits = listOf(
         messageOf(id = "a", at = at(hour = 10)),
         messageOf(id = "b", at = at(hour = 14))
       )
-    ).toChronologyGraph()
+    ).toChronology()
 
     assertEquals(1, together.episodeCount(), "два часа — та же очередь реплик, а не второй эпизод")
     assertEquals(2, apart.episodeCount(), "четыре часа — уже разрыв: §5 брифа режет кластер по трём")
@@ -74,18 +74,18 @@ class ChronologyHistoryMappersTest {
       messageOf(id = "m-$index", at = at(hour = 10).plusMinutes(index.toLong()))
     }.toList()
 
-    val graph = historyOf(baselineCommits = minute).toChronologyGraph()
+    val chronology = historyOf(baselineCommits = minute).toChronology()
 
     assertEquals(
       listOf(24, 6),
-      graph.episodes().map { it.count },
+      chronology.episodes().map { it.count },
       "паузы между сообщениями нет вовсе, и без потолка §5 весь день стал бы одной плашкой"
     )
   }
 
   @Test
   fun `a system event stays out of the episode`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       baselineCommits = listOf(
         messageOf(id = "a", at = at(hour = 10), text = "последнее слово"),
         Commit.InviteMember(
@@ -97,9 +97,9 @@ class ChronologyHistoryMappersTest {
           invitedId = UserId(PEER)
         )
       )
-    ).toChronologyGraph()
+    ).toChronology()
 
-    val episode = graph.episodes().single()
+    val episode = chronology.episodes().single()
     assertEquals(1, episode.count, "приглашение участника — не реплика, и счётчик его не считает")
     assertEquals(
       "последнее слово",
@@ -110,7 +110,7 @@ class ChronologyHistoryMappersTest {
 
   @Test
   fun `a merged branch gets its merge point and dims its episodes`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       baselineCommits = listOf(messageOf(id = "t-1", at = at(hour = 9))),
       branches = listOf(
         BranchHistory(
@@ -125,28 +125,28 @@ class ChronologyHistoryMappersTest {
           commits = listOf(messageOf(id = "b-1", at = at(hour = 11)))
         )
       )
-    ).toChronologyGraph()
+    ).toChronology()
 
-    val branch = graph.layout.branches.single()
+    val branch = chronology.graph.branches.single()
     assertEquals(GraphBranch.Status.Merged, branch.status)
     assertEquals(Node.Id("merge-b"), branch.mergedAt)
     assertTrue(
-      graph.layout.nodes.single { it.id == Node.Id("merge-b") } is GraphNode.Merge,
+      chronology.graph.nodes.single { it.id == Node.Id("merge-b") } is GraphNode.Merge,
       "точка слияния обязана быть настоящим узлом списка, иначе её вертикаль пройдёт по чужой плашке"
     )
     assertTrue(
-      graph.episode("b-1").dim,
+      chronology.episode("b-1").dim,
       "эпизоды закрытой темы рисуются приглушёнными — §6.5"
     )
     assertFalse(
-      graph.episode("t-1").dim,
+      chronology.episode("t-1").dim,
       "приглушается ветка, а не всё, что случилось до её слияния"
     )
   }
 
   @Test
   fun `an open merge request puts no point on the baseline`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       branches = listOf(
         BranchHistory(
           branch = branchOf(
@@ -157,19 +157,19 @@ class ChronologyHistoryMappersTest {
           commits = listOf(messageOf(id = "b-1", at = at(hour = 11)))
         )
       )
-    ).toChronologyGraph()
+    ).toChronology()
 
-    assertEquals(GraphBranch.Status.Waiting, graph.layout.branches.single().status)
+    assertEquals(GraphBranch.Status.Waiting, chronology.graph.branches.single().status)
     assertNull(
-      graph.layout.branches.single().mergedAt,
+      chronology.graph.branches.single().mergedAt,
       "до финализации точки на магистрали нет вовсе: ветка заморожена, но не вернулась"
     )
-    assertTrue(graph.layout.nodes.none { it is GraphNode.Merge })
+    assertTrue(chronology.graph.nodes.none { it is GraphNode.Merge })
   }
 
   @Test
   fun `the fork stands on the message it left, not on the moment the branch was made`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       baselineCommits = listOf(
         messageOf(id = "old", at = at(hour = 9)),
         messageOf(id = "new", at = at(hour = 20))
@@ -180,18 +180,18 @@ class ChronologyHistoryMappersTest {
           commits = emptyList()
         )
       )
-    ).toChronologyGraph()
+    ).toChronology()
 
     assertEquals(
       listOf("old", "fork-b", "new", "front"),
-      graph.layout.nodes.map { it.id.value },
+      chronology.graph.nodes.map { it.id.value },
       "разговор разошёлся на сообщении девяти часов, а не тогда, когда нажали кнопку"
     )
   }
 
   @Test
   fun `a branch whose source message is gone falls back to its creation time`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       baselineCommits = listOf(messageOf(id = "t-1", at = at(hour = 9))),
       branches = listOf(
         BranchHistory(
@@ -199,38 +199,38 @@ class ChronologyHistoryMappersTest {
           commits = emptyList()
         )
       )
-    ).toChronologyGraph()
+    ).toChronology()
 
     assertEquals(
       Node.Id("fork-b"),
-      graph.layout.branches.single().forkedFrom,
+      chronology.graph.branches.single().forkedFrom,
       "лента страничится с конца, и сообщение-развилка бывает ещё не догружено — ветка от этого " +
         "не перестаёт существовать"
     )
-    assertEquals("fork-b", graph.layout.nodes.last().id.value)
+    assertEquals("fork-b", chronology.graph.nodes.last().id.value)
   }
 
   @Test
   fun `a branch with no anchor at all keeps its lane without a fork`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       branches = listOf(
         BranchHistory(
           branch = branchOf(id = "b", createdAt = null, branchedFrom = "paged-out"),
           commits = listOf(messageOf(id = "b-1", at = at(hour = 11)))
         )
       )
-    ).toChronologyGraph()
+    ).toChronology()
 
-    assertNull(graph.layout.branches.single().forkedFrom)
+    assertNull(chronology.graph.branches.single().forkedFrom)
     assertTrue(
-      graph.layout.nodes.none { it is GraphNode.Fork },
+      chronology.graph.nodes.none { it is GraphNode.Fork },
       "узел в нулевой секунде эпохи утянул бы начало графа в 1970 год и сжал бы историю в точку"
     )
   }
 
   @Test
   fun `unread is laid out from the last episode backwards`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       baselineCommits = listOf(
         messageOf(id = "a", at = at(hour = 9)),
         messageOf(id = "b", at = at(hour = 15)),
@@ -238,58 +238,58 @@ class ChronologyHistoryMappersTest {
         messageOf(id = "d", at = at(hour = 21))
       ),
       baselineUnreadCount = 3
-    ).toChronologyGraph()
+    ).toChronology()
 
     assertEquals(
       listOf(0L, 2L, 1L),
-      graph.episodes().map { it.unreadCount },
+      chronology.episodes().map { it.unreadCount },
       "непрочитанными считаются последние N сообщений ленты, поэтому счёт идёт с конца"
     )
   }
 
   @Test
   fun `the front closes the baseline even when the last episode is a single message`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       baselineCommits = listOf(messageOf(id = "only", at = at(hour = 9)))
-    ).toChronologyGraph()
+    ).toChronology()
 
     assertEquals(
       listOf(GraphNode.Episode::class, GraphNode.Front::class),
-      graph.layout.nodes.map { it::class },
+      chronology.graph.nodes.map { it::class },
       "фронт стоит на времени последнего сообщения, и на одиночном эпизоде обе величины совпадают"
     )
   }
 
   @Test
   fun `branch colours run in a circle and never take the baseline's`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       branches = (1..7).map { order ->
         BranchHistory(
           branch = branchOf(id = "b-$order", createdAt = at(hour = 9).plusMinutes(order.toLong())),
           commits = emptyList()
         )
       }
-    ).toChronologyGraph()
+    ).toChronology()
 
     assertEquals(
       listOf(1, 2, 3, 4, 5, 6, 1),
-      graph.layout.branches.map { it.colorIndex },
+      chronology.graph.branches.map { it.colorIndex },
       "ноль оставлен магистрали: наивный остаток отдал бы седьмой ветке её цвет"
     )
   }
 
   @Test
   fun `an empty conversation gives an empty graph, not a broken one`() {
-    val graph = historyOf().toChronologyGraph()
+    val chronology = historyOf().toChronology()
 
-    assertTrue(graph.layout.nodes.isEmpty())
-    assertTrue(graph.layout.branches.isEmpty())
-    assertTrue(graph.previewById.isEmpty())
+    assertTrue(chronology.graph.nodes.isEmpty())
+    assertTrue(chronology.graph.branches.isEmpty())
+    assertTrue(chronology.previewById.isEmpty())
   }
 
   @Test
   fun `the episode carries the count, the last snippet and the share of my replies`() {
-    val graph = historyOf(
+    val chronology = historyOf(
       baselineCommits = listOf(
         messageOf(id = "a", at = at(hour = 9), text = "первое", isSelf = true),
         messageOf(id = "b", at = at(hour = 9).plusMinutes(1), text = "второе", isSelf = true),
@@ -297,24 +297,24 @@ class ChronologyHistoryMappersTest {
         messageOf(id = "d", at = at(hour = 9).plusMinutes(3), text = "и правда последнее")
       ),
       members = listOf(Member(id = Member.Id(PEER), displayName = "Анна", photoUrl = null))
-    ).toChronologyGraph()
+    ).toChronology()
 
-    val episode = graph.episodes().single()
+    val episode = chronology.episodes().single()
     assertEquals(4, episode.count)
     assertEquals("и правда последнее", episode.snippet)
     assertEquals(0.5f, episode.myShare)
 
-    val preview = graph.previewById.getValue(Node.Id("a"))
+    val preview = chronology.previewById.getValue(Node.Id("a"))
     assertEquals("Анна", preview.authorName, "карточка разворачивает последнее сообщение кластера")
     assertEquals("и правда последнее", preview.text)
   }
 }
 
-private fun ChronologyGraph.episodes(): List<GraphNode.Episode> {
-  return layout.nodes.filterIsInstance<GraphNode.Episode>()
+private fun Chronology.episodes(): List<GraphNode.Episode> {
+  return graph.nodes.filterIsInstance<GraphNode.Episode>()
 }
 
-private fun ChronologyGraph.episodeCount(): Int {
+private fun Chronology.episodeCount(): Int {
   return episodes().size
 }
 
@@ -324,7 +324,7 @@ private fun ChronologyGraph.episodeCount(): Int {
  * @param id идентификатор узла
  * @return узел-эпизод; его отсутствие — ошибка теста, а не проверяемое значение
  */
-private fun ChronologyGraph.episode(id: String): GraphNode.Episode {
+private fun Chronology.episode(id: String): GraphNode.Episode {
   return episodes().single { it.id.value == id }
 }
 
