@@ -1,7 +1,6 @@
-package ru.sla.clarify.feature.chronology.ui.components.canvas
+package ru.sla.atlas.ui
 
 import androidx.compose.runtime.State
-import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 
 /**
  * Уходящее представление на время смены уровня детализации: что гаснет и насколько ещё видно.
@@ -13,11 +12,12 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
  * конкретный уходящий уровень и после смены цели означает уже не то, что означала. Пара
  * пересобирается целиком, и разъехаться половинам нечем.
  *
+ * @param L уровень детализации вызывающего
  * @param level уровень, который гаснет
  * @param alpha сколько от него ещё видно: единица в начале перехода, ноль в конце. Читать в фазе
  *   рисования — чтение в композиции пересобирало бы узлы каждый кадр перехода
  */
-internal data class GraphLevelExit(
-  val level: GraphLevel,
+data class LevelExit<out L>(
+  val level: L,
   val alpha: State<Float>
 )
