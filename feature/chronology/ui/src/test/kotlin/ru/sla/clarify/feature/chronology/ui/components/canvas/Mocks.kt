@@ -8,6 +8,7 @@ import ru.sla.atlas.entity.Lanes
 import ru.sla.atlas.entity.Node
 import ru.sla.atlas.layout.lanesOf
 import ru.sla.atlas.ui.AtlasCanvasState
+import ru.sla.clarify.feature.chronology.ui.entity.ChronologyLevels
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 

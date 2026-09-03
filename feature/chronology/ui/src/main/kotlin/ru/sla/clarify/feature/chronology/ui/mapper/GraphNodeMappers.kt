@@ -74,7 +74,7 @@ internal fun GraphNode(
           modifier = modifier.graphicsLayer { alpha = if (node.id == selectedNode) 0f else 1f },
           time = node.time,
           count = node.count,
-          snippet = node.snippet,
+          snippet = node.text,
           myShare = node.myShare,
           unreadCount = node.unreadCount,
           dim = node.dim,

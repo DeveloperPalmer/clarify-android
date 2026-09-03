@@ -7,14 +7,6 @@ import ru.sla.atlas.entity.Branch
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.uikit.theme.AppColors
 
-/**
- * Иконка, которой статус ведёт свою строку.
- *
- * Иконка есть у каждого статуса, поэтому `null` здесь не возвращается: строка статуса на узле ветки
- * рисуется всегда.
- *
- * @return идентификатор рисунка
- */
 internal fun Branch.Status.toIconResId(): Int {
   return when (this) {
     Branch.Status.Alive -> R.drawable.ic_git_branch_24
@@ -24,17 +16,6 @@ internal fun Branch.Status.toIconResId(): Int {
   }
 }
 
-/**
- * Цвет иконки статуса — единственное место, где статус кодируется цветом.
- *
- * Строка статуса цвет не берёт, и это решение с ценой: `contentGoldPrimary` на карточке в светлой
- * теме даёт 2.19 : 1 при пороге 4.5 : 1, то есть §3.2 п. 4 и §14 брифа запрещают золото как цвет
- * мелкого текста. У иконки та же цифра допустима: рядом с ней стоит слово, и цвет здесь не
- * единственный носитель смысла, а его усиление.
- *
- * @param colors палитра активной темы
- * @return золото у ожидания, зелёный у закрытой темы, нейтральный серый у живой
- */
 internal fun Branch.Status.toIconTint(colors: AppColors): Color {
   return when (this) {
     Branch.Status.Alive -> colors.contentTertiary
@@ -44,17 +25,20 @@ internal fun Branch.Status.toIconTint(colors: AppColors): Color {
   }
 }
 
-/**
- * Строка статуса словами.
- *
- * @return готовая к показу строка на языке устройства
- */
 @Composable
 internal fun Branch.Status.toLabel(): String {
   return when (this) {
-    Branch.Status.Alive -> stringResource(R.string.chronology_branch_status_alive)
-    Branch.Status.Waiting -> stringResource(R.string.chronology_branch_status_waiting)
-    Branch.Status.Ready -> stringResource(R.string.chronology_branch_status_ready)
-    Branch.Status.Merged -> stringResource(R.string.chronology_branch_status_merged)
+    Branch.Status.Alive -> {
+      stringResource(R.string.chronology_branch_status_alive)
+    }
+    Branch.Status.Waiting -> {
+      stringResource(R.string.chronology_branch_status_waiting)
+    }
+    Branch.Status.Ready -> {
+      stringResource(R.string.chronology_branch_status_ready)
+    }
+    Branch.Status.Merged -> {
+      stringResource(R.string.chronology_branch_status_merged)
+    }
   }
 }

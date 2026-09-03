@@ -1,7 +1,10 @@
 package ru.sla.clarify.feature.chronology.ui.mapper
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import ru.sla.atlas.assembly.graphOf
 import ru.sla.atlas.entity.Node
+import ru.sla.atlas.entity.NodeDraft
 import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.core.domain.date.DATE_TIME_FORMATTER_DAY_MONTH_TIME
 import ru.sla.clarify.entity.chat.Branch
@@ -10,7 +13,6 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
 import ru.sla.clarify.feature.chronology.ui.entity.Chronology
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
-import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeDraft
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodePreview
 import java.time.Duration
 import java.time.Instant
@@ -39,7 +41,7 @@ internal fun ChronologyHistory.toChronology(): Chronology {
   val baselineBranchId = GraphBranch.Id(baseline.id.value)
   val baselineTimeByCommit = baseline.commits.associate { it.id to it.timestamp }
 
-  val drafts = mutableListOf<GraphNodeDraft>()
+  val drafts = mutableListOf<NodeDraft<GraphNode>>()
   drafts += episodeDraftsOf(
     branchId = baselineBranchId,
     commits = baseline.commits,
@@ -50,8 +52,8 @@ internal fun ChronologyHistory.toChronology(): Chronology {
   // Фронт стоит на последнем событии магистрали, а не на «сейчас» по часам: §6.7 просит крайний
   // правый узел магистрали, а пустота между последним сообщением и текущей минутой — это не история.
   baseline.commits.lastOrNull()?.let { last ->
-    drafts += GraphNodeDraft(
-      graphNode = GraphNode.Front(id = Node.Id("front"), gap = UNSET_GAP),
+    drafts += draftOf(
+      node = GraphNode.Front(id = Node.Id("front"), gap = UNSET_GAP),
       branchId = baselineBranchId,
       at = last.timestamp
     )
@@ -87,15 +89,15 @@ internal fun ChronologyHistory.toChronology(): Chronology {
         // Шесть оттенков идентичности — `graphLane1`…`graphLane6`, см. `Int.toBranchColor`.
         paletteSize = 6
       ),
-      forkedFrom = fork?.graphNode?.id,
-      mergedAt = merge?.graphNode?.id,
+      forkedFrom = fork?.node?.id,
+      mergedAt = merge?.node?.id,
       status = status
     )
   }
 
   return Chronology(
     graph = graphOf(
-      drafts = drafts.map { it.toNodeDraft() },
+      drafts = drafts,
       // Магистраль — такая же ветка, как остальные, и в графе она названа отдельно: её узлы иначе
       // не принадлежали бы никому. Цвет нулевой, развилки и слияния у неё нет по определению.
       baseline = GraphBranch(
@@ -110,11 +112,49 @@ internal fun ChronologyHistory.toChronology(): Chronology {
       gapOf = { it.toTimeGap() },
       withGap = { node, gap -> node.withGap(gap) }
     ),
-    branchNames = branches.associate { GraphBranch.Id(it.branch.id.value) to it.branch.name },
-    // Карточка адресуется идентификатором узла, а он сборку переживает: пауза меняется, тождество
-    // нет. Поэтому карту можно собрать по черновикам, не дожидаясь готовых узлов.
-    previewById = drafts.mapNotNull { draft -> draft.preview?.let { draft.graphNode.id to it } }.toMap()
+    branchNames = branches.associate { GraphBranch.Id(it.branch.id.value) to it.branch.name }
   )
+}
+
+/**
+ * Узел, готовый встать в общий порядок.
+ *
+ * @param node узел, каким он попадёт в граф: всё, кроме паузы
+ * @param branchId ветка, которой принадлежит узел; у точек на магистрали — корневая
+ * @param at момент времени, по которому узел встаёт в общий порядок
+ * @return черновик с разрешением спора внутри одного момента
+ */
+private fun draftOf(
+  node: GraphNode,
+  branchId: GraphBranch.Id,
+  at: LocalDateTime
+): NodeDraft<GraphNode> {
+  return NodeDraft(
+    node = node,
+    branchId = branchId,
+    at = at,
+    order = node.toSortOrder()
+  )
+}
+
+/**
+ * Порядок узлов, попавших на один и тот же момент.
+ *
+ * Совпадение это не экзотика, а обычное дело: фронт стоит на последнем сообщении магистрали, а
+ * развилка — на том самом сообщении, от которого ушла ветка, и оно бывает первым в своём эпизоде.
+ *
+ * Порядок смысловой: сначала то, что было сказано, потом то, что из сказанного следует. Ветка ушла
+ * **от** сообщения, значит после него; вернулась она позже, чем ушла; фронт замыкает магистраль.
+ *
+ * @return ключ сортировки внутри одного момента
+ */
+private fun GraphNode.toSortOrder(): Int {
+  return when (this) {
+    is GraphNode.Episode -> 0
+    is GraphNode.Fork -> 1
+    is GraphNode.Merge -> 2
+    is GraphNode.Front -> 3
+  }
 }
 
 /**
@@ -127,21 +167,22 @@ internal fun ChronologyHistory.toChronology(): Chronology {
  * @param membersById участники беседы по идентификатору пользователя
  * @return узлы-эпизоды в порядке ленты
  */
+@RequiresApi(Build.VERSION_CODES.O)
 private fun episodeDraftsOf(
   branchId: GraphBranch.Id,
   commits: List<Commit>,
   unreadCount: Long,
   dim: Boolean,
   membersById: Map<String, Member>
-): List<GraphNodeDraft> {
+): List<NodeDraft<GraphNode>> {
   val clusters = commits.toEpisodeClusters()
   val unreadShares = clusters.map { it.size }.toUnreadShares(unreadCount)
   return clusters.mapIndexed { index, cluster ->
     val first = cluster.first()
     val last = cluster.last()
     val author = membersById[last.senderId.value]
-    GraphNodeDraft(
-      graphNode = GraphNode.Episode(
+    draftOf(
+      node = GraphNode.Episode(
         // Идентификатор первого сообщения кластера, а не порядковый номер: номер съезжает, стоит
         // приехать сообщению в середину истории, и вместе с ним съезжает выбранный узел под
         // открытой карточкой.
@@ -149,19 +190,19 @@ private fun episodeDraftsOf(
         gap = UNSET_GAP,
         time = first.timestamp.format(DATE_TIME_FORMATTER_DAY_MONTH_TIME),
         count = cluster.size,
-        snippet = last.text,
+        text = last.text,
         myShare = cluster.count { it.isSelf }.toFloat() / cluster.size,
         unreadCount = unreadShares[index],
-        dim = dim
+        dim = dim,
+        preview = GraphNodePreview(
+          authorName = author?.displayName.orEmpty(),
+          authorPhotoUrl = author?.photoUrl,
+          text = last.text,
+          time = last.timestamp.format(DATE_TIME_FORMATTER_DAY_MONTH_TIME)
+        )
       ),
       branchId = branchId,
-      at = first.timestamp,
-      preview = GraphNodePreview(
-        authorName = author?.displayName.orEmpty(),
-        authorPhotoUrl = author?.photoUrl,
-        text = last.text,
-        time = last.timestamp.format(DATE_TIME_FORMATTER_DAY_MONTH_TIME)
-      )
+      at = first.timestamp
     )
   }
 }
@@ -189,15 +230,15 @@ private fun forkDraftOf(
   baseline: Branch.Id,
   baselineBranchId: GraphBranch.Id,
   baselineTimeByCommit: Map<Commit.Id, LocalDateTime>
-): GraphNodeDraft? {
+): NodeDraft<GraphNode>? {
   if (branch.parentBranchId != baseline) {
     return null
   }
   val at = baselineTimeByCommit[branch.branchedFromCommitId]
     ?: branch.createdAt.takeIf { it > 0 }?.toBranchTime()
     ?: return null
-  return GraphNodeDraft(
-    graphNode = GraphNode.Fork(id = Node.Id("fork-${branch.id.value}"), gap = UNSET_GAP),
+  return draftOf(
+    node = GraphNode.Fork(id = Node.Id("fork-${branch.id.value}"), gap = UNSET_GAP),
     branchId = baselineBranchId,
     at = at
   )
@@ -218,13 +259,13 @@ private fun mergeDraftOf(
   branch: Branch,
   baselineBranchId: GraphBranch.Id,
   status: GraphBranch.Status
-): GraphNodeDraft? {
+): NodeDraft<GraphNode>? {
   if (status != GraphBranch.Status.Merged) {
     return null
   }
   val at = branch.mergeRequest?.mergedAt?.takeIf { it > 0 }?.toBranchTime() ?: return null
-  return GraphNodeDraft(
-    graphNode = GraphNode.Merge(id = Node.Id("merge-${branch.id.value}"), gap = UNSET_GAP),
+  return draftOf(
+    node = GraphNode.Merge(id = Node.Id("merge-${branch.id.value}"), gap = UNSET_GAP),
     branchId = baselineBranchId,
     at = at
   )

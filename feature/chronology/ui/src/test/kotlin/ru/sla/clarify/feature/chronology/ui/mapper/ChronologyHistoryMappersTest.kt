@@ -103,7 +103,7 @@ class ChronologyHistoryMappersTest {
     assertEquals(1, episode.count, "приглашение участника — не реплика, и счётчик его не считает")
     assertEquals(
       "последнее слово",
-      episode.snippet,
+      episode.text,
       "у приглашения нет текста, и попав в кластер, оно подменило бы сниппет пустой строкой"
     )
   }
@@ -284,7 +284,6 @@ class ChronologyHistoryMappersTest {
 
     assertTrue(chronology.graph.nodes.isEmpty())
     assertTrue(chronology.graph.branches.isEmpty())
-    assertTrue(chronology.previewById.isEmpty())
   }
 
   @Test
@@ -301,12 +300,15 @@ class ChronologyHistoryMappersTest {
 
     val episode = chronology.episodes().single()
     assertEquals(4, episode.count)
-    assertEquals("и правда последнее", episode.snippet)
+    assertEquals("и правда последнее", episode.text)
     assertEquals(0.5f, episode.myShare)
 
-    val preview = chronology.previewById.getValue(Node.Id("a"))
-    assertEquals("Анна", preview.authorName, "карточка разворачивает последнее сообщение кластера")
-    assertEquals("и правда последнее", preview.text)
+    assertEquals(
+      "Анна",
+      episode.preview.authorName,
+      "карточка разворачивает последнее сообщение кластера"
+    )
+    assertEquals("и правда последнее", episode.preview.text)
   }
 }
 

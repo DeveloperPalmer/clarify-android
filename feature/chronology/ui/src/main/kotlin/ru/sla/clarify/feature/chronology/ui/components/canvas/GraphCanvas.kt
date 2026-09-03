@@ -50,6 +50,7 @@ internal fun GraphCanvas(
   AtlasCanvas(
     modifier = modifier,
     state = state,
+    crossfadeSpec = AppTheme.motion.mediumTween(),
     branchColors = branchColors,
     gesturesEnabled = gesturesEnabled,
     foreignBranchOf = { graphNode -> graph.foreignBranchOf(graphNode) },

@@ -25,21 +25,6 @@ import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
 
-/**
- * Две кнопки камеры: «к началу переписки» и «к текущему моменту» (§11.1 брифа).
- *
- * Обе уводят камеру перелётом, а не прыжком, и это требование спеки, а не украшение: камера,
- * телепортировавшаяся через всю историю, не оставляет зрителю ничего, из чего понять, куда он попал.
- * Само движение живёт в держателе камеры — кнопка знает только, что её нажали.
- *
- * Круги по 44 dp — минимальная цель касания, а не размер иконки: сама иконка внутри 18 dp.
- *
- * @param onStart нажата кнопка «к началу переписки»
- * @param onFront нажата кнопка «к текущему моменту»
- * @param onBoundsChanged куда встали кнопки и когда их не стало: полотно по этой зоне отличает
- *   палец на кнопке от пальца на графе — иначе съехавший с кнопки палец потащит за собой граф
- * @param modifier модификатор пары кнопок
- */
 @Composable
 internal fun CameraButtons(
   onStart: () -> Unit,
@@ -52,9 +37,8 @@ internal fun CameraButtons(
     onDispose { currentOnBoundsChanged(ZONE_KEY, Rect.Zero) }
   }
   Column(
-    modifier = modifier.onGloballyPositioned {
-      currentOnBoundsChanged(ZONE_KEY, it.boundsInRoot())
-    },
+    modifier = modifier
+      .onGloballyPositioned { currentOnBoundsChanged(ZONE_KEY, it.boundsInRoot()) },
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
     CameraButton(
@@ -70,14 +54,6 @@ internal fun CameraButtons(
   }
 }
 
-/**
- * Одна круглая кнопка камеры.
- *
- * @param iconResId иконка внутри круга
- * @param description что кнопка делает, для скринридера
- * @param onClick нажатие
- * @param modifier модификатор кнопки
- */
 @Composable
 private fun CameraButton(
   iconResId: Int,
@@ -87,7 +63,6 @@ private fun CameraButton(
 ) {
   Box(
     modifier = modifier
-      // 44 dp — минимальная цель касания; иконка внутри вчетверо меньше круга.
       .size(44.dp)
       .surface(
         backgroundColor = AppTheme.colors.cardPrimary,
@@ -106,8 +81,6 @@ private fun CameraButton(
   }
 }
 
-// Ключ зоны жеста: важно только то, что он один на пару кнопок и не совпадает с чужим. Читается
-// дважды — при объявлении зоны и при её снятии.
 private val ZONE_KEY = Any()
 
 @Preview

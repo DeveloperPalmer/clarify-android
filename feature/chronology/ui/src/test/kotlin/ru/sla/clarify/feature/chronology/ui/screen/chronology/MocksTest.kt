@@ -15,9 +15,9 @@ import ru.sla.atlas.layout.edgesOf
 import ru.sla.atlas.layout.placementOf
 import ru.sla.atlas.layout.topLaneOf
 import ru.sla.atlas.lod.fitScaleOf
-import ru.sla.clarify.feature.chronology.ui.components.canvas.ChronologyLevels
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockBranchColors
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockLanes
+import ru.sla.clarify.feature.chronology.ui.entity.ChronologyLevels
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.mapper.toLaneStep
@@ -268,7 +268,7 @@ class MocksTest {
       "трёхзначный счётчик обязан упереться в «99» и не растянуть плашку"
     )
     assertTrue(
-      episodes.any { it.snippet.length > 100 },
+      episodes.any { it.text.length > 100 },
       "длинный сниппет обязан упереться в фиксированную ширину узла эллипсисом"
     )
   }
@@ -335,22 +335,6 @@ class MocksTest {
       lanes.size > 7,
       "потолок §4.2 в семь дорожек раскраска не ставит: восьмая ветка получает дорожку за потолком, " +
         "а не теряется — §18 п. 6 закрыт вертикальным скроллом полотна"
-    )
-  }
-
-  /**
-   * Тап по узлу без содержимого карточки не заводится вовсе, поэтому эпизод без превью — это узел,
-   * который молча перестал нажиматься. По коду этого не видно: и поле, и его чтение на месте.
-   */
-  @Test
-  fun `every episode of the set has a card to open`() {
-    val mock = mockGraph()
-    val episodes = mock.graphNodes.filterIsInstance<GraphNode.Episode>()
-
-    assertEquals(
-      episodes.map { it.id }.toSet(),
-      mock.previewById.keys,
-      "эпизод без превью перестаёт нажиматься, и заметить это можно только тапнув по нему"
     )
   }
 
