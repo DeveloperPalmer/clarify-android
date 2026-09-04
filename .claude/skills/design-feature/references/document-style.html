@@ -1,0 +1,1042 @@
+<!-- ============================================================================
+     ОБРАЗЕЦ ДОКУМЕНТА РЕШЕНИЯ — дом-стиль проектных документов Clarify.
+
+     Как пользоваться: скопировать этот файл в docs/plans/<feature>-<topic>.html
+     и заменить содержимое на своё. Блок <style> и <script> копируются ЦЕЛИКОМ и
+     не переписываются — они одинаковы во всех документах, и именно поэтому
+     документы одной серии выглядят как одна серия.
+
+     Заголовочные теги <!doctype>, <html>, <head>, <body> не пишутся: страница
+     публикуется Артефактом и обёртку получает при публикации.
+
+     Читая ЧУЖОЙ существующий план, начинать с <div class="page"> — выше только
+     стиль, он тут же, в этом файле.
+     ============================================================================ -->
+
+<title>Имя документа</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper:        #f2f5f4;
+    --surface:      #ffffff;
+    --surface-sunk: #e8edeb;
+    --ink:          #16201f;
+    --ink-soft:     #46534f;
+    --ink-faint:    #75837e;
+    --rule:         #d3dbd8;
+    --rule-strong:  #b3bfbb;
+    --accent:       #0d6360;
+    --accent-soft:  #d9e9e6;
+    --warn:         #8f5b10;
+    --warn-soft:    #f5e7cd;
+    --risk:         #93372f;
+    --risk-soft:    #f6dfdb;
+    --ok:           #3f6b34;
+    --ok-soft:      #dfeed8;
+    --done:         #00a63e;
+    --done-soft:    #d4f7e0;
+    --done-line:    #7fd9a2;
+
+    color-scheme: light dark;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:        #101615;
+      --surface:      #182120;
+      --surface-sunk: #0b100f;
+      --ink:          #e6ecea;
+      --ink-soft:     #a9b6b2;
+      --ink-faint:    #7c8985;
+      --rule:         #2b3937;
+      --rule-strong:  #3d504c;
+      --accent:       #5ec6bd;
+      --accent-soft:  #14322f;
+      --warn:         #d9a45c;
+      --warn-soft:    #362813;
+      --risk:         #e08a80;
+      --risk-soft:    #3a1e1a;
+      --ok:           #9ec98e;
+      --ok-soft:      #1e2c18;
+      --done:         #34e57c;
+      --done-soft:    #0e3a22;
+      --done-line:    #1f6b41;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:        #101615;
+    --surface:      #182120;
+    --surface-sunk: #0b100f;
+    --ink:          #e6ecea;
+    --ink-soft:     #a9b6b2;
+    --ink-faint:    #7c8985;
+    --rule:         #2b3937;
+    --rule-strong:  #3d504c;
+    --accent:       #5ec6bd;
+    --accent-soft:  #14322f;
+    --warn:         #d9a45c;
+    --warn-soft:    #362813;
+    --risk:         #e08a80;
+    --risk-soft:    #3a1e1a;
+    --ok:           #9ec98e;
+    --ok-soft:      #1e2c18;
+    --done:         #34e57c;
+    --done-soft:    #0e3a22;
+    --done-line:    #1f6b41;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 40px 24px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 44px;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead { display: flex; flex-direction: column; gap: 16px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .eyebrow .sep { color: var(--rule-strong); }
+
+  h1 {
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(30px, 4.2vw, 44px);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    max-width: 66ch;
+    font-size: 16.5px;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    padding-top: 4px;
+    font-size: 13px;
+    color: var(--ink-faint);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .meta b { color: var(--ink-soft); font-weight: 500; }
+
+  /* ---------- flow rail ---------- */
+
+  .rail-wrap { overflow-x: auto; padding-bottom: 6px; }
+  .rail {
+    display: flex;
+    align-items: stretch;
+    gap: 3px;
+    min-width: 900px;
+  }
+  .rail-step {
+    flex: 1 1 0;
+    border-top: 3px solid var(--rule);
+    padding: 10px 8px 0;
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--ink-faint);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .rail-step .n {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--rule-strong);
+  }
+  .rail-step.in {
+    border-top-color: var(--accent);
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .rail-step.in .n { color: var(--accent); }
+  .rail-step.edge { border-top-style: dashed; }
+
+  .rail-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin-top: 12px;
+  }
+  .swatch {
+    display: inline-block;
+    width: 22px;
+    height: 3px;
+    vertical-align: middle;
+    margin-right: 7px;
+  }
+
+  /* ---------- sections ---------- */
+
+  section { display: flex; flex-direction: column; gap: 18px; }
+
+  h2 {
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-weight: 600;
+    font-size: 23px;
+    letter-spacing: -0.01em;
+    margin: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  h3 {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+
+  p { margin: 0; max-width: 72ch; }
+  p.note { color: var(--ink-soft); }
+
+  /* ---------- scope split ---------- */
+
+  .scope {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .scope-col { display: flex; flex-direction: column; gap: 10px; }
+  .scope-col ul { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .scope-col li {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    font-size: 14px;
+    padding-left: 14px;
+    border-left: 2px solid var(--rule);
+  }
+  .scope-col.own li { border-left-color: var(--accent); }
+  .scope-col li .key {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    flex: 0 0 auto;
+    min-width: 84px;
+  }
+
+  /* ---------- pipeline schematic ---------- */
+
+  .pipe-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    padding: 20px 18px;
+  }
+  .pipe { display: block; min-width: 880px; width: 100%; height: auto; }
+  .pipe text { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .pipe .t-key   { font-size: 12.5px; fill: var(--ink); font-weight: 500; }
+  .pipe .t-sub   { font-size: 11px; fill: var(--ink-faint); }
+  .pipe .t-head  { font-family: "IBM Plex Sans Condensed", sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; fill: var(--ink-faint); }
+  .pipe .t-chip  { font-size: 10.5px; fill: var(--accent); }
+
+  /* ---------- table ---------- */
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  table { border-collapse: collapse; width: 100%; min-width: 940px; }
+  table.narrow { min-width: 720px; }
+
+  thead th {
+    text-align: left;
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 12px 14px;
+    background: var(--surface-sunk);
+    border-bottom: 1px solid var(--rule-strong);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    font-size: 14px;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+
+  tr.group td {
+    background: var(--surface-sunk);
+    border-bottom: 1px solid var(--rule-strong);
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 600;
+    font-size: 12.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink);
+    padding: 10px 14px;
+  }
+  tr.group td .status { text-transform: none; letter-spacing: 0; }
+
+  td.id {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    width: 1%;
+  }
+  td.name { font-weight: 500; min-width: 190px; }
+  td.what { color: var(--ink-soft); min-width: 300px; }
+  td.dep { color: var(--ink-soft); min-width: 190px; font-size: 13.5px; }
+  td.size { width: 1%; }
+  td.src { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-faint); min-width: 220px; }
+  td.val { font-variant-numeric: tabular-nums; white-space: nowrap; width: 1%; font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.88em;
+    background: var(--surface-sunk);
+    padding: 1px 4px;
+    border-radius: 2px;
+    word-break: break-word;
+  }
+  tr.group td code { background: transparent; padding: 0; }
+  td.src code { background: transparent; padding: 0; }
+
+  .size-chip {
+    display: inline-block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border: 1px solid var(--rule-strong);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .size-chip.l { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+  .size-chip.none { border-style: dashed; color: var(--ink-faint); }
+
+  /* ---------- tracker ---------- */
+
+  .tracker {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+  }
+  .tracker-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 16px;
+  }
+  .tracker-count {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .tracker-count b { color: var(--done); font-weight: 500; }
+  .tracker-hint { font-size: 13px; color: var(--ink-faint); }
+  .tracker-reset {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--rule-strong);
+    color: var(--ink-faint);
+    font: inherit;
+    font-size: 12.5px;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+  .tracker-reset:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .tracker-reset.armed { color: var(--risk); border-color: var(--risk); background: var(--risk-soft); }
+  .tracker-reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .tracker-bar {
+    height: 6px;
+    background: var(--surface-sunk);
+    overflow: hidden;
+  }
+  .tracker-bar span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--done);
+    transition: width 220ms ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tracker-bar span { transition: none; }
+  }
+
+  .sync {
+    font-size: 12.5px;
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--ink-faint);
+  }
+  .sync.live { color: var(--done); }
+
+  .tick {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    cursor: pointer;
+    text-align: left;
+  }
+  .tick:hover { color: var(--ink); }
+  .tick .mark {
+    width: 10px;
+    color: transparent;
+    font-size: 11px;
+  }
+  .tick:hover .mark { color: var(--rule-strong); }
+  .tick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  tr.done td.id .tick,
+  tr.done td.id .tick:hover { color: var(--done); font-weight: 500; }
+  tr.done td.id .tick .mark { color: var(--done); }
+  tr.done td.id { box-shadow: inset 3px 0 0 var(--done); }
+  tr.done td.name { color: var(--ink-faint); }
+  tr.done td.name code { opacity: 0.75; }
+
+  .gcount {
+    display: inline-block;
+    margin-left: 10px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .gcount.full { color: var(--done); }
+
+  .status {
+    display: inline-block;
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    margin-left: 8px;
+  }
+  .status.reuse { background: var(--ok-soft); color: var(--ok); }
+  .status.new   { background: var(--accent-soft); color: var(--accent); }
+  .status.risk  { background: var(--risk-soft); color: var(--risk); }
+  .status.part  { background: var(--warn-soft); color: var(--warn); }
+
+  /* ---------- numbered prose lists ---------- */
+
+  .items { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--rule); }
+  .item {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 0 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .item .num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    color: var(--accent);
+    padding-top: 1px;
+  }
+  .items.risky .item .num { color: var(--risk); }
+  .items.costs .item .num { color: var(--warn); }
+  .items.closed .item .num,
+  .item.closed .num { color: var(--ok); }
+  .item .body { display: flex; flex-direction: column; gap: 5px; }
+  .item .ask { font-weight: 500; }
+  .item .why { color: var(--ink-soft); font-size: 14px; max-width: 78ch; }
+
+  /* ---------- verdict callout ---------- */
+
+  .verdict {
+    border: 1px solid var(--risk);
+    background: var(--risk-soft);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .verdict .label {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--risk);
+  }
+  .verdict p { color: var(--ink); max-width: 80ch; }
+
+  /* ---------- cards ---------- */
+
+  .reuse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .reuse-card {
+    background: var(--surface);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .reuse-card .path {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--accent);
+    word-break: break-word;
+  }
+  .reuse-card .desc { font-size: 13.5px; color: var(--ink-soft); }
+
+  /* ---------- module tree ---------- */
+
+  .tree {
+    margin: 0;
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    padding: 18px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+  }
+  .tree b { color: var(--ink); font-weight: 500; }
+  .tree i { color: var(--accent); font-style: normal; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 18px;
+    font-size: 13px;
+    color: var(--ink-faint);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 600px) {
+    .page { padding: 28px 16px 64px; gap: 34px; }
+  }
+</style>
+
+<!-- ============================================================================
+     КАТАЛОГ КОМПОНЕНТОВ.
+     Примеры взяты из раунда по инерции камеры — чтобы было видно, какого рода
+     содержимое каждый компонент держит. Заменяются целиком.
+     ============================================================================ -->
+
+<div class="page">
+
+  <!-- РАЗДЕЛ 1 «Требование». Требование дословно живёт в standfirst, рамка из
+       фазы 0 — в meta. Eyebrow: фича / уровень / ветка. -->
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>Clarify</span>
+      <span class="sep">/</span>
+      <span>design-feature · уровень 2</span>
+      <span class="sep">/</span>
+      <span>ветка dev</span>
+    </div>
+    <h1>Инерция камеры на канвасе хронологии</h1>
+    <p class="standfirst">
+      Требование дословно, словами владельца, — здесь, а не в пересказе. Одна-две фразы:
+      что просят и чем документ заканчивается.
+    </p>
+    <div class="meta">
+      <span><b>Уровень:</b> 2 — три проекта, один foil</span>
+      <span><b>Решение:</b> проект A, принят</span>
+      <span><b>Дата:</b> 04.09.2026</span>
+      <span><b>Статус:</b> ждёт «да» владельца</span>
+    </div>
+  </header>
+
+  <!-- ОБЗОРНЫЙ РЕЛЬС. Ставится сразу за шапкой, когда у работы есть
+       последовательность: пункты перестройки, шаги флоу, фазы. Класс "in" —
+       то, что не заблокировано; "edge" — пунктир, для удаления или чужого шага.
+       Не ставить, если последовательности нет: пустой рельс хуже отсутствующего. -->
+  <section>
+    <h2>Порядок работ и что не заблокировано</h2>
+    <p class="note">Одна фраза: что показывает рельс и по какому признаку выделены шаги.</p>
+    <div class="rail-wrap">
+      <div class="rail">
+        <div class="rail-step in"><span class="n">1</span>Кламп с чтения на запись</div>
+        <div class="rail-step in"><span class="n">2</span>panStepOf возвращает consumed</div>
+        <div class="rail-step"><span class="n">3</span>Затухание поверх шага</div>
+        <div class="rail-step"><span class="n">4</span>Телеметрия жеста и инерции</div>
+        <div class="rail-step edge"><span class="n">5</span>Снять старый обработчик</div>
+      </div>
+    </div>
+    <div class="rail-legend">
+      <span><span class="swatch" style="background: var(--accent)"></span>можно начинать сегодня</span>
+      <span><span class="swatch" style="background: var(--rule)"></span>ждёт предыдущих пунктов</span>
+      <span>пунктир — удаление, а не добавление</span>
+    </div>
+  </section>
+
+  <!-- ГРАНИЦЫ из фазы 0: что в объёме, что нет. Колонка own — наша, вторая —
+       чужая или отложенная. Ключ слева короткий: тема, а не номер. -->
+  <section>
+    <h2>Границы</h2>
+    <div class="scope">
+      <div class="scope-col own">
+        <h3>В объёме</h3>
+        <ul>
+          <li><span class="key">камера</span><span>затухание после отпускания, останов на упоре</span></li>
+          <li><span class="key">кламп</span><span>перенос с чтения на запись</span></li>
+        </ul>
+      </div>
+      <div class="scope-col">
+        <h3>За границей</h3>
+        <ul>
+          <li><span class="key">снято</span><span>масштабирование двумя пальцами</span></li>
+          <li><span class="key">позже</span><span>инерция по вертикали при одной дорожке</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- РАЗДЕЛ 2 «Что установлено разведкой». Таблица с обязательной колонкой
+       «где проверено»: туда идут файл:строка, путь внутри jar, вывод gradle.
+       Утверждение без источника в эту таблицу не попадает.
+       Группирующая строка tr.group выделяет находки, изменившие план. -->
+  <section>
+    <h2>Что установлено разведкой</h2>
+    <p class="note">Всякое утверждение о чужом коде подкреплено строкой из исходников на диске.</p>
+    <div class="table-wrap">
+      <table class="narrow">
+        <thead>
+          <tr><th>Величина</th><th>Значение</th><th>Где проверено</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group"><td colspan="3">Находки, изменившие план<span class="status risk">важно</span></td></tr>
+          <tr>
+            <td class="name">Кламп камеры стоял на чтении, а не на записи</td>
+            <td class="val">—</td>
+            <td class="src"><code>GraphCamera.kt:88</code></td>
+          </tr>
+          <tr class="group"><td colspan="3">Числа, которые сверяются на устройстве</td></tr>
+          <tr>
+            <td class="name">Пролёт при броске 1000 dp/s</td>
+            <td class="val">194 dp / 555 мс</td>
+            <td class="src"><code>exponentialDecay</code>, плотность 2.75</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Факты, которые не строятся в таблицу, — карточками. Тем же гридом
+         рисуются разделы 8 «на устройстве» и 9 «непроверенное». -->
+    <div class="reuse-grid">
+      <div class="reuse-card">
+        <div class="path">detekt · уже исключает generated</div>
+        <div class="desc">Короткая справка: что готово принять работу и где это прочитано.</div>
+      </div>
+      <div class="reuse-card">
+        <div class="path">spotless · уже исключает build</div>
+        <div class="desc"><span class="mono">targetExclude("**/build/**/*.*")</span> — трогать не придётся.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- РАЗДЕЛ 3 «Дефекты существующего кода». items.risky — номера Д1…Дn красным.
+       Тем же компонентом рисуются открытые вопросы владельцу (там номера 01…0n). -->
+  <section>
+    <h2>Дефекты, которые чинятся первыми</h2>
+    <div class="items risky">
+      <div class="item">
+        <div class="num">Д1</div>
+        <div class="body">
+          <div class="ask">Кламп на чтении копил мёртвую зону</div>
+          <div class="why">Что именно сломано, с трассировкой на числах: сдвиг копился без границ, каждый упор банковал перерегулирование, следующая раскладка отдавала банк одним кадром.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- РАЗДЕЛ 4 «Решение». Схема — только когда у решения есть механизм, который
+       прозой читается хуже, чем рисунком; иначе не рисовать.
+       Цвета в SVG берутся из тех же токенов. Оставлять место в viewBox под
+       крайние подписи; у каждой фигуры явный fill. -->
+  <section>
+    <h2>Как устроен механизм</h2>
+    <div class="pipe-wrap">
+      <svg class="pipe" viewBox="0 0 880 110" role="img" aria-label="Пример схемы: вход, преобразование, выход">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--rule-strong)"></path>
+          </marker>
+        </defs>
+        <text class="t-head" x="8" y="16">Вход</text>
+        <text class="t-head" x="300" y="16">Чистая функция</text>
+        <text class="t-head" x="620" y="16">Что возвращает</text>
+        <rect x="8" y="34" width="250" height="48" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1"></rect>
+        <text class="t-key" x="22" y="54">requested: Offset</text>
+        <text class="t-sub" x="22" y="71">дельта жеста за кадр</text>
+        <line x1="266" y1="58" x2="292" y2="58" stroke="var(--rule-strong)" stroke-width="1" marker-end="url(#ar)"></line>
+        <rect x="300" y="34" width="250" height="48" fill="var(--surface-sunk)" stroke="var(--rule)" stroke-width="1"></rect>
+        <text class="t-key" x="314" y="54">panStepOf</text>
+        <text class="t-sub" x="314" y="71">GraphCamera.kt</text>
+        <line x1="558" y1="58" x2="584" y2="58" stroke="var(--rule-strong)" stroke-width="1" marker-end="url(#ar)"></line>
+        <rect x="592" y="34" width="280" height="48" fill="none" stroke="var(--rule-strong)" stroke-width="1"></rect>
+        <text class="t-key" x="606" y="54">GraphPanStep</text>
+        <text class="t-sub" x="606" y="71">requested · camera · consumed</text>
+        <text class="t-chip" x="860" y="54" text-anchor="end">isRejected</text>
+      </svg>
+    </div>
+    <!-- Раскладка модулей и графы зависимостей — моноширинным деревом.
+         <b> выделяет корни, <i> — пометки вроде [ген]. -->
+    <pre class="tree"><b>feature/chronology/ui/</b>
+  components/canvas/<b>GraphGeometry.kt</b>   где стоят плашки, о камере не знает
+  components/canvas/<b>GraphCamera.kt</b>     где может быть камера
+  entity/<b>GraphPanStep.kt</b>              <i>[новое]</i> requested · camera · consumed</pre>
+  </section>
+
+  <!-- ФАЗА 3 «Судейство». Таблица сравнения подходов по линзе, затем verdict —
+       рамка риска, в которой стоит вето и объяснение, что именно опровергло
+       проигравший подход. Без вето блок verdict не ставится. -->
+  <section>
+    <h2>Судейство</h2>
+    <div class="table-wrap">
+      <table class="narrow">
+        <thead>
+          <tr><th>Линза «Поведение»</th><th>A — шаг возвращает consumed</th><th>B — анимация считает сама</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">Бросок в стенку</td>
+            <td class="what">останавливается на упоре</td>
+            <td class="what">доигрывает длительность вхолостую</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="verdict">
+      <div class="label">Вето по линзе «Риск» — проект B снят с дистанции</div>
+      <p>Чем именно опровергнут: дефект с воспроизведением, а не оценка.</p>
+    </div>
+  </section>
+
+  <!-- РАЗДЕЛЫ 6 и 7 «Минимальная перестройка» и «Тесты» — ОДНА таблица с трекером.
+       Пункты перестройки идут блоками, тесты — последним блоком, каждый привязан
+       к своему пункту («к 1.2»).
+       Обязательные атрибуты: у строки data-item и data-group, у групповой строки
+       data-group-header и <span class="gcount">. Скрипт внизу считает по ним.
+       Колонка «Объём» — измеренные величины из разведки, НЕ оценки трудоёмкости;
+       нет числа — <span class="size-chip none">—</span>.
+       Колонка «Причина» обязательна: пункт без причины переоткроют. -->
+  <section>
+    <h2>План работ</h2>
+    <p class="note">
+      Одна фраза о составе таблицы.
+      <strong>Клик по номеру отмечает пункт выполненным</strong> — номер становится зелёным,
+      счётчик блока и общий прогресс пересчитываются.
+    </p>
+    <div class="tracker">
+      <div class="tracker-top">
+        <span class="tracker-count" id="tracker-count">Выполнено <b>0</b> из 2 · 0%</span>
+        <span class="tracker-hint">клик по номеру — отметка</span>
+        <button class="tracker-reset" id="tracker-reset" type="button">Сбросить отметки</button>
+      </div>
+      <div class="tracker-bar"><span id="tracker-bar" style="width: 0%"></span></div>
+      <div class="sync" id="tracker-sync">Отметки хранятся в этом браузере</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>№</th><th>Пункт</th><th>Что входит</th><th>Объём</th><th>Причина</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Перестройка<span class="status new">можно начинать сегодня</span><span class="gcount">0/1</span></td></tr>
+          <tr data-item="0.1" data-group="0">
+            <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.1</button></td>
+            <td class="name">Перенести кламп на запись</td>
+            <td class="what">Что именно входит в пункт.</td>
+            <td class="size"><span class="size-chip">3 вызова</span></td>
+            <td class="dep">Причина: второе определение того же понятия разъезжается с первым при первой правке.</td>
+          </tr>
+          <tr class="group" data-group-header="1"><td colspan="5">Блок 1 · Сторожа<span class="status part">пишутся вместе со своим пунктом</span><span class="gcount">0/1</span></td></tr>
+          <tr data-item="1.1" data-group="1">
+            <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>1.1</button></td>
+            <td class="name"><code>GraphCameraTest</code></td>
+            <td class="what"><code>consumed delta is truncated at the boundary</code> · <code>a rejected delta cannot be banked for later</code></td>
+            <td class="size"><span class="size-chip">к 0.1</span></td>
+            <td class="dep">Что именно сторожит тест: случившийся дефект, а не строки.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- РАЗДЕЛ 5 «Чем платим». items.costs — номера тёплым. Раздела нет — значит
+       цену не искали. -->
+  <section>
+    <h2>Чем платим</h2>
+    <p class="note">Раздел, которого нет, означает, что цену не искали.</p>
+    <div class="items costs">
+      <div class="item">
+        <div class="num">01</div>
+        <div class="body">
+          <div class="ask">На вырожденной оси бросок проезжает только проекцию</div>
+          <div class="why">Цена названа числом и снабжена обратным ходом: заменить <code>&amp;&amp;</code> на <code>||</code>.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- РАЗДЕЛЫ 8 и 9 — «Что проверять на устройстве» и «Что осталось непроверенным».
+       Оба рисуются reuse-grid: в path — что именно, в desc — как проверять. -->
+  <section>
+    <h2>Что проверять на устройстве</h2>
+    <p class="note">У агента устройства нет, и это не оговорка, а раздел документа.</p>
+    <div class="reuse-grid">
+      <div class="reuse-card">
+        <div class="path">пролёт броска</div>
+        <div class="desc">Сверить с таблицей чисел из разведки: 1000 dp/s должны дать 194 dp за 555 мс.</div>
+      </div>
+      <div class="reuse-card">
+        <div class="path">бросок в стенку</div>
+        <div class="desc">Останов на упоре без отдачи и без телепорта на следующей раскладке.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ОТКРЫТЫЕ ВОПРОСЫ владельцу — тем же items.risky, номера 01…0n.
+       Ставятся последними, перед подвалом. Каждый вопрос говорит, что
+       заблокировано ответом, а что нет. -->
+  <section>
+    <h2>Вопросы, которые ждут «да» владельца</h2>
+    <p class="note">Ни один не блокирует блок 0.</p>
+    <div class="items risky">
+      <div class="item">
+        <div class="num">01</div>
+        <div class="body">
+          <div class="ask">Формулировка вопроса одной строкой</div>
+          <div class="why">Почему решение за владельцем и что изменится от каждого ответа.</div>
+        </div>
+      </div>
+      <!-- Отвеченный вопрос НЕ остаётся выглядеть открытым: заголовок раздела меняется
+           («Вопросы владельца — закрыты <дата>»), items получает класс closed (номера
+           зеленеют), в ask встаёт чип «решено», а сам ask переписывается из вопроса в
+           принятое решение — вопрос без ответа и вопрос с ответом читаются по-разному. -->
+      <div class="item closed">
+        <div class="num">02</div>
+        <div class="body">
+          <div class="ask">Принятое решение, а не вопрос<span class="status reuse">решено</span></div>
+          <div class="why">Что решили и что из этого следует: где записано, какой пункт плана это меняет.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Источники: файлы и версии, по которым велась разведка.</div>
+    <div>Документ решения, а не отчёт о работе: после реализации он удаляется, а выводы переезжают в журнал фичи.</div>
+  </footer>
+
+</div>
+
+<!-- ============================================================================
+     СКРИПТ ТРЕКЕРА. Копируется целиком и не правится: он читает data-item,
+     data-group и data-group-header из разметки выше и больше ни от чего не зависит.
+     KEY меняется на свой — по одному ключу на документ, иначе два плана делят
+     отметки. При публикации Артефактом с capabilities {"db": {}} отметки
+     становятся общими; без публикации остаются в браузере.
+     ============================================================================ -->
+<script>
+  (function () {
+    var KEY = '<feature>-<topic>/v1';
+    var rows = Array.prototype.slice.call(document.querySelectorAll('tr[data-item]'));
+    var headers = Array.prototype.slice.call(document.querySelectorAll('tr[data-group-header]'));
+    var total = rows.length;
+    var bar = document.getElementById('tracker-bar');
+    var count = document.getElementById('tracker-count');
+    var sync = document.getElementById('tracker-sync');
+    var resetBtn = document.getElementById('tracker-reset');
+
+    var state = readLocal();
+    var remote = null;
+    var keepLocal = true;
+    var seeded = false;
+
+    function readLocal() {
+      try {
+        var raw = localStorage.getItem(KEY);
+        var parsed = raw ? JSON.parse(raw) : null;
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function writeLocal() {
+      if (!keepLocal) return;
+      try {
+        localStorage.setItem(KEY, JSON.stringify(state));
+      } catch (e) {
+        /* private mode or blocked site data: marks stay in memory */
+      }
+    }
+
+    function render() {
+      var done = 0;
+      rows.forEach(function (row) {
+        var isDone = !!state[row.dataset.item];
+        if (isDone) done += 1;
+        row.classList.toggle('done', isDone);
+        var tick = row.querySelector('.tick');
+        if (tick) {
+          tick.setAttribute('aria-pressed', isDone ? 'true' : 'false');
+          tick.title = isDone ? 'Снять отметку' : 'Отметить выполненным';
+        }
+      });
+
+      headers.forEach(function (header) {
+        var group = header.dataset.groupHeader;
+        var kids = rows.filter(function (row) { return row.dataset.group === group; });
+        var kidsDone = kids.filter(function (row) { return !!state[row.dataset.item]; }).length;
+        var out = header.querySelector('.gcount');
+        if (!out) return;
+        out.textContent = kidsDone + '/' + kids.length;
+        out.classList.toggle('full', kids.length > 0 && kidsDone === kids.length);
+      });
+
+      var pct = total ? Math.round((done / total) * 100) : 0;
+      bar.style.width = pct + '%';
+      count.innerHTML = 'Выполнено <b>' + done + '</b> из ' + total + ' · ' + pct + '%';
+    }
+
+    function push(patch) {
+      if (!remote) { writeLocal(); return; }
+      remote.update({ items: patch }).catch(function () {
+        // update needs the document to exist; the first write creates it
+        remote.set({ items: state }).catch(function () {});
+      });
+    }
+
+    function toggle(id) {
+      state[id] = !state[id];
+      render();
+      var patch = {};
+      patch[id] = state[id];
+      push(patch);
+    }
+
+    rows.forEach(function (row) {
+      var tick = row.querySelector('.tick');
+      if (tick) {
+        tick.addEventListener('click', function () { toggle(row.dataset.item); });
+      }
+    });
+
+    var armed = false;
+    resetBtn.addEventListener('click', function () {
+      if (!armed) {
+        armed = true;
+        resetBtn.classList.add('armed');
+        resetBtn.textContent = 'Точно сбросить?';
+        return;
+      }
+      armed = false;
+      resetBtn.classList.remove('armed');
+      resetBtn.textContent = 'Сбросить отметки';
+      state = {};
+      render();
+      if (remote) {
+        remote.set({ items: {} }).catch(function () {});
+      } else {
+        writeLocal();
+      }
+    });
+
+    render();
+
+    // Shared marks when the page runs inside a viewer; local ones otherwise.
+    if (window.claude && typeof window.claude.use === 'function') {
+      window.claude.use('db').then(function (db) {
+        if (!db) return;
+        remote = db.doc('tracker/progress');
+        keepLocal = false;
+        sync.textContent = 'Отметки общие — их видит каждый, кто открыл страницу';
+        sync.className = 'sync live';
+        remote.onSnapshot(function (snap) {
+          var body = snap.exists ? (snap.data() || {}) : {};
+          var items = body.items;
+          if (!seeded) {
+            seeded = true;
+            var local = readLocal();
+            if (!snap.exists && Object.keys(local).length) {
+              state = local;
+              render();
+              remote.set({ items: local }).catch(function () {});
+              return;
+            }
+          }
+          state = items && typeof items === 'object' ? items : {};
+          render();
+        }, function () {
+          remote = null;
+          keepLocal = true;
+          sync.textContent = 'Общая синхронизация недоступна — отметки остались локальными';
+          sync.className = 'sync';
+        });
+      }).catch(function () {});
+    }
+  })();
+</script>

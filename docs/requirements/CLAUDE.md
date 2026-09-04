@@ -12,7 +12,7 @@ raw/recycled/   — архив обработанных снапшотов; са
 wiki/index.md   — оглавление
 wiki/log.md     — append-only журнал операций
 wiki/feature/   — фича, описанная с позиции бизнес-аналитика
-wiki/method/    — API-методы. Единственным источнком API ялвяется Firestore.kt
+wiki/method/    — API-методы. Источник API — OpenAPI-спека; пока её нет — Firestore.kt
 ```
 
 ## Категории и граф
