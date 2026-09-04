@@ -7,7 +7,7 @@ import ru.sla.atlas.entity.MockNode
 import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.NodeDraft
 import ru.sla.atlas.entity.TimeGap
-import ru.sla.atlas.entity.mockBranch
+import ru.sla.atlas.entity.mockBranchDraft
 import ru.sla.atlas.entity.mockNode
 import java.time.Duration
 import java.time.LocalDateTime
@@ -133,8 +133,8 @@ class GraphAssemblyTest {
   private fun assembled(vararg drafts: NodeDraft<MockNode>): ru.sla.atlas.entity.Graph<MockNode> {
     return graphOf(
       drafts = drafts.toList(),
-      baseline = mockBranch(id = "trunk", colorIndex = 0),
-      branches = listOf(mockBranch(id = "a"), mockBranch(id = "b")),
+      baseline = mockBranchDraft(id = "trunk"),
+      branches = listOf(mockBranchDraft(id = "a"), mockBranchDraft(id = "b")),
       gapOf = { duration -> if (duration > Duration.ofMinutes(20)) TimeGap.Long else TimeGap.Minutes },
       withGap = { node, gap -> node.copy(gap = gap) }
     )

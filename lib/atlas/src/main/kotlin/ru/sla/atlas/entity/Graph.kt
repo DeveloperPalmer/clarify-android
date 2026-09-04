@@ -130,7 +130,6 @@ data class Graph<out N : Node>(
       baseline = Branch(
         id = Branch.Id(""),
         nodeIds = emptyList(),
-        colorIndex = 0,
         forkedFrom = null,
         mergedAt = null,
         status = Branch.Status.Alive

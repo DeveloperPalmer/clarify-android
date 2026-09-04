@@ -184,14 +184,12 @@ private fun fiveBranchGraph(): Graph<MockNode> {
     nodes = nodes,
     baseline = mockBranch(
       id = "b0",
-      nodes = nodeIdsByBranch.getValue(0).map { it.value },
-      colorIndex = 0
+      nodes = nodeIdsByBranch.getValue(0).map { it.value }
     ),
     branches = (1..4).map { index ->
       mockBranch(
         id = "b$index",
-        nodes = nodeIdsByBranch.getValue(index).map { it.value },
-        colorIndex = index
+        nodes = nodeIdsByBranch.getValue(index).map { it.value }
       )
     }
   )

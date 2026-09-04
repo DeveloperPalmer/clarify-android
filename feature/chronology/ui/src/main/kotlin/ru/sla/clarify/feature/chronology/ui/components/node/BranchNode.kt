@@ -29,7 +29,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.atlas.entity.Branch
-import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
+import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
+import ru.sla.clarify.feature.chronology.ui.mapper.toColor
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconResId
 import ru.sla.clarify.feature.chronology.ui.mapper.toIconTint
 import ru.sla.clarify.feature.chronology.ui.mapper.toLabel
@@ -181,9 +182,9 @@ private fun BranchNodePreviewContent(branch: BranchNodePreview) {
     name = branch.name,
     contentDescription = branch.name,
     onClick = {},
-    // Через настоящий маппер, а не через свой цвет: кадр заодно проверяет, что соседние дорожки
+    // Через настоящий маппер, а не через свой цвет: кадр заодно проверяет, что соседние ветки
     // действительно получают разные оттенки.
-    laneColor = branch.lane.toBranchColor(AppTheme.colors),
+    laneColor = branch.color.toColor(AppTheme.colors),
     status = branch.status,
     unreadCount = branch.unreadCount
   )
@@ -192,7 +193,7 @@ private fun BranchNodePreviewContent(branch: BranchNodePreview) {
 @Immutable
 private data class BranchNodePreview(
   val name: String,
-  val lane: Int,
+  val color: BranchColor,
   val status: Branch.Status = Branch.Status.Alive,
   val unreadCount: Long = 0
 )
@@ -209,28 +210,28 @@ private class BranchNodePreviewProvider : PreviewParameterProvider<BranchNodePre
   override val values = sequenceOf(
     BranchNodePreview(
       name = "Бюджет на Q3",
-      lane = 1,
+      color = BranchColor.First,
       unreadCount = 3
     ),
     BranchNodePreview(
       name = "Дизайн онбординга",
-      lane = 2,
+      color = BranchColor.Second,
       status = Branch.Status.Waiting,
       unreadCount = 2
     ),
     BranchNodePreview(
       name = "Сроки по релизу",
-      lane = 3,
+      color = BranchColor.Third,
       status = Branch.Status.Ready
     ),
     BranchNodePreview(
       name = "Сроки по релизу",
-      lane = 3,
+      color = BranchColor.Third,
       status = Branch.Status.Merged
     ),
     BranchNodePreview(
       name = "Очень длинное имя ветки, которое обязано обрезаться эллипсисом",
-      lane = 5,
+      color = BranchColor.Fifth,
       status = Branch.Status.Merged,
       unreadCount = 128
     )

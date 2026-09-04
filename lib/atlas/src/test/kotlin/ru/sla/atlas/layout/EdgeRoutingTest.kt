@@ -1,6 +1,7 @@
 package ru.sla.atlas.layout
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -14,6 +15,7 @@ import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.Vertical
 import ru.sla.atlas.entity.mockBranch
 import ru.sla.atlas.entity.mockBranchColors
+import ru.sla.atlas.entity.mockLaneColor
 import ru.sla.atlas.entity.mockNode
 
 /**
@@ -190,6 +192,12 @@ class EdgeRoutingTest {
       branches = listOf(
         mockBranch("a", forkedFrom = null, mergedAt = null, nodes = listOf("1", "2")),
         mockBranch("b", forkedFrom = null, mergedAt = null, nodes = listOf("3", "4"))
+      ),
+      // Общий оттенок задан здесь, а не выведен из веток: он и есть условие проверки, а по
+      // умолчанию у каждой ветки набора он свой.
+      branchColors = mapOf(
+        Branch.Id("a") to mockLaneColor(1),
+        Branch.Id("b") to mockLaneColor(1)
       )
     )
 
@@ -365,7 +373,8 @@ private fun mockEdgesOf(
   sizes: List<IntSize>,
   laneYs: List<Float> = List(nodes.size) { 0f },
   branches: List<Branch> = emptyList(),
-  contentRight: Float = 0f
+  contentRight: Float = 0f,
+  branchColors: Map<Branch.Id, Color> = emptyMap()
 ): List<Edge> {
   val owned = branches.flatMap { it.nodeIds }.toSet()
   val graph = Graph(
@@ -373,14 +382,14 @@ private fun mockEdgesOf(
     // Всё, что ветки не разобрали, стоит на магистрали — как и в настоящем графе.
     baseline = mockBranch(
       id = "baseline",
-      nodes = nodes.map { it.id.value }.filterNot { owned.contains(Node.Id(it)) },
-      colorIndex = 0
+      nodes = nodes.map { it.id.value }.filterNot { owned.contains(Node.Id(it)) }
     ),
     branches = branches
   )
   return edgesOf(
     graph = graph,
-    branchColors = graph.mockBranchColors(),
+    // Оттенки по умолчанию у всех веток разные; совпадение задаёт тот тест, которому оно и нужно.
+    branchColors = graph.mockBranchColors() + branchColors,
     laneYs = laneYs,
     positions = positions,
     sizes = sizes,

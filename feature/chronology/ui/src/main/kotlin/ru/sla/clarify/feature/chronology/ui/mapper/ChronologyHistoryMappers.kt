@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chronology.ui.mapper
 import android.os.Build
 import androidx.annotation.RequiresApi
 import ru.sla.atlas.assembly.graphOf
+import ru.sla.atlas.entity.BranchDraft
 import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.NodeDraft
 import ru.sla.atlas.entity.TimeGap
@@ -11,6 +12,7 @@ import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
+import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
 import ru.sla.clarify.feature.chronology.ui.entity.Chronology
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodePreview
@@ -59,7 +61,7 @@ internal fun ChronologyHistory.toChronology(): Chronology {
     )
   }
 
-  val graphBranches = branches.mapIndexed { index, history ->
+  val graphBranches = branches.map { history ->
     val branch = history.branch
     val status = branch.mergeRequest.toBranchStatus()
     val fork = forkDraftOf(
@@ -68,7 +70,11 @@ internal fun ChronologyHistory.toChronology(): Chronology {
       baselineBranchId = baselineBranchId,
       baselineTimeByCommit = baselineTimeByCommit
     )
-    val merge = mergeDraftOf(branch = branch, baselineBranchId = baselineBranchId, status = status)
+    val merge = mergeDraftOf(
+      branch = branch,
+      baselineBranchId = baselineBranchId,
+      status = status
+    )
     drafts += listOfNotNull(fork, merge)
     drafts += episodeDraftsOf(
       branchId = GraphBranch.Id(branch.id.value),
@@ -77,42 +83,39 @@ internal fun ChronologyHistory.toChronology(): Chronology {
       dim = status == GraphBranch.Status.Merged,
       membersById = membersById
     )
-    GraphBranch(
+    BranchDraft(
       id = GraphBranch.Id(branch.id.value),
-      // Состав ветки заполнит сборка: порядок узлов — свойство графа, и до сортировки его нет ни у
-      // кого.
-      nodeIds = emptyList(),
-      // Порядковый номер по времени ветвления, а не номер дорожки: дорожка переиспользуется после
-      // слияния, и цвет, взятый из неё, означал бы «номер ряда», а не «какая это тема».
-      colorIndex = GraphBranch.colorIndexOf(
-        order = index + 1,
-        // Шесть оттенков идентичности — `graphLane1`…`graphLane6`, см. `Int.toBranchColor`.
-        paletteSize = 6
-      ),
       forkedFrom = fork?.node?.id,
       mergedAt = merge?.node?.id,
       status = status
     )
   }
 
+  val baselineBranchDraft = BranchDraft(
+    id = baselineBranchId,
+    forkedFrom = null,
+    mergedAt = null,
+    status = GraphBranch.Status.Alive
+  )
+
+  val branchColors = branches.mapIndexed { index, history ->
+    GraphBranch.Id(history.branch.id.value) to BranchColor.ofOrder(index + 1)
+  }.toMap()
+
   return Chronology(
     graph = graphOf(
       drafts = drafts,
       // Магистраль — такая же ветка, как остальные, и в графе она названа отдельно: её узлы иначе
-      // не принадлежали бы никому. Цвет нулевой, развилки и слияния у неё нет по определению.
-      baseline = GraphBranch(
-        id = baselineBranchId,
-        nodeIds = emptyList(),
-        colorIndex = 0,
-        forkedFrom = null,
-        mergedAt = null,
-        status = GraphBranch.Status.Alive
-      ),
+      // не принадлежали бы никому. Развилки и слияния у неё нет по определению, а оттенка нет
+      // вовсе — оттенок отвечает на «какая это тема», а у магистрали темы нет.
+      baseline = baselineBranchDraft,
       branches = graphBranches,
       gapOf = { it.toTimeGap() },
       withGap = { node, gap -> node.withGap(gap) }
     ),
-    branchNames = branches.associate { GraphBranch.Id(it.branch.id.value) to it.branch.name }
+    branchNames = branches.associate { GraphBranch.Id(it.branch.id.value) to it.branch.name },
+    // Оттенок раздаётся по порядку ветвления: ветки идут по времени ухода, и первая берёт первый.
+    branchColors = branchColors
   )
 }
 

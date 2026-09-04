@@ -20,10 +20,11 @@ import androidx.compose.ui.unit.dp
 import ru.sla.atlas.entity.NodeAccent
 import ru.sla.atlas.ui.drawnOnly
 import ru.sla.clarify.core.resources.R
+import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.MergeCeremonyFrame
-import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
+import ru.sla.clarify.feature.chronology.ui.mapper.toColor
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -161,7 +162,7 @@ private fun MergeNodePreviewContent(merge: MergeNodePreview) {
     level = GraphLevel.LOD0,
     // Акцент узлу слияния нужен ровно за одним — за знаком дорожки: он говорит, с какой стороны
     // магистрали ветка, а значит с какой стороны встанет чип. Цвет через настоящий маппер.
-    accent = NodeAccent(lane = 1, color = 1.toBranchColor(AppTheme.colors)),
+    accent = NodeAccent(lane = 1, color = BranchColor.First.toColor(AppTheme.colors)),
     state = merge.state
   )
 }

@@ -69,6 +69,7 @@ fun ChronologyScreen(viewModel: ChronologyViewModel) {
           modifier = Modifier.fillMaxSize(),
           state = canvasState,
           ceremony = ceremonyState,
+          branchColors = state.chronology.branchColors,
           gesturesEnabled = { state.selectedNodeId == null },
           node = { graphNode, accent, level ->
             GraphNode(

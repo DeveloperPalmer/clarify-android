@@ -6,6 +6,7 @@ import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.TimeGap
 import ru.sla.clarify.feature.chronology.ui.components.node.DEFAULT_MY_SHARE
+import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.NodePreview
 
@@ -228,7 +229,6 @@ private fun demoBranches(): List<Branch> {
     Branch(
       id = Branch.Id("terms"),
       nodeIds = emptyList(),
-      colorIndex = 1,
       forkedFrom = Node.Id("fork-terms"),
       mergedAt = Node.Id("merge-terms"),
       status = Branch.Status.Merged
@@ -236,7 +236,6 @@ private fun demoBranches(): List<Branch> {
     Branch(
       id = Branch.Id("export"),
       nodeIds = emptyList(),
-      colorIndex = 2,
       forkedFrom = Node.Id("fork-export"),
       mergedAt = null,
       status = Branch.Status.Alive
@@ -244,7 +243,6 @@ private fun demoBranches(): List<Branch> {
     Branch(
       id = Branch.Id("design"),
       nodeIds = emptyList(),
-      colorIndex = 3,
       forkedFrom = Node.Id("fork-design"),
       mergedAt = null,
       status = Branch.Status.Waiting
@@ -252,7 +250,6 @@ private fun demoBranches(): List<Branch> {
     Branch(
       id = Branch.Id("budget"),
       nodeIds = emptyList(),
-      colorIndex = 4,
       forkedFrom = Node.Id("fork-budget"),
       mergedAt = null,
       status = Branch.Status.Ready
@@ -260,7 +257,6 @@ private fun demoBranches(): List<Branch> {
     Branch(
       id = Branch.Id("photos"),
       nodeIds = emptyList(),
-      colorIndex = 5,
       forkedFrom = Node.Id("fork-photos"),
       mergedAt = Node.Id("merge-photos"),
       status = Branch.Status.Merged
@@ -268,20 +264,18 @@ private fun demoBranches(): List<Branch> {
     Branch(
       id = Branch.Id("release"),
       nodeIds = emptyList(),
-      colorIndex = 6,
       forkedFrom = Node.Id("fork-release"),
       mergedAt = null,
       status = Branch.Status.Alive
     ),
-    // Седьмая и восьмая берут оттенки по кругу: `1 + (order − 1) mod 6`. Ноль оставлен магистрали, и
-    // наивный остаток отдал бы седьмой ветке именно его.
+    // Седьмая и восьмая берут оттенки по кругу: их раздаёт [MockGraph.branchColors] по месту в
+    // этом списке, а мест в палитре шесть.
     //
     // Развилка та же, что у `release`: от одного коммита уходят две ветки. Акцент точки достаётся
     // первой из них, вторая получает собственную вертикаль своего цвета в другую сторону.
     Branch(
       id = Branch.Id("pricing"),
       nodeIds = emptyList(),
-      colorIndex = 1,
       forkedFrom = Node.Id("fork-release"),
       mergedAt = null,
       status = Branch.Status.Alive
@@ -291,7 +285,6 @@ private fun demoBranches(): List<Branch> {
     Branch(
       id = Branch.Id("stickers"),
       nodeIds = emptyList(),
-      colorIndex = 2,
       forkedFrom = null,
       mergedAt = null,
       status = Branch.Status.Alive
@@ -636,7 +629,6 @@ private fun crowdedBranches(): List<Branch> {
     Branch(
       id = Branch.Id("crowd-$order"),
       nodeIds = emptyList(),
-      colorIndex = 1 + (order - 1).mod(6),
       forkedFrom = Node.Id("crowd-fork-$order"),
       mergedAt = null,
       status = Branch.Status.Alive
@@ -789,6 +781,16 @@ internal data class MockGraph(
     get() = nodes.map { it.graphNode }
 
   /**
+   * Оттенок каждой ветки — по её месту в [branches], как их раздаёт настоящий маппер.
+   *
+   * Списком рядом с ветками оттенки не пишутся по той же причине, что и состав: порядок ветвления
+   * уже записан порядком списка, и второй такой же список разъехался бы с первым молча. Магистрали
+   * здесь нет: у неё нет темы, а значит и оттенка.
+   */
+  val branchColors: Map<Branch.Id, BranchColor>
+    get() = branches.mapIndexed { index, branch -> branch.id to BranchColor.ofOrder(index + 1) }.toMap()
+
+  /**
    * Граф целиком: узлы и ветки с уже заполненным составом.
    *
    * Состав собирается здесь, а не пишется в [demoBranches]: ветку узлу назначает сам узел набора, и
@@ -802,7 +804,6 @@ internal data class MockGraph(
         baseline = Branch(
           id = Branch.Id(BASELINE),
           nodeIds = nodeIdsByBranch[Branch.Id(BASELINE)].orEmpty(),
-          colorIndex = 0,
           forkedFrom = null,
           mergedAt = null,
           status = Branch.Status.Alive

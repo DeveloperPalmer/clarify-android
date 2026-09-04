@@ -58,7 +58,8 @@ import ru.sla.atlas.minimap.scrubbedPositionOf
 import ru.sla.atlas.minimap.trackCentreOf
 import ru.sla.atlas.minimap.widenedSpanOf
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
+import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
+import ru.sla.clarify.feature.chronology.ui.mapper.toColor
 import ru.sla.clarify.uikit.modifier.surface
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppColors
@@ -368,7 +369,7 @@ private fun GraphMinimapPreviewContent(minimap: GraphMinimapPreview) {
     LaneMark(
       position = mark.position,
       lane = mark.lane,
-      color = mark.colorIndex.toBranchColor(colors)
+      color = mark.color.toColor(colors)
     )
   }
   GraphMinimap(
@@ -404,9 +405,9 @@ private data class GraphMinimapPreview(
 )
 
 /**
- * Засечка кадра превью: то же, что [LaneMark], но цветом ветки здесь ещё номер оттенка.
+ * Засечка кадра превью: то же, что [LaneMark], но цветом ветки здесь ещё её оттенок.
  *
- * Провайдер композицией не является, а цвет живёт в палитре — достать её он не может. Номер
+ * Провайдер композицией не является, а цвет живёт в палитре — достать её он не может. Оттенок
  * превращается в цвет в [GraphMinimapPreviewContent], то есть там же, где это делает настоящий
  * вызывающий: на границе композиции.
  */
@@ -414,7 +415,7 @@ private data class GraphMinimapPreview(
 private data class GraphMinimapPreviewMark(
   val position: Float,
   val lane: Int,
-  val colorIndex: Int
+  val color: BranchColor
 )
 
 /**
@@ -432,19 +433,19 @@ private class GraphMinimapPreviewProvider : PreviewParameterProvider<GraphMinima
     GraphMinimapPreview(
       span = ViewportSpan(position = 0.45f, width = 0.06f),
       marks = listOf(
-        GraphMinimapPreviewMark(position = 0.08f, lane = -1, colorIndex = 1),
-        GraphMinimapPreviewMark(position = 0.21f, lane = 1, colorIndex = 2),
-        GraphMinimapPreviewMark(position = 0.33f, lane = -2, colorIndex = 3),
-        GraphMinimapPreviewMark(position = 0.55f, lane = 2, colorIndex = 4),
-        GraphMinimapPreviewMark(position = 0.71f, lane = -3, colorIndex = 5),
-        GraphMinimapPreviewMark(position = 0.88f, lane = 3, colorIndex = 6)
+        GraphMinimapPreviewMark(position = 0.08f, lane = -1, color = BranchColor.First),
+        GraphMinimapPreviewMark(position = 0.21f, lane = 1, color = BranchColor.Second),
+        GraphMinimapPreviewMark(position = 0.33f, lane = -2, color = BranchColor.Third),
+        GraphMinimapPreviewMark(position = 0.55f, lane = 2, color = BranchColor.Fourth),
+        GraphMinimapPreviewMark(position = 0.71f, lane = -3, color = BranchColor.Fifth),
+        GraphMinimapPreviewMark(position = 0.88f, lane = 3, color = BranchColor.Sixth)
       )
     ),
     GraphMinimapPreview(
       span = ViewportSpan(position = 0f, width = 0.16f),
       marks = listOf(
-        GraphMinimapPreviewMark(position = 0.08f, lane = -1, colorIndex = 1),
-        GraphMinimapPreviewMark(position = 0.21f, lane = 1, colorIndex = 2)
+        GraphMinimapPreviewMark(position = 0.08f, lane = -1, color = BranchColor.First),
+        GraphMinimapPreviewMark(position = 0.21f, lane = 1, color = BranchColor.Second)
       )
     ),
     GraphMinimapPreview(

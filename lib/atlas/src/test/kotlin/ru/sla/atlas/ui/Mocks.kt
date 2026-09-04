@@ -35,7 +35,7 @@ internal fun mockBaselineGraph(count: Int): Graph<MockNode> {
   val nodes = List(count) { index -> mockNode("n$index") }
   return Graph(
     nodes = nodes,
-    baseline = mockBranch(id = "baseline", nodes = nodes.map { it.id.value }, colorIndex = 0),
+    baseline = mockBranch(id = "baseline", nodes = nodes.map { it.id.value }),
     branches = emptyList()
   )
 }

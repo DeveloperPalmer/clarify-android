@@ -17,7 +17,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColor
+import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
+import ru.sla.clarify.feature.chronology.ui.mapper.toColor
 import ru.sla.clarify.uikit.preview.PreviewColumn
 import ru.sla.clarify.uikit.theme.AppTheme
 import ru.sla.clarify.uikit.theme.ColorTheme
@@ -73,17 +74,17 @@ private fun ForkNodePreviewDark(
 @Composable
 private fun ForkNodePreviewContent(fork: ForkNodePreview) {
   ForkNode(
-    // Через настоящий маппер, а не через свой цвет: кадр заодно проверяет, что соседние дорожки
+    // Через настоящий маппер, а не через свой цвет: кадр заодно проверяет, что соседние ветки
     // получают разные оттенки.
-    color = fork.lane.toBranchColor(AppTheme.colors)
+    color = fork.color.toColor(AppTheme.colors)
   )
 }
 
 @Immutable
-private data class ForkNodePreview(val lane: Int)
+private data class ForkNodePreview(val color: BranchColor)
 
 /**
- * Кадры превью [ForkNode]: разные дорожки.
+ * Кадры превью [ForkNode]: разные оттенки.
  *
  * Направления в кадрах больше нет — его показывает ребро ухода, которого в превью узла не
  * существует. Оттенков три, потому что единственное, что здесь проверяется, — что цвет приходит
@@ -92,8 +93,8 @@ private data class ForkNodePreview(val lane: Int)
 @Immutable
 private class ForkNodePreviewProvider : PreviewParameterProvider<ForkNodePreview> {
   override val values = sequenceOf(
-    ForkNodePreview(lane = 1),
-    ForkNodePreview(lane = 2),
-    ForkNodePreview(lane = 5)
+    ForkNodePreview(color = BranchColor.First),
+    ForkNodePreview(color = BranchColor.Second),
+    ForkNodePreview(color = BranchColor.Fifth)
   )
 }

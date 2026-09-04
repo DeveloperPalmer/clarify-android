@@ -17,23 +17,27 @@ import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
  *
  * Настоящий цвет приходит из `AppColors`, которой в юнит-тесте нет и заводить её незачем: геометрия
  * цвет не толкует, а только переносит из ветки в ребро и в засечку. Здесь поэтому важно одно —
- * чтобы у веток с разными оттенками цвета были разные, а у веток с одним оттенком одинаковые: на
- * этом стоят проверки «цвет повторяется каждые шесть ответвлений».
+ * чтобы у веток с разными оттенками цвета были разные, а у веток с одним оттенком одинаковые.
  *
- * @param colorIndex номер оттенка ветки
+ * @param shade номер оттенка
  * @return цвет, однозначно соответствующий номеру
  */
-internal fun mockLaneColor(colorIndex: Int): Color {
-  return Color(red = colorIndex * 20, green = 0, blue = 0)
+internal fun mockLaneColor(shade: Int): Color {
+  return Color(red = shade * 20, green = 0, blue = 0)
 }
 
 /**
  * Цвета всех веток графа: то, что настоящему полотну отдаёт `Graph.toBranchColors`.
  *
+ * Оттенок берётся из порядка ветки в графе, а не из карты оттенков: какой ветке какой оттенок
+ * достался, сторожит тест маппера, а геометрии довольно того, что цвета соседей не совпадают.
+ *
  * @return цвет каждой ветки графа, магистраль включая
  */
 internal fun Graph<Node>.mockBranchColors(): Map<Branch.Id, Color> {
-  return (listOf(baseline) + branches).associate { it.id to mockLaneColor(it.colorIndex) }
+  return (listOf(baseline) + branches)
+    .mapIndexed { index, branch -> branch.id to mockLaneColor(index) }
+    .toMap()
 }
 
 /**

@@ -79,7 +79,7 @@ class GraphTest {
     val taken = branches.flatMap { it.nodeIds }.toSet()
     return Graph(
       nodes = nodes,
-      baseline = mockBranch(id = "baseline", colorIndex = 0).copy(
+      baseline = mockBranch(id = "baseline").copy(
         nodeIds = nodes.map { it.id }.filterNot { taken.contains(it) }
       ),
       branches = branches.toList()

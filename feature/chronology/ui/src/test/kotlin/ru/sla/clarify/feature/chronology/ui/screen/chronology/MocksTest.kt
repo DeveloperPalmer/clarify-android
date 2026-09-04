@@ -17,6 +17,7 @@ import ru.sla.atlas.layout.topLaneOf
 import ru.sla.atlas.lod.fitScaleOf
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockBranchColors
 import ru.sla.clarify.feature.chronology.ui.components.canvas.mockLanes
+import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
 import ru.sla.clarify.feature.chronology.ui.entity.ChronologyLevels
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
@@ -195,17 +196,17 @@ class MocksTest {
 
   @Test
   fun `the set uses all six identity colours and wraps past the sixth`() {
-    val colours = mockGraph().branches.map { it.colorIndex }
+    val colours = mockGraph().branchColors.values.toList()
 
     assertEquals(
-      (1..6).toList(),
-      colours.distinct().sorted(),
-      "шестая ветка сторожит остаток от деления, дававший ноль — цвет магистрали"
+      BranchColor.entries.toList(),
+      colours.distinct().sortedBy { it.ordinal },
+      "набор обязан пройти палитру целиком: оттенок, не попавший в него, не проверяет никто"
     )
     assertTrue(
-      colours.size > 6 && colours.none { it == 0 },
-      "седьмая и следующие обязаны брать оттенки по кругу, а не ноль: ноль оставлен магистрали, " +
-        "и наивное `order mod 6` красило бы шестую ветку её цветом"
+      colours.size > BranchColor.entries.size,
+      "седьмая и следующие ветки берут оттенки по кругу, и виден этот круг только на наборе, " +
+        "который длиннее палитры"
     )
   }
 

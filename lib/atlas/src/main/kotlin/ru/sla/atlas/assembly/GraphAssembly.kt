@@ -1,10 +1,11 @@
 package ru.sla.atlas.assembly
 
-import ru.sla.atlas.entity.Branch
+import ru.sla.atlas.entity.BranchDraft
 import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.NodeDraft
 import ru.sla.atlas.entity.TimeGap
+import ru.sla.atlas.mapper.toBranch
 import java.time.Duration
 
 /**
@@ -28,8 +29,9 @@ import java.time.Duration
  *
  * @param N узел вызывающего
  * @param drafts узлы в любом порядке: в нужный их поставит сортировка
- * @param baseline магистраль без состава: состав ей раздаст сборка
- * @param branches остальные ветки, тоже без состава
+ * @param baseline магистраль: [BranchDraft], потому что состав веток — это и есть то, что сборка
+ *   считает, и подать его вместе с веткой значило бы подать выдумку
+ * @param branches остальные ветки, тоже черновиками
  * @param gapOf чем меряется пауза: длительность в ступень зазора. Ступени — свойство вызывающего,
  *   и одинаковых у разных полотен не бывает
  * @param withGap тот же узел с проставленной паузой; идентификатор при этом обязан сохраниться —
@@ -38,8 +40,8 @@ import java.time.Duration
  */
 fun <N : Node> graphOf(
   drafts: List<NodeDraft<N>>,
-  baseline: Branch,
-  branches: List<Branch>,
+  baseline: BranchDraft,
+  branches: List<BranchDraft>,
   gapOf: (Duration) -> TimeGap,
   withGap: (node: N, gap: TimeGap) -> N
 ): Graph<N> {
@@ -51,7 +53,7 @@ fun <N : Node> graphOf(
   val nodeIdsByBranch = ordered.groupBy({ it.branchId }, { it.node.id })
   return Graph(
     nodes = nodes,
-    baseline = baseline.copy(nodeIds = nodeIdsByBranch[baseline.id].orEmpty()),
-    branches = branches.map { branch -> branch.copy(nodeIds = nodeIdsByBranch[branch.id].orEmpty()) }
+    baseline = baseline.toBranch(nodeIdsByBranch[baseline.id].orEmpty()),
+    branches = branches.map { branch -> branch.toBranch(nodeIdsByBranch[branch.id].orEmpty()) }
   )
 }

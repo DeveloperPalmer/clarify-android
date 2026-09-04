@@ -6,10 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import ru.sla.atlas.entity.Branch
 import ru.sla.atlas.entity.NodeAccent
 import ru.sla.atlas.ui.AtlasCanvas
 import ru.sla.atlas.ui.AtlasCanvasState
 import ru.sla.atlas.ui.CanvasBackdrop
+import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
 import ru.sla.clarify.feature.chronology.ui.entity.GraphLevel
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.mapper.toBranchColors
@@ -29,6 +31,8 @@ import ru.sla.clarify.uikit.theme.AppTheme
  * @param state камера полотна и результат его последней раскладки
  * @param ceremony церемония слияния: полотно её не запускает, но линия ветки на время церемонии
  *   показывается так, будто ветка снова готова к слиянию
+ * @param branchColors оттенок идентичности каждой ветки; магистрали в карте нет, и её линия
+ *   красится нейтральным
  * @param modifier модификатор корня полотна
  * @param gesturesEnabled берёт ли полотно жесты камеры прямо сейчас
  * @param node содержимое узла на заданном уровне детализации
@@ -38,6 +42,7 @@ import ru.sla.clarify.uikit.theme.AppTheme
 internal fun GraphCanvas(
   state: AtlasCanvasState<GraphNode, GraphLevel>,
   ceremony: MergeCeremonyState,
+  branchColors: Map<Branch.Id, BranchColor>,
   modifier: Modifier = Modifier,
   gesturesEnabled: () -> Boolean = { true },
   node: @Composable (graphNode: GraphNode, accent: NodeAccent, level: GraphLevel) -> Unit,
@@ -45,13 +50,13 @@ internal fun GraphCanvas(
 ) {
   val graph = state.graph
   val colors = AppTheme.colors
-  val branchColors = remember(graph, colors) { graph.toBranchColors(colors) }
+  val resolvedColors = remember(graph, branchColors, colors) { graph.toBranchColors(branchColors, colors) }
   val drawEdges = rememberEdgePainter(state.edges, ceremony)
   AtlasCanvas(
     modifier = modifier,
     state = state,
     crossfadeSpec = AppTheme.motion.mediumTween(),
-    branchColors = branchColors,
+    branchColors = resolvedColors,
     gesturesEnabled = gesturesEnabled,
     foreignBranchOf = { graphNode -> graph.foreignBranchOf(graphNode) },
     drawEdges = drawEdges,

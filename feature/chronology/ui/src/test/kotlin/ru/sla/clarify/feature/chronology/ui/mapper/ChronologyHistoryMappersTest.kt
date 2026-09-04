@@ -14,6 +14,7 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.domain.entity.BaselineHistory
 import ru.sla.clarify.feature.chronology.domain.entity.BranchHistory
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
+import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
 import ru.sla.clarify.feature.chronology.ui.entity.Chronology
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import java.time.LocalDateTime
@@ -261,7 +262,7 @@ class ChronologyHistoryMappersTest {
   }
 
   @Test
-  fun `branch colours run in a circle and never take the baseline's`() {
+  fun `branch colours run in a circle and the baseline has none`() {
     val chronology = historyOf(
       branches = (1..7).map { order ->
         BranchHistory(
@@ -272,9 +273,21 @@ class ChronologyHistoryMappersTest {
     ).toChronology()
 
     assertEquals(
-      listOf(1, 2, 3, 4, 5, 6, 1),
-      chronology.graph.branches.map { it.colorIndex },
-      "ноль оставлен магистрали: наивный остаток отдал бы седьмой ветке её цвет"
+      listOf(
+        BranchColor.First,
+        BranchColor.Second,
+        BranchColor.Third,
+        BranchColor.Fourth,
+        BranchColor.Fifth,
+        BranchColor.Sixth,
+        BranchColor.First
+      ),
+      (1..7).map { order -> chronology.branchColors.getValue(GraphBranch.Id("b-$order")) },
+      "после последнего оттенка набор идёт по кругу: седьмая тема берёт первый"
+    )
+    assertNull(
+      chronology.branchColors[GraphBranch.Id(BASELINE)],
+      "у магистрали оттенка нет вовсе, и сказано это отсутствием, а не выделенным значением"
     )
   }
 
