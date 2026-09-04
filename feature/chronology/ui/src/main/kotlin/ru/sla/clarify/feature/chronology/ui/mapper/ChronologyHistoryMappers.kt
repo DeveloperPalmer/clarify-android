@@ -2,8 +2,8 @@ package ru.sla.clarify.feature.chronology.ui.mapper
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import ru.sla.atlas.assembly.graphOf
 import ru.sla.atlas.entity.BranchDraft
+import ru.sla.atlas.entity.Graph
 import ru.sla.atlas.entity.Node
 import ru.sla.atlas.entity.NodeDraft
 import ru.sla.atlas.entity.TimeGap
@@ -16,6 +16,7 @@ import ru.sla.clarify.feature.chronology.ui.entity.BranchColor
 import ru.sla.clarify.feature.chronology.ui.entity.Chronology
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNode
 import ru.sla.clarify.feature.chronology.ui.entity.GraphNodePreview
+import ru.sla.clarify.feature.chronology.ui.entity.GraphNodeScale
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
@@ -25,7 +26,7 @@ import ru.sla.atlas.entity.Branch as GraphBranch
 /**
  * История беседы — в хронологию, которую рисует полотно.
  *
- * Порядок узлов, паузы между ними и состав веток сводит `graphOf`: три величины, которые обязаны
+ * Порядок узлов, паузы между ними и состав веток сводит `Graph.of`: три величины, которые обязаны
  * сойтись, собирает тот, кто их и проверяет. Здесь остаётся то, чего библиотека знать не может, —
  * из чего складывается узел беседы.
  *
@@ -51,11 +52,12 @@ internal fun ChronologyHistory.toChronology(): Chronology {
     dim = false,
     membersById = membersById
   )
-  // Фронт стоит на последнем событии магистрали, а не на «сейчас» по часам: §6.7 просит крайний
-  // правый узел магистрали, а пустота между последним сообщением и текущей минутой — это не история.
   baseline.commits.lastOrNull()?.let { last ->
     drafts += draftOf(
-      node = GraphNode.Front(id = Node.Id("front"), gap = UNSET_GAP),
+      node = GraphNode.Front(
+        id = Node.Id("front"),
+        gap = UNSET_GAP
+      ),
       branchId = baselineBranchId,
       at = last.timestamp
     )
@@ -103,18 +105,13 @@ internal fun ChronologyHistory.toChronology(): Chronology {
   }.toMap()
 
   return Chronology(
-    graph = graphOf(
+    graph = Graph.of(
       drafts = drafts,
-      // Магистраль — такая же ветка, как остальные, и в графе она названа отдельно: её узлы иначе
-      // не принадлежали бы никому. Развилки и слияния у неё нет по определению, а оттенка нет
-      // вовсе — оттенок отвечает на «какая это тема», а у магистрали темы нет.
       baseline = baselineBranchDraft,
       branches = graphBranches,
-      gapOf = { it.toTimeGap() },
-      withGap = { node, gap -> node.withGap(gap) }
+      scale = GraphNodeScale
     ),
     branchNames = branches.associate { GraphBranch.Id(it.branch.id.value) to it.branch.name },
-    // Оттенок раздаётся по порядку ветвления: ветки идут по времени ухода, и первая берёт первый.
     branchColors = branchColors
   )
 }
@@ -272,25 +269,6 @@ private fun mergeDraftOf(
     branchId = baselineBranchId,
     at = at
   )
-}
-
-/**
- * Тот же узел с проставленной паузой.
- *
- * Перечисление здесь неизбежно: пауза лежит в каждом роде узла своим полем, и общего `copy` у
- * запечатанного типа нет. Зато оно полное — род, забытый в этом `when`, не компилируется, а
- * забытый в заглушке просто уехал бы на экран с чужим зазором.
- *
- * @param gap пауза, посчитанная по соседу слева
- * @return узел, готовый попасть в граф
- */
-private fun GraphNode.withGap(gap: TimeGap): GraphNode {
-  return when (this) {
-    is GraphNode.Episode -> copy(gap = gap)
-    is GraphNode.Fork -> copy(gap = gap)
-    is GraphNode.Merge -> copy(gap = gap)
-    is GraphNode.Front -> copy(gap = gap)
-  }
 }
 
 /**

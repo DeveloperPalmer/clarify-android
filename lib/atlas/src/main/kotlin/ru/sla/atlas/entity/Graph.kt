@@ -1,6 +1,8 @@
 package ru.sla.atlas.entity
 
 import androidx.compose.runtime.Immutable
+import ru.sla.atlas.mapper.toBranch
+import java.time.Duration
 
 /**
  * Граф целиком: порядок узлов и состав веток.
@@ -118,6 +120,53 @@ data class Graph<out N : Node>(
   }
 
   companion object {
+
+    /**
+     * Граф из черновиков: расставляет узлы по времени, проставляет паузы и раздаёт веткам их состав.
+     *
+     * **Собирает граф тот, кто проверяет его состав.** Конструктор требует, чтобы каждый узел
+     * принадлежал ровно одной ветке, и ловит нарушение на месте — а собирали граф до сих пор этажом
+     * выше, где этой проверки нет. Три величины, которые там сходились руками, сходятся здесь:
+     * порядок узлов, паузы между ними и обратная сторона порядка — состав каждой ветки.
+     *
+     * **Порядок задаёт время, а не ветка.** Ось X накапливается по порядку списка, поэтому набор,
+     * сгруппированный по веткам, поставил бы позднюю ветку левее ранней. Узлы всех веток сводятся в
+     * один список и сортируются один раз, и только после этого у каждого появляется пауза: она
+     * считается от соседа **по времени**, а кто сосед, до сортировки неизвестно.
+     *
+     * **Пауза меряется по соседу в списке, а не по соседу той же ветки.** Зазор раздвигает узлы по
+     * общей оси, и пауза внутри ветки, посчитанная в обход чужих узлов, поставила бы её узлы поверх
+     * них.
+     *
+     * Перед первым узлом паузы нет: отступ от края полотна дают поля, а не выдуманный зазор.
+     *
+     * @param N узел вызывающего
+     * @param drafts узлы в любом порядке: в нужный их поставит сортировка
+     * @param baseline магистраль: [BranchDraft], потому что состав веток — это и есть то, что сборка
+     *   считает, и подать его вместе с веткой значило бы подать выдумку
+     * @param branches остальные ветки, тоже черновиками
+     * @param scale шкала узлов вызывающего: чем меряется пауза и как она попадает в узел
+     * @return граф, прошедший проверку состава
+     */
+    fun <N : Node> of(
+      drafts: List<NodeDraft<N>>,
+      baseline: BranchDraft,
+      branches: List<BranchDraft>,
+      scale: NodeScale<N>
+    ): Graph<N> {
+      val ordered = drafts.sortedWith(compareBy({ it.at }, { it.order }))
+      val nodes = ordered.mapIndexed { index, draft ->
+        val previous = ordered.getOrNull(index - 1)
+        val gap = scale.gapOf(Duration.between(previous?.at ?: draft.at, draft.at))
+        scale.withGap(draft.node, gap)
+      }
+      val nodeIdsByBranch = ordered.groupBy({ it.branchId }, { it.node.id })
+      return Graph(
+        nodes = nodes,
+        baseline = baseline.toBranch(nodeIdsByBranch[baseline.id].orEmpty()),
+        branches = branches.map { branch -> branch.toBranch(nodeIdsByBranch[branch.id].orEmpty()) }
+      )
+    }
 
     /**
      * Граф, которого ещё нет: ни узлов, ни веток.

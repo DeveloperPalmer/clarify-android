@@ -1,6 +1,7 @@
 package ru.sla.atlas.entity
 
 import androidx.compose.ui.graphics.Color
+import java.time.Duration
 
 /**
  * Узел вызывающего в его наименьшем виде: только то, что обещает [Node].
@@ -35,6 +36,23 @@ internal fun mockNode(id: String): MockNode {
  */
 internal fun mockNodes(count: Int): List<MockNode> {
   return List(count) { index -> mockNode("n$index") }
+}
+
+/**
+ * Шкала узлов вместо настоящей: две ступени с порогом в двадцать минут.
+ *
+ * Какие у полотна ступени, сборке безразлично — она спрашивает ступень и ставит её в узел. Тесту
+ * поэтому хватает шкалы, по которой видно, от какого соседа пауза посчитана.
+ */
+internal object MockNodeScale : NodeScale<MockNode> {
+
+  override fun gapOf(duration: Duration): TimeGap {
+    return if (duration > Duration.ofMinutes(20)) TimeGap.Long else TimeGap.Minutes
+  }
+
+  override fun withGap(node: MockNode, gap: TimeGap): MockNode {
+    return node.copy(gap = gap)
+  }
 }
 
 /**
