@@ -40,6 +40,8 @@ junit-jupiter = "6.1.2"
 mockk = "1.14.11"
 turbine = "1.2.1"
 arrow = "2.2.3"
+ktor = "3.5.2"
+pathfinder = "0.11.1"
 
 [libraries]
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
@@ -57,6 +59,17 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-client-websockets = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+
+pathfinder-core = { module = "ru.kode.pathfinder:pathfinder", version.ref = "pathfinder" }
+pathfinder-store = { module = "ru.kode.pathfinder:pathfinder-store-sqldelight", version.ref = "pathfinder" }
+pathfinder-ui = { module = "ru.kode.pathfinder:pathfinder-android-ui-compose", version.ref = "pathfinder" }
 
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 arrow-optics = { module = "io.arrow-kt:arrow-optics", version.ref = "arrow" }
