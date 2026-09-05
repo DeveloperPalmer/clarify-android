@@ -536,7 +536,7 @@
       <span><b>Источник истины:</b> спека сервера; здесь её копия</span>
       <span><b>Парный документ:</b> план сервера</span>
       <span><b>Дата:</b> 04.09.2026</span>
-      <span><b>Статус:</b> редакция 3 — противоречия сняты, блок 0 готов к старту</span>
+      <span><b>Статус:</b> редакция 3 — блок 0 начат, пункт 0.5 закрыт 05.09.2026</span>
     </div>
   </header>
 
@@ -994,11 +994,11 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
     </p>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>0</b> из 23 · 0%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>1</b> из 23 · 4%</span>
         <span class="tracker-hint">клик по номеру — отметка</span>
         <button class="tracker-reset" id="tracker-reset" type="button">Сбросить отметки</button>
       </div>
-      <div class="tracker-bar"><span id="tracker-bar" style="width: 0%"></span></div>
+      <div class="tracker-bar"><span id="tracker-bar" style="width: 4%"></span></div>
       <div class="sync" id="tracker-sync">Отметки хранятся в этом браузере</div>
     </div>
     <div class="table-wrap">
@@ -1008,7 +1008,7 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
         </thead>
         <tbody>
 
-          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">можно начинать сегодня</span><span class="gcount">0/5</span></td></tr>
+          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">в работе</span><span class="gcount">1/5</span></td></tr>
           <tr data-item="0.1" data-group="0">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.1</button></td>
             <td class="name"><code>ChatChange</code> вместо <code>FirestoreChange</code></td>
@@ -1037,10 +1037,10 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
             <td class="size"><span class="size-chip">4 файла</span></td>
             <td class="dep">Д3. Компиляция не сломается: <code>core:domain</code> и так приходит в <code>auth-session:data</code> через <code>:database</code> — но опираться на это молча нельзя.</td>
           </tr>
-          <tr data-item="0.5" data-group="0">
+          <tr data-item="0.5" data-group="0" data-done="true">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.5</button></td>
             <td class="name">Четыре недостающие страницы <code>wiki/method/</code></td>
-            <td class="what"><code>readMember</code>, <code>updateBranchCommit</code>, <code>branchLive</code> и вторая перегрузка <code>commitsLive</code> описаны наравне с остальными. После этого страниц 46, живых — 12, и wiki становится полным составом будущей спеки.</td>
+            <td class="what"><code>readMember</code>, <code>updateBranchCommit</code>, <code>branchLive</code> и вторая перегрузка <code>commitsLive</code> описаны наравне с остальными. После этого страниц 46, живых — 12, и wiki становится полным составом будущей спеки. <b>Сделано 05.09.2026.</b> Попутно закрыты три расхождения, которые уехали бы в спеку как есть: <code>read-commits</code> описывала курсор пагинации как <code>LocalDateTime</code> и несуществующее поле в ответе, <code>branches-live</code> не перечисляла <code>lastCommitText</code>, а <code>chat-branch</code> ссылалась на методы, которых экран не вызывает, и не описывала редактирование сообщения.</td>
             <td class="size"><span class="size-chip">4 страницы</span></td>
             <td class="dep">Сегодня функций 46, а страниц 42, и спека, написанная по wiki, недосчитается четырёх методов. Обнаружится это на паритете в блоке 3 — дороже всего.</td>
           </tr>
@@ -1368,7 +1368,7 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
     var sync = document.getElementById('tracker-sync');
     var resetBtn = document.getElementById('tracker-reset');
 
-    var state = readLocal();
+    var state = withMarkup(readLocal());
     var remote = null;
     var keepLocal = true;
     var seeded = false;
@@ -1381,6 +1381,17 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
       } catch (e) {
         return {};
       }
+    }
+
+    function withMarkup(stored) {
+      // Разметка — источник истины о выполненном: она живёт в файле и переживает чужой браузер.
+      // Локальные и общие отметки ложатся поверх, поэтому снятую вручную отметку это не воскрешает.
+      var merged = {};
+      rows.forEach(function (row) {
+        if (row.dataset.done === 'true') merged[row.dataset.item] = true;
+      });
+      Object.keys(stored || {}).forEach(function (id) { merged[id] = stored[id]; });
+      return merged;
     }
 
     function writeLocal() {
@@ -1480,13 +1491,13 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
             seeded = true;
             var local = readLocal();
             if (!snap.exists && Object.keys(local).length) {
-              state = local;
+              state = withMarkup(local);
               render();
               remote.set({ items: local }).catch(function () {});
               return;
             }
           }
-          state = items && typeof items === 'object' ? items : {};
+          state = withMarkup(items && typeof items === 'object' ? items : {});
           render();
         }, function () {
           remote = null;
