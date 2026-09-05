@@ -29,7 +29,7 @@ tags:
 
 ### Commit
 
-- [read-commits](method/commit/read-commits.md) — загружает порцию сообщений ветки, опционально раньше указанного момента.
+- [read-commits](method/commit/read-commits.md) — загружает порцию сообщений ветки, опционально раньше указанного курсора.
 - [commits-live](method/commit/commits-live.md) — живая подписка на сообщения ветки по conversationId.
 - [commits-tail-live](method/commit/commits-tail-live.md) — живая подписка на сообщения ветки от курсора и дальше, без верхней границы.
 - [direct-commits-live](method/commit/direct-commits-live.md) — живая подписка на сообщения ветки в direct-чате.

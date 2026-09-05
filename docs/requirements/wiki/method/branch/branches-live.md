@@ -6,7 +6,7 @@ tags:
 
 **Summary**: Живая подписка на список веток conversation.
 **Sources**: `lib/google/firestore/src/main/kotlin/ru/sla/clarify/lib/google/firestore/Firestore.kt`
-**Last updated**: 2026-06-19
+**Last updated**: 2026-09-05
 
 ---
 
@@ -38,7 +38,8 @@ fun branchesLive(conversationId: String): Flow<List<FirestoreChange<BranchNM>>>
 | [].data.branchedFromCommitId            | Y   | String     | ID commit'а, от которого отответвились.                                 |
 | [].data.name                            | Y   | String     | Название ветки.                                                         |
 | [].data.createdAt                       | Y   | Timestamp  | Время создания.                                                         |
-| [].data.lastCommitAt                    | N   | Timestamp? | Время последнего сообщения в ветке.                                     |
+| [].data.lastCommitText                  | N   | String?    | Текст последнего сообщения ветки. `null` — сообщений нет.               |
+| [].data.lastCommitAt                    | N   | Timestamp? | Время последнего сообщения ветки. `null` — сообщений нет.               |
 | [].data.createdByUid                    | Y   | String     | UID создателя ветки.                                                    |
 | [].data.mergeRequest                    | N   | Object?    | Merge request, если открыт. `null` — нет активного MR.                  |
 | [].data.mergeRequest.status             | Y   | String     | Статус MR.<br>\* open<br>\* readyToMerge<br>\* merged                   |
@@ -69,6 +70,7 @@ fun branchesLive(conversationId: String): Flow<List<FirestoreChange<BranchNM>>>
       "branchedFromCommitId": "commit-def456",
       "name": "Feature discussion",
       "createdAt": "2026-06-13T15:00:00Z",
+      "lastCommitText": "Let's discuss this here",
       "lastCommitAt": "2026-06-13T16:00:00Z",
       "createdByUid": "uid-alice",
       "mergeRequest": {
