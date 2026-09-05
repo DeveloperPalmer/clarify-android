@@ -15,7 +15,7 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Clarify"
+rootProject.name = "clarify-android"
 includeBuild("build-conventions")
 include ':lib:atlas'
 include ':lib:atlas-debug'
