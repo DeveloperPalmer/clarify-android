@@ -2,6 +2,7 @@ package ru.sla.clarify.feature.chat.conversation.data.mapper
 
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.ConversationRecord
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.mapper.data.formatLastCommitTimestamp
@@ -16,8 +17,8 @@ internal fun mapToConversation(
   peerDisplayName: String,
   peerPhotoUrl: String?
 ): Conversation {
-  return when (Conversation.Type.entries.first { it.value == type }) {
-    Conversation.Type.Direct -> {
+  return when (ConversationRecord.Type.fromValue(type)) {
+    ConversationRecord.Type.Direct -> {
       Conversation.Direct(
         id = id,
         peer = Peer(
@@ -31,7 +32,7 @@ internal fun mapToConversation(
         unreadCount = unreadCount
       )
     }
-    Conversation.Type.Group -> {
+    ConversationRecord.Type.Group -> {
       // TODO: @sla Conversation. Remove mapToGroup. Add Group mapper here instead of throw error
       error("unexpected conversation type: $type")
     }

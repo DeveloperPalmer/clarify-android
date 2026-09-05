@@ -22,6 +22,7 @@ import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.CommitRecord
 import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.ConversationRecord
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.data.mapper.mapToBranchCommit
 import ru.sla.clarify.feature.chronology.domain.ChronologyRepository
@@ -208,7 +209,7 @@ class ChronologyRepositoryImpl @Inject constructor(
     return inMemoryDB.chatConversationQueries.selectIdByMembers(
       memberIds = memberIds,
       memberCount = memberIds.size.toLong(),
-      type = Conversation.Type.Direct.value
+      type = ConversationRecord.Type.Direct.value
     )
   }
 

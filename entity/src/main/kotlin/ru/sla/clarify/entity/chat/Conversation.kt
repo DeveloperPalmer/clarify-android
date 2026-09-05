@@ -34,9 +34,4 @@ sealed interface Conversation {
     val name: String,
     val lastCommitSenderName: String?
   ) : Conversation
-
-  enum class Type(val value: String) {
-    Direct("direct"),
-    Group("group")
-  }
 }

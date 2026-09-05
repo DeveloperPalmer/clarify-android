@@ -57,15 +57,4 @@ sealed interface Commit {
       }
     }
   }
-
-  enum class Type(val value: String) {
-    Text("text"),
-    InviteMember("inviteMember");
-
-    companion object {
-      fun fromValue(value: String): Type {
-        return entries.firstOrNull { it.value == value } ?: error("unexpected type: $value")
-      }
-    }
-  }
 }
