@@ -7,21 +7,27 @@ import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.lib.google.firestore.codec.codec
 import ru.sla.clarify.lib.google.firestore.codec.decodeFromSnapshot
 
-internal inline fun <reified T> QuerySnapshot?.mapDocumentChanges(
+/**
+ * Читает изменения снапшота как [NM] и сразу отдаёт их доменными: за границу модуля
+ * транспортный тип не выходит, поэтому декодирование и отображение стоят рядом.
+ */
+internal inline fun <reified NM, R> QuerySnapshot?.mapDocumentChanges(
   metadataChanges: MetadataChanges = MetadataChanges.EXCLUDE,
-  trackPendingWrites: Boolean = false
-): List<ChatChange<T>> {
+  trackPendingWrites: Boolean = false,
+  transform: (NM) -> R
+): List<ChatChange<R>> {
   return this
     ?.getDocumentChanges(metadataChanges)
-    ?.map { it.toDomainModel<T>(trackPendingWrites) }
+    ?.map { it.toDomainModel(trackPendingWrites, transform) }
     .orEmpty()
 }
 
-private inline fun <reified T> DocumentChange.toDomainModel(
-  trackPendingWrites: Boolean
-): ChatChange<T> {
+private inline fun <reified NM, R> DocumentChange.toDomainModel(
+  trackPendingWrites: Boolean,
+  transform: (NM) -> R
+): ChatChange<R> {
   return ChatChange(
-    data = codec.decodeFromSnapshot<T>(document),
+    data = transform(codec.decodeFromSnapshot<NM>(document)),
     changeType = type.toDomainModel(),
     isPending = trackPendingWrites && document.metadata.hasPendingWrites()
   )

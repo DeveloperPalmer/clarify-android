@@ -14,13 +14,24 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
+import ru.sla.clarify.core.domain.date.toLocalDateTime
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
+import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.BranchRecord
 import ru.sla.clarify.entity.chat.ChatChange
+import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.CommitCursor
+import ru.sla.clarify.entity.chat.CommitNotFoundException
+import ru.sla.clarify.entity.chat.CommitRecord
+import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.ConversationRecord
+import ru.sla.clarify.entity.chat.LastCommitUpdate
+import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.lib.google.firestore.codec.codec
 import ru.sla.clarify.lib.google.firestore.codec.decodeFromSnapshot
 import ru.sla.clarify.lib.google.firestore.codec.encodeToMap
@@ -29,9 +40,7 @@ import ru.sla.clarify.lib.google.firestore.codec.sentinel.ArrayUnion
 import ru.sla.clarify.lib.google.firestore.codec.sentinel.Delete
 import ru.sla.clarify.lib.google.firestore.codec.sentinel.Increment
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
-import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
-import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.lib.google.firestore.entity.MemberNM
 import ru.sla.clarify.lib.google.firestore.entity.MergeRequestNM
@@ -48,8 +57,6 @@ import ru.sla.clarify.lib.google.firestore.entity.write.CreateUserParams
 import ru.sla.clarify.lib.google.firestore.entity.write.DeleteConversationMemberParams
 import ru.sla.clarify.lib.google.firestore.entity.write.DeleteMergeRequestParams
 import ru.sla.clarify.lib.google.firestore.entity.write.HideCommitParams
-import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
-import ru.sla.clarify.lib.google.firestore.entity.write.ReplyCommit
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateBranchLastCommitParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateCommitMessageParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateConversationMembersParams
@@ -63,6 +70,8 @@ import ru.sla.clarify.lib.google.firestore.entity.write.UpdateReadWatermarkParam
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateUnreadCountParams
 import ru.sla.clarify.lib.google.firestore.entity.write.UpdateUserParams
 import ru.sla.clarify.lib.google.firestore.mapper.mapDocumentChanges
+import ru.sla.clarify.lib.google.firestore.mapper.toDomainModel
+import ru.sla.clarify.lib.google.firestore.mapper.toNetworkModel
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
 
@@ -74,7 +83,7 @@ class Firestore @Inject constructor(
   private val listenerGuard: FirestoreListenerGuard
 ) : FirestoreWrapperProvider by firestoreWrapper {
 
-  suspend fun readCurrentUser(): UserNM {
+  suspend fun readCurrentUser(): User {
     val userId = requireUserId()
     val document = userDocumentRef(userId)
       .get()
@@ -82,17 +91,17 @@ class Firestore @Inject constructor(
     if (!document.exists()) {
       error("User by id: ${userId.value} not found in Firestore")
     }
-    return codec.decodeFromSnapshot(document)
+    return codec.decodeFromSnapshot<UserNM>(document).toDomainModel()
   }
 
-  suspend fun readUser(id: UserId): UserNM? {
+  suspend fun readUser(id: UserId): User? {
     val document = userDocumentRef(id)
       .get()
       .await()
     if (!document.exists()) {
       return null
     }
-    return codec.decodeFromSnapshot<UserNM>(document)
+    return codec.decodeFromSnapshot<UserNM>(document).toDomainModel()
   }
 
   suspend fun readUserExists(id: UserId): Boolean {
@@ -120,15 +129,15 @@ class Firestore @Inject constructor(
       ?.let(::UserId)
   }
 
-  suspend fun readUsersByEmailPrefix(prefix: String, limit: Long): List<UserNM> {
+  suspend fun readUsersByEmailPrefix(prefix: String, limit: Long): List<User> {
     return usersQueryByEmailPrefix(prefix = prefix, limit = limit)
       .get()
       .await()
       .documents
-      .map { codec.decodeFromSnapshot<UserNM>(it) }
+      .map { codec.decodeFromSnapshot<UserNM>(it).toDomainModel() }
   }
 
-  fun userLive(id: UserId): Flow<UserNM?> = callbackFlow {
+  fun userLive(id: UserId): Flow<User?> = callbackFlow {
     listenerGuard.trackOpen("userLive:${id.value}")
 
     val listener = userDocumentRef(
@@ -140,7 +149,7 @@ class Firestore @Inject constructor(
       }
       val user = snapshot
         ?.takeIf { it.exists() }
-        ?.let { codec.decodeFromSnapshot<UserNM>(it) }
+        ?.let { codec.decodeFromSnapshot<UserNM>(it).toDomainModel() }
       trySend(user)
     }
     awaitClose { listener.remove() }
@@ -204,7 +213,7 @@ class Firestore @Inject constructor(
     conversationId: String,
     peerId: String,
     commitIds: List<String>,
-    lastCommit: LastCommitParams,
+    lastCommit: LastCommitUpdate,
     peerUnreadDelta: Int
   ) {
     require(commitIds.isNotEmpty()) { "deleteDirectCommits called with empty commitIds" }
@@ -225,12 +234,12 @@ class Firestore @Inject constructor(
       commitDocuments.forEach { transaction.delete(it) }
 
       when (lastCommit) {
-        is LastCommitParams.Keep -> Unit
-        is LastCommitParams.Replace -> {
+        is LastCommitUpdate.Keep -> Unit
+        is LastCommitUpdate.Replace -> {
           val updateLastCommitParams = UpdateLastCommitParams(
             lastCommitText = lastCommit.text,
-            lastCommitSenderUid = lastCommit.senderUid,
-            lastCommitAt = lastCommit.at
+            lastCommitSenderUid = lastCommit.senderId.value,
+            lastCommitAt = lastCommit.at.toTimestamp()
           )
           transaction.set(
             conversationDocument,
@@ -238,7 +247,7 @@ class Firestore @Inject constructor(
             SetOptions.merge()
           )
         }
-        is LastCommitParams.Clear -> {
+        is LastCommitUpdate.Clear -> {
           val clearLastCommitParams = ClearLastCommitParams(
             lastCommitText = Delete,
             lastCommitSenderUid = Delete,
@@ -271,7 +280,7 @@ class Firestore @Inject constructor(
     branchId: String,
     peerId: String,
     commitIds: List<String>,
-    lastCommit: LastCommitParams,
+    lastCommit: LastCommitUpdate,
     peerUnreadDelta: Int
   ) {
     require(commitIds.isNotEmpty()) { "deleteBranchCommits called with empty commitIds" }
@@ -292,12 +301,12 @@ class Firestore @Inject constructor(
       commitDocuments.forEach { transaction.delete(it) }
 
       when (lastCommit) {
-        is LastCommitParams.Keep -> Unit
-        is LastCommitParams.Replace -> {
+        is LastCommitUpdate.Keep -> Unit
+        is LastCommitUpdate.Replace -> {
           // ветка не хранит lastCommitSenderUid — берём только text/at
           val updateBranchLastCommitParams = UpdateBranchLastCommitParams(
             lastCommitText = lastCommit.text,
-            lastCommitAt = lastCommit.at
+            lastCommitAt = lastCommit.at.toTimestamp()
           )
           transaction.set(
             branchDocument,
@@ -305,7 +314,7 @@ class Firestore @Inject constructor(
             SetOptions.merge()
           )
         }
-        is LastCommitParams.Clear -> {
+        is LastCommitUpdate.Clear -> {
           val clearBranchLastCommitParams = ClearBranchLastCommitParams(
             lastCommitText = Delete,
             lastCommitAt = Delete
@@ -332,15 +341,16 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  suspend fun readMember(conversationId: String, memberId: String): MemberNM? {
+  suspend fun readMember(conversationId: String, memberId: String): LocalDateTime? {
     val document = memberDocumentRef(conversationId, memberId)
       .get()
       .await()
-    return if (document.exists()) {
-      codec.decodeFromSnapshot<MemberNM>(document)
-    } else {
-      null
-    }
+    return document
+      .takeIf { it.exists() }
+      ?.let { codec.decodeFromSnapshot<MemberNM>(it) }
+      ?.lastReadAt
+      ?.toEpochMillis()
+      ?.toLocalDateTime()
   }
 
   suspend fun hideCommits(conversationId: String, commitIds: List<String>) {
@@ -372,7 +382,7 @@ class Firestore @Inject constructor(
     }.await()
   }
 
-  fun conversationsLive(): Flow<List<ChatChange<ConversationNM>>> = callbackFlow {
+  fun conversationsLive(): Flow<List<ChatChange<ConversationRecord>>> = callbackFlow {
     val userId = requireUserId()
 
     val listener = conversationsQuery(
@@ -382,7 +392,7 @@ class Firestore @Inject constructor(
         close(error)
         return@addSnapshotListener
       }
-      trySend(snapshot.mapDocumentChanges<ConversationNM>())
+      trySend(snapshot.mapDocumentChanges<ConversationNM, ConversationRecord> { it.toDomainModel() })
     }
     awaitClose { listener.remove() }
   }
@@ -464,7 +474,7 @@ class Firestore @Inject constructor(
 
   fun membersLive(
     conversationId: String
-  ): Flow<List<ChatChange<MemberNM>>> = callbackFlow {
+  ): Flow<List<ChatChange<Member.Id>>> = callbackFlow {
     listenerGuard.trackOpen("membersLive:$conversationId")
 
     val listener = membersCollectionRef(
@@ -474,7 +484,7 @@ class Firestore @Inject constructor(
         close(error)
         return@addSnapshotListener
       }
-      trySend(snapshot.mapDocumentChanges<MemberNM>())
+      trySend(snapshot.mapDocumentChanges<MemberNM, Member.Id> { Member.Id(it.id) })
     }
     awaitClose { listener.remove() }
   }
@@ -482,7 +492,7 @@ class Firestore @Inject constructor(
   fun memberLive(
     conversationId: String,
     memberId: String
-  ): Flow<MemberNM?> = callbackFlow {
+  ): Flow<LocalDateTime?> = callbackFlow {
     listenerGuard.trackOpen("memberLive:$conversationId:$memberId")
 
     val listener = memberDocumentRef(
@@ -493,10 +503,13 @@ class Firestore @Inject constructor(
         close(error)
         return@addSnapshotListener
       }
-      val member = snapshot
+      val lastReadAt = snapshot
         ?.takeIf { it.exists() }
         ?.let { codec.decodeFromSnapshot<MemberNM>(it) }
-      trySend(member)
+        ?.lastReadAt
+        ?.toEpochMillis()
+        ?.toLocalDateTime()
+      trySend(lastReadAt)
     }
     awaitClose { listener.remove() }
   }
@@ -572,7 +585,7 @@ class Firestore @Inject constructor(
     conversationId: String,
     branchId: String,
     limit: Long
-  ): Flow<List<ChatChange<CommitNM>>> = callbackFlow {
+  ): Flow<List<ChatChange<CommitRecord>>> = callbackFlow {
     listenerGuard.trackOpen("commitsLive:$conversationId:$branchId")
 
     val listener = commitQuery(
@@ -586,10 +599,10 @@ class Firestore @Inject constructor(
         close(error)
         return@addSnapshotListener
       }
-      val result = snapshot.mapDocumentChanges<CommitNM>(
+      val result = snapshot.mapDocumentChanges<CommitNM, CommitRecord>(
         metadataChanges = MetadataChanges.INCLUDE,
         trackPendingWrites = true
-      )
+      ) { it.toDomainModel() }
       trySend(result)
     }
     awaitClose { listener.remove() }
@@ -601,7 +614,7 @@ class Firestore @Inject constructor(
     limit: Long,
     before: CommitCursor?,
     source: Source = Source.DEFAULT
-  ): List<CommitNM> {
+  ): List<CommitRecord> {
     val query = commitQuery(
       conversationId = conversationId,
       whereEqualTo = Branch.Id(branchId),
@@ -613,14 +626,14 @@ class Firestore @Inject constructor(
       .get(source)
       .await()
       .documents
-      .map { codec.decodeFromSnapshot<CommitNM>(it) }
+      .map { codec.decodeFromSnapshot<CommitNM>(it).toDomainModel() }
   }
 
   fun directCommitsLive(
     branchId: String,
     peerId: String,
     from: CommitCursor?
-  ): Flow<List<ChatChange<CommitNM>>> {
+  ): Flow<List<ChatChange<CommitRecord>>> {
     return directConversationIdLive(peerId)
       .distinctUntilChanged()
       .flatMapLatest { conversationId ->
@@ -639,7 +652,7 @@ class Firestore @Inject constructor(
   fun groupCommitsLive(
     conversationId: String,
     limit: Long
-  ): Flow<List<ChatChange<CommitNM>>> {
+  ): Flow<List<ChatChange<CommitRecord>>> {
     return commitsLive(
       conversationId = conversationId,
       branchId = conversationId,
@@ -652,7 +665,7 @@ class Firestore @Inject constructor(
     branchId: String,
     text: String,
     memberUids: List<String>,
-    replyCommit: ReplyCommit?
+    replyCommit: CommitRecord.Reply?
   ) {
     val commitId = randomUuid()
     val createdAt = Timestamp.now()
@@ -670,7 +683,7 @@ class Firestore @Inject constructor(
       createdAt = createdAt,
       branchId = branchId,
       visibleFor = memberUids,
-      replyCommit = replyCommit
+      replyCommit = replyCommit?.toNetworkModel()
     )
     val updateBranchLastCommitParams = UpdateBranchLastCommitParams(
       lastCommitText = text,
@@ -708,7 +721,7 @@ class Firestore @Inject constructor(
     branchId: String?,
     conversationId: String?,
     text: String,
-    replyCommit: ReplyCommit?
+    replyCommit: CommitRecord.Reply?
   ) {
     val commitId = randomUuid()
     val createdAt = Timestamp.now()
@@ -731,7 +744,7 @@ class Firestore @Inject constructor(
       createdAt = createdAt,
       branchId = resolvedBranchId,
       visibleFor = directMemberIds,
-      replyCommit = replyCommit
+      replyCommit = replyCommit?.toNetworkModel()
     )
     val createConversationParams = CreateConversationParams(
       type = ConversationNM.Type.Direct,
@@ -815,7 +828,7 @@ class Firestore @Inject constructor(
       // документ-зомби из двух полей, поэтому сначала проверка существования, затем update.
       val commitSnapshot = transaction[commitDocument]
       if (!commitSnapshot.exists()) {
-        throw CommitNotFoundException(commitId)
+        throw CommitNotFoundException(Commit.Id(commitId))
       }
       val commit = codec.decodeFromSnapshot<CommitNM>(commitSnapshot)
       val lastCommitAt = transaction[conversationDocument]
@@ -858,7 +871,7 @@ class Firestore @Inject constructor(
       // документ-зомби из двух полей, поэтому сначала проверка существования, затем update.
       val commitSnapshot = transaction[commitDocument]
       if (!commitSnapshot.exists()) {
-        throw CommitNotFoundException(commitId)
+        throw CommitNotFoundException(Commit.Id(commitId))
       }
       val commit = codec.decodeFromSnapshot<CommitNM>(commitSnapshot)
       val branchLastCommitAt = transaction[branchDocument]
@@ -1012,7 +1025,7 @@ class Firestore @Inject constructor(
 
   fun branchesLive(
     conversationId: String
-  ): Flow<List<ChatChange<BranchNM>>> = callbackFlow {
+  ): Flow<List<ChatChange<BranchRecord>>> = callbackFlow {
     listenerGuard.trackOpen("branchesLive:$conversationId")
 
     val listener = branchesCollectionRef(
@@ -1022,7 +1035,11 @@ class Firestore @Inject constructor(
         close(error)
         return@addSnapshotListener
       }
-      trySend(snapshot.mapDocumentChanges<BranchNM>())
+      trySend(
+        snapshot.mapDocumentChanges<BranchNM, BranchRecord> {
+          it.toDomainModel(Conversation.Id(conversationId))
+        }
+      )
     }
     awaitClose { listener.remove() }
   }
@@ -1035,7 +1052,7 @@ class Firestore @Inject constructor(
   fun branchLive(
     conversationId: String,
     branchId: String
-  ): Flow<BranchNM?> = callbackFlow {
+  ): Flow<BranchRecord?> = callbackFlow {
     listenerGuard.trackOpen("branchLive:$branchId")
 
     val listener = branchDocumentRef(
@@ -1049,6 +1066,7 @@ class Firestore @Inject constructor(
       val branch = snapshot
         ?.takeIf { it.exists() }
         ?.let { codec.decodeFromSnapshot<BranchNM>(it) }
+        ?.toDomainModel(Conversation.Id(conversationId))
       trySend(branch)
     }
     awaitClose { listener.remove() }
@@ -1059,7 +1077,7 @@ class Firestore @Inject constructor(
     parentBranchId: String,
     branchedFromCommitId: String,
     name: String
-  ): BranchNM {
+  ): BranchRecord {
     val branchId = randomUuid()
     val createdAt = Timestamp.now()
     val currentUserId = requireUserId()
@@ -1089,7 +1107,7 @@ class Firestore @Inject constructor(
       lastCommitAt = null,
       createdByUid = currentUserId.value,
       mergeRequest = null
-    )
+    ).toDomainModel(Conversation.Id(conversationId))
   }
 
   suspend fun createOpenMergeRequest(conversationId: String, branchId: String) {
@@ -1262,7 +1280,7 @@ class Firestore @Inject constructor(
     conversationId: String,
     branchId: String,
     from: CommitCursor?
-  ): Flow<List<ChatChange<CommitNM>>> = callbackFlow {
+  ): Flow<List<ChatChange<CommitRecord>>> = callbackFlow {
     listenerGuard.trackOpen("commitsTailLive:$conversationId:$branchId")
 
     val listener = commitTailQuery(
@@ -1275,10 +1293,10 @@ class Firestore @Inject constructor(
         close(error)
         return@addSnapshotListener
       }
-      val result = snapshot.mapDocumentChanges<CommitNM>(
+      val result = snapshot.mapDocumentChanges<CommitNM, CommitRecord>(
         metadataChanges = MetadataChanges.INCLUDE,
         trackPendingWrites = true
-      )
+      ) { it.toDomainModel() }
       trySend(result)
     }
     awaitClose { listener.remove() }

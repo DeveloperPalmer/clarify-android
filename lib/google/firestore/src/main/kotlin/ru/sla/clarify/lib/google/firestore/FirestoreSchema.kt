@@ -48,25 +48,25 @@ object FirestoreSchema {
   const val BRANCH_MERGE_REQUEST = "mergeRequest"
 }
 
-fun Timestamp.toEpochSeconds(): Long {
+internal fun Timestamp.toEpochSeconds(): Long {
   return seconds
 }
 
-fun Timestamp.toEpochMillis(): Long {
+internal fun Timestamp.toEpochMillis(): Long {
   return toDate().time
 }
 
 /** Сворачивает пару (секунды, наносекунды) в единое значение «наносекунд от эпохи». */
-fun Timestamp.toEpochNanos(): Long {
+internal fun Timestamp.toEpochNanos(): Long {
   return seconds * NANOS_PER_SECOND + nanoseconds
 }
 
 /** Обратна [toEpochNanos]: раскладывает «наносекунды от эпохи» обратно в [Timestamp]. */
-fun Long.epochNanosToTimestamp(): Timestamp {
+internal fun Long.epochNanosToTimestamp(): Timestamp {
   return Timestamp(this / NANOS_PER_SECOND, (this % NANOS_PER_SECOND).toInt())
 }
 
-fun LocalDateTime.toTimestamp(): Timestamp {
+internal fun LocalDateTime.toTimestamp(): Timestamp {
   val instant = atZone(ZoneId.systemDefault())
     .toInstant()
   return Timestamp(Date.from(instant))

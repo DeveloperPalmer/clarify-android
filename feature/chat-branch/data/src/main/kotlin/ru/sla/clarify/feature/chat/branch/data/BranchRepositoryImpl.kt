@@ -2,7 +2,6 @@ package ru.sla.clarify.feature.chat.branch.data
 
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.Source
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +17,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
+import ru.sla.clarify.core.domain.date.nowEpochNanos
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
@@ -25,8 +25,12 @@ import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.BranchRecord
 import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.CommitCursor
+import ru.sla.clarify.entity.chat.CommitNotFoundException
+import ru.sla.clarify.entity.chat.CommitRecord
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
@@ -39,21 +43,13 @@ import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
 import ru.sla.clarify.feature.chat.branch.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.entity.BranchNM
-import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
-import ru.sla.clarify.lib.google.firestore.entity.CommitNM
-import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
-import ru.sla.clarify.lib.google.firestore.toEpochMillis
-import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.clarify.mapper.data.mapToMember
 import ru.sla.clarify.mapper.data.mapToUser
-import ru.sla.clarify.mapper.data.toDomain
-import ru.sla.clarify.mapper.data.toDomainModel
-import ru.sla.clarify.mapper.data.toLocalDateTime
-import ru.sla.clarify.mapper.data.toNetworkModel
+import ru.sla.clarify.mapper.data.toCacheRow
+import ru.sla.clarify.mapper.data.toReplyRecord
 import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
@@ -83,12 +79,7 @@ class BranchRepositoryImpl @Inject constructor(
     firestore.branchLive(
       conversationId = conversationId.value,
       branchId = branchId.value
-    ).collect { branch ->
-      applyBranchChanges(
-        conversationId = conversationId,
-        branch = branch
-      )
-    }
+    ).collect(::applyBranchChanges)
   }
 
   override suspend fun subscribeOnBranchCommitsChanges() {
@@ -176,7 +167,7 @@ class BranchRepositoryImpl @Inject constructor(
         branchId = branchId.value,
         text = text,
         memberUids = memberUids(conversationId),
-        replyCommit = replyCommit?.toNetworkModel()
+        replyCommit = replyCommit?.toReplyRecord()
       )
     }
   }
@@ -264,9 +255,6 @@ class BranchRepositoryImpl @Inject constructor(
         conversationId = conversationId.value,
         memberId = peerId.value
       )
-        ?.lastReadAt
-        ?.toEpochMillis()
-        ?.toLocalDateTime()
 
       DeleteForEveryoneWrite(
         peerId = peerId,
@@ -442,11 +430,7 @@ class BranchRepositoryImpl @Inject constructor(
       firestore.memberLive(
         conversationId = conversationId.value,
         memberId = member.id.value
-      ).map { member ->
-        member?.lastReadAt
-          ?.toEpochMillis()
-          ?.toLocalDateTime()
-      }.collect {
+      ).collect {
         emit(it)
       }
     }
@@ -459,28 +443,28 @@ class BranchRepositoryImpl @Inject constructor(
       .map { it.value }
   }
 
-  private suspend fun applyBranchChanges(conversationId: Conversation.Id, branch: BranchNM?) {
+  private suspend fun applyBranchChanges(branch: BranchRecord?) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
         if (branch == null) {
           inMemoryDB.chatBranchQueries.delete(branchId)
         } else {
-          applyInsertOrReplaceBranch(branch.toDomain(conversationId))
+          applyInsertOrReplaceBranch(branch)
         }
       }
     }
   }
 
-  private fun applyInsertOrReplaceBranch(branch: Branch) {
+  private fun applyInsertOrReplaceBranch(branch: BranchRecord) {
     inMemoryDB.chatBranchQueries.insertOrReplace(
       id = branch.id,
       conversationId = branch.conversationId,
       parentBranchId = branch.parentBranchId,
       branchedFromCommitId = branch.branchedFromCommitId,
       name = branch.name,
-      lastCommit = branch.lastCommit,
-      lastCommitTimestamp = branch.lastCommitTimestamp,
-      createdAt = branch.createdAt,
+      lastCommit = branch.lastCommitText,
+      lastCommitTimestamp = branch.lastCommitAtSeconds,
+      createdAt = branch.createdAtSeconds,
       createdById = branch.createdById
     )
     val mergeRequest = branch.mergeRequest
@@ -490,8 +474,8 @@ class BranchRepositoryImpl @Inject constructor(
         initiatorId = mergeRequest.initiatorId,
         approvedByIds = mergeRequest.approvedByIds,
         status = mergeRequest.status.value,
-        requestedAt = mergeRequest.requestedAt,
-        mergedAt = mergeRequest.mergedAt,
+        requestedAt = mergeRequest.requestedAtSeconds,
+        mergedAt = mergeRequest.mergedAtSeconds,
         mergedIntoBranchId = mergeRequest.mergedIntoBranchId
       )
     } else {
@@ -508,7 +492,7 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun applyInsertOrReplaceCommits(conversationId: Conversation.Id, commits: List<CommitNM>) {
+  private suspend fun applyInsertOrReplaceCommits(conversationId: Conversation.Id, commits: List<CommitRecord>) {
     return withContext(Dispatchers.IO) {
       val userId = requireUserId()
       inMemoryDB.transaction {
@@ -527,7 +511,7 @@ class BranchRepositoryImpl @Inject constructor(
   private suspend fun applyCommitChanges(
     conversationId: Conversation.Id,
     userId: UserId,
-    changes: List<ChatChange<CommitNM>>
+    changes: List<ChatChange<CommitRecord>>
   ) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
@@ -544,7 +528,7 @@ class BranchRepositoryImpl @Inject constructor(
               )
             }
             ChatChange.Type.Removed -> {
-              inMemoryDB.chatCommitQueries.delete(Commit.Id(commit.id))
+              inMemoryDB.chatCommitQueries.delete(commit.id)
             }
           }
         }
@@ -554,11 +538,11 @@ class BranchRepositoryImpl @Inject constructor(
 
   private fun applyInsertOrReplaceCommit(
     conversationId: Conversation.Id,
-    commit: CommitNM,
+    commit: CommitRecord,
     userId: UserId,
     isPending: Boolean
   ) {
-    val row = commit.toDomainModel(
+    val row = commit.toCacheRow(
       conversationId = conversationId,
       selfUserId = userId,
       isPending = isPending
@@ -610,7 +594,7 @@ class BranchRepositoryImpl @Inject constructor(
         id = id,
         text = text,
         status = status.value,
-        editedAtNanos = Timestamp.now().toEpochNanos()
+        editedAtNanos = nowEpochNanos()
       )
     }
   }

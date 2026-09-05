@@ -1,16 +1,14 @@
 package ru.sla.clarify.mapper.data
 
 import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
+import ru.sla.clarify.core.domain.date.toLocalDateTime
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
 import ru.sla.clarify.database.chat.ChatCommit
-import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.CommitRecord
 import ru.sla.clarify.entity.chat.Conversation
-import ru.sla.clarify.lib.google.firestore.entity.CommitNM
-import ru.sla.clarify.lib.google.firestore.entity.write.LastCommitParams
-import ru.sla.clarify.lib.google.firestore.toEpochNanos
-import ru.sla.clarify.lib.google.firestore.toTimestamp
+import ru.sla.clarify.entity.chat.LastCommitUpdate
 import ru.sla.resourcerefs.TextRef
 import ru.sla.resourcerefs.resRef
 import ru.sla.resourcerefs.strRef
@@ -63,28 +61,31 @@ fun mapToCommit(
 }
 
 /**
- * Обратна [mapToCommit]: Firestore-[CommitNM] в строку кэша. Единый источник истины для
- * отображения NM -> ChatCommit, общего для всех репозиториев тредов (direct/group/branch), так что
- * поля вроде [ChatCommit.createdAtNanos] задаются ровно в одном месте.
+ * Обратна [mapToCommit]: пришедшее снаружи сообщение в строку кэша. Единый источник истины для
+ * отображения записи в [ChatCommit], общий для всех репозиториев тредов (direct/group/branch),
+ * так что поля вроде [ChatCommit.createdAtNanos] задаются ровно в одном месте.
+ *
+ * Что своё, а что чужое, знает только вызывающий: [selfUserId] приходит параметром, а запись
+ * несёт отправителя как есть.
  */
-fun CommitNM.toDomainModel(
+fun CommitRecord.toCacheRow(
   conversationId: Conversation.Id,
   selfUserId: UserId,
   isPending: Boolean
 ): ChatCommit {
   return ChatCommit(
-    id = Commit.Id(id),
+    id = id,
     conversationId = conversationId,
-    branchId = Branch.Id(branchId),
-    senderId = UserId(senderUid),
+    branchId = branchId,
+    senderId = senderId,
     type = type.value,
     text = text.orEmpty(),
     replyCommit = replyCommit?.toDomainModel(selfUserId),
-    invitedId = invitedUid?.let(::UserId),
-    createdAtNanos = createdAt?.toEpochNanos() ?: 0L,
-    isSelf = senderUid == selfUserId.value,
+    invitedId = invitedId,
+    createdAtNanos = createdAtNanos,
+    isSelf = senderId == selfUserId,
     status = if (isPending) Commit.Status.Sending.value else Commit.Status.Sent.value,
-    editedAtNanos = editedAt?.toEpochNanos()
+    editedAtNanos = editedAtNanos
   )
 }
 
@@ -113,11 +114,11 @@ fun Commit.withReadStatus(peerLastReadAt: LocalDateTime?): Commit {
 
 /**
  * Что сделать с денормализованным `lastCommit*` после удаления [deletedIds]: если удалили текущее последнее сообщение
- * — Переставить на новое последнее оставшееся ([LastCommitParams.Replace]);
- * — Очистить, если сообщений не осталось ([LastCommitParams.Clear]);
- * — Не трогать ([LastCommitParams.Keep]).
+ * — Переставить на новое последнее оставшееся ([LastCommitUpdate.Replace]);
+ * — Очистить, если сообщений не осталось ([LastCommitUpdate.Clear]);
+ * — Не трогать ([LastCommitUpdate.Keep]).
  */
-fun List<Commit>.lastCommitWriteAfterDeleting(deletedIds: Set<Commit.Id>): LastCommitParams {
+fun List<Commit>.lastCommitWriteAfterDeleting(deletedIds: Set<Commit.Id>): LastCommitUpdate {
   val messages = filterIsInstance<Commit.Message>()
   val currentNewest = messages
     .maxWithOrNull(newestCommitOrderComparator)
@@ -126,16 +127,16 @@ fun List<Commit>.lastCommitWriteAfterDeleting(deletedIds: Set<Commit.Id>): LastC
     .maxWithOrNull(newestCommitOrderComparator)
   return when {
     currentNewest == null || currentNewest.id !in deletedIds -> {
-      LastCommitParams.Keep
+      LastCommitUpdate.Keep
     }
     remainingNewest == null -> {
-      LastCommitParams.Clear
+      LastCommitUpdate.Clear
     }
     else -> {
-      LastCommitParams.Replace(
+      LastCommitUpdate.Replace(
         text = remainingNewest.text,
-        senderUid = remainingNewest.senderId.value,
-        at = remainingNewest.timestamp.toTimestamp()
+        senderId = remainingNewest.senderId,
+        at = remainingNewest.timestamp
       )
     }
   }

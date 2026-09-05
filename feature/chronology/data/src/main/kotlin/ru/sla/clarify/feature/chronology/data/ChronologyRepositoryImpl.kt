@@ -20,6 +20,7 @@ import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.CommitRecord
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chronology.data.mapper.mapToBranchCommit
@@ -30,11 +31,9 @@ import ru.sla.clarify.feature.chronology.domain.entity.BranchHistory
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
 import ru.sla.clarify.feature.chronology.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.entity.CommitNM
-import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToMember
-import ru.sla.clarify.mapper.data.toDomainModel
+import ru.sla.clarify.mapper.data.toCacheRow
 import ru.sla.log.log
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
@@ -159,13 +158,13 @@ class ChronologyRepositoryImpl @Inject constructor(
 
   private suspend fun applyInsertOrReplaceCommits(
     conversationId: Conversation.Id,
-    commits: List<CommitNM>
+    commits: List<CommitRecord>
   ) {
     return withContext(Dispatchers.IO) {
       val userId = requireUserId()
       inMemoryDB.transaction {
         commits.forEach { commit ->
-          val row = commit.toDomainModel(
+          val row = commit.toCacheRow(
             conversationId = conversationId,
             selfUserId = userId,
             isPending = false
@@ -209,7 +208,7 @@ class ChronologyRepositoryImpl @Inject constructor(
     return inMemoryDB.chatConversationQueries.selectIdByMembers(
       memberIds = memberIds,
       memberCount = memberIds.size.toLong(),
-      type = ConversationNM.Type.Direct.value
+      type = Conversation.Type.Direct.value
     )
   }
 

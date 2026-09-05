@@ -3,7 +3,6 @@ package ru.sla.clarify.feature.chat.direct.thread.data
 import app.cash.sqldelight.Query
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.Source
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -24,14 +23,20 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
+import ru.sla.clarify.core.domain.date.nowEpochNanos
+import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.BranchRecord
 import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.CommitCursor
+import ru.sla.clarify.entity.chat.CommitNotFoundException
+import ru.sla.clarify.entity.chat.CommitRecord
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
@@ -43,23 +48,12 @@ import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.entity.BranchNM
-import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
-import ru.sla.clarify.lib.google.firestore.entity.CommitNM
-import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
-import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
-import ru.sla.clarify.lib.google.firestore.entity.UserNM
-import ru.sla.clarify.lib.google.firestore.epochNanosToTimestamp
-import ru.sla.clarify.lib.google.firestore.toEpochMillis
-import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.clarify.mapper.data.mapToMember
-import ru.sla.clarify.mapper.data.toDomain
-import ru.sla.clarify.mapper.data.toDomainModel
-import ru.sla.clarify.mapper.data.toLocalDateTime
-import ru.sla.clarify.mapper.data.toNetworkModel
+import ru.sla.clarify.mapper.data.toCacheRow
+import ru.sla.clarify.mapper.data.toReplyRecord
 import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
@@ -164,8 +158,8 @@ class DirectThreadRepositoryImpl @Inject constructor(
         .executeAsOneOrNull()
     }?.let { oldest ->
       CommitCursor(
-        id = oldest.id.value,
-        createdAt = oldest.createdAtNanos.epochNanosToTimestamp()
+        id = oldest.id,
+        createdAtNanos = oldest.createdAtNanos
       )
     }
 
@@ -190,7 +184,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       text = text,
       peerId = peerId.value,
       branchId = null,
-      replyCommit = replyCommit?.toNetworkModel()
+      replyCommit = replyCommit?.toReplyRecord()
     )
   }
 
@@ -229,7 +223,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
         branchedFromCommitId = from.value,
         name = name
       )
-      val branch = remote.toDomain(conversationId)
+      val branch = remote
       applyInsertOrReplaceBranch(branch)
       branch.id
     }
@@ -317,9 +311,6 @@ class DirectThreadRepositoryImpl @Inject constructor(
       memberId = peerId.value
     ).map { member ->
       member
-        ?.lastReadAt
-        ?.toEpochMillis()
-        ?.toLocalDateTime()
     }.distinctUntilChanged()
 
     combine(
@@ -379,14 +370,14 @@ class DirectThreadRepositoryImpl @Inject constructor(
       .map { oldest ->
         oldest?.let {
           CommitCursor(
-            id = it.id.value,
-            createdAt = it.createdAtNanos.epochNanosToTimestamp()
+            id = it.id,
+            createdAtNanos = it.createdAtNanos
           )
         }
       }
   }
 
-  private suspend fun applyInsertOrReplaceCommits(commits: List<CommitNM>) {
+  private suspend fun applyInsertOrReplaceCommits(commits: List<CommitRecord>) {
     return withContext(Dispatchers.IO) {
       val userId = requireUserId()
       val conversationId = awaitConversationId()
@@ -403,10 +394,10 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun applyPeerChanges(user: UserNM): Unit = withContext(Dispatchers.IO) {
+  private suspend fun applyPeerChanges(user: User): Unit = withContext(Dispatchers.IO) {
     inMemoryDB.userQueries.insertOrReplace(
-      id = UserId(user.id),
-      email = user.email,
+      id = user.id,
+      email = user.email.value,
       displayName = user.displayName,
       photoUrl = user.photoUrl
     )
@@ -415,7 +406,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   private suspend fun applyCommitChanges(
     conversationId: Conversation.Id,
     userId: UserId,
-    changes: List<ChatChange<CommitNM>>
+    changes: List<ChatChange<CommitRecord>>
   ): Unit = withContext(Dispatchers.IO) {
     inMemoryDB.transaction {
       changes.forEach { change ->
@@ -431,7 +422,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
             )
           }
           ChatChange.Type.Removed -> {
-            inMemoryDB.chatCommitQueries.delete(Commit.Id(commit.id))
+            inMemoryDB.chatCommitQueries.delete(commit.id)
           }
         }
       }
@@ -440,11 +431,11 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   private fun applyInsertOrReplaceCommit(
     conversationId: Conversation.Id,
-    commit: CommitNM,
+    commit: CommitRecord,
     userId: UserId,
     isPending: Boolean
   ) {
-    val row = commit.toDomainModel(
+    val row = commit.toCacheRow(
       conversationId = conversationId,
       selfUserId = userId,
       isPending = isPending
@@ -465,7 +456,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     )
   }
 
-  private suspend fun applyBranchesChanges(changes: List<ChatChange<BranchNM>>) {
+  private suspend fun applyBranchesChanges(changes: List<ChatChange<BranchRecord>>) {
     return withContext(Dispatchers.IO) {
       val conversationId = awaitConversationId()
       inMemoryDB.transaction {
@@ -473,10 +464,10 @@ class DirectThreadRepositoryImpl @Inject constructor(
           when (change.changeType) {
             ChatChange.Type.Added,
             ChatChange.Type.Modified -> {
-              applyInsertOrReplaceBranch(change.data.toDomain(conversationId))
+              applyInsertOrReplaceBranch(change.data)
             }
             ChatChange.Type.Removed -> {
-              inMemoryDB.chatBranchQueries.delete(Branch.Id(change.data.id))
+              inMemoryDB.chatBranchQueries.delete(change.data.id)
             }
           }
         }
@@ -484,16 +475,16 @@ class DirectThreadRepositoryImpl @Inject constructor(
     }
   }
 
-  private fun applyInsertOrReplaceBranch(branch: Branch) {
+  private fun applyInsertOrReplaceBranch(branch: BranchRecord) {
     inMemoryDB.chatBranchQueries.insertOrReplace(
       id = branch.id,
       conversationId = branch.conversationId,
       parentBranchId = branch.parentBranchId,
       branchedFromCommitId = branch.branchedFromCommitId,
       name = branch.name,
-      lastCommit = branch.lastCommit,
-      lastCommitTimestamp = branch.lastCommitTimestamp,
-      createdAt = branch.createdAt,
+      lastCommit = branch.lastCommitText,
+      lastCommitTimestamp = branch.lastCommitAtSeconds,
+      createdAt = branch.createdAtSeconds,
       createdById = branch.createdById
     )
     val mergeRequest = branch.mergeRequest
@@ -502,9 +493,9 @@ class DirectThreadRepositoryImpl @Inject constructor(
         branchId = branch.id,
         status = mergeRequest.status.value,
         initiatorId = mergeRequest.initiatorId,
-        requestedAt = mergeRequest.requestedAt,
+        requestedAt = mergeRequest.requestedAtSeconds,
         approvedByIds = mergeRequest.approvedByIds,
-        mergedAt = mergeRequest.mergedAt,
+        mergedAt = mergeRequest.mergedAtSeconds,
         mergedIntoBranchId = mergeRequest.mergedIntoBranchId
       )
     } else {
@@ -526,7 +517,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       inMemoryDB.chatCommitQueries.updateEdit(
         id = id,
         text = text,
-        editedAtNanos = Timestamp.now().toEpochNanos(),
+        editedAtNanos = nowEpochNanos(),
         status = status.value
       )
     }
@@ -592,14 +583,10 @@ class DirectThreadRepositoryImpl @Inject constructor(
         .executeAsList()
     }
 
-    val peerMember = firestore.readMember(
+    val peerLastReadAt = firestore.readMember(
       conversationId = conversationId.value,
       memberId = peerId.value
     )
-
-    val peerLastReadAt = peerMember?.lastReadAt
-      ?.toEpochMillis()
-      ?.toLocalDateTime()
 
     val deletedIds = ids.toSet()
     return DeleteForEveryoneWrite(
@@ -648,7 +635,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     return inMemoryDB.chatConversationQueries.selectIdByMembers(
       memberIds = memberIds,
       memberCount = memberIds.size.toLong(),
-      type = ConversationNM.Type.Direct.value
+      type = Conversation.Type.Direct.value
     )
   }
 

@@ -4,7 +4,6 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
-import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
 import ru.sla.clarify.mapper.data.formatLastCommitTimestamp
 
 internal fun mapToConversation(
@@ -17,8 +16,8 @@ internal fun mapToConversation(
   peerDisplayName: String,
   peerPhotoUrl: String?
 ): Conversation {
-  return when (ConversationNM.Type.entries.first { it.value == type }) {
-    ConversationNM.Type.Direct -> {
+  return when (Conversation.Type.entries.first { it.value == type }) {
+    Conversation.Type.Direct -> {
       Conversation.Direct(
         id = id,
         peer = Peer(
@@ -32,7 +31,7 @@ internal fun mapToConversation(
         unreadCount = unreadCount
       )
     }
-    ConversationNM.Type.Group -> {
+    Conversation.Type.Group -> {
       // TODO: @sla Conversation. Remove mapToGroup. Add Group mapper here instead of throw error
       error("unexpected conversation type: $type")
     }
