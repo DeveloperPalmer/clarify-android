@@ -536,7 +536,7 @@
       <span><b>Источник истины:</b> спека сервера; здесь её копия</span>
       <span><b>Парный документ:</b> план сервера</span>
       <span><b>Дата:</b> 04.09.2026</span>
-      <span><b>Статус:</b> редакция 3 — блок 0 в работе, закрыты 0.1, 0.2, 0.4 и 0.5 (05.09.2026)</span>
+      <span><b>Статус:</b> редакция 3 — блок 0 закрыт целиком (05.09.2026)</span>
     </div>
   </header>
 
@@ -994,11 +994,11 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
     </p>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>4</b> из 23 · 17%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>5</b> из 23 · 22%</span>
         <span class="tracker-hint">клик по номеру — отметка</span>
         <button class="tracker-reset" id="tracker-reset" type="button">Сбросить отметки</button>
       </div>
-      <div class="tracker-bar"><span id="tracker-bar" style="width: 17%"></span></div>
+      <div class="tracker-bar"><span id="tracker-bar" style="width: 22%"></span></div>
       <div class="sync" id="tracker-sync">Отметки хранятся в этом браузере</div>
     </div>
     <div class="table-wrap">
@@ -1008,7 +1008,7 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
         </thead>
         <tbody>
 
-          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">в работе</span><span class="gcount">4/5</span></td></tr>
+          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">закрыт</span><span class="gcount">5/5</span></td></tr>
           <tr data-item="0.1" data-group="0" data-done="true">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.1</button></td>
             <td class="name"><code>ChatChange</code> вместо <code>FirestoreChange</code></td>
@@ -1023,10 +1023,10 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
             <td class="size"><span class="size-chip l">14 файлов</span></td>
             <td class="dep">Д1. После этого граница модуля проходит по доменным типам, и подмена транспорта становится механической.</td>
           </tr>
-          <tr data-item="0.3" data-group="0">
+          <tr data-item="0.3" data-group="0" data-done="true">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.3</button></td>
             <td class="name">Семь интерфейсов вместо одного фасада</td>
-            <td class="what">Разбить по темам <code>wiki/method/</code>: user, conversation, member, commit, branch, merge-request, unread-count. Нынешний класс становится их единственной реализацией.</td>
+            <td class="what">Разбить по темам <code>wiki/method/</code>: user, conversation, member, commit, branch, merge-request, unread-count. Нынешний класс становится их единственной реализацией. <b>Сделано 05.09.2026.</b> Интерфейсы вынесены в новый чистый JVM-модуль <code>:chat-api</code> — в самом модуле Firestore им нельзя, иначе вторая реализация из блока 3 зависела бы от первой. Разбивка сошлась с wiki без остатка: commit 13, user 9, member 7, conversation 5, merge-request 5, unread-count 4, branch 3. Семь <code>@ContributesBinding</code> с <code>boundType</code> — аннотация repeatable, проверено по jar. Заодно закрыта утечка, пропущенная в 0.2: <code>readCommits</code> брал <code>source: Source</code> — тип Firestore; стало <code>fromServerOnly: Boolean</code>. Семь <code>feature/*/data</code> больше не зависят от <code>:lib:google:firestore</code> вовсе.</td>
             <td class="size"><span class="size-chip l">46 функций → 7 тем</span></td>
             <td class="dep">Д2 и канон «разделять темы, которым не нужно знать друг о друге». Это же деление даст имена <code>&lt;Tag&gt;ApiClient</code>.</td>
           </tr>
