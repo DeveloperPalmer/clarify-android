@@ -536,7 +536,7 @@
       <span><b>Источник истины:</b> спека сервера; здесь её копия</span>
       <span><b>Парный документ:</b> план сервера</span>
       <span><b>Дата:</b> 04.09.2026</span>
-      <span><b>Статус:</b> редакция 3 — блок 0 начат, пункт 0.5 закрыт 05.09.2026</span>
+      <span><b>Статус:</b> редакция 3 — блок 0 в работе, закрыты 0.4 и 0.5 (05.09.2026)</span>
     </div>
   </header>
 
@@ -994,11 +994,11 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
     </p>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>1</b> из 23 · 4%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>2</b> из 23 · 9%</span>
         <span class="tracker-hint">клик по номеру — отметка</span>
         <button class="tracker-reset" id="tracker-reset" type="button">Сбросить отметки</button>
       </div>
-      <div class="tracker-bar"><span id="tracker-bar" style="width: 4%"></span></div>
+      <div class="tracker-bar"><span id="tracker-bar" style="width: 9%"></span></div>
       <div class="sync" id="tracker-sync">Отметки хранятся в этом браузере</div>
     </div>
     <div class="table-wrap">
@@ -1008,7 +1008,7 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
         </thead>
         <tbody>
 
-          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">в работе</span><span class="gcount">1/5</span></td></tr>
+          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">в работе</span><span class="gcount">2/5</span></td></tr>
           <tr data-item="0.1" data-group="0">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.1</button></td>
             <td class="name"><code>ChatChange</code> вместо <code>FirestoreChange</code></td>
@@ -1030,10 +1030,10 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
             <td class="size"><span class="size-chip l">46 функций → 7 тем</span></td>
             <td class="dep">Д2 и канон «разделять темы, которым не нужно знать друг о друге». Это же деление даст имена <code>&lt;Tag&gt;ApiClient</code>.</td>
           </tr>
-          <tr data-item="0.4" data-group="0">
+          <tr data-item="0.4" data-group="0" data-done="true">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.4</button></td>
             <td class="name">Удалить <code>core:data</code></td>
-            <td class="what">Модуль целиком, его строка в <code>settings.gradle</code> и Retrofit с OkHttp из графа. Зависимость в <code>auth-session/data/build.gradle:13</code> заменяется с <code>:core:data</code> на прямую <code>:core:domain</code>. Заодно проверить плагин <code>kotlinx.serialization</code> там же: ни один <code>.kt</code> модуля сериализацию не использует.</td>
+            <td class="what">Модуль целиком, его строка в <code>settings.gradle</code> и Retrofit с OkHttp из графа. Зависимость в <code>auth-session/data/build.gradle:13</code> заменяется с <code>:core:data</code> на прямую <code>:core:domain</code>. Заодно проверить плагин <code>kotlinx.serialization</code> там же: ни один <code>.kt</code> модуля сериализацию не использует. <b>Сделано 05.09.2026.</b> Плагин действительно оказался лишним и снят. Retrofit и OkHttp убраны и из каталога версий: после удаления модуля на них не осталось ни одной ссылки, а запись в каталоге читается как «библиотека в проекте есть».</td>
             <td class="size"><span class="size-chip">4 файла</span></td>
             <td class="dep">Д3. Компиляция не сломается: <code>core:domain</code> и так приходит в <code>auth-session:data</code> через <code>:database</code> — но опираться на это молча нельзя.</td>
           </tr>
