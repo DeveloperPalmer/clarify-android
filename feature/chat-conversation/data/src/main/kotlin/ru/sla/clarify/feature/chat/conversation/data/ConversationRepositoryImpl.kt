@@ -10,6 +10,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
+import ru.sla.clarify.chat.api.ConversationApi
+import ru.sla.clarify.chat.api.UnreadCountApi
+import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
@@ -27,7 +30,6 @@ import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToConversation
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToGroup
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
-import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.mapper.data.mapToUser
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
@@ -35,13 +37,15 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class ConversationRepositoryImpl @Inject constructor(
-  private val firestore: Firestore,
+  private val conversationApi: ConversationApi,
+  private val unreadCountApi: UnreadCountApi,
+  private val userApi: UserApi,
   private val inMemoryDB: InMemoryDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : ConversationRepository {
 
   override suspend fun subscribeOnConversations() {
-    firestore.conversationsLive()
+    conversationApi.conversationsLive()
       .collect(::applyConversationsChanges)
   }
 
@@ -62,25 +66,25 @@ class ConversationRepositoryImpl @Inject constructor(
 
   override suspend fun fetchCurrentUser() {
     return withContext(Dispatchers.IO) {
-      val firestoreUser = firestore.readCurrentUser()
+      val currentUser = userApi.readCurrentUser()
       inMemoryDB.userQueries.insertOrReplace(
-        id = firestoreUser.id,
-        email = firestoreUser.email.value,
-        displayName = firestoreUser.displayName,
-        photoUrl = firestoreUser.photoUrl
+        id = currentUser.id,
+        email = currentUser.email.value,
+        displayName = currentUser.displayName,
+        photoUrl = currentUser.photoUrl
       )
     }
   }
 
   override suspend fun getPeerByEmail(email: Email): Peer.Id {
-    val userId = firestore.readUserIdByEmail(email) ?: throw PeerNotFoundException(email)
+    val userId = userApi.readUserIdByEmail(email) ?: throw PeerNotFoundException(email)
     return Peer.Id(userId.value)
   }
 
   override suspend fun createGroupConversation(name: GroupName): Conversation.Id {
     return withContext(Dispatchers.IO) {
       val userId = findUserId()
-      val conversationId = Conversation.Id(firestore.createGroupConversation(name))
+      val conversationId = Conversation.Id(conversationApi.createGroupConversation(name))
       if (userId != null) {
         inMemoryDB.transaction {
           inMemoryDB.chatConversationQueries.insertOrReplace(
@@ -104,7 +108,7 @@ class ConversationRepositoryImpl @Inject constructor(
 
   override suspend fun deleteConversations(ids: List<Conversation.Id>) {
     return withContext(Dispatchers.IO) {
-      firestore.deleteConversations(ids.map { it.value })
+      conversationApi.deleteConversations(ids.map { it.value })
       inMemoryDB.transaction {
         ids.forEach {
           inMemoryDB.chatConversationQueries.delete(it)
@@ -151,7 +155,7 @@ class ConversationRepositoryImpl @Inject constructor(
     return coroutineScope {
       ids.forEach { conversationId ->
         launch {
-          firestore.unreadCountLive(
+          unreadCountApi.unreadCountLive(
             conversationId = conversationId.value
           ).collect { unreadCount ->
             applyUpdateUnreadCount(
@@ -219,7 +223,7 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   private suspend fun applyInsertOrReplace(memberId: Member.Id) {
-    val user = firestore.readUser(UserId(memberId.value)) ?: return
+    val user = userApi.readUser(UserId(memberId.value)) ?: return
     return withContext(Dispatchers.IO) {
       inMemoryDB.userQueries.insertOrReplace(
         id = user.id,

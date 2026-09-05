@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
+import ru.sla.clarify.chat.api.CommitApi
+import ru.sla.clarify.chat.api.UnreadCountApi
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
@@ -31,7 +33,6 @@ import ru.sla.clarify.feature.chronology.domain.entity.BaselineHistory
 import ru.sla.clarify.feature.chronology.domain.entity.BranchHistory
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
 import ru.sla.clarify.feature.chronology.domain.entity.TargetParams
-import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToMember
 import ru.sla.clarify.mapper.data.toCacheRow
@@ -51,7 +52,8 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 @ContributesBinding(ChronologyScope::class)
 class ChronologyRepositoryImpl @Inject constructor(
   params: TargetParams,
-  private val firestore: Firestore,
+  private val commitApi: CommitApi,
+  private val unreadCountApi: UnreadCountApi,
   private val inMemoryDB: InMemoryDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : ChronologyRepository {
@@ -99,7 +101,7 @@ class ChronologyRepositoryImpl @Inject constructor(
     //
     // Нулём вперёд, потому что `combine` ждёт первого значения от каждого потока: без этого граф
     // целиком стоял бы до первого снимка Firestore ради бейджа, которого может и не быть.
-    val baselineUnreadFlow = firestore.unreadCountLive(conversationId.value).onStart { emit(0L) }
+    val baselineUnreadFlow = unreadCountApi.unreadCountLive(conversationId.value).onStart { emit(0L) }
 
     combine(
       branchesFlow,
@@ -139,7 +141,7 @@ class ChronologyRepositoryImpl @Inject constructor(
   ) {
     branchIds.filterNot { it in fetchedBranches }.forEach { branchId ->
       runSuspendCatching {
-        firestore.readCommits(
+        commitApi.readCommits(
           conversationId = conversationId.value,
           branchId = branchId.value,
           limit = BRANCH_PAGE_SIZE,

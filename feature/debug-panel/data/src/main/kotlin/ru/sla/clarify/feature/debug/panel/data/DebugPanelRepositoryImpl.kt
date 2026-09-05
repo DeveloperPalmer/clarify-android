@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.debug.panel.data
 
 import me.tatarka.inject.annotations.Inject
+import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.toggle.AppFeature
 import ru.sla.clarify.feature.debug.panel.data.config.DebugConfig
@@ -8,14 +9,13 @@ import ru.sla.clarify.feature.debug.panel.domain.DebugPanelRepository
 import ru.sla.clarify.feature.debug.panel.domain.di.DebugPanelScope
 import ru.sla.clarify.feature.debug.panel.domain.entity.DebugUserException
 import ru.sla.clarify.feature.debug.panel.domain.entity.UserJsonError
-import ru.sla.clarify.lib.google.firestore.Firestore
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(DebugPanelScope::class)
 @ContributesBinding(DebugPanelScope::class)
 class DebugPanelRepositoryImpl @Inject constructor(
-  private val firestore: Firestore,
+  private val userApi: UserApi,
   private val debugConfig: DebugConfig
 ) : DebugPanelRepository {
 
@@ -24,10 +24,10 @@ class DebugPanelRepositoryImpl @Inject constructor(
   }
 
   override suspend fun createUser(user: User) {
-    if (firestore.readUserExistsByEmail(user.email)) {
+    if (userApi.readUserExistsByEmail(user.email)) {
       throw DebugUserException(UserJsonError.UserAlreadyExist)
     }
-    firestore.createUser(
+    userApi.createUser(
       id = user.id,
       email = user.email.value,
       displayName = user.displayName,

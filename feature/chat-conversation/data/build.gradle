@@ -12,7 +12,7 @@ dependencies {
   implementation project(":app:domain")
   implementation project(":mapper:data")
   implementation project(":core:resources")
-  implementation project(":lib:google:firestore")
+  implementation project(":chat-api")
   implementation project(":auth-session:data")
   implementation project(":feature:chat-conversation:domain")
 }

@@ -10,6 +10,7 @@ android {
 
 dependencies {
   // api — ChatChange выходит наружу в сигнатурах *Live-методов.
+  api project(":chat-api")
   api project(":entity")
   implementation project(":auth-session:data")
   // api — Firebase Timestamp / FieldValue / DocumentReference выходят как часть

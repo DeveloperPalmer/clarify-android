@@ -1,0 +1,9 @@
+plugins {
+  id "kotlin-convention"
+}
+
+dependencies {
+  api project(":entity")
+  api project(":core:domain")
+  api libs.kotlin.coroutines.core
+}

@@ -14,6 +14,13 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
+import ru.sla.clarify.chat.api.BranchApi
+import ru.sla.clarify.chat.api.CommitApi
+import ru.sla.clarify.chat.api.ConversationApi
+import ru.sla.clarify.chat.api.MemberApi
+import ru.sla.clarify.chat.api.MergeRequestApi
+import ru.sla.clarify.chat.api.UnreadCountApi
+import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.date.toLocalDateTime
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.Email
@@ -72,18 +79,34 @@ import ru.sla.clarify.lib.google.firestore.entity.write.UpdateUserParams
 import ru.sla.clarify.lib.google.firestore.mapper.mapDocumentChanges
 import ru.sla.clarify.lib.google.firestore.mapper.toDomainModel
 import ru.sla.clarify.lib.google.firestore.mapper.toNetworkModel
+import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
 
 @Suppress("TooManyFunctions", "LargeClass")
 @SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class, boundType = BranchApi::class)
+@ContributesBinding(AppScope::class, boundType = CommitApi::class)
+@ContributesBinding(AppScope::class, boundType = ConversationApi::class)
+@ContributesBinding(AppScope::class, boundType = MergeRequestApi::class)
+@ContributesBinding(AppScope::class, boundType = MemberApi::class)
+@ContributesBinding(AppScope::class, boundType = UnreadCountApi::class)
+@ContributesBinding(AppScope::class, boundType = UserApi::class)
 class Firestore @Inject constructor(
   firestoreWrapper: FirestoreWrapper,
   private val authSessionPersistence: AuthSessionPersistence,
   private val listenerGuard: FirestoreListenerGuard
-) : FirestoreWrapperProvider by firestoreWrapper {
+) :
+  FirestoreWrapperProvider by firestoreWrapper,
+  BranchApi,
+  CommitApi,
+  ConversationApi,
+  MergeRequestApi,
+  MemberApi,
+  UnreadCountApi,
+  UserApi {
 
-  suspend fun readCurrentUser(): User {
+  override suspend fun readCurrentUser(): User {
     val userId = requireUserId()
     val document = userDocumentRef(userId)
       .get()
@@ -94,7 +117,7 @@ class Firestore @Inject constructor(
     return codec.decodeFromSnapshot<UserNM>(document).toDomainModel()
   }
 
-  suspend fun readUser(id: UserId): User? {
+  override suspend fun readUser(id: UserId): User? {
     val document = userDocumentRef(id)
       .get()
       .await()
@@ -104,14 +127,14 @@ class Firestore @Inject constructor(
     return codec.decodeFromSnapshot<UserNM>(document).toDomainModel()
   }
 
-  suspend fun readUserExists(id: UserId): Boolean {
+  override suspend fun readUserExists(id: UserId): Boolean {
     return userDocumentRef(id)
       .get()
       .await()
       .exists()
   }
 
-  suspend fun readUserExistsByEmail(email: Email): Boolean {
+  override suspend fun readUserExistsByEmail(email: Email): Boolean {
     return !usersQuery(whereEqualTo = email.value.lowercase())
       .limit(1)
       .get()
@@ -119,7 +142,7 @@ class Firestore @Inject constructor(
       .isEmpty
   }
 
-  suspend fun readUserIdByEmail(email: Email): UserId? {
+  override suspend fun readUserIdByEmail(email: Email): UserId? {
     val querySnapshot = usersQuery(whereEqualTo = email.value.lowercase())
       .limit(1)
       .get()
@@ -129,7 +152,7 @@ class Firestore @Inject constructor(
       ?.let(::UserId)
   }
 
-  suspend fun readUsersByEmailPrefix(prefix: String, limit: Long): List<User> {
+  override suspend fun readUsersByEmailPrefix(prefix: String, limit: Long): List<User> {
     return usersQueryByEmailPrefix(prefix = prefix, limit = limit)
       .get()
       .await()
@@ -137,7 +160,7 @@ class Firestore @Inject constructor(
       .map { codec.decodeFromSnapshot<UserNM>(it).toDomainModel() }
   }
 
-  fun userLive(id: UserId): Flow<User?> = callbackFlow {
+  override fun userLive(id: UserId): Flow<User?> = callbackFlow {
     listenerGuard.trackOpen("userLive:${id.value}")
 
     val listener = userDocumentRef(
@@ -155,7 +178,7 @@ class Firestore @Inject constructor(
     awaitClose { listener.remove() }
   }
 
-  suspend fun updateUser(
+  override suspend fun updateUser(
     id: UserId,
     email: String,
     displayName: String,
@@ -176,7 +199,7 @@ class Firestore @Inject constructor(
       .await()
   }
 
-  suspend fun createUser(
+  override suspend fun createUser(
     id: UserId,
     email: String,
     displayName: String,
@@ -193,7 +216,7 @@ class Firestore @Inject constructor(
       .await()
   }
 
-  suspend fun deleteConversations(ids: List<String>) {
+  override suspend fun deleteConversations(ids: List<String>) {
     require(ids.isNotEmpty()) { "deleteConversations called with empty ids" }
     val conversationCollections = conversationCollectionRef()
 
@@ -203,13 +226,13 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  suspend fun deleteConversation(conversationId: String) {
+  override suspend fun deleteConversation(conversationId: String) {
     conversationDocumentRef(conversationId)
       .delete()
       .await()
   }
 
-  suspend fun deleteDirectCommits(
+  override suspend fun deleteDirectCommits(
     conversationId: String,
     peerId: String,
     commitIds: List<String>,
@@ -275,7 +298,7 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  suspend fun deleteBranchCommits(
+  override suspend fun deleteBranchCommits(
     conversationId: String,
     branchId: String,
     peerId: String,
@@ -341,7 +364,7 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  suspend fun readMember(conversationId: String, memberId: String): LocalDateTime? {
+  override suspend fun readMember(conversationId: String, memberId: String): LocalDateTime? {
     val document = memberDocumentRef(conversationId, memberId)
       .get()
       .await()
@@ -353,7 +376,7 @@ class Firestore @Inject constructor(
       ?.toLocalDateTime()
   }
 
-  suspend fun hideCommits(conversationId: String, commitIds: List<String>) {
+  override suspend fun hideCommits(conversationId: String, commitIds: List<String>) {
     require(commitIds.isNotEmpty()) { "hideCommits called with empty commitIds" }
     val currentUserId = requireUserId()
     val commitsCollection = commitsCollectionRef(conversationId)
@@ -382,7 +405,7 @@ class Firestore @Inject constructor(
     }.await()
   }
 
-  fun conversationsLive(): Flow<List<ChatChange<ConversationRecord>>> = callbackFlow {
+  override fun conversationsLive(): Flow<List<ChatChange<ConversationRecord>>> = callbackFlow {
     val userId = requireUserId()
 
     val listener = conversationsQuery(
@@ -397,7 +420,7 @@ class Firestore @Inject constructor(
     awaitClose { listener.remove() }
   }
 
-  suspend fun createGroupConversation(name: GroupName): String {
+  override suspend fun createGroupConversation(name: GroupName): String {
     val ownerId = requireUserId()
     val conversationId = randomUuid()
 
@@ -425,7 +448,7 @@ class Firestore @Inject constructor(
     return conversationId
   }
 
-  suspend fun updateConversationName(conversationId: String, name: String) {
+  override suspend fun updateConversationName(conversationId: String, name: String) {
     val conversationDocument = conversationDocumentRef(conversationId)
 
     val updateConversationNameParams = UpdateConversationNameParams(
@@ -442,14 +465,14 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  suspend fun deleteConversationMember(conversationId: String) {
+  override suspend fun deleteConversationMember(conversationId: String) {
     deleteConversationMember(
       conversationId = conversationId,
       memberId = requireUserId().value
     )
   }
 
-  suspend fun deleteConversationMember(
+  override suspend fun deleteConversationMember(
     conversationId: String,
     memberId: String
   ) {
@@ -472,7 +495,7 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  fun membersLive(
+  override fun membersLive(
     conversationId: String
   ): Flow<List<ChatChange<Member.Id>>> = callbackFlow {
     listenerGuard.trackOpen("membersLive:$conversationId")
@@ -489,7 +512,7 @@ class Firestore @Inject constructor(
     awaitClose { listener.remove() }
   }
 
-  fun memberLive(
+  override fun memberLive(
     conversationId: String,
     memberId: String
   ): Flow<LocalDateTime?> = callbackFlow {
@@ -514,7 +537,7 @@ class Firestore @Inject constructor(
     awaitClose { listener.remove() }
   }
 
-  suspend fun updateReadWatermark(
+  override suspend fun updateReadWatermark(
     conversationId: String,
     lastReadAt: LocalDateTime
   ) {
@@ -539,7 +562,7 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  suspend fun createCommitInviteMember(
+  override suspend fun createCommitInviteMember(
     conversationId: String,
     memberId: String,
     memberUids: List<String>
@@ -581,7 +604,7 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  fun commitsLive(
+  override fun commitsLive(
     conversationId: String,
     branchId: String,
     limit: Long
@@ -608,12 +631,12 @@ class Firestore @Inject constructor(
     awaitClose { listener.remove() }
   }
 
-  suspend fun readCommits(
+  override suspend fun readCommits(
     conversationId: String,
     branchId: String,
     limit: Long,
     before: CommitCursor?,
-    source: Source = Source.DEFAULT
+    fromServerOnly: Boolean
   ): List<CommitRecord> {
     val query = commitQuery(
       conversationId = conversationId,
@@ -623,13 +646,13 @@ class Firestore @Inject constructor(
       limit = limit
     )
     return query
-      .get(source)
+      .get(if (fromServerOnly) Source.SERVER else Source.DEFAULT)
       .await()
       .documents
       .map { codec.decodeFromSnapshot<CommitNM>(it).toDomainModel() }
   }
 
-  fun directCommitsLive(
+  override fun directCommitsLive(
     branchId: String,
     peerId: String,
     from: CommitCursor?
@@ -649,7 +672,7 @@ class Firestore @Inject constructor(
       }
   }
 
-  fun groupCommitsLive(
+  override fun groupCommitsLive(
     conversationId: String,
     limit: Long
   ): Flow<List<ChatChange<CommitRecord>>> {
@@ -660,7 +683,7 @@ class Firestore @Inject constructor(
     )
   }
 
-  suspend fun createBranchCommit(
+  override suspend fun createBranchCommit(
     conversationId: String,
     branchId: String,
     text: String,
@@ -716,7 +739,7 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  suspend fun createDirectCommit(
+  override suspend fun createDirectCommit(
     peerId: String,
     branchId: String?,
     conversationId: String?,
@@ -809,7 +832,7 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  suspend fun updateDirectCommit(
+  override suspend fun updateDirectCommit(
     conversationId: String,
     commitId: String,
     text: String
@@ -851,7 +874,7 @@ class Firestore @Inject constructor(
     }.await()
   }
 
-  suspend fun updateBranchCommit(
+  override suspend fun updateBranchCommit(
     conversationId: String,
     branchId: String,
     commitId: String,
@@ -898,7 +921,7 @@ class Firestore @Inject constructor(
     }.await()
   }
 
-  suspend fun createGroupCommit(
+  override suspend fun createGroupCommit(
     conversationId: String,
     text: String,
     memberUids: List<String>
@@ -954,7 +977,7 @@ class Firestore @Inject constructor(
     batch.commit().await()
   }
 
-  fun branchUnreadCountLive(
+  override fun branchUnreadCountLive(
     conversationId: String,
     branchId: String
   ): Flow<Long> = callbackFlow {
@@ -974,7 +997,7 @@ class Firestore @Inject constructor(
     awaitClose { listener.remove() }
   }
 
-  fun unreadCountLive(conversationId: String): Flow<Long> = callbackFlow {
+  override fun unreadCountLive(conversationId: String): Flow<Long> = callbackFlow {
     val userId = requireUserId()
 
     val listener = unreadCommitsDocumentRef(
@@ -990,7 +1013,7 @@ class Firestore @Inject constructor(
     awaitClose { listener.remove() }
   }
 
-  suspend fun updateBranchUnreadCount(conversationId: String, branchId: String) {
+  override suspend fun updateBranchUnreadCount(conversationId: String, branchId: String) {
     val userId = requireUserId()
 
     val branchUnreadCommitsDocument = branchUnreadCommitsDocumentRef(
@@ -1007,7 +1030,7 @@ class Firestore @Inject constructor(
       .await()
   }
 
-  suspend fun updateUnreadCount(conversationId: String) {
+  override suspend fun updateUnreadCount(conversationId: String) {
     val userId = requireUserId()
 
     val unreadCommitsDocument = unreadCommitsDocumentRef(
@@ -1023,7 +1046,7 @@ class Firestore @Inject constructor(
       .await()
   }
 
-  fun branchesLive(
+  override fun branchesLive(
     conversationId: String
   ): Flow<List<ChatChange<BranchRecord>>> = callbackFlow {
     listenerGuard.trackOpen("branchesLive:$conversationId")
@@ -1049,7 +1072,7 @@ class Firestore @Inject constructor(
    * документ удалён или ещё не создан. Для экрана ветки достаточно её самой, поэтому
    * слушаем один документ, а не всю коллекцию [branchesLive].
    */
-  fun branchLive(
+  override fun branchLive(
     conversationId: String,
     branchId: String
   ): Flow<BranchRecord?> = callbackFlow {
@@ -1072,7 +1095,7 @@ class Firestore @Inject constructor(
     awaitClose { listener.remove() }
   }
 
-  suspend fun createBranch(
+  override suspend fun createBranch(
     conversationId: String,
     parentBranchId: String,
     branchedFromCommitId: String,
@@ -1110,7 +1133,7 @@ class Firestore @Inject constructor(
     ).toDomainModel(Conversation.Id(conversationId))
   }
 
-  suspend fun createOpenMergeRequest(conversationId: String, branchId: String) {
+  override suspend fun createOpenMergeRequest(conversationId: String, branchId: String) {
     val initiatorId = requireUserId()
     val requestedAt = Timestamp.now()
 
@@ -1143,7 +1166,7 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  suspend fun updateMergeApproval(
+  override suspend fun updateMergeApproval(
     conversationId: String,
     branchId: String,
     memberUids: List<String>
@@ -1185,7 +1208,7 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  suspend fun updateMergeFinalize(conversationId: String, branchId: String) {
+  override suspend fun updateMergeFinalize(conversationId: String, branchId: String) {
     val now = Timestamp.now()
 
     val branchDocument = branchDocumentRef(
@@ -1217,7 +1240,7 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  suspend fun deleteMergeRequest(conversationId: String, branchId: String) {
+  override suspend fun deleteMergeRequest(conversationId: String, branchId: String) {
     val branchDocument = branchDocumentRef(
       branchId = branchId,
       conversationId = conversationId
@@ -1245,7 +1268,7 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  suspend fun deleteMergeRequestApproval(conversationId: String, branchId: String) {
+  override suspend fun deleteMergeRequestApproval(conversationId: String, branchId: String) {
     val approver = requireUserId()
 
     val branchDocument = branchDocumentRef(
@@ -1276,7 +1299,7 @@ class Firestore @Inject constructor(
     transaction.await()
   }
 
-  fun commitsLive(
+  override fun commitsLive(
     conversationId: String,
     branchId: String,
     from: CommitCursor?

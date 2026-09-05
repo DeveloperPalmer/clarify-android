@@ -11,5 +11,4 @@ dependencies {
   implementation project(":database")
   implementation project(":core:domain")
   implementation project(":core:resources")
-  implementation project(":lib:google:firestore")
 }
