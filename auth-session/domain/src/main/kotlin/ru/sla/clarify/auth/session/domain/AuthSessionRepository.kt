@@ -1,13 +1,22 @@
 package ru.sla.clarify.auth.session.domain
 
 import kotlinx.coroutines.flow.Flow
+import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
-import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
 import ru.sla.clarify.core.domain.entity.UserId
 
 interface AuthSessionRepository {
-  suspend fun refresh(refreshToken: RefreshToken)
+  /**
+   * Обменивает протухшую пару на свежую.
+   *
+   * @param staleAccessToken токен, с которым вызывающий получил 401. По нему видно, не обновил
+   *   ли пару параллельный вызов, пока этот ждал: обновление идёт ровно одно на всех.
+   * @return свежая пара либо `null`, если сессии уже нет.
+   * @throws ru.sla.clarify.auth.session.domain.entity.RefreshRejectedException если сервер отверг
+   *   refresh-токен. К этому моменту ключ сессии уже стёрт.
+   */
+  suspend fun refresh(staleAccessToken: AccessToken): AuthTokens?
 
   /**
    * Starts new auth session with specified tokens

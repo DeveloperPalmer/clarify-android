@@ -4,9 +4,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
+import ru.sla.clarify.auth.session.data.refresh.AccessTokenRefresher
 import ru.sla.clarify.auth.session.domain.AuthSessionRepository
+import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
-import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.UserId
@@ -17,8 +18,14 @@ import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 @ContributesBinding(AppScope::class)
 class AuthSessionRepositoryImpl @Inject constructor(
   private val inMemoryDB: InMemoryDB,
-  private val authSessionPersistence: AuthSessionPersistence
+  private val authSessionPersistence: AuthSessionPersistence,
+  private val accessTokenRefresher: AccessTokenRefresher
 ) : AuthSessionRepository {
+
+  override suspend fun refresh(staleAccessToken: AccessToken): AuthTokens? {
+    return accessTokenRefresher.refresh(staleAccessToken)
+  }
+
   override suspend fun readTokens(key: SessionKey): AuthTokens? {
     return authSessionPersistence.readTokens(key)
   }
@@ -48,11 +55,6 @@ class AuthSessionRepositoryImpl @Inject constructor(
   override suspend fun deleteTokens(key: SessionKey) {
     authSessionPersistence.deleteTokens(key)
     authSessionPersistence.deleteUserId(key)
-  }
-
-  override suspend fun refresh(refreshToken: RefreshToken) {
-    // Пока ничего не делаем
-    // Добавить метод обновления токена
   }
 
   override suspend fun startNew(tokens: AuthTokens, userId: UserId) {
