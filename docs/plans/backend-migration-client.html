@@ -536,7 +536,7 @@
       <span><b>Источник истины:</b> спека сервера; здесь её копия</span>
       <span><b>Парный документ:</b> план сервера</span>
       <span><b>Дата:</b> 04.09.2026</span>
-      <span><b>Статус:</b> редакция 3 — блок 0 в работе, закрыты 0.4 и 0.5 (05.09.2026)</span>
+      <span><b>Статус:</b> редакция 3 — блок 0 в работе, закрыты 0.1, 0.4 и 0.5 (05.09.2026)</span>
     </div>
   </header>
 
@@ -994,11 +994,11 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
     </p>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>2</b> из 23 · 9%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>3</b> из 23 · 13%</span>
         <span class="tracker-hint">клик по номеру — отметка</span>
         <button class="tracker-reset" id="tracker-reset" type="button">Сбросить отметки</button>
       </div>
-      <div class="tracker-bar"><span id="tracker-bar" style="width: 9%"></span></div>
+      <div class="tracker-bar"><span id="tracker-bar" style="width: 13%"></span></div>
       <div class="sync" id="tracker-sync">Отметки хранятся в этом браузере</div>
     </div>
     <div class="table-wrap">
@@ -1008,11 +1008,11 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
         </thead>
         <tbody>
 
-          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">в работе</span><span class="gcount">2/5</span></td></tr>
-          <tr data-item="0.1" data-group="0">
+          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">в работе</span><span class="gcount">3/5</span></td></tr>
+          <tr data-item="0.1" data-group="0" data-done="true">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.1</button></td>
             <td class="name"><code>ChatChange</code> вместо <code>FirestoreChange</code></td>
-            <td class="what">Тип изменения в доменных терминах в модуле <code>entity</code>; <code>FirestoreChange</code> и <code>FirestoreDocumentResult</code> уходят из четырёх репозиториев.</td>
+            <td class="what">Тип изменения в доменных терминах в модуле <code>entity</code>; <code>FirestoreChange</code> и <code>FirestoreDocumentResult</code> уходят из четырёх репозиториев. <b>Сделано 05.09.2026.</b> Вместе с типом переименовано и его поле: <code>hasPendingWrites</code> — имя метода Firestore SDK, а у второго поставщика такого понятия нет; стало <code>isPending</code>. Переименование прошло по всей цепочке до <code>CommitMappers</code>, где флаг и превращается в <code>Commit.Status.Sending</code>.</td>
             <td class="size"><span class="size-chip">4 репозитория</span></td>
             <td class="dep">Пока тип изменения назван по поставщику, второй поставщик не подставляется.</td>
           </tr>
