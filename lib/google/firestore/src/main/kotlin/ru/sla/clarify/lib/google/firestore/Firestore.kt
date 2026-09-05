@@ -20,6 +20,7 @@ import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.randomUuid
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.lib.google.firestore.codec.codec
 import ru.sla.clarify.lib.google.firestore.codec.decodeFromSnapshot
 import ru.sla.clarify.lib.google.firestore.codec.encodeToMap
@@ -371,7 +372,7 @@ class Firestore @Inject constructor(
     }.await()
   }
 
-  fun conversationsLive(): Flow<List<FirestoreChange<ConversationNM>>> = callbackFlow {
+  fun conversationsLive(): Flow<List<ChatChange<ConversationNM>>> = callbackFlow {
     val userId = requireUserId()
 
     val listener = conversationsQuery(
@@ -463,7 +464,7 @@ class Firestore @Inject constructor(
 
   fun membersLive(
     conversationId: String
-  ): Flow<List<FirestoreChange<MemberNM>>> = callbackFlow {
+  ): Flow<List<ChatChange<MemberNM>>> = callbackFlow {
     listenerGuard.trackOpen("membersLive:$conversationId")
 
     val listener = membersCollectionRef(
@@ -571,7 +572,7 @@ class Firestore @Inject constructor(
     conversationId: String,
     branchId: String,
     limit: Long
-  ): Flow<List<FirestoreChange<CommitNM>>> = callbackFlow {
+  ): Flow<List<ChatChange<CommitNM>>> = callbackFlow {
     listenerGuard.trackOpen("commitsLive:$conversationId:$branchId")
 
     val listener = commitQuery(
@@ -619,7 +620,7 @@ class Firestore @Inject constructor(
     branchId: String,
     peerId: String,
     from: CommitCursor?
-  ): Flow<List<FirestoreChange<CommitNM>>> {
+  ): Flow<List<ChatChange<CommitNM>>> {
     return directConversationIdLive(peerId)
       .distinctUntilChanged()
       .flatMapLatest { conversationId ->
@@ -638,7 +639,7 @@ class Firestore @Inject constructor(
   fun groupCommitsLive(
     conversationId: String,
     limit: Long
-  ): Flow<List<FirestoreChange<CommitNM>>> {
+  ): Flow<List<ChatChange<CommitNM>>> {
     return commitsLive(
       conversationId = conversationId,
       branchId = conversationId,
@@ -1011,7 +1012,7 @@ class Firestore @Inject constructor(
 
   fun branchesLive(
     conversationId: String
-  ): Flow<List<FirestoreChange<BranchNM>>> = callbackFlow {
+  ): Flow<List<ChatChange<BranchNM>>> = callbackFlow {
     listenerGuard.trackOpen("branchesLive:$conversationId")
 
     val listener = branchesCollectionRef(
@@ -1261,7 +1262,7 @@ class Firestore @Inject constructor(
     conversationId: String,
     branchId: String,
     from: CommitCursor?
-  ): Flow<List<FirestoreChange<CommitNM>>> = callbackFlow {
+  ): Flow<List<ChatChange<CommitNM>>> = callbackFlow {
     listenerGuard.trackOpen("commitsTailLive:$conversationId:$branchId")
 
     val listener = commitTailQuery(

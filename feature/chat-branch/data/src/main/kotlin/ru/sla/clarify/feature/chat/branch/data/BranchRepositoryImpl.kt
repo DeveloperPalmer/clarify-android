@@ -25,6 +25,7 @@ import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
@@ -38,12 +39,10 @@ import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
 import ru.sla.clarify.feature.chat.branch.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
 import ru.sla.clarify.lib.google.firestore.toEpochNanos
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
@@ -518,7 +517,7 @@ class BranchRepositoryImpl @Inject constructor(
             conversationId = conversationId,
             commit = item,
             userId = userId,
-            hasPendingWrites = false
+            isPending = false
           )
         }
       }
@@ -528,23 +527,23 @@ class BranchRepositoryImpl @Inject constructor(
   private suspend fun applyCommitChanges(
     conversationId: Conversation.Id,
     userId: UserId,
-    changes: List<FirestoreChange<CommitNM>>
+    changes: List<ChatChange<CommitNM>>
   ) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
         changes.forEach { change ->
           val commit = change.data
           when (change.changeType) {
-            FirestoreDocumentResult.Added,
-            FirestoreDocumentResult.Modified -> {
+            ChatChange.Type.Added,
+            ChatChange.Type.Modified -> {
               applyInsertOrReplaceCommit(
                 conversationId = conversationId,
                 commit = commit,
                 userId = userId,
-                hasPendingWrites = change.hasPendingWrites
+                isPending = change.isPending
               )
             }
-            FirestoreDocumentResult.Removed -> {
+            ChatChange.Type.Removed -> {
               inMemoryDB.chatCommitQueries.delete(Commit.Id(commit.id))
             }
           }
@@ -557,12 +556,12 @@ class BranchRepositoryImpl @Inject constructor(
     conversationId: Conversation.Id,
     commit: CommitNM,
     userId: UserId,
-    hasPendingWrites: Boolean
+    isPending: Boolean
   ) {
     val row = commit.toDomainModel(
       conversationId = conversationId,
       selfUserId = userId,
-      hasPendingWrites = hasPendingWrites
+      isPending = isPending
     )
     inMemoryDB.chatCommitQueries.insertOrReplace(
       id = row.id,
