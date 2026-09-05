@@ -1,0 +1,33 @@
+plugins {
+  id "android-library-convention"
+  id "kotlin-inject-convention"
+  alias(libs.plugins.kotlinx.serialization)
+}
+
+android {
+  namespace "ru.sla.clarify.app.data"
+}
+
+dependencies {
+  api project(":auth-session:domain")
+  implementation project(":core:domain")
+  implementation project(":database")
+  implementation project(":build-config")
+  implementation project(":lib:log:log")
+  implementation libs.kotlin.coroutines.core
+  implementation libs.kotlinx.serialization.json
+
+  // api — PathFinder уходит в конструкторы сгенерированных клиентов: они резолвят через него URL
+  api libs.pathfinder.core
+  implementation libs.pathfinder.store
+
+  api libs.ktor.client.core
+  implementation libs.ktor.client.cio
+  implementation libs.ktor.client.content.negotiation
+  implementation libs.ktor.serialization.kotlinx.json
+
+  testImplementation libs.bundles.unittest
+  testImplementation libs.ktor.client.mock
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.platform.launcher
+}
