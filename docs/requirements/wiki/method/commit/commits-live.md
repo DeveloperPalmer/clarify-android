@@ -44,7 +44,7 @@ fun commitsLive(
 | [].data.clientCommitId  | Y   | String                 | Клиентский UUID сообщения.                      |
 | [].data.senderUid       | Y   | String                 | UID отправителя.                                |
 | [].data.text            | Y   | String                 | Текст сообщения.                                |
-| [].data.type            | Y   | String                 | Тип сообщения.<br>\* text |                                  |
+| [].data.type            | Y   | String                 | Тип сообщения.<br>\* text                       |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
 | [].data.branchId        | Y   | String                 | ID ветки.                                       |
 | [].data.visibleFor      | Y   | List\<String\>         | UID участников, которым видно сообщение.        |

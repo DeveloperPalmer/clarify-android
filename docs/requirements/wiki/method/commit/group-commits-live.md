@@ -42,7 +42,7 @@ fun groupCommitsLive(
 | [].data.clientCommitId  | Y   | String                 | Клиентский UUID сообщения.                      |
 | [].data.senderUid       | Y   | String                 | UID отправителя.                                |
 | [].data.text            | Y   | String                 | Текст сообщения.                                |
-| [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteMember |        |
+| [].data.type            | Y   | String                 | Тип сообщения.<br>\* text<br>\* inviteMember   |
 | [].data.createdAt       | Y   | Timestamp              | Время создания.                                 |
 | [].data.branchId        | Y   | String                 | Всегда равен `conversationId` (корневая ветка). |
 | [].data.visibleFor      | Y   | List\<String\>         | UID участников на момент отправки. В группах для фильтрации не используется. |
