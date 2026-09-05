@@ -12,4 +12,9 @@ dependencies {
   api project(":core:domain")
   api project(":build-config")
   api project(":auth-session:domain")
+  implementation libs.kotlin.coroutines.core
+
+  testImplementation libs.bundles.unittest
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.platform.launcher
 }
