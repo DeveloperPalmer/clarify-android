@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import ru.sla.clarify.app.data.CONTRACT_VERSION
 import ru.sla.clarify.auth.session.domain.SessionKeyProvider
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
 import java.io.IOException
@@ -44,6 +45,14 @@ class EventChannelTest {
     return """{"events":[{"seq":$seq,"event":{"type":"commit_created","id":"$id"}}]}"""
   }
 
+  /**
+   * Кадр, которым канал представляется: место для догона и версия копии спеки. Версия подставляется
+   * константой, а не буквой, — здесь проверяется, что она в кадре есть, а не какая она сегодня.
+   */
+  private fun subscribeFrame(lastSeq: Long): String {
+    return """{"lastSeq":$lastSeq,"contractVersion":"$CONTRACT_VERSION"}"""
+  }
+
   @Test
   fun `a subscription asks to continue from the stored cursor`() = runTest {
     val connection = FakeChannelConnection(listOf(commitFrame(seq = 43L, id = "c1")))
@@ -51,7 +60,7 @@ class EventChannelTest {
     runCurrent()
     job.cancel()
 
-    assertEquals(listOf("""{"lastSeq":42}"""), connection.sent)
+    assertEquals(listOf(subscribeFrame(lastSeq = 42)), connection.sent)
   }
 
   @Test
@@ -131,7 +140,7 @@ class EventChannelTest {
 
     assertTrue(first.closed)
     // Повтор идёт с 11: первый кадр записан и курсор сдвинут, второй раз его не переспрашивают
-    assertEquals(listOf("""{"lastSeq":11}"""), second.sent)
+    assertEquals(listOf(subscribeFrame(lastSeq = 11)), second.sent)
   }
 
   @Test
@@ -152,9 +161,9 @@ class EventChannelTest {
     runCurrent()
     job.cancel()
 
-    assertEquals(listOf("""{"lastSeq":42}"""), first.sent)
+    assertEquals(listOf(subscribeFrame(lastSeq = 42)), first.sent)
     // Новый пользователь начинает с нуля, а не с чужого места
-    assertEquals(listOf("""{"lastSeq":0}"""), second.sent)
+    assertEquals(listOf(subscribeFrame(lastSeq = 0)), second.sent)
   }
 
   @Test
