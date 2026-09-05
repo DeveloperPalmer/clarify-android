@@ -15,6 +15,7 @@ import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.entity.chat.Commit
+import ru.sla.clarify.entity.chat.CommitRecord
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadRepository
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
@@ -23,10 +24,8 @@ import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.entity.CommitNM
-import ru.sla.clarify.lib.google.firestore.entity.MemberNM
 import ru.sla.clarify.mapper.data.mapToCommit
-import ru.sla.clarify.mapper.data.toDomainModel
+import ru.sla.clarify.mapper.data.toCacheRow
 import ru.sla.log.log
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
@@ -183,9 +182,9 @@ class GroupThreadRepositoryImpl @Inject constructor(
       limit = USER_SEARCH_LIMIT
     ).map { user ->
       FoundUser(
-        id = UserId(user.id),
+        id = user.id,
         displayName = user.displayName,
-        email = user.email,
+        email = user.email.value,
         photoUrl = user.photoUrl
       )
     }
@@ -254,13 +253,13 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   private suspend fun applyCommitChanges(
     userId: UserId,
-    changes: List<ChatChange<CommitNM>>
+    changes: List<ChatChange<CommitRecord>>
   ): Unit = withContext(Dispatchers.IO) {
     inMemoryDB.transaction {
       changes.forEach { change ->
         when (change.changeType) {
           ChatChange.Type.Removed -> {
-            inMemoryDB.chatCommitQueries.delete(Commit.Id(change.data.id))
+            inMemoryDB.chatCommitQueries.delete(change.data.id)
           }
           ChatChange.Type.Added,
           ChatChange.Type.Modified -> {
@@ -276,11 +275,11 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   private fun applyInsertOrReplaceCommit(
-    commit: CommitNM,
+    commit: CommitRecord,
     userId: UserId,
     isPending: Boolean
   ) {
-    val row = commit.toDomainModel(
+    val row = commit.toCacheRow(
       conversationId = conversationId,
       selfUserId = userId,
       isPending = isPending
@@ -301,7 +300,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
     )
   }
 
-  private suspend fun applyMemberChanges(changes: List<ChatChange<MemberNM>>) {
+  private suspend fun applyMemberChanges(changes: List<ChatChange<Member.Id>>) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
         changes.forEach { change ->
@@ -310,12 +309,12 @@ class GroupThreadRepositoryImpl @Inject constructor(
             ChatChange.Type.Modified -> {
               inMemoryDB.chatMemberQueries.insertOrReplace(
                 conversationId = conversationId,
-                id = Member.Id(change.data.id)
+                id = change.data
               )
             }
             ChatChange.Type.Removed -> {
               inMemoryDB.chatMemberQueries.deleteById(
-                id = Member.Id(change.data.id),
+                id = change.data,
                 conversationId = conversationId
               )
             }

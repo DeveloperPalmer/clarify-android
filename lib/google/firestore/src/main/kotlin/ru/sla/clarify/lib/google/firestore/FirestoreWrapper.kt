@@ -13,6 +13,7 @@ import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.CommitCursor
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.BRANCHES_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMITS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.COMMIT_BRANCH_ID
@@ -25,7 +26,6 @@ import ru.sla.clarify.lib.google.firestore.FirestoreSchema.MEMBERS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.UNREAD_COMMITS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USERS_COLLECTION
 import ru.sla.clarify.lib.google.firestore.FirestoreSchema.USER_EMAIL
-import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
@@ -194,7 +194,7 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
       .orderBy(FieldPath.documentId(), Query.Direction.DESCENDING)
       .let {
         if (before != null) {
-          it.startAfter(before.createdAt, before.id)
+          it.startAfter(before.createdAtNanos.epochNanosToTimestamp(), before.id.value)
         } else {
           it
         }
@@ -226,7 +226,7 @@ class FirestoreWrapper @Inject constructor() : FirestoreWrapperProvider {
           // Включительно (startAt, а не startAfter): граничный коммит сам остаётся в окне,
           // поэтому его последующие правки/удаления по-прежнему наблюдаются вживую. Его повторная
           // выдача как ADDED — идемпотентный insertOrReplace.
-          it.startAt(from.createdAt, from.id)
+          it.startAt(from.createdAtNanos.epochNanosToTimestamp(), from.id.value)
         } else {
           it
         }

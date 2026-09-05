@@ -20,6 +20,7 @@ import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.ConversationRecord
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToConversation
@@ -27,8 +28,6 @@ import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToGroup
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
-import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.clarify.mapper.data.mapToUser
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
@@ -65,8 +64,8 @@ class ConversationRepositoryImpl @Inject constructor(
     return withContext(Dispatchers.IO) {
       val firestoreUser = firestore.readCurrentUser()
       inMemoryDB.userQueries.insertOrReplace(
-        id = UserId(firestoreUser.id),
-        email = firestoreUser.email,
+        id = firestoreUser.id,
+        email = firestoreUser.email.value,
         displayName = firestoreUser.displayName,
         photoUrl = firestoreUser.photoUrl
       )
@@ -86,7 +85,7 @@ class ConversationRepositoryImpl @Inject constructor(
         inMemoryDB.transaction {
           inMemoryDB.chatConversationQueries.insertOrReplace(
             id = conversationId,
-            type = ConversationNM.Type.Group.value,
+            type = Conversation.Type.Group.value,
             name = name.value,
             ownerId = userId,
             lastCommit = null,
@@ -165,7 +164,7 @@ class ConversationRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun applyConversationsChanges(changes: List<ChatChange<ConversationNM>>) {
+  private suspend fun applyConversationsChanges(changes: List<ChatChange<ConversationRecord>>) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
         changes.forEach { change ->
@@ -175,7 +174,7 @@ class ConversationRepositoryImpl @Inject constructor(
               applyConversationChanges(change.data)
             }
             ChatChange.Type.Removed -> {
-              val conversationId = Conversation.Id(change.data.id)
+              val conversationId = change.data.id
               inMemoryDB.chatConversationQueries.delete(conversationId)
               inMemoryDB.chatMemberQueries.delete(conversationId)
             }
@@ -185,27 +184,24 @@ class ConversationRepositoryImpl @Inject constructor(
     }
   }
 
-  private fun applyConversationChanges(conversation: ConversationNM) {
+  private fun applyConversationChanges(conversation: ConversationRecord) {
     applyMembers(
       conversationId = conversation.id,
-      memberUids = conversation.memberUids
+      memberIds = conversation.memberIds
     )
     inMemoryDB.chatConversationQueries.insertOrReplace(
-      id = Conversation.Id(conversation.id),
+      id = conversation.id,
       type = conversation.type.value,
       name = conversation.name,
-      ownerId = conversation.ownerUid?.let(::UserId),
+      ownerId = conversation.ownerId,
       lastCommit = conversation.lastCommitText,
-      lastCommitSenderId = conversation.lastCommitSenderUid?.let(::UserId),
-      lastCommitTimestamp = conversation.lastCommitAt?.toEpochSeconds() ?: 0L
+      lastCommitSenderId = conversation.lastCommitSenderId,
+      lastCommitTimestamp = conversation.lastCommitAtSeconds
     )
   }
 
-  private fun applyMembers(conversationId: String, memberUids: List<String>) {
-    val conversationId = Conversation.Id(conversationId)
-    val memberIds = memberUids.map(Member::Id)
-
-    if (memberUids.isEmpty()) {
+  private fun applyMembers(conversationId: Conversation.Id, memberIds: List<Member.Id>) {
+    if (memberIds.isEmpty()) {
       inMemoryDB.chatMemberQueries.delete(conversationId)
       return
     }
@@ -226,8 +222,8 @@ class ConversationRepositoryImpl @Inject constructor(
     val user = firestore.readUser(UserId(memberId.value)) ?: return
     return withContext(Dispatchers.IO) {
       inMemoryDB.userQueries.insertOrReplace(
-        id = UserId(user.id),
-        email = user.email,
+        id = user.id,
+        email = user.email.value,
         displayName = user.displayName,
         photoUrl = user.photoUrl
       )

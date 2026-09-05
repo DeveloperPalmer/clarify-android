@@ -8,7 +8,7 @@ import com.google.firebase.firestore.Transaction
 import com.google.firebase.firestore.WriteBatch
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.entity.chat.Branch
-import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
+import ru.sla.clarify.entity.chat.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM.Type
 
 interface FirestoreWrapperProvider {

@@ -32,4 +32,9 @@ sealed interface Conversation {
 
   @JvmInline
   value class Id(val value: String)
+
+  enum class Type(val value: String) {
+    Direct("direct"),
+    Group("group")
+  }
 }

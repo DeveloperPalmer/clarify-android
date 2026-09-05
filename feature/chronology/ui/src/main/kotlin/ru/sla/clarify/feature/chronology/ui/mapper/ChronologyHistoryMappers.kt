@@ -330,7 +330,7 @@ private fun List<Int>.toUnreadShares(unreadCount: Long): List<Long> {
 /**
  * Секунды эпохи — в локальное время.
  *
- * Отдельно от `Long.toLocalDateTime` из `mapper/data`: тот считает миллисекунды, а ветка и её merge
+ * Отдельно от `Long.toLocalDateTime` из `core/domain`: тот считает миллисекунды, а ветка и её merge
  * request хранят время в секундах — Firestore отдаёт `Timestamp`, и запись в кэш округляет его до
  * секунды. Одно имя на две единицы разошлось бы молча, и разошлось бы в тысячу раз.
  *
