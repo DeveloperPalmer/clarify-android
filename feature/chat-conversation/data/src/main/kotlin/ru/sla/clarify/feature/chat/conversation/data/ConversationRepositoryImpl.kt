@@ -85,7 +85,7 @@ class ConversationRepositoryImpl @Inject constructor(
         inMemoryDB.transaction {
           inMemoryDB.chatConversationQueries.insertOrReplace(
             id = conversationId,
-            type = Conversation.Type.Group.value,
+            type = ConversationRecord.Type.Group.value,
             name = name.value,
             ownerId = userId,
             lastCommit = null,

@@ -34,8 +34,8 @@ fun mapToCommit(
 ): Commit {
   val localTimestamp = (createdAtNanos / NANOS_PER_MILLI).toLocalDateTime()
 
-  return when (Commit.Type.fromValue(type)) {
-    Commit.Type.Text -> {
+  return when (CommitRecord.Type.fromValue(type)) {
+    CommitRecord.Type.Text -> {
       Commit.Message(
         id = id,
         senderId = senderId,
@@ -47,7 +47,7 @@ fun mapToCommit(
         replyCommit = replyCommit
       )
     }
-    Commit.Type.InviteMember -> {
+    CommitRecord.Type.InviteMember -> {
       Commit.InviteMember(
         id = id,
         senderId = senderId,

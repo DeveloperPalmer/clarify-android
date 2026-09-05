@@ -14,7 +14,7 @@ internal fun CommitNM.toDomainModel(): CommitRecord {
     id = Commit.Id(id),
     branchId = Branch.Id(branchId),
     senderId = UserId(senderUid),
-    type = Commit.Type.fromValue(type.value),
+    type = CommitRecord.Type.fromValue(type.value),
     text = text,
     invitedId = invitedUid?.let(::UserId),
     replyCommit = replyCommit?.toDomainModel(),

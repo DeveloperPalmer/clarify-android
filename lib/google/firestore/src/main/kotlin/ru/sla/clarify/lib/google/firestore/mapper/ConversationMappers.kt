@@ -10,7 +10,7 @@ import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 internal fun ConversationNM.toDomainModel(): ConversationRecord {
   return ConversationRecord(
     id = Conversation.Id(id),
-    type = Conversation.Type.entries.first { it.value == type.value },
+    type = ConversationRecord.Type.fromValue(type.value),
     memberIds = memberUids.map(Member::Id),
     name = name,
     ownerId = ownerUid?.let(::UserId),

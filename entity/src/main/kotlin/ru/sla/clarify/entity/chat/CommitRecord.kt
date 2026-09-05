@@ -14,7 +14,7 @@ data class CommitRecord(
   val id: Commit.Id,
   val branchId: Branch.Id,
   val senderId: UserId,
-  val type: Commit.Type,
+  val type: Type,
   val text: String?,
   val invitedId: UserId? = null,
   val replyCommit: Reply? = null,
@@ -22,6 +22,21 @@ data class CommitRecord(
   val editedAtNanos: Long? = null,
   val isPending: Boolean = false
 ) {
+
+  /**
+   * Вид сообщения отдельным полем: запись плоская, а [Commit] различает вид подтипами
+   * и в дискриминаторе не нуждается.
+   */
+  enum class Type(val value: String) {
+    Text("text"),
+    InviteMember("inviteMember");
+
+    companion object {
+      fun fromValue(value: String): Type {
+        return entries.firstOrNull { it.value == value } ?: error("unexpected commit type: $value")
+      }
+    }
+  }
 
   data class Reply(
     val id: Commit.Id,

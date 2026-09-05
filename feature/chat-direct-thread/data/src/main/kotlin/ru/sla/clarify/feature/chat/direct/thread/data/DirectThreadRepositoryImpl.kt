@@ -38,6 +38,7 @@ import ru.sla.clarify.entity.chat.CommitCursor
 import ru.sla.clarify.entity.chat.CommitNotFoundException
 import ru.sla.clarify.entity.chat.CommitRecord
 import ru.sla.clarify.entity.chat.Conversation
+import ru.sla.clarify.entity.chat.ConversationRecord
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.direct.thread.data.entity.DeleteForEveryoneWrite
@@ -635,7 +636,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     return inMemoryDB.chatConversationQueries.selectIdByMembers(
       memberIds = memberIds,
       memberCount = memberIds.size.toLong(),
-      type = Conversation.Type.Direct.value
+      type = ConversationRecord.Type.Direct.value
     )
   }
 
