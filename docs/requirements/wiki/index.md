@@ -6,7 +6,7 @@ tags:
 
 **Summary**: Оглавление всей wiki проекта Clarify.
 
-**Last updated**: 2026-08-04
+**Last updated**: 2026-09-05
 
 ---
 
@@ -24,16 +24,19 @@ tags:
 ### Branch
 
 - [branches-live](method/branch/branches-live.md) — живая подписка на список веток conversation.
+- [branch-live](method/branch/branch-live.md) — живая подписка на документ одной ветки.
 - [create-branch](method/branch/create-branch.md) — создаёт новую ветку, ответвляясь от конкретного commit'а.
 
 ### Commit
 
 - [read-commits](method/commit/read-commits.md) — загружает порцию сообщений ветки, опционально раньше указанного момента.
 - [commits-live](method/commit/commits-live.md) — живая подписка на сообщения ветки по conversationId.
+- [commits-tail-live](method/commit/commits-tail-live.md) — живая подписка на сообщения ветки от курсора и дальше, без верхней границы.
 - [direct-commits-live](method/commit/direct-commits-live.md) — живая подписка на сообщения ветки в direct-чате.
 - [group-commits-live](method/commit/group-commits-live.md) — живая подписка на сообщения корневой ветки группы.
 - [create-direct-commit](method/commit/create-direct-commit.md) — отправляет сообщение в direct-чат, при необходимости создавая conversation.
 - [update-direct-commit](method/commit/update-direct-commit.md) — редактирует текст сообщения direct-чата, помечая его как изменённое; при правке последнего обновляет превью беседы.
+- [update-branch-commit](method/commit/update-branch-commit.md) — редактирует текст сообщения ветки, помечая его как изменённое; при правке последнего обновляет превью ветки.
 - [create-group-commit](method/commit/create-group-commit.md) — отправляет сообщение в корневую ветку групповой беседы.
 - [create-branch-commit](method/commit/create-branch-commit.md) — отправляет сообщение в существующую ветку.
 - [hide-commits](method/commit/hide-commits.md) — скрывает сообщения «только у себя», физически удаляя документ, когда его не видит больше никто.
@@ -50,6 +53,7 @@ tags:
 
 ### Member
 
+- [read-member](method/member/read-member.md) — возвращает данные участника беседы по его ID.
 - [member-live](method/member/member-live.md) — живая подписка на документ конкретного участника.
 - [members-live](method/member/members-live.md) — живая подписка на список участников группы.
 - [create-commit-invite-member](method/member/create-commit-invite-member.md) — приглашает пользователя в группу.
