@@ -3,7 +3,6 @@ package ru.sla.clarify.feature.chat.direct.thread.data
 import app.cash.sqldelight.Query
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
-import com.google.firebase.firestore.Source
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -23,6 +22,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
+import ru.sla.clarify.chat.api.BranchApi
+import ru.sla.clarify.chat.api.CommitApi
+import ru.sla.clarify.chat.api.MemberApi
+import ru.sla.clarify.chat.api.UnreadCountApi
+import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.date.nowEpochNanos
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
@@ -48,7 +52,6 @@ import ru.sla.clarify.feature.chat.direct.thread.domain.DirectThreadRepository
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
-import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
 import ru.sla.clarify.mapper.data.mapToBranch
 import ru.sla.clarify.mapper.data.mapToCommit
@@ -67,7 +70,11 @@ import java.time.LocalDateTime
 @ContributesBinding(DirectThreadScope::class)
 class DirectThreadRepositoryImpl @Inject constructor(
   params: TargetParams,
-  private val firestore: Firestore,
+  private val branchApi: BranchApi,
+  private val commitApi: CommitApi,
+  private val memberApi: MemberApi,
+  private val unreadCountApi: UnreadCountApi,
+  private val userApi: UserApi,
   private val inMemoryDB: InMemoryDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : DirectThreadRepository {
@@ -81,7 +88,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnPeerChanges() {
     val peerUserId = UserId(peerId.value)
-    firestore.userLive(peerUserId)
+    userApi.userLive(peerUserId)
       .filterNotNull()
       .collect(::applyPeerChanges)
   }
@@ -94,7 +101,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     fetchLatestCommitsCompletable.await()
 
     oldestCommitCursor(conversationId).flatMapLatest { cursor ->
-      firestore.directCommitsLive(
+      commitApi.directCommitsLive(
         peerId = peerId.value,
         branchId = conversationId.value,
         from = cursor
@@ -110,7 +117,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnBranchesChanges() {
     val conversationId = awaitConversationId()
-    firestore.branchesLive(
+    branchApi.branchesLive(
       conversationId = conversationId.value
     ).collect { changes ->
       applyBranchesChanges(
@@ -134,7 +141,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       fetchLatestCommitsCompletable.complete(Unit)
       return
     }
-    val latestCommits = firestore.readCommits(
+    val latestCommits = commitApi.readCommits(
       conversationId = conversationId.value,
       branchId = conversationId.value,
       limit = LATEST_PAGE_SIZE.toLong(),
@@ -164,12 +171,12 @@ class DirectThreadRepositoryImpl @Inject constructor(
       )
     }
 
-    val commitHistory = firestore.readCommits(
+    val commitHistory = commitApi.readCommits(
       conversationId = conversationId.value,
       branchId = conversationId.value,
       limit = HISTORY_PAGE_SIZE.toLong(),
       before = cursor,
-      source = Source.SERVER
+      fromServerOnly = true
     )
 
     applyInsertOrReplaceCommits(commits = commitHistory)
@@ -180,7 +187,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun sendCommit(text: String, replyCommit: Commit.Message?) {
-    firestore.createDirectCommit(
+    commitApi.createDirectCommit(
       conversationId = findConversationId()?.value,
       text = text,
       peerId = peerId.value,
@@ -191,7 +198,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override suspend fun markAsRead() {
     val conversationId = findConversationId() ?: return
-    firestore.updateUnreadCount(conversationId.value)
+    unreadCountApi.updateUnreadCount(conversationId.value)
   }
 
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
@@ -202,11 +209,11 @@ class DirectThreadRepositoryImpl @Inject constructor(
       return
     }
     lastReadWatermarkCache.value = lastReadAt
-    firestore.updateReadWatermark(
+    memberApi.updateReadWatermark(
       conversationId = conversationId.value,
       lastReadAt = lastReadAt
     )
-    firestore.updateUnreadCount(
+    unreadCountApi.updateUnreadCount(
       conversationId = conversationId.value
     )
   }
@@ -218,7 +225,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
   ): Branch.Id {
     return withContext(Dispatchers.IO) {
       val conversationId = requireConversationId()
-      val remote = firestore.createBranch(
+      val remote = branchApi.createBranch(
         conversationId = conversationId.value,
         parentBranchId = resolveBranchId(parentId).value,
         branchedFromCommitId = from.value,
@@ -242,7 +249,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       status = Commit.Status.Sending
     )
     runSuspendCatching {
-      firestore.updateDirectCommit(
+      commitApi.updateDirectCommit(
         conversationId = conversationId.value,
         commitId = id.value,
         text = text
@@ -274,7 +281,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
     applyDeleteCommits(ids = ids)
     runSuspendCatching {
       if (forEveryoneWrite != null) {
-        firestore.deleteDirectCommits(
+        commitApi.deleteDirectCommits(
           conversationId = conversationId.value,
           peerId = peerId.value,
           commitIds = ids.map { it.value },
@@ -282,7 +289,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
           peerUnreadDelta = forEveryoneWrite.peerUnreadDelta
         )
       } else {
-        firestore.hideCommits(
+        commitApi.hideCommits(
           conversationId = conversationId.value,
           commitIds = ids.map { it.value }
         )
@@ -307,7 +314,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       .select(conversationId, branchId, ::mapToCommit)
       .observeList()
 
-    val peerReadAtFlow = firestore.memberLive(
+    val peerReadAtFlow = memberApi.memberLive(
       conversationId = conversationId.value,
       memberId = peerId.value
     ).map { member ->
@@ -332,7 +339,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
 
   override val unreadCount: Flow<Long> = flow {
     val conversationId = awaitConversationId()
-    firestore
+    unreadCountApi
       .unreadCountLive(conversationId.value)
       .collect { emit(it) }
   }
@@ -350,7 +357,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       val conversationId = awaitConversationId()
       ids.forEach { branchId ->
         launch {
-          firestore.branchUnreadCountLive(
+          unreadCountApi.branchUnreadCountLive(
             conversationId = conversationId.value,
             branchId = branchId.value
           ).collect { unreadCount ->
@@ -584,7 +591,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
         .executeAsList()
     }
 
-    val peerLastReadAt = firestore.readMember(
+    val peerLastReadAt = memberApi.readMember(
       conversationId = conversationId.value,
       memberId = peerId.value
     )

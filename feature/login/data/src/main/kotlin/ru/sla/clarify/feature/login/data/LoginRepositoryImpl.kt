@@ -5,13 +5,13 @@ import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
+import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.login.domain.LoginRepository
 import ru.sla.clarify.feature.login.domain.LoginScope
 import ru.sla.clarify.feature.login.entity.AuthResult
 import ru.sla.clarify.feature.login.entity.GoogleAuthError
 import ru.sla.clarify.lib.google.authenticator.GoogleAuthenticator
-import ru.sla.clarify.lib.google.firestore.Firestore
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import ru.sla.clarify.lib.google.authenticator.SignInResult as GoogleSignInResult
@@ -19,7 +19,7 @@ import ru.sla.clarify.lib.google.authenticator.SignInResult as GoogleSignInResul
 @SingleIn(LoginScope::class)
 @ContributesBinding(LoginScope::class)
 class LoginRepositoryImpl @Inject constructor(
-  private val firestore: Firestore,
+  private val userApi: UserApi,
   private val googleAuthenticator: GoogleAuthenticator
 ) : LoginRepository {
 
@@ -43,15 +43,15 @@ class LoginRepositoryImpl @Inject constructor(
         val displayName = user.displayName
           ?: error("FirebaseAuth returned null displayName after Google sign-in")
 
-        if (firestore.readUserExists(userId)) {
-          firestore.updateUser(
+        if (userApi.readUserExists(userId)) {
+          userApi.updateUser(
             id = userId,
             email = email,
             displayName = displayName,
             photoUrl = user.photoUrl?.toString()
           )
         } else {
-          firestore.createUser(
+          userApi.createUser(
             id = userId,
             email = email,
             displayName = displayName,

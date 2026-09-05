@@ -8,6 +8,6 @@ android {
 }
 
 dependencies {
-  implementation project(":lib:google:firestore")
+  implementation project(":chat-api")
   implementation project(":feature:debug-panel:domain")
 }

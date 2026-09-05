@@ -8,6 +8,11 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
+import ru.sla.clarify.chat.api.CommitApi
+import ru.sla.clarify.chat.api.ConversationApi
+import ru.sla.clarify.chat.api.MemberApi
+import ru.sla.clarify.chat.api.UnreadCountApi
+import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
@@ -23,7 +28,6 @@ import ru.sla.clarify.feature.chat.group.thread.domain.entity.FoundUser
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams
-import ru.sla.clarify.lib.google.firestore.Firestore
 import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.clarify.mapper.data.toCacheRow
 import ru.sla.log.log
@@ -35,7 +39,11 @@ import java.time.LocalDateTime
 @ContributesBinding(GroupThreadScope::class)
 class GroupThreadRepositoryImpl @Inject constructor(
   target: TargetParams,
-  private val firestore: Firestore,
+  private val commitApi: CommitApi,
+  private val conversationApi: ConversationApi,
+  private val memberApi: MemberApi,
+  private val unreadCountApi: UnreadCountApi,
+  private val userApi: UserApi,
   private val inMemoryDB: InMemoryDB,
   private val authSessionPersistence: AuthSessionPersistence
 ) : GroupThreadRepository {
@@ -45,7 +53,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnCommitChanges() {
     val userId = requireUserId()
-    firestore.groupCommitsLive(
+    commitApi.groupCommitsLive(
       conversationId = conversationId.value,
       limit = LIVE_COMMIT_LIMIT
     ).collect { changes ->
@@ -57,7 +65,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun fetchHistoryCommits(count: Int) {
-    val historyCommits = firestore.readCommits(
+    val historyCommits = commitApi.readCommits(
       conversationId = conversationId.value,
       branchId = conversationId.value,
       limit = count.toLong(),
@@ -79,7 +87,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun sendCommit(text: String) {
     val memberUids = withContext(Dispatchers.IO) { currentMemberUids() }
-    firestore.createGroupCommit(
+    commitApi.createGroupCommit(
       conversationId = conversationId.value,
       text = text,
       memberUids = memberUids
@@ -93,23 +101,23 @@ class GroupThreadRepositoryImpl @Inject constructor(
       return
     }
     lastReadWatermark.value = lastReadAt
-    firestore.updateReadWatermark(
+    memberApi.updateReadWatermark(
       conversationId = conversationId.value,
       lastReadAt = lastReadAt
     )
-    firestore.updateUnreadCount(
+    unreadCountApi.updateUnreadCount(
       conversationId = conversationId.value
     )
   }
 
   override suspend fun subscribeOnGroupMembers() {
-    firestore.membersLive(conversationId.value)
+    memberApi.membersLive(conversationId.value)
       .collect(::applyMemberChanges)
   }
 
   override suspend fun renameGroup(name: String) {
     withContext(Dispatchers.IO) {
-      firestore.updateConversationName(
+      conversationApi.updateConversationName(
         conversationId = conversationId.value,
         name = name
       )
@@ -122,7 +130,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun deleteConversation() {
     withContext(Dispatchers.IO) {
-      firestore.deleteConversation(conversationId.value)
+      conversationApi.deleteConversation(conversationId.value)
       inMemoryDB.transaction {
         inMemoryDB.chatConversationQueries.delete(conversationId)
         inMemoryDB.chatMemberQueries.delete(conversationId)
@@ -132,7 +140,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun leaveConversation() {
     withContext(Dispatchers.IO) {
-      firestore.deleteConversationMember(conversationId.value)
+      memberApi.deleteConversationMember(conversationId.value)
       inMemoryDB.transaction {
         inMemoryDB.chatConversationQueries.delete(conversationId)
         inMemoryDB.chatMemberQueries.delete(conversationId)
@@ -146,7 +154,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       // чтобы новый участник видел «X пригласил Y» (запросы фильтруются по visibleFor).
       val visibleFor = (currentMemberUids() + ids.map { it.value }).distinct()
       ids.forEach { member ->
-        firestore.createCommitInviteMember(
+        memberApi.createCommitInviteMember(
           conversationId = conversationId.value,
           memberId = member.value,
           memberUids = visibleFor
@@ -165,7 +173,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun deleteConversationMember(id: Member.Id) {
     withContext(Dispatchers.IO) {
-      firestore.deleteConversationMember(
+      memberApi.deleteConversationMember(
         conversationId = conversationId.value,
         memberId = id.value
       )
@@ -177,7 +185,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   override suspend fun searchMemberByPrefix(prefix: String): List<FoundUser> {
-    return firestore.readUsersByEmailPrefix(
+    return userApi.readUsersByEmailPrefix(
       prefix = prefix.lowercase(),
       limit = USER_SEARCH_LIMIT
     ).map { user ->
@@ -247,7 +255,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
   }
 
   override val unreadCount: Flow<Long> = flow {
-    firestore.unreadCountLive(conversationId.value)
+    unreadCountApi.unreadCountLive(conversationId.value)
       .collect { emit(it) }
   }
 
