@@ -18,6 +18,7 @@ import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
@@ -26,9 +27,7 @@ import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToGroup
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.toEpochSeconds
 import ru.sla.clarify.mapper.data.mapToUser
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
@@ -166,16 +165,16 @@ class ConversationRepositoryImpl @Inject constructor(
     }
   }
 
-  private suspend fun applyConversationsChanges(changes: List<FirestoreChange<ConversationNM>>) {
+  private suspend fun applyConversationsChanges(changes: List<ChatChange<ConversationNM>>) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
         changes.forEach { change ->
           when (change.changeType) {
-            FirestoreDocumentResult.Added,
-            FirestoreDocumentResult.Modified -> {
+            ChatChange.Type.Added,
+            ChatChange.Type.Modified -> {
               applyConversationChanges(change.data)
             }
-            FirestoreDocumentResult.Removed -> {
+            ChatChange.Type.Removed -> {
               val conversationId = Conversation.Id(change.data.id)
               inMemoryDB.chatConversationQueries.delete(conversationId)
               inMemoryDB.chatMemberQueries.delete(conversationId)

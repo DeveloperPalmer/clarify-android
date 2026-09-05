@@ -168,7 +168,7 @@ class ChronologyRepositoryImpl @Inject constructor(
           val row = commit.toDomainModel(
             conversationId = conversationId,
             selfUserId = userId,
-            hasPendingWrites = false
+            isPending = false
           )
           inMemoryDB.chatCommitQueries.insertOrReplace(
             id = row.id,

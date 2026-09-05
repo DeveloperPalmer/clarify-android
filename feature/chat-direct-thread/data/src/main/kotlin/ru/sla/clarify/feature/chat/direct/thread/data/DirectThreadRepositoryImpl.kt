@@ -30,6 +30,7 @@ import ru.sla.clarify.database.chat.ChatCommit
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Member
@@ -42,13 +43,11 @@ import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.direct.thread.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.BranchNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitCursor
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
 import ru.sla.clarify.lib.google.firestore.entity.CommitNotFoundException
 import ru.sla.clarify.lib.google.firestore.entity.ConversationNM
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.UserNM
 import ru.sla.clarify.lib.google.firestore.epochNanosToTimestamp
 import ru.sla.clarify.lib.google.firestore.toEpochMillis
@@ -397,7 +396,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
             conversationId = conversationId,
             commit = item,
             userId = userId,
-            hasPendingWrites = false
+            isPending = false
           )
         }
       }
@@ -416,22 +415,22 @@ class DirectThreadRepositoryImpl @Inject constructor(
   private suspend fun applyCommitChanges(
     conversationId: Conversation.Id,
     userId: UserId,
-    changes: List<FirestoreChange<CommitNM>>
+    changes: List<ChatChange<CommitNM>>
   ): Unit = withContext(Dispatchers.IO) {
     inMemoryDB.transaction {
       changes.forEach { change ->
         val commit = change.data
         when (change.changeType) {
-          FirestoreDocumentResult.Added,
-          FirestoreDocumentResult.Modified -> {
+          ChatChange.Type.Added,
+          ChatChange.Type.Modified -> {
             applyInsertOrReplaceCommit(
               conversationId = conversationId,
               commit = commit,
               userId = userId,
-              hasPendingWrites = change.hasPendingWrites
+              isPending = change.isPending
             )
           }
-          FirestoreDocumentResult.Removed -> {
+          ChatChange.Type.Removed -> {
             inMemoryDB.chatCommitQueries.delete(Commit.Id(commit.id))
           }
         }
@@ -443,12 +442,12 @@ class DirectThreadRepositoryImpl @Inject constructor(
     conversationId: Conversation.Id,
     commit: CommitNM,
     userId: UserId,
-    hasPendingWrites: Boolean
+    isPending: Boolean
   ) {
     val row = commit.toDomainModel(
       conversationId = conversationId,
       selfUserId = userId,
-      hasPendingWrites = hasPendingWrites
+      isPending = isPending
     )
     inMemoryDB.chatCommitQueries.insertOrReplace(
       id = row.id,
@@ -466,17 +465,17 @@ class DirectThreadRepositoryImpl @Inject constructor(
     )
   }
 
-  private suspend fun applyBranchesChanges(changes: List<FirestoreChange<BranchNM>>) {
+  private suspend fun applyBranchesChanges(changes: List<ChatChange<BranchNM>>) {
     return withContext(Dispatchers.IO) {
       val conversationId = awaitConversationId()
       inMemoryDB.transaction {
         changes.forEach { change ->
           when (change.changeType) {
-            FirestoreDocumentResult.Added,
-            FirestoreDocumentResult.Modified -> {
+            ChatChange.Type.Added,
+            ChatChange.Type.Modified -> {
               applyInsertOrReplaceBranch(change.data.toDomain(conversationId))
             }
-            FirestoreDocumentResult.Removed -> {
+            ChatChange.Type.Removed -> {
               inMemoryDB.chatBranchQueries.delete(Branch.Id(change.data.id))
             }
           }

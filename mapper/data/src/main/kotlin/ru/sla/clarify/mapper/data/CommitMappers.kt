@@ -70,7 +70,7 @@ fun mapToCommit(
 fun CommitNM.toDomainModel(
   conversationId: Conversation.Id,
   selfUserId: UserId,
-  hasPendingWrites: Boolean
+  isPending: Boolean
 ): ChatCommit {
   return ChatCommit(
     id = Commit.Id(id),
@@ -83,7 +83,7 @@ fun CommitNM.toDomainModel(
     invitedId = invitedUid?.let(::UserId),
     createdAtNanos = createdAt?.toEpochNanos() ?: 0L,
     isSelf = senderUid == selfUserId.value,
-    status = if (hasPendingWrites) Commit.Status.Sending.value else Commit.Status.Sent.value,
+    status = if (isPending) Commit.Status.Sending.value else Commit.Status.Sent.value,
     editedAtNanos = editedAt?.toEpochNanos()
   )
 }

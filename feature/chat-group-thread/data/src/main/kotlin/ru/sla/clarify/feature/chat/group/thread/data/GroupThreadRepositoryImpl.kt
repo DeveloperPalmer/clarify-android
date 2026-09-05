@@ -13,6 +13,7 @@ import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.extension.observeList
 import ru.sla.clarify.database.extension.observeOneOrNull
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.feature.chat.group.thread.domain.GroupThreadRepository
@@ -22,9 +23,7 @@ import ru.sla.clarify.feature.chat.group.thread.domain.entity.Group
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.GroupMember
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams
 import ru.sla.clarify.lib.google.firestore.Firestore
-import ru.sla.clarify.lib.google.firestore.FirestoreChange
 import ru.sla.clarify.lib.google.firestore.entity.CommitNM
-import ru.sla.clarify.lib.google.firestore.entity.FirestoreDocumentResult
 import ru.sla.clarify.lib.google.firestore.entity.MemberNM
 import ru.sla.clarify.mapper.data.mapToCommit
 import ru.sla.clarify.mapper.data.toDomainModel
@@ -72,7 +71,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
           applyInsertOrReplaceCommit(
             commit = commit,
             userId = userId,
-            hasPendingWrites = false
+            isPending = false
           )
         }
       }
@@ -255,20 +254,20 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   private suspend fun applyCommitChanges(
     userId: UserId,
-    changes: List<FirestoreChange<CommitNM>>
+    changes: List<ChatChange<CommitNM>>
   ): Unit = withContext(Dispatchers.IO) {
     inMemoryDB.transaction {
       changes.forEach { change ->
         when (change.changeType) {
-          FirestoreDocumentResult.Removed -> {
+          ChatChange.Type.Removed -> {
             inMemoryDB.chatCommitQueries.delete(Commit.Id(change.data.id))
           }
-          FirestoreDocumentResult.Added,
-          FirestoreDocumentResult.Modified -> {
+          ChatChange.Type.Added,
+          ChatChange.Type.Modified -> {
             applyInsertOrReplaceCommit(
               commit = change.data,
               userId = userId,
-              hasPendingWrites = change.hasPendingWrites
+              isPending = change.isPending
             )
           }
         }
@@ -279,12 +278,12 @@ class GroupThreadRepositoryImpl @Inject constructor(
   private fun applyInsertOrReplaceCommit(
     commit: CommitNM,
     userId: UserId,
-    hasPendingWrites: Boolean
+    isPending: Boolean
   ) {
     val row = commit.toDomainModel(
       conversationId = conversationId,
       selfUserId = userId,
-      hasPendingWrites = hasPendingWrites
+      isPending = isPending
     )
     inMemoryDB.chatCommitQueries.insertOrReplace(
       id = row.id,
@@ -302,19 +301,19 @@ class GroupThreadRepositoryImpl @Inject constructor(
     )
   }
 
-  private suspend fun applyMemberChanges(changes: List<FirestoreChange<MemberNM>>) {
+  private suspend fun applyMemberChanges(changes: List<ChatChange<MemberNM>>) {
     return withContext(Dispatchers.IO) {
       inMemoryDB.transaction {
         changes.forEach { change ->
           when (change.changeType) {
-            FirestoreDocumentResult.Added,
-            FirestoreDocumentResult.Modified -> {
+            ChatChange.Type.Added,
+            ChatChange.Type.Modified -> {
               inMemoryDB.chatMemberQueries.insertOrReplace(
                 conversationId = conversationId,
                 id = Member.Id(change.data.id)
               )
             }
-            FirestoreDocumentResult.Removed -> {
+            ChatChange.Type.Removed -> {
               inMemoryDB.chatMemberQueries.deleteById(
                 id = Member.Id(change.data.id),
                 conversationId = conversationId
