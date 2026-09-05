@@ -5,6 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import ru.sla.clarify.app.data.CONTRACT_VERSION
 import ru.sla.clarify.app.data.entity.SubscribeFrame
 import ru.sla.clarify.auth.session.domain.SessionKeyProvider
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
@@ -70,7 +71,11 @@ class EventChannel<E>(
     var cursor = cursors.read(key)
     val connection = transport.open()
     try {
-      connection.send(json.encodeToString(SubscribeFrame.serializer(), SubscribeFrame(cursor)))
+      val hello = SubscribeFrame(
+        lastSeq = cursor,
+        contractVersion = CONTRACT_VERSION
+      )
+      connection.send(json.encodeToString(SubscribeFrame.serializer(), hello))
       while (true) {
         val text = connection.receive() ?: return
         cursor = applyFrame(key, cursor, text)

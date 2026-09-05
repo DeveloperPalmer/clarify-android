@@ -1126,7 +1126,7 @@ feature/*/data ─→ app/data ─→ openapi-schema <i>[ген]</i>
           <tr data-item="2.3" data-group="2">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>2.3</button></td>
             <td class="name">Сверка версии контракта</td>
-            <td class="what"><code>info.version</code> копии — константой из gradle-задачи модуля; уходит заголовком каждого запроса и первым кадром канала, сервер сверяет со своей.</td>
+            <td class="what"><code>info.version</code> копии — константой из gradle-задачи модуля; уходит заголовком каждого запроса и первым кадром канала, сервер сверяет со своей. <b>Сделано 05.09.2026 всё, кроме источника константы:</b> заголовок <code>X-Contract-Version</code> уходит с каждым запросом, версия — первым кадром канала, названный сервером отказ разворачивается в <code>ServerException.ContractMismatch</code>. Печатать константу пока нечем — копии спеки в репозитории нет, и до неё в <code>app:data</code> стоит заглушка <code>0.0.0</code>; с приходом копии здесь останется одна строка, ссылающаяся на напечатанное задачей её модуля. Три решения по дороге. <b>Отказ получил собственный тип, а не код внутри <code>ApiError</code>:</b> смысл у него один на все 37 операций — упавший так вызов ничего не сообщает о своих данных, — и разбирать его на месте вызова незачем. <b>Расхождение разбирается раньше статуса и независимо от него:</b> код называет сам сервер, а статус он волен выбрать любой, и сверка по статусу прибила бы клиент к решению, которого серверная сторона ещё не принимала. <b>Заголовок ставится в <code>defaultRequest</code>, а не в перехватчике <code>HttpSend</code>:</b> перехватчик нужен тому, что меняется между попытками, — токену; версия за время запроса не меняется, и место рядом с адресом стенда честнее. Рукопожатие канала идёт тем же клиентом, поэтому заголовок оказывается и на нём, а кадр говорит о событиях то же, что заголовок сказал о командах. <b>Заодно два новых допущения</b> к тем, что уже стоят рядом с формой кадров: имя заголовка и код <code>contract_version_mismatch</code> — наши, и сверяются с серверной командой той же встречей.</td>
             <td class="size"><span class="size-chip">1 константа</span></td>
             <td class="dep">Единственная связь двух независимых репозиториев. Без неё устаревшая копия проявится как пропавшее поле в середине ленты, и искать будут в клиенте.</td>
           </tr>
@@ -1193,7 +1193,7 @@ feature/*/data ─→ app/data ─→ openapi-schema <i>[ген]</i>
           <tr data-item="4.5" data-group="4">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>4.5</button></td>
             <td class="name"><code>ContractVersionTest</code></td>
-            <td class="what"><code>the generated version constant matches the spec info.version</code> · <code>every outgoing request carries the contract version header</code> · <code>a major mismatch surfaces as a named failure, not a decode error</code></td>
+            <td class="what"><code>the generated version constant matches the spec info.version</code> · <code>every outgoing request carries the contract version header</code> · <code>a major mismatch surfaces as a named failure, not a decode error</code>. Два из трёх написаны 05.09.2026 вместе с пунктом 2.3, к ним добавился <code>a mismatch keeps its name whatever status the server chose</code> — сторож того, что расхождение узнают по коду, а не по статусу. Первый ждёт копии спеки: сверять константу пока не с чем. Имя заголовка проверяется буквой, а версия — константой: имя есть договорённость с сервером и ломаться при переименовании обязано, а значение меняется с каждым обновлением копии. Версию в первом кадре канала стережёт <code>EventChannelTest</code> — ожидаемый кадр там собирается одной функцией, и версия в неё подставляется так же константой.</td>
             <td class="size"><span class="size-chip">к 2.3</span></td>
             <td class="dep">Сторожит единственное, что связывает два независимых репозитория.</td>
           </tr>
@@ -1322,6 +1322,10 @@ feature/*/data ─→ app/data ─→ openapi-schema <i>[ген]</i>
       <div class="reuse-card">
         <div class="path">форма кадров канала</div>
         <div class="desc">Спеки нет, поэтому <span class="mono">ServerFrame</span>, <span class="mono">SubscribeFrame</span>, поле <span class="mono">resyncFromSeq</span> и путь <span class="mono">/events</span> — наши допущения, а не контракт. Разбор к ним терпим (незнакомые поля игнорируются, отсутствующие имеют значения по умолчанию), но имена обязаны совпасть. Самое смелое здесь — <span class="mono">resyncFromSeq</span>: без него после полной выборки канал переподписался бы со старым номером и получил бы тот же отказ, то есть зациклился. Сверить с серверной командой первым делом.</div>
+      </div>
+      <div class="reuse-card">
+        <div class="path">имя заголовка и код отказа</div>
+        <div class="desc">Из той же семьи, что форма кадров: <span class="mono">X-Contract-Version</span> и <span class="mono">contract_version_mismatch</span> придуманы здесь, а не прочитаны в спеке. Цена ошибки разная. Разошедшееся имя заголовка сервер просто не увидит — и сверка молча перестанет работать, то есть откажет ровно тем способом, против которого заведена. Разошедшийся код всего лишь вернёт отказ обычным <span class="mono">ApiError</span> со всем текстом внутри. Сверять — одной встречей с формой кадров.</div>
       </div>
       <div class="reuse-card">
         <div class="path">globalProperties в бою</div>
