@@ -536,7 +536,7 @@
       <span><b>Источник истины:</b> спека сервера; здесь её копия</span>
       <span><b>Парный документ:</b> план сервера</span>
       <span><b>Дата:</b> 04.09.2026</span>
-      <span><b>Статус:</b> редакция 3 — блок 0 в работе, закрыты 0.1, 0.4 и 0.5 (05.09.2026)</span>
+      <span><b>Статус:</b> редакция 3 — блок 0 в работе, закрыты 0.1, 0.2, 0.4 и 0.5 (05.09.2026)</span>
     </div>
   </header>
 
@@ -994,11 +994,11 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
     </p>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>3</b> из 23 · 13%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>4</b> из 23 · 17%</span>
         <span class="tracker-hint">клик по номеру — отметка</span>
         <button class="tracker-reset" id="tracker-reset" type="button">Сбросить отметки</button>
       </div>
-      <div class="tracker-bar"><span id="tracker-bar" style="width: 13%"></span></div>
+      <div class="tracker-bar"><span id="tracker-bar" style="width: 17%"></span></div>
       <div class="sync" id="tracker-sync">Отметки хранятся в этом браузере</div>
     </div>
     <div class="table-wrap">
@@ -1008,7 +1008,7 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
         </thead>
         <tbody>
 
-          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">в работе</span><span class="gcount">3/5</span></td></tr>
+          <tr class="group" data-group-header="0"><td colspan="5">Блок 0 · Зачистка шва<span class="status new">в работе</span><span class="gcount">4/5</span></td></tr>
           <tr data-item="0.1" data-group="0" data-done="true">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.1</button></td>
             <td class="name"><code>ChatChange</code> вместо <code>FirestoreChange</code></td>
@@ -1016,10 +1016,10 @@ feature/*/data ─→ lib/backend ─→ openapi-schema <i>[ген]</i>
             <td class="size"><span class="size-chip">4 репозитория</span></td>
             <td class="dep">Пока тип изменения назван по поставщику, второй поставщик не подставляется.</td>
           </tr>
-          <tr data-item="0.2" data-group="0">
+          <tr data-item="0.2" data-group="0" data-done="true">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>0.2</button></td>
             <td class="name">Убрать <code>*NM</code> и хелперы времени из репозиториев</td>
-            <td class="what"><code>*NM</code>, <code>CommitCursor</code>, <code>toEpochSeconds</code> / <code>toEpochNanos</code> / <code>toEpochMillis</code> уезжают внутрь модуля вместе с мапперами; имена мапперов — <code>toDomainModel</code>, как требует правило проекта.</td>
+            <td class="what"><code>*NM</code>, <code>CommitCursor</code>, <code>toEpochSeconds</code> / <code>toEpochNanos</code> / <code>toEpochMillis</code> уезжают внутрь модуля вместе с мапперами; имена мапперов — <code>toDomainModel</code>, как требует правило проекта. <b>Сделано 05.09.2026.</b> Граница оказалась не там, где ждали: экранные сущности (<code>Conversation</code>, <code>Branch</code>) не везут транспортных полей — состав участников, <code>branchId</code> — и, наоборот, несут экранные: <code>unreadCount</code> и отформатированный <code>TextRef</code>, который на этом пути никто не читал. Поэтому фасад отдаёт записи <code>CommitRecord</code> / <code>BranchRecord</code> / <code>ConversationRecord</code> — ровно то, что приходит снаружи; экран собирается из них репозиторием, как и раньше. Заодно уехали внутрь <code>LastCommitParams</code> и <code>CommitNotFoundException</code>, а <code>toLocalDateTime</code> опустился в <code>core:domain</code>, чтобы не замкнуть цикл на <code>mapper:data</code>.</td>
             <td class="size"><span class="size-chip l">14 файлов</span></td>
             <td class="dep">Д1. После этого граница модуля проходит по доменным типам, и подмена транспорта становится механической.</td>
           </tr>

@@ -11,6 +11,10 @@ sealed interface Conversation {
   val lastCommitTimestamp: Long
   val unreadCount: Long
 
+  @JvmInline
+  value class Id(val value: String)
+
+  @Immutable
   data class Direct(
     override val id: Id,
     override val lastCommit: String?,
@@ -20,6 +24,7 @@ sealed interface Conversation {
     val peer: Peer
   ) : Conversation
 
+  @Immutable
   data class Group(
     override val id: Id,
     override val lastCommit: String?,
@@ -29,9 +34,6 @@ sealed interface Conversation {
     val name: String,
     val lastCommitSenderName: String?
   ) : Conversation
-
-  @JvmInline
-  value class Id(val value: String)
 
   enum class Type(val value: String) {
     Direct("direct"),
