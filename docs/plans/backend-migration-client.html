@@ -1027,11 +1027,11 @@ feature/*/data ─→ app/data ─→ openapi-schema <i>[ген]</i>
     </p>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>9</b> из 23 · 39%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>10</b> из 23 · 43%</span>
         <span class="tracker-hint">клик по номеру — отметка</span>
         <button class="tracker-reset" id="tracker-reset" type="button">Сбросить отметки</button>
       </div>
-      <div class="tracker-bar"><span id="tracker-bar" style="width: 39%"></span></div>
+      <div class="tracker-bar"><span id="tracker-bar" style="width: 43%"></span></div>
       <div class="sync" id="tracker-sync">Отметки хранятся в этом браузере</div>
     </div>
     <div class="table-wrap">
@@ -1161,7 +1161,7 @@ feature/*/data ─→ app/data ─→ openapi-schema <i>[ген]</i>
             <td class="dep">Два источника правды о данных — гарантированное расхождение. Сторож при этом к Firestore не привязан ничем, кроме места в дереве: его причина — <code>flatMapLatest</code> поверх недедуплицированного Flow, см. цену 05.</td>
           </tr>
 
-          <tr class="group" data-group-header="4"><td colspan="5">Блок 4 · Сторожа<span class="status part">пишутся вместе со своим пунктом</span><span class="gcount">2/7</span></td></tr>
+          <tr class="group" data-group-header="4"><td colspan="5">Блок 4 · Сторожа<span class="status part">пишутся вместе со своим пунктом</span><span class="gcount">3/7</span></td></tr>
           <tr data-item="4.1" data-group="4">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>4.1</button></td>
             <td class="name"><code>ContractGoldenTest</code></td>
@@ -1204,12 +1204,12 @@ feature/*/data ─→ app/data ─→ openapi-schema <i>[ген]</i>
             <td class="size"><span class="size-chip">10 тестов</span></td>
             <td class="dep">Обновление токена — единственное место, где гонка приводит к разлогину пользователя, а не к повтору запроса.</td>
           </tr>
-          <tr data-item="4.7" data-group="4">
+          <tr data-item="4.7" data-group="4" data-done="true">
             <td class="id"><button class="tick" type="button" aria-pressed="false"><span class="mark" aria-hidden="true">✓</span>4.7</button></td>
             <td class="name"><code>ChatChangeMappingTest</code></td>
-            <td class="what"><code>an added document becomes an added change</code></td>
-            <td class="size"><span class="size-chip">к 0.1</span></td>
-            <td class="dep">Ломается по назначению при добавлении нового типа изменения — то есть сторожит, что новый тип проведён во все ветки.</td>
+            <td class="what"><code>an added document becomes an added change</code>. <b>Сделано 06.09.2026.</b> Названный тест написан, к нему добавился второй — и причина сторожа при этом оказалась не той, что записана справа. Ветки в репозиториях компилятор держит сам: <code>when</code> по enum обязан быть исчерпывающим, и новый тип изменения ломает сборку во всех местах, где изменение разбирают. Не держит он обратное — что новый доменный тип кто-нибудь <em>порождает</em>: разобранный везде, где потребовал компилятор, он может не прийти из поставщика ни разу, и ветка останется мёртвой молча. Поэтому второй тест требует, чтобы каждый <code>ChatChange.Type</code> был образом какого-нибудь <code>DocumentChange.Type</code>. Проверен порчей маппинга: <code>MODIFIED</code>, направленный в <code>Added</code>, роняет его с названием пропавшего типа, а названный тест при этом остаётся зелёным. Отдельной проверки на склейку двух изменений в одно нет: enum'ы одного размера, и сюръективность её уже запрещает.</td>
+            <td class="size"><span class="size-chip">2 теста</span></td>
+            <td class="dep">Ломается по назначению при добавлении нового типа изменения — то есть сторожит, что новый тип не остался без источника.</td>
           </tr>
 
         </tbody>
