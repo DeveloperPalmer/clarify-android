@@ -15,8 +15,8 @@ import ru.sla.clarify.app.data.entity.ServerException
  */
 internal fun ServerErrorBody?.toServerException(status: HttpStatusCode): ServerException {
   // Расхождение версий разбирается раньше статуса и независимо от него: код называет сам сервер,
-  // а статус он волен выбрать любой. Код — наше допущение до первой версии спеки
-  if (this?.code == "contract_version_mismatch") {
+  // а статус он волен выбрать любой. Код взят из перечисления кодов ошибок спеки
+  if (this?.code == "contractVersionMismatch") {
     return ServerException.ContractMismatch(CONTRACT_VERSION, message)
   }
   if (status == HttpStatusCode.Unauthorized) {

@@ -23,28 +23,12 @@ import ru.sla.clarify.app.data.entity.ServerException
 class ContractVersionTest {
 
   @Test
-  fun `every outgoing request carries the contract version header`() = runTest {
-    val seen = mutableListOf<String?>()
-    val client = clientOf(
-      tokens = null,
-      handler = { request ->
-        seen += request.headers["X-Contract-Version"]
-        respond("{}", HttpStatusCode.OK, jsonHeaders())
-      }
-    )
-
-    client.get("/user")
-
-    assertEquals(listOf(CONTRACT_VERSION), seen)
-  }
-
-  @Test
   fun `a major mismatch surfaces as a named failure, not a decode error`() = runTest {
     val client = clientOf(
       tokens = null,
       handler = {
         respond(
-          """{"code":"contract_version_mismatch","message":"server speaks 2.x"}""",
+          """{"code":"contractVersionMismatch","message":"server speaks 2.x"}""",
           HttpStatusCode.UpgradeRequired,
           jsonHeaders()
         )
@@ -62,7 +46,7 @@ class ContractVersionTest {
       tokens = null,
       handler = {
         respond(
-          """{"code":"contract_version_mismatch","message":"server speaks 2.x"}""",
+          """{"code":"contractVersionMismatch","message":"server speaks 2.x"}""",
           HttpStatusCode.BadRequest,
           jsonHeaders()
         )

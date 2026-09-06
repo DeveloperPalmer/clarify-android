@@ -12,7 +12,6 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.plugin
 import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.header
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
@@ -106,15 +105,7 @@ private fun HttpClientConfig<*>.configureServer(pathFinder: PathFinder) {
   // Блок defaultRequest выполняется на каждом запросе, а не один раз при сборке клиента, поэтому
   // адрес читается заново: переключение стенда подхватывается без пересборки. Прочитанный при
   // создании, он замер бы до перезапуска приложения.
-  defaultRequest {
-    url(pathFinder.currentEnvironment.baseUrl)
-    // Версия копии спеки уходит с каждой командой, а не только первым кадром канала: /auth/google
-    // и догон отправляются раньше, чем канал открыт, и на устаревшей копии клиент упёрся бы там в
-    // ошибку разбора ответа вместо понятного отказа. Рукопожатие канала идёт этим же клиентом,
-    // поэтому заголовок оказывается и на нём. Имя заголовка — наше допущение: сверить с серверной
-    // командой вместе с формой кадров канала, потом менять его будет уже нельзя
-    header("X-Contract-Version", CONTRACT_VERSION)
-  }
+  defaultRequest { url(pathFinder.currentEnvironment.baseUrl) }
   install(ContentNegotiation) { json(ServerJson) }
   install(HttpTimeout) {
     // Команда, не уложившаяся в 30 секунд, уже не нужна тому, кто её отправил

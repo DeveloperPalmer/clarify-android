@@ -13,6 +13,8 @@ dependencies {
   implementation project(":core:domain")
   implementation project(":database")
   implementation project(":build-config")
+  // Копия спеки: отсюда приходит константа версии, а с генерацией придут и клиенты операций
+  implementation project(":openapi-schema")
   implementation project(":lib:log:log")
   implementation libs.kotlin.coroutines.core
   implementation libs.kotlinx.serialization.json
