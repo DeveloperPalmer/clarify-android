@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import ru.sla.clarify.app.data.CONTRACT_VERSION
+import ru.sla.clarify.app.data.entity.ServerException
 import ru.sla.clarify.auth.session.domain.SessionKeyProvider
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
 import java.io.IOException
@@ -28,11 +29,11 @@ class EventChannelTest {
     cursors: EventCursorStore,
     connections: List<ChannelConnection>,
     applier: ServerEventApplier<TestEvent> = FakeServerEventApplier(),
-    sessionKeys: SessionKeyProvider = sessionKeysOf(key)
+    sessionKeys: SessionKeyProvider = sessionKeysOf(key),
+    failOpenWith: Throwable? = null
   ): EventChannel<TestEvent> {
-    val queue = ArrayDeque(connections)
     return EventChannel(
-      transport = { queue.removeFirstOrNull() ?: FakeChannelConnection(emptyList()) },
+      transport = FakeChannelTransport(connections, failOpenWith),
       cursors = cursors,
       sessionKeys = sessionKeys,
       codec = ServerEventCodec(json, TestEvent.serializer()),
@@ -141,6 +142,43 @@ class EventChannelTest {
     assertTrue(first.closed)
     // Повтор идёт с 11: первый кадр записан и курсор сдвинут, второй раз его не переспрашивают
     assertEquals(listOf(subscribeFrame(lastSeq = 11)), second.sent)
+  }
+
+  @Test
+  fun `a connection that never opened is retried like a dropped one`() = runTest {
+    val second = FakeChannelConnection(listOf(commitFrame(seq = 11L, id = "c1")))
+    val job = backgroundScope.launch {
+      channelOf(
+        cursors = FakeEventCursorStore(seq = 10L),
+        connections = listOf(second),
+        failOpenWith = ServerException.Unreachable(IOException("connection reset"))
+      ).run()
+    }
+    runCurrent()
+    advanceTimeBy(2_001)
+    runCurrent()
+    job.cancel()
+
+    // Обрыв, случившийся до рукопожатия, приходит от транспорта его собственным исключением, а
+    // не тем, что бросил движок. Пропусти канал этот тип — и первая же потерянная сеть кончала бы
+    // его насовсем, вместо того чтобы стоить одной паузы
+    assertEquals(listOf(subscribeFrame(lastSeq = 10)), second.sent)
+  }
+
+  @Test
+  fun `a contract mismatch ends the channel instead of retrying`() = runTest {
+    val channel = channelOf(
+      cursors = FakeEventCursorStore(seq = 10L),
+      connections = emptyList(),
+      failOpenWith = ServerException.ContractMismatch(
+        clientVersion = CONTRACT_VERSION,
+        serverMessage = "server speaks 2.x"
+      )
+    )
+
+    // Устаревшая копия спеки повтором не лечится: сколько ни переподключайся, версия останется
+    // той же. Канал заканчивается — так же, как на отказе записи
+    assertThrows<ServerException.ContractMismatch> { channel.run() }
   }
 
   @Test

@@ -95,6 +95,27 @@ internal class FakeServerEventApplier(private val failWith: Throwable? = null) :
 }
 
 /**
+ * Транспорт, отдающий заготовленные соединения по порядку. [failOpenWith] роняет **первое**
+ * открытие — тот обрыв, что случился до рукопожатия и потому приходит от транспорта его
+ * собственным исключением, а не тем, что бросил движок.
+ */
+internal class FakeChannelTransport(
+  connections: List<ChannelConnection>,
+  private val failOpenWith: Throwable? = null
+) : ChannelTransport {
+  private val queue = ArrayDeque(connections)
+  private var failedOpen = false
+
+  override suspend fun open(): ChannelConnection {
+    if (failOpenWith != null && !failedOpen) {
+      failedOpen = true
+      throw failOpenWith
+    }
+    return queue.removeFirstOrNull() ?: FakeChannelConnection(emptyList())
+  }
+}
+
+/**
  * Соединение, отдающее заранее записанные кадры и затем закрывающееся. [failWith] позволяет
  * оборвать его так, как оборвалась бы сеть.
  */

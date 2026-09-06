@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import ru.sla.clarify.app.data.CONTRACT_VERSION
+import ru.sla.clarify.app.data.entity.ServerException
 import ru.sla.clarify.app.data.entity.SubscribeFrame
 import ru.sla.clarify.auth.session.domain.SessionKeyProvider
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
@@ -43,7 +44,9 @@ class EventChannel<E>(
    *
    * Отказ [ServerEventApplier] выходит отсюда наружу и канал заканчивает. Это выбор: курсор при
    * этом не сдвинут, поэтому перезапуск продолжит ровно с того же места, ничего не потеряв, —
-   * а вечный повтор на детерминированной ошибке записи спрятал бы её насовсем.
+   * а вечный повтор на детерминированной ошибке записи спрятал бы её насовсем. Тем же путём
+   * уходит наружу и всё остальное, чего повтор не лечит: расхождение версии контракта и
+   * отвергнутая сессия.
    */
   suspend fun run() {
     sessionKeys.key().collectLatest { key ->
@@ -53,6 +56,17 @@ class EventChannel<E>(
     }
   }
 
+  /**
+   * Один и тот же обрыв сети приходит сюда под двумя разными типами, и ловятся оба.
+   *
+   * Рукопожатие канала идёт общим с командами клиентом, и его перехватчик переводит отказ движка
+   * в термины транспорта ещё до возврата. Чтение кадров через перехватчик не идёт и приходит сюда
+   * так, как его бросил движок. Ловить только второе значило бы кончать канал на первой же
+   * потерянной сети — на той её потере, что случилась чуть раньше остальных.
+   *
+   * Всё, что повтором не лечится, — расхождение версии контракта, отвергнутая сессия, отказ
+   * записи, — по-прежнему выходит наружу и канал заканчивает.
+   */
   private suspend fun reconnectWhile(key: SessionKey) {
     var failures = 0
     while (true) {
@@ -60,11 +74,18 @@ class EventChannel<E>(
         runSession(key)
         0
       } catch (e: IOException) {
-        log(LogPriority.Warn) { e.asLog("event channel dropped") }
+        reportDrop(e)
+        failures + 1
+      } catch (e: ServerException.Unreachable) {
+        reportDrop(e)
         failures + 1
       }
       delay(backoffMillis(failures).milliseconds)
     }
+  }
+
+  private fun reportDrop(e: Exception) {
+    log(LogPriority.Warn) { e.asLog("event channel dropped") }
   }
 
   private suspend fun runSession(key: SessionKey) {
