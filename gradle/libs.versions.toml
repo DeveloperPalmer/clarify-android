@@ -28,6 +28,8 @@ ktlint = "1.8.0"
 spotless = "8.9.0"
 detekt = "2.0.0-alpha.5"
 detekt-rules-compose = "1.4.0"
+# Пин намеренно точный: свои mustache-шаблоны прибиты к внутренним переменным этой версии
+openapi-generator = "7.14.0"
 coil = "2.7.0"
 cachefix = "3.0.3"
 # Firebase
@@ -166,3 +168,4 @@ way = { id = "ru.kode.way", version.ref = "way" }
 google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-built-in1-kotlin = { id = "com.android.built-in-kotlin", version.ref = "androidBuiltInKotlin" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
