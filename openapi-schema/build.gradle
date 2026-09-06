@@ -2,6 +2,12 @@ plugins {
   id "kotlin-convention"
 }
 
+dependencies {
+  testImplementation libs.junit.jupiter.api
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.platform.launcher
+}
+
 /**
  * Версия копии спеки уезжает в код константой: клиент предъявляет её серверу, и держать её
  * вторым, рукописным экземпляром нельзя — рукописный разойдётся с YAML на первом же обновлении
