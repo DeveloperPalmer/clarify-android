@@ -1,0 +1,1704 @@
+openapi: 3.0.3
+
+info:
+  title: Clarify API
+  version: 0.2.0
+  description: |
+    Контракт между сервером Clarify и его клиентами. Спека — оригинал: она живёт в репозитории
+    сервера, из неё же генерируются серверные интерфейсы, поэтому разойтись с реализацией она
+    не может. Клиент держит копию и генерирует из неё свои клиенты.
+
+    Соглашения, действующие для всех операций:
+
+    * `info.version` растёт по семантике. Ломающая правка — поднятый мажор и осознанный отказ
+      старым клиентам, а не переименованное поле.
+    * Отсутствие ресурса — ответ `404` со схемой `ApiErrorNM`, а не `200` с пустым телом.
+      Клиент разворачивает код ошибки в типизированную ошибку и решает сам, норма это или сбой.
+    * Живые подписки — не операции. Двенадцать `*Live`-подписок прежнего клиента заменены одним
+      WebSocket-каналом; его кадры описаны схемой `ServerFrameNM` с дискриминатором на родителе.
+    * Время — `date-time` в UTC. Счётчики и лимиты — `int64`.
+    * Все операции требуют bearer-токена, кроме тега `auth`: вход, обновление пары и выход
+      предъявляют не access-токен, а то, что их заменяет — Google ID-token или refresh-токен.
+
+servers:
+  - url: "https://{host}"
+    description: Развёртывание Clarify. Хост задаётся сборкой клиента.
+    variables:
+      host:
+        default: localhost
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+    description: Вход по Google ID-token, обновление пары токенов и выход.
+  - name: user
+    description: Профили пользователей и их поиск.
+  - name: conversation
+    description: Беседы — direct и групповые.
+  - name: member
+    description: Участники беседы и отметки прочтения.
+  - name: commit
+    description: Отправка сообщений, чтение истории, правка, удаление и скрытие.
+  - name: branch
+    description: Ветки внутри беседы.
+  - name: merge-request
+    description: Запросы на слияние ветки — открытие, одобрение, финализация.
+  - name: unread-count
+    description: Счётчики непрочитанного по беседе и по ветке.
+
+paths:
+
+  /users:
+    post:
+      tags: [user]
+      operationId: createUser
+      summary: Создаёт пользователя при первом входе.
+      description: |
+        Первичная вставка профиля. Вызывается после `readUserExists`: существующий профиль
+        операция не перезаписывает, а отвечает `409`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequestNM'
+      responses:
+        '201':
+          description: Профиль создан.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /users/me:
+    get:
+      tags: [user]
+      operationId: readCurrentUser
+      summary: Возвращает профиль текущего пользователя.
+      description: Пользователь определяется по токену; параметров у операции нет.
+      responses:
+        '200':
+          description: Профиль текущего пользователя.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserNM'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /users/search:
+    get:
+      tags: [user]
+      operationId: readUsersByEmailPrefix
+      summary: Ищет пользователей по началу email.
+      description: |
+        Поиск собеседника при создании беседы. Email хранятся в нижнем регистре, и префикс
+        приводится к нему сервером — клиенту нормализовать не нужно.
+      parameters:
+        - name: emailPrefix
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Найденные профили, не более `limit`.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /users/exists-by-email:
+    get:
+      tags: [user]
+      operationId: readUserExistsByEmail
+      summary: Отвечает, зарегистрирован ли пользователь с таким email.
+      description: |
+        Отсутствие пользователя здесь — штатный ответ, а не `404`: спрашивают именно про факт
+        наличия.
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Факт наличия пользователя с таким email.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserExistsNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /users/id-by-email:
+    get:
+      tags: [user]
+      operationId: readUserIdByEmail
+      summary: Находит идентификатор пользователя по email.
+      responses:
+        '200':
+          description: Идентификатор найденного пользователя.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserIdNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+    get:
+      tags: [user]
+      operationId: readUser
+      summary: Возвращает профиль произвольного пользователя.
+      responses:
+        '200':
+          description: Профиль пользователя.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserNM'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [user]
+      operationId: updateUser
+      summary: Обновляет профиль пользователя.
+      description: |
+        Непереданные поля остаются как были. Пустая строка в `photoUrl` — не способ удалить
+        аватарку: удаление появится отдельной операцией, когда понадобится.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequestNM'
+      responses:
+        '200':
+          description: Обновлённый профиль.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /users/{userId}/exists:
+    parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+    get:
+      tags: [user]
+      operationId: readUserExists
+      summary: Отвечает, существует ли профиль с таким идентификатором.
+      responses:
+        '200':
+          description: Факт наличия профиля.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserExistsNM'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /conversations/group:
+    post:
+      tags: [conversation]
+      operationId: createGroupConversation
+      summary: Создаёт групповую беседу.
+      description: |
+        Создатель становится первым участником в той же транзакции. Direct-беседа так не
+        создаётся: она возникает при первом сообщении, см. `createDirectCommit`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupConversationRequestNM'
+      responses:
+        '201':
+          description: Созданная беседа.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /conversations/delete:
+    post:
+      tags: [conversation]
+      operationId: deleteConversations
+      summary: Удаляет несколько бесед разом.
+      description: |
+        Пакетная очистка. Удаление идёт одной транзакцией: либо исчезают все перечисленные
+        беседы, либо ни одна.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteConversationsRequestNM'
+      responses:
+        '204':
+          description: Беседы удалены.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /conversations/{conversationId}:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    delete:
+      tags: [conversation]
+      operationId: deleteConversation
+      summary: Удаляет беседу.
+      responses:
+        '204':
+          description: Беседа удалена.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/name:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    put:
+      tags: [conversation]
+      operationId: updateConversationName
+      summary: Переименовывает групповую беседу.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConversationNameRequestNM'
+      responses:
+        '204':
+          description: Название обновлено.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/members:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    post:
+      tags: [member]
+      operationId: createCommitInviteMember
+      summary: Приглашает пользователя в группу.
+      description: |
+        Одна транзакция: участник добавляется в состав, получает свою запись и в историю
+        попадает системное сообщение типа `inviteMember`. Системное сообщение не обновляет
+        превью беседы и не увеличивает счётчики непрочитанного — оно только фиксирует факт.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommitInviteMemberRequestNM'
+      responses:
+        '201':
+          description: Участник добавлен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /conversations/{conversationId}/members/me:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    delete:
+      tags: [member]
+      operationId: deleteConversationMemberSelf
+      summary: Текущий пользователь покидает беседу.
+      description: |
+        Отдельная операция, а не `deleteConversationMember` со своим идентификатором: выход —
+        право участника, а исключение другого требует другой проверки прав.
+      responses:
+        '204':
+          description: Участник вышел из беседы.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/members/me/read-watermark:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    put:
+      tags: [member]
+      operationId: updateReadWatermark
+      summary: Записывает отметку о последнем прочитанном сообщении.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReadWatermarkRequestNM'
+      responses:
+        '204':
+          description: Отметка записана.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+      - $ref: '#/components/parameters/UserIdPath'
+    get:
+      tags: [member]
+      operationId: readMember
+      summary: Возвращает участника беседы.
+      description: |
+        Разовое чтение того же, за чем следит канал. Основной потребитель — удаление сообщений
+        «у всех»: по отметке прочтения собеседника считается поправка к его счётчику.
+      responses:
+        '200':
+          description: Участник беседы.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberNM'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [member]
+      operationId: deleteConversationMember
+      summary: Удаляет участника из беседы.
+      description: |
+        Одна транзакция: участник уходит из состава, его запись и его счётчик непрочитанного
+        удаляются. Сообщения остаются.
+      responses:
+        '204':
+          description: Участник удалён.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/branches:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    post:
+      tags: [branch]
+      operationId: createBranch
+      summary: Создаёт ветку, ответвляясь от сообщения.
+      description: |
+        Родительская ветка для ответвления от корня — сама беседа: её идентификатор и
+        передаётся в `parentBranchId`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBranchRequestNM'
+      responses:
+        '201':
+          description: Созданная ветка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/commits:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    post:
+      tags: [commit]
+      operationId: createGroupCommit
+      summary: Отправляет сообщение в корневую ветку групповой беседы.
+      description: |
+        Одна транзакция: сообщение, превью беседы и счётчики непрочитанного у всех, кроме
+        отправителя.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupCommitRequestNM'
+      responses:
+        '201':
+          description: Отправленное сообщение.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/commits/delete:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    post:
+      tags: [commit]
+      operationId: deleteDirectCommits
+      summary: Удаляет сообщения корневой ветки «у всех».
+      description: |
+        Сообщения стираются физически. Что делать с превью беседы, решает `lastCommit`, а
+        `peerUnreadDelta` уменьшает счётчик непрочитанного у собеседника — но не ниже нуля.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteCommitsRequestNM'
+      responses:
+        '204':
+          description: Сообщения удалены.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/commits/hide:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    post:
+      tags: [commit]
+      operationId: hideCommits
+      summary: Скрывает сообщения только у текущего пользователя.
+      description: |
+        Сообщение перестаёт приходить скрывшему и остаётся у остальных. Когда его скрыли все,
+        оно удаляется физически — хранить больше незачем.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HideCommitsRequestNM'
+      responses:
+        '204':
+          description: Сообщения скрыты.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/commits/{commitId}:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+      - $ref: '#/components/parameters/CommitIdPath'
+    patch:
+      tags: [commit]
+      operationId: updateDirectCommit
+      summary: Правит текст сообщения корневой ветки.
+      description: |
+        `createdAt` не меняется: позиция в истории, курсоры и отметки прочтения остаются
+        прежними. Если правится последнее сообщение беседы, обновляется её превью.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCommitTextRequestNM'
+      responses:
+        '200':
+          description: Обновлённое сообщение.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/unread-count/reset:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+    post:
+      tags: [unread-count]
+      operationId: updateUnreadCount
+      summary: Обнуляет счётчик непрочитанного по беседе.
+      responses:
+        '204':
+          description: Счётчик обнулён.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/branches/{branchId}/commits:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+      - $ref: '#/components/parameters/BranchIdPath'
+    get:
+      tags: [commit]
+      operationId: readCommits
+      summary: Загружает страницу истории ветки.
+      description: |
+        Страница идёт от свежих к старым. Курсор — пара «время создания и идентификатор»:
+        идентификатор служит вторым ключом сортировки, поэтому сообщения с одинаковым временем
+        не пропадают и не задваиваются между страницами. Скрытые текущим пользователем
+        сообщения в страницу не попадают и места в ней не занимают.
+      parameters:
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: beforeCreatedAt
+          in: query
+          required: false
+          description: Время создания граничного сообщения. Передаётся вместе с `beforeId`.
+          schema:
+            type: string
+            format: date-time
+        - name: beforeId
+          in: query
+          required: false
+          description: Идентификатор граничного сообщения. Передаётся вместе с `beforeCreatedAt`.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Страница сообщений, от свежих к старым.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommitNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [commit]
+      operationId: createBranchCommit
+      summary: Отправляет сообщение в ветку.
+      description: |
+        Одна транзакция: сообщение, превью ветки и счётчики непрочитанного по ветке у всех,
+        кроме отправителя.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBranchCommitRequestNM'
+      responses:
+        '201':
+          description: Отправленное сообщение.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/branches/{branchId}/commits/delete:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+      - $ref: '#/components/parameters/BranchIdPath'
+    post:
+      tags: [commit]
+      operationId: deleteBranchCommits
+      summary: Удаляет сообщения ветки «у всех».
+      description: |
+        То же, что и для корневой ветки, но превью ветки не хранит автора последнего
+        сообщения — при `replace` переставляются только текст и время.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteCommitsRequestNM'
+      responses:
+        '204':
+          description: Сообщения удалены.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/branches/{branchId}/commits/{commitId}:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+      - $ref: '#/components/parameters/BranchIdPath'
+      - $ref: '#/components/parameters/CommitIdPath'
+    patch:
+      tags: [commit]
+      operationId: updateBranchCommit
+      summary: Правит текст сообщения ветки.
+      description: |
+        Отличие от правки в корневой ветке: превью ветки хранит время последнего сообщения,
+        поэтому при правке последнего обновляется пара «текст и время».
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCommitTextRequestNM'
+      responses:
+        '200':
+          description: Обновлённое сообщение.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /conversations/{conversationId}/branches/{branchId}/merge-request:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+      - $ref: '#/components/parameters/BranchIdPath'
+    post:
+      tags: [merge-request]
+      operationId: createOpenMergeRequest
+      summary: Открывает запрос на слияние ветки.
+      description: |
+        Инициатор не одобряет запрос автоматически — одобрение он ставит отдельно. Ветка с уже
+        открытым запросом отвечает `409`.
+      responses:
+        '201':
+          description: Открытый запрос на слияние.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeRequestNM'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [merge-request]
+      operationId: deleteMergeRequest
+      summary: Отменяет запрос на слияние.
+      description: |
+        Доступно любому участнику, не только инициатору. После отмены ветка снова принимает
+        сообщения. Слитый запрос отменить нельзя — `409`.
+      responses:
+        '204':
+          description: Запрос отменён.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /conversations/{conversationId}/branches/{branchId}/merge-request/approval:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+      - $ref: '#/components/parameters/BranchIdPath'
+    put:
+      tags: [merge-request]
+      operationId: updateMergeApproval
+      summary: Ставит одобрение текущего пользователя.
+      description: |
+        Когда одобрили все участники, запрос переходит в `readyToMerge`. Состав участников
+        передаёт вызывающая сторона — по нему и считается полнота.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMergeApprovalRequestNM'
+      responses:
+        '200':
+          description: Запрос на слияние после одобрения.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeRequestNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [merge-request]
+      operationId: deleteMergeRequestApproval
+      summary: Отзывает одобрение текущего пользователя.
+      description: |
+        Статус возвращается в `open`, даже если запрос уже был готов к слиянию.
+      responses:
+        '200':
+          description: Запрос на слияние после отзыва одобрения.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeRequestNM'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /conversations/{conversationId}/branches/{branchId}/merge-request/finalize:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+      - $ref: '#/components/parameters/BranchIdPath'
+    post:
+      tags: [merge-request]
+      operationId: updateMergeFinalize
+      summary: Завершает слияние ветки.
+      description: |
+        Требует статуса `readyToMerge`. После завершения ветка считается слитой, и запрос
+        больше не меняется.
+      responses:
+        '200':
+          description: Слитый запрос на слияние.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeRequestNM'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /conversations/{conversationId}/branches/{branchId}/unread-count/reset:
+    parameters:
+      - $ref: '#/components/parameters/ConversationIdPath'
+      - $ref: '#/components/parameters/BranchIdPath'
+    post:
+      tags: [unread-count]
+      operationId: updateBranchUnreadCount
+      summary: Обнуляет счётчик непрочитанного по ветке.
+      responses:
+        '204':
+          description: Счётчик обнулён.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /commits/direct:
+    post:
+      tags: [commit]
+      operationId: createDirectCommit
+      summary: Отправляет сообщение в direct-беседу, создавая её при необходимости.
+      description: |
+        Единственная операция сообщений вне пути беседы: беседы может ещё не быть. Без
+        `conversationId` она создаётся вместе с записями обоих участников, без `branchId`
+        сообщение идёт в корневую ветку.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDirectCommitRequestNM'
+      responses:
+        '201':
+          description: Отправленное сообщение.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /auth/google:
+    post:
+      tags: [auth]
+      operationId: createSessionByGoogle
+      security: []
+      summary: Открывает сессию по Google ID-token.
+      description: |
+        Клиент получает ID-token системным способом и отдаёт его сюда; сервер проверяет подпись
+        по ключам Google и выдаёт свою пару токенов. Профиль этой операцией не создаётся —
+        клиент заводит его сам через `createUser`, как заводил и раньше.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionByGoogleRequestNM'
+      responses:
+        '201':
+          description: Открытая сессия — кто вошёл и с какими токенами.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      operationId: updateSession
+      security: []
+      summary: Меняет refresh-токен на новую пару.
+      description: |
+        Refresh-токен одноразовый: удачное обновление делает предъявленный недействительным.
+        Отказ здесь означает, что сессии больше нет, и клиенту остаётся вход заново.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequestNM'
+      responses:
+        '200':
+          description: Новая пара токенов.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensNM'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      operationId: deleteSession
+      security: []
+      summary: Закрывает сессию.
+      description: |
+        Access-токен не требуется: выходят и с истёкшим. Уже недействительный refresh-токен
+        ошибкой не считается — выход идемпотентен.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteSessionRequestNM'
+      responses:
+        '204':
+          description: Сессия закрыта.
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UserIdPath:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    ConversationIdPath:
+      name: conversationId
+      in: path
+      required: true
+      schema:
+        type: string
+    BranchIdPath:
+      name: branchId
+      in: path
+      required: true
+      schema:
+        type: string
+    CommitIdPath:
+      name: commitId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Запрос не прошёл проверку.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorNM'
+    Unauthorized:
+      description: Токен отсутствует, истёк или отозван.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorNM'
+    Forbidden:
+      description: Вызывающему это действие не разрешено.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorNM'
+    NotFound:
+      description: Ресурса нет.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorNM'
+    Conflict:
+      description: Состояние ресурса не допускает этого действия.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorNM'
+
+  schemas:
+
+    ApiErrorNM:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          $ref: '#/components/schemas/ApiErrorCodeNM'
+        message:
+          type: string
+          description: Человекочитаемое пояснение. Не предназначено для разбора кодом.
+        details:
+          type: object
+          additionalProperties: true
+          description: Подробности, зависящие от кода. Отсутствуют, если сказать нечего.
+
+    ApiErrorCodeNM:
+      type: string
+      description: |
+        Код ошибки. Клиент разворачивает его в типизированную ошибку, поэтому набор растёт
+        только вместе с версией контракта.
+      enum:
+        - unauthorized
+        - idTokenRejected
+        - refreshTokenRejected
+        - forbidden
+        - validationFailed
+        - userNotFound
+        - userAlreadyExists
+        - conversationNotFound
+        - memberNotFound
+        - memberAlreadyExists
+        - commitNotFound
+        - branchNotFound
+        - mergeRequestNotFound
+        - mergeRequestAlreadyOpen
+        - mergeRequestStatusConflict
+        - contractVersionMismatch
+        - internalError
+
+    AuthTokensNM:
+      type: object
+      required: [accessToken, refreshToken]
+      description: |
+        Пара токенов в том виде, в каком её хранит клиент. Момент получения он проставляет сам,
+        поэтому по проводу тот не ходит.
+      properties:
+        accessToken:
+          type: string
+          description: Предъявляется в каждом запросе. Истёкший — ответ `401`, после которого клиент обновляет пару.
+        refreshToken:
+          type: string
+          description: Одноразовый — удачное обновление делает его недействительным.
+
+    SessionNM:
+      type: object
+      required: [userId, tokens]
+      properties:
+        userId:
+          type: string
+          description: Кто вошёл. Профиль под этим идентификатором может ещё не существовать.
+        tokens:
+          $ref: '#/components/schemas/AuthTokensNM'
+
+    CreateSessionByGoogleRequestNM:
+      type: object
+      required: [idToken]
+      properties:
+        idToken:
+          type: string
+          description: Google ID-token, полученный клиентом системным способом.
+
+    UpdateSessionRequestNM:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    DeleteSessionRequestNM:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    ChangeKindNM:
+      type: string
+      description: Что случилось с сущностью, о которой говорит кадр канала.
+      enum: [added, modified, removed]
+
+    UserNM:
+      type: object
+      required: [id, displayName, email, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+          description: Хранится и возвращается в нижнем регистре.
+        photoUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserIdNM:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+
+    UserExistsNM:
+      type: object
+      required: [exists]
+      properties:
+        exists:
+          type: boolean
+
+    CreateUserRequestNM:
+      type: object
+      required: [id, email, displayName]
+      properties:
+        id:
+          type: string
+          description: Идентификатор из проверенного токена входа.
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        photoUrl:
+          type: string
+          nullable: true
+
+    UpdateUserRequestNM:
+      type: object
+      required: [email, displayName]
+      properties:
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        photoUrl:
+          type: string
+          nullable: true
+          description: Отсутствие поля оставляет аватарку как есть.
+
+    ConversationTypeNM:
+      type: string
+      enum: [direct, group]
+
+    ConversationNM:
+      type: object
+      required: [id, type, memberUids]
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationTypeNM'
+        memberUids:
+          type: array
+          items:
+            type: string
+        name:
+          type: string
+          nullable: true
+          description: Название группы. У direct-беседы отсутствует.
+        ownerUid:
+          type: string
+          nullable: true
+          description: Создатель группы. У direct-беседы отсутствует.
+        lastCommitText:
+          type: string
+          nullable: true
+        lastCommitSenderUid:
+          type: string
+          nullable: true
+        lastCommitAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateGroupConversationRequestNM:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+
+    DeleteConversationsRequestNM:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+
+    UpdateConversationNameRequestNM:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+
+    MemberNM:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          description: Идентификатор пользователя-участника.
+        lastReadAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Отметка о последнем прочитанном сообщении. Отсутствует — не читал.
+
+    CreateCommitInviteMemberRequestNM:
+      type: object
+      required: [invitedUserId, memberUids]
+      properties:
+        invitedUserId:
+          type: string
+        memberUids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: |
+            Состав группы уже с приглашённым — он попадает в видимость системного сообщения,
+            иначе приглашённый своего приглашения не увидит.
+        clientCommitId:
+          type: string
+          nullable: true
+          description: Идентификатор системного сообщения на стороне клиента, если он его показывает.
+
+    UpdateReadWatermarkRequestNM:
+      type: object
+      required: [lastReadAt]
+      properties:
+        lastReadAt:
+          type: string
+          format: date-time
+
+    CommitTypeNM:
+      type: string
+      enum: [text, inviteMember]
+
+    ReplyCommitNM:
+      type: object
+      required: [id, senderUid, text]
+      description: |
+        Снимок цитируемого сообщения на момент ответа. Не пересчитывается: цитата остаётся
+        читаемой и после правки или удаления оригинала.
+      properties:
+        id:
+          type: string
+        senderUid:
+          type: string
+        text:
+          type: string
+
+    CommitNM:
+      type: object
+      required: [id, senderUid, text, type, createdAt, branchId, visibleFor]
+      properties:
+        id:
+          type: string
+        clientCommitId:
+          type: string
+          nullable: true
+          description: |
+            Идентификатор, под которым клиент показал сообщение до подтверждения. Возвращается
+            обратно, чтобы клиент сопоставил свою запись с пришедшей по каналу.
+        senderUid:
+          type: string
+        text:
+          type: string
+        type:
+          $ref: '#/components/schemas/CommitTypeNM'
+        createdAt:
+          type: string
+          format: date-time
+        editedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Момент правки. Отсутствует — сообщение не редактировалось.
+        branchId:
+          type: string
+          description: Для корневой ветки совпадает с идентификатором беседы.
+        visibleFor:
+          type: array
+          items:
+            type: string
+          description: Кто видит сообщение. Скрытие «только у себя» убирает отсюда одного.
+        invitedUid:
+          type: string
+          nullable: true
+          description: Кого пригласили. Есть только у сообщений типа `inviteMember`.
+        replyCommit:
+          $ref: '#/components/schemas/ReplyCommitNM'
+
+    CreateDirectCommitRequestNM:
+      type: object
+      required: [peerId, text, clientCommitId]
+      properties:
+        peerId:
+          type: string
+          description: Собеседник. Вместе с вызывающим определяет единственную direct-беседу.
+        conversationId:
+          type: string
+          nullable: true
+          description: Существующая беседа. Отсутствует — беседа создаётся.
+        branchId:
+          type: string
+          nullable: true
+          description: Ветка. Отсутствует — сообщение идёт в корневую.
+        text:
+          type: string
+          minLength: 1
+        clientCommitId:
+          type: string
+          description: Идентификатор оптимистичной записи клиента.
+        replyCommit:
+          $ref: '#/components/schemas/ReplyCommitNM'
+
+    CreateGroupCommitRequestNM:
+      type: object
+      required: [text, memberUids, clientCommitId]
+      properties:
+        text:
+          type: string
+          minLength: 1
+        memberUids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: Состав группы — по нему растут счётчики непрочитанного у всех, кроме отправителя.
+        clientCommitId:
+          type: string
+        replyCommit:
+          $ref: '#/components/schemas/ReplyCommitNM'
+
+    CreateBranchCommitRequestNM:
+      type: object
+      required: [text, memberUids, clientCommitId]
+      properties:
+        text:
+          type: string
+          minLength: 1
+        memberUids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        clientCommitId:
+          type: string
+        replyCommit:
+          $ref: '#/components/schemas/ReplyCommitNM'
+
+    UpdateCommitTextRequestNM:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          description: Новый текст. Пустой запрещён — это удаление, а не правка.
+
+    LastCommitModeNM:
+      type: string
+      description: |
+        Что сделать с превью после удаления сообщений: оставить как есть, переставить на новое
+        последнее или очистить, если не осталось ничего.
+      enum: [keep, replace, clear]
+
+    LastCommitParamsNM:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          $ref: '#/components/schemas/LastCommitModeNM'
+        text:
+          type: string
+          nullable: true
+          description: Текст нового последнего сообщения. Нужен только при `replace`.
+        senderUid:
+          type: string
+          nullable: true
+          description: |
+            Автор нового последнего сообщения. Нужен только при `replace` в корневой ветке:
+            превью ветки автора не хранит.
+        at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время нового последнего сообщения. Нужно только при `replace`.
+
+    DeleteCommitsRequestNM:
+      type: object
+      required: [peerId, commitIds, lastCommit, peerUnreadDelta]
+      properties:
+        peerId:
+          type: string
+          description: Собеседник, чей счётчик непрочитанного пересчитывается.
+        commitIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        lastCommit:
+          $ref: '#/components/schemas/LastCommitParamsNM'
+        peerUnreadDelta:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            На сколько уменьшить счётчик собеседника — столько наших удаляемых сообщений он ещё
+            не прочитал. Ноль оставляет счётчик нетронутым.
+
+    HideCommitsRequestNM:
+      type: object
+      required: [commitIds]
+      properties:
+        commitIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+
+    MergeRequestStatusNM:
+      type: string
+      enum: [open, readyToMerge, merged]
+
+    MergeRequestNM:
+      type: object
+      required: [status, initiatorUid, requestedAt, approvedByUids]
+      properties:
+        status:
+          $ref: '#/components/schemas/MergeRequestStatusNM'
+        initiatorUid:
+          type: string
+        requestedAt:
+          type: string
+          format: date-time
+        approvedByUids:
+          type: array
+          items:
+            type: string
+        mergedAt:
+          type: string
+          format: date-time
+          nullable: true
+        mergedIntoBranchId:
+          type: string
+          nullable: true
+
+    BranchNM:
+      type: object
+      required: [id, parentBranchId, branchedFromCommitId, name, createdByUid, createdAt]
+      properties:
+        id:
+          type: string
+        parentBranchId:
+          type: string
+          description: Для ветки от корня совпадает с идентификатором беседы.
+        branchedFromCommitId:
+          type: string
+        name:
+          type: string
+        lastCommitText:
+          type: string
+          nullable: true
+        lastCommitAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdByUid:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        mergeRequest:
+          $ref: '#/components/schemas/MergeRequestNM'
+
+    CreateBranchRequestNM:
+      type: object
+      required: [parentBranchId, branchedFromCommitId, name]
+      properties:
+        parentBranchId:
+          type: string
+        branchedFromCommitId:
+          type: string
+        name:
+          type: string
+          minLength: 1
+
+    UpdateMergeApprovalRequestNM:
+      type: object
+      required: [memberUids]
+      properties:
+        memberUids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: Полный состав беседы — по нему проверяется, все ли одобрили.
+
+    ClientHelloFrameNM:
+      type: object
+      required: [contractVersion, lastSeq]
+      description: |
+        Первый кадр, который клиент шлёт в канал. Сервер сверяет мажор версии со своим и при
+        расхождении отказывает явно, а не начинает слать кадры, которые собеседник не разберёт.
+      properties:
+        contractVersion:
+          type: string
+          description: Версия копии спеки у клиента — `info.version`.
+        lastSeq:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Последний полученный номер события. Ноль — первый запуск; он идёт той же дорогой,
+            что и просроченный курсор.
+
+    ServerFrameNM:
+      type: object
+      required: [type]
+      description: |
+        Кадр, приходящий по каналу. Дискриминатор объявлен здесь и только здесь: свойство с его
+        именем в дочерней схеме ломает разбор на стороне обоих собеседников.
+      discriminator:
+        propertyName: type
+        mapping:
+          helloAccepted: '#/components/schemas/HelloAcceptedFrameNM'
+          versionMismatch: '#/components/schemas/VersionMismatchFrameNM'
+          resyncRequired: '#/components/schemas/ResyncRequiredFrameNM'
+          userChanged: '#/components/schemas/UserChangedFrameNM'
+          conversationChanged: '#/components/schemas/ConversationChangedFrameNM'
+          memberChanged: '#/components/schemas/MemberChangedFrameNM'
+          branchChanged: '#/components/schemas/BranchChangedFrameNM'
+          commitChanged: '#/components/schemas/CommitChangedFrameNM'
+          unreadCountChanged: '#/components/schemas/UnreadCountChangedFrameNM'
+          branchUnreadCountChanged: '#/components/schemas/BranchUnreadCountChangedFrameNM'
+      properties:
+        type:
+          type: string
+
+    HelloAcceptedFrameNM:
+      description: Рукопожатие принято; дальше идёт догон пропущенного и поток событий.
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [currentSeq, contractVersion]
+          properties:
+            currentSeq:
+              type: integer
+              format: int64
+              description: Последний номер события на сервере на момент рукопожатия.
+            contractVersion:
+              type: string
+              description: Версия спеки сервера — чтобы расхождение было видно без чтения исходников.
+
+    VersionMismatchFrameNM:
+      description: |
+        Мажор версии контракта у клиента и сервера разошёлся. Канал закрывается: разобрать
+        последующие кадры клиент всё равно не сможет.
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [serverContractVersion, clientContractVersion]
+          properties:
+            serverContractVersion:
+              type: string
+            clientContractVersion:
+              type: string
+            message:
+              type: string
+
+    ResyncRequiredFrameNM:
+      description: |
+        Курсор старше глубины хранения, догнать нечем — клиент выкачивает состояние заново.
+        Первое подключение приходит этой же дорогой.
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [reason]
+          properties:
+            reason:
+              type: string
+              enum: [cursorExpired, firstConnection, sequenceGap]
+
+    UserChangedFrameNM:
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [seq, occurredAt, user]
+          properties:
+            seq:
+              type: integer
+              format: int64
+            occurredAt:
+              type: string
+              format: date-time
+            user:
+              $ref: '#/components/schemas/UserNM'
+
+    ConversationChangedFrameNM:
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [seq, occurredAt, change, conversation]
+          properties:
+            seq:
+              type: integer
+              format: int64
+            occurredAt:
+              type: string
+              format: date-time
+            change:
+              $ref: '#/components/schemas/ChangeKindNM'
+            conversation:
+              $ref: '#/components/schemas/ConversationNM'
+
+    MemberChangedFrameNM:
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [seq, occurredAt, conversationId, change, member]
+          properties:
+            seq:
+              type: integer
+              format: int64
+            occurredAt:
+              type: string
+              format: date-time
+            conversationId:
+              type: string
+            change:
+              $ref: '#/components/schemas/ChangeKindNM'
+            member:
+              $ref: '#/components/schemas/MemberNM'
+
+    BranchChangedFrameNM:
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [seq, occurredAt, conversationId, change, branch]
+          properties:
+            seq:
+              type: integer
+              format: int64
+            occurredAt:
+              type: string
+              format: date-time
+            conversationId:
+              type: string
+            change:
+              $ref: '#/components/schemas/ChangeKindNM'
+            branch:
+              $ref: '#/components/schemas/BranchNM'
+
+    CommitChangedFrameNM:
+      description: |
+        Скрытие сообщения приходит подписчику, который его скрыл, как `removed` — так же, как
+        приходило от прежнего поставщика.
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [seq, occurredAt, conversationId, branchId, change, commit]
+          properties:
+            seq:
+              type: integer
+              format: int64
+            occurredAt:
+              type: string
+              format: date-time
+            conversationId:
+              type: string
+            branchId:
+              type: string
+            change:
+              $ref: '#/components/schemas/ChangeKindNM'
+            commit:
+              $ref: '#/components/schemas/CommitNM'
+
+    UnreadCountChangedFrameNM:
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [seq, occurredAt, conversationId, count]
+          properties:
+            seq:
+              type: integer
+              format: int64
+            occurredAt:
+              type: string
+              format: date-time
+            conversationId:
+              type: string
+            count:
+              type: integer
+              format: int64
+              minimum: 0
+
+    BranchUnreadCountChangedFrameNM:
+      allOf:
+        - $ref: '#/components/schemas/ServerFrameNM'
+        - type: object
+          required: [seq, occurredAt, conversationId, branchId, count]
+          properties:
+            seq:
+              type: integer
+              format: int64
+            occurredAt:
+              type: string
+              format: date-time
+            conversationId:
+              type: string
+            branchId:
+              type: string
+            count:
+              type: integer
+              format: int64
+              minimum: 0

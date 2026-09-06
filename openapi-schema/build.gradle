@@ -1,0 +1,52 @@
+plugins {
+  id "kotlin-convention"
+}
+
+/**
+ * Версия копии спеки уезжает в код константой: клиент предъявляет её серверу, и держать её
+ * вторым, рукописным экземпляром нельзя — рукописный разойдётся с YAML на первом же обновлении
+ * копии и разойдётся молча.
+ */
+def writeSpecVersion = tasks.register("writeSpecVersion") {
+  def spec = layout.projectDirectory.file("clarify.yaml")
+  def outputDir = layout.buildDirectory.dir("generated/version/kotlin")
+
+  inputs.file(spec)
+  outputs.dir(outputDir)
+
+  doLast {
+    def version = readInfoVersion(spec.asFile)
+    def target = outputDir.get().file("ru/sla/clarify/openapi/SpecVersion.kt").asFile
+    target.parentFile.mkdirs()
+    target.text = """\
+package ru.sla.clarify.openapi
+
+/**
+ * `info.version` копии спеки. Печатается сборкой из YAML — руками это значение не правится.
+ */
+const val SPEC_VERSION: String = "${version}"
+"""
+  }
+}
+
+sourceSets.main.kotlin.srcDir(writeSpecVersion)
+
+/**
+ * `info.version` — единственное поле, которое читается из YAML сборкой, и парсер ради него не
+ * заводится: версия лежит на втором уровне под `info`, у которого нет одноимённых соседей.
+ * Отсутствие поля — обрыв сборки, а не пустая константа: пустая уехала бы на сервер молча.
+ */
+static String readInfoVersion(File spec) {
+  def inInfo = false
+  for (String line : spec.readLines()) {
+    if (line ==~ /^\S.*/) {
+      inInfo = line.startsWith("info:")
+      continue
+    }
+    def matcher = line =~ /^\s{2}version:\s*["']?([^"'\s]+)["']?\s*$/
+    if (inInfo && matcher) {
+      return matcher[0][1]
+    }
+  }
+  throw new GradleException("clarify.yaml has no info.version")
+}
