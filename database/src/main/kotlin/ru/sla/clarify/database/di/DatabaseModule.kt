@@ -1,12 +1,15 @@
 package ru.sla.clarify.database.di
 
 import android.content.Context
+import androidx.room3.Room
+import androidx.sqlite.driver.AndroidSQLiteDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import me.tatarka.inject.annotations.Provides
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.database.InMemoryDB
 import ru.sla.clarify.database.PersistedDB
+import ru.sla.clarify.database.SettingsDatabase
 import ru.sla.clarify.database.User
 import ru.sla.clarify.database.adapter.BranchIdAdapter
 import ru.sla.clarify.database.adapter.CommitIdAdapter
@@ -25,6 +28,15 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @ContributesTo(AppScope::class)
 interface DatabaseModule {
+
+  @SingleIn(AppScope::class)
+  @Provides
+  fun provideSettingsDatabase(@ApplicationContext context: Context): SettingsDatabase {
+    return Room.databaseBuilder(context, SettingsDatabase::class.java, "settings.db")
+      .setDriver(AndroidSQLiteDriver())
+      .build()
+  }
+
   @SingleIn(AppScope::class)
   @Provides
   fun provideInMemoryDatabase(@ApplicationContext context: Context): InMemoryDB {
