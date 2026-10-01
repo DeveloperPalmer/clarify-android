@@ -6,6 +6,9 @@ import androidx.room3.PrimaryKey
 @Entity(tableName = "Settings")
 data class SettingsEntity(
   @PrimaryKey
-  val key: String,
+  val key: Key,
   val value: String
-)
+) {
+  @JvmInline
+  value class Key(val key: String)
+}
