@@ -68,7 +68,8 @@ dependencies {
   ksp libs.androidx.room3.compiler
 
 
-  testImplementation libs.junit.jupiter.api
+  testImplementation libs.bundles.unittest
+  testImplementation libs.androidx.sqlite.bundled.jvm
   testRuntimeOnly libs.junit.jupiter.engine
   testRuntimeOnly libs.junit.platform.launcher
 }

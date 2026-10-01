@@ -16,6 +16,7 @@ compose = "1.11.4"
 composeRuntime = "1.11.4"
 sqldelight = "2.3.2"
 androidx-room3 = "3.0.3"
+androidx-sqlite = "2.7.1"
 # Project versions
 remo = "9.0.1"
 plexus = "1.0.0"
@@ -89,6 +90,7 @@ sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", 
 
 androidx-room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "androidx-room3" }
 androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "androidx-room3" }
+androidx-sqlite-bundled-jvm = { module = "androidx.sqlite:sqlite-bundled-jvm", version.ref = "androidx-sqlite" }
 
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-splashscreen" }
