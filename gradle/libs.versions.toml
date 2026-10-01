@@ -15,6 +15,7 @@ androidx-splashscreen = "1.2.0"
 compose = "1.11.4"
 composeRuntime = "1.11.4"
 sqldelight = "2.3.2"
+androidx-room3 = "3.0.3"
 # Project versions
 remo = "9.0.1"
 plexus = "1.0.0"
@@ -85,6 +86,9 @@ kotlin-inject-anvil-compiler = { module = "software.amazon.lastmile.kotlin.injec
 
 sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
+
+androidx-room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "androidx-room3" }
+androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "androidx-room3" }
 
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-splashscreen" }
@@ -169,3 +173,4 @@ google-services = { id = "com.google.gms.google-services", version.ref = "google
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-built-in1-kotlin = { id = "com.android.built-in-kotlin", version.ref = "androidBuiltInKotlin" }
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
+androidx-room3 = { id = "androidx.room3", version.ref = "androidx-room3" }
