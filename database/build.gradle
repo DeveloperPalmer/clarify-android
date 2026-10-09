@@ -1,63 +1,28 @@
 plugins {
   id 'android-library-convention'
   id "kotlin-inject-convention"
-  alias(libs.plugins.sqldelight)
   alias(libs.plugins.androidx.room3)
   alias(libs.plugins.kotlinx.serialization)
 }
 
 android {
   namespace "ru.sla.clarify.database"
-
-  // Expose SqlDelight output to KSP (AGP disallows Provider-based srcDir here).
-  def genRoot = layout.buildDirectory.get().asFile
-  sourceSets {
-    debug {
-      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/InMemoryDB/debug"))
-    }
-    release {
-      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/InMemoryDB/release"))
-    }
-  }
-}
-
-sqldelight {
-  databases {
-    InMemoryDB {
-      packageName = "ru.sla.clarify.database"
-      srcDirs('src/main/sqldelight/memory')
-    }
-  }
 }
 
 room3 {
   schemaDirectory "$projectDir/schemas"
 }
 
-// KSP по умолчанию запускается до кодогенерации Sqldelight; Dagger'у нужен сгенерированный тип InMemoryDB.
-afterEvaluate {
-  ["Debug", "Release"].each { vn ->
-    def kspTask = tasks.findByName("ksp${vn}Kotlin")
-    if (kspTask != null) {
-      kspTask.dependsOn(
-        tasks.named("generate${vn}InMemoryDBInterface"),
-      )
-    }
-  }
-}
-
 dependencies {
   api project(":entity")
   api project(":core:domain")
   api project(":auth-session:domain")
-  api libs.sqldelight.coroutines
   api libs.androidx.room3.runtime
 
   implementation project(":feature:chat-conversation:domain")
   implementation libs.firebase.auth
   implementation libs.firebase.firestore
   implementation libs.kotlinx.serialization.json
-  implementation libs.sqldelight.android.driver
   ksp libs.androidx.room3.compiler
 
 
