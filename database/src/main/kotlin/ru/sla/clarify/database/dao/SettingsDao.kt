@@ -11,10 +11,26 @@ import ru.sla.clarify.database.entity.SettingsEntity
 @Dao
 interface SettingsDao {
 
-  @Query("SELECT value FROM Settings WHERE key = :key LIMIT 1")
+  @Query(
+    """
+    SELECT
+      value
+    FROM Settings
+    WHERE key = :key
+    LIMIT 1
+    """
+  )
   suspend fun select(key: SettingsEntity.Key): String?
 
-  @Query("SELECT value FROM Settings WHERE key = :key LIMIT 1")
+  @Query(
+    """
+    SELECT
+      value
+    FROM Settings
+    WHERE key = :key
+    LIMIT 1
+    """
+  )
   fun observe(key: SettingsEntity.Key): DistinctFlow<String?>
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
