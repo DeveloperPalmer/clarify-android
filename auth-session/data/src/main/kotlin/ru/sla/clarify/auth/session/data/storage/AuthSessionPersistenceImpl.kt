@@ -1,13 +1,9 @@
 package ru.sla.clarify.auth.session.data.storage
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToOneOrNull
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
@@ -17,14 +13,15 @@ import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.domain.mapDistinctNotNullChanges
 import ru.sla.clarify.core.domain.randomUuid
-import ru.sla.clarify.database.PersistedDB
+import ru.sla.clarify.database.SettingsDatabase
+import ru.sla.clarify.database.entity.SettingsEntity
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class AuthSessionPersistenceImpl @Inject constructor(
-  private val database: PersistedDB
+  private val database: SettingsDatabase
 ) : AuthSessionPersistence {
 
   override fun <R> produceUserId(transform: (UserId) -> Flow<R>): Flow<R> {
@@ -35,64 +32,52 @@ class AuthSessionPersistenceImpl @Inject constructor(
   }
 
   override suspend fun saveTokens(key: SessionKey, tokens: AuthTokens) {
-    withContext(Dispatchers.IO) {
-      database.settingsQueries.insertOrReplace(
-        buildTokensSettingsKey(key),
-        serializeTokens(tokens)
+    database.settingsDao().insertOrReplace(
+      SettingsEntity(
+        key = buildTokensKey(key),
+        value = serializeTokens(tokens)
       )
-    }
+    )
   }
 
   override fun tokens(key: SessionKey): Flow<AuthTokens?> {
-    return database.settingsQueries
-      .selectByKey(buildTokensSettingsKey(key))
-      .asFlow()
-      .mapToOneOrNull(Dispatchers.IO)
+    return database.settingsDao()
+      .observe(buildTokensKey(key))
       .map { dbRecord ->
         dbRecord?.let { deserializeTokens(it) } ?: return@map null
       }
   }
 
   override suspend fun readTokens(key: SessionKey): AuthTokens? {
-    return withContext(Dispatchers.IO) {
-      val dbRecord = database.settingsQueries
-        .selectByKey(buildTokensSettingsKey(key))
-        .executeAsOneOrNull()
-      dbRecord?.let { deserializeTokens(it) }
-    }
+    val dbRecord = database.settingsDao().select(buildTokensKey(key))
+    return dbRecord?.let { deserializeTokens(it) }
   }
 
   override suspend fun saveUserId(key: SessionKey, userId: UserId) {
-    withContext(Dispatchers.IO) {
-      database.settingsQueries.insertOrReplace(
-        buildUserIdSettingsKey(key),
-        userId.value
+    database.settingsDao().insertOrReplace(
+      SettingsEntity(
+        key = buildUserIdKey(key),
+        value = userId.value
       )
-    }
+    )
   }
 
   override suspend fun readUserId(key: SessionKey): UserId? {
-    return withContext(Dispatchers.IO) {
-      database.settingsQueries
-        .selectByKey(buildUserIdSettingsKey(key))
-        .executeAsOneOrNull()
-        ?.let(::UserId)
-    }
+    return database.settingsDao()
+      .select(buildUserIdKey(key))
+      ?.let(::UserId)
   }
 
   override suspend fun deleteUserId(key: SessionKey) {
-    withContext(Dispatchers.IO) {
-      database.settingsQueries
-        .deleteByKey(buildUserIdSettingsKey(key))
-    }
+    database.settingsDao().delete(buildUserIdKey(key))
   }
 
-  private fun buildTokensSettingsKey(sessionKey: SessionKey): String {
-    return PREF_KEY_TOKENS + PREF_KEY_SEPARATOR + sessionKey.value
+  private fun buildTokensKey(sessionKey: SessionKey): SettingsEntity.Key {
+    return SettingsEntity.Key(PREF_KEY_TOKENS + PREF_KEY_SEPARATOR + sessionKey.value)
   }
 
-  private fun buildUserIdSettingsKey(sessionKey: SessionKey): String {
-    return PREF_KEY_USER_ID + PREF_KEY_SEPARATOR + sessionKey.value
+  private fun buildUserIdKey(sessionKey: SessionKey): SettingsEntity.Key {
+    return SettingsEntity.Key(PREF_KEY_USER_ID + PREF_KEY_SEPARATOR + sessionKey.value)
   }
 
   private fun serializeTokens(tokens: AuthTokens): String {
@@ -112,10 +97,7 @@ class AuthSessionPersistenceImpl @Inject constructor(
   }
 
   override suspend fun deleteTokens(key: SessionKey) {
-    withContext(Dispatchers.IO) {
-      database.settingsQueries
-        .deleteByKey(buildTokensSettingsKey(key))
-    }
+    database.settingsDao().delete(buildTokensKey(key))
   }
 
   override suspend fun <T> withKey(body: suspend AuthSessionPersistence.(key: SessionKey) -> T): T {
@@ -133,38 +115,32 @@ class AuthSessionPersistenceImpl @Inject constructor(
   }
 
   override fun key(): Flow<SessionKey?> {
-    return database.settingsQueries
-      .selectByKey(PREF_KEY_ACTIVE_SESSION_KEY)
-      .asFlow()
-      .mapToOneOrNull(Dispatchers.IO)
+    return database.settingsDao()
+      .observe(PREF_KEY_ACTIVE_SESSION_KEY)
       .map { it?.let(::SessionKey) }
   }
 
   override suspend fun readKey(): SessionKey? {
-    return withContext(Dispatchers.IO) {
-      database.settingsQueries
-        .selectByKey(PREF_KEY_ACTIVE_SESSION_KEY)
-        .executeAsOneOrNull()
-        ?.let { SessionKey(it) }
-    }
+    return database.settingsDao()
+      .select(PREF_KEY_ACTIVE_SESSION_KEY)
+      ?.let { SessionKey(it) }
   }
 
   private suspend fun writeActiveKey(key: SessionKey) {
-    withContext(Dispatchers.IO) {
-      database.settingsQueries
-        .insertOrReplace(PREF_KEY_ACTIVE_SESSION_KEY, key.value)
-    }
+    database.settingsDao().insertOrReplace(
+      SettingsEntity(
+        key = PREF_KEY_ACTIVE_SESSION_KEY,
+        value = key.value
+      )
+    )
   }
 
   private suspend fun deleteActiveKey() {
-    withContext(Dispatchers.IO) {
-      database.settingsQueries
-        .deleteByKey(PREF_KEY_ACTIVE_SESSION_KEY)
-    }
+    database.settingsDao().delete(PREF_KEY_ACTIVE_SESSION_KEY)
   }
 }
 
-private const val PREF_KEY_ACTIVE_SESSION_KEY = "session_key"
+private val PREF_KEY_ACTIVE_SESSION_KEY = SettingsEntity.Key("session_key")
 private const val PREF_KEY_TOKENS = "tokens"
 private const val PREF_KEY_USER_ID = "user_id"
 private const val PREF_KEY_SEPARATOR = "::::"
