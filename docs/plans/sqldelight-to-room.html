@@ -671,8 +671,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <p class="standfirst">
       План переписывает локальную базу с SQLDelight на Room в том порядке, в каком это удобно учить: от одной
       таблицы из двух столбцов до шести таблиц чата с join-ами, внешними ключами и транзакциями. У каждого
-      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–07 и 18–21, открыты
-      08–17: у каждого есть рекомендация и пункт, который он блокирует.
+      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–07, 09, 12 и 18–21, открыты
+      08, 10, 11 и 13–17: у каждого есть рекомендация и пункт, который он блокирует.
     </p>
     <div class="meta">
       <span><b>Формат:</b> учебный план + трекер</span>
@@ -697,9 +697,9 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         <div class="rail-step"><span class="n">0</span>Подготовка</div>
         <div class="rail-step"><span class="n">1</span>Settings в Room</div>
         <div class="rail-step"><span class="n">2</span>Тесты DAO</div>
-        <div class="rail-step in"><span class="n">3</span>Подключение Settings</div>
+        <div class="rail-step"><span class="n">3</span>Подключение Settings</div>
         <div class="rail-step"><span class="n">4</span>Схема чата</div>
-        <div class="rail-step"><span class="n">5</span>Чтение I</div>
+        <div class="rail-step in"><span class="n">5</span>Чтение I</div>
         <div class="rail-step"><span class="n">6</span>Чтение II</div>
         <div class="rail-step"><span class="n">7</span>Запись</div>
         <div class="rail-step"><span class="n">8</span>Подключение чата</div>
@@ -861,8 +861,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
           </tr>
           <tr>
             <td class="name"><code>ColumnAdapter</code> и <code>AS Тип</code></td>
-            <td class="what"><code>@TypeConverter</code>, подключённый на базе</td>
-            <td class="dep">Тип колонки больше не виден в схеме — он выводится из типа поля сущности.</td>
+            <td class="what"><code>@ColumnTypeConverter</code>, подключённый на базе через <code>@ColumnTypeConverters</code></td>
+            <td class="dep">Тип колонки больше не виден в схеме — он выводится из типа поля сущности. В Room 3 аннотации переименованы: <code>@TypeConverter</code> → <code>@ColumnTypeConverter</code>, <code>@TypeConverters</code> → <code>@ColumnTypeConverters</code>, <code>@ProvidedTypeConverter</code> → <code>@ProvidedColumnTypeConverter</code>. <code>value class</code> конвертера не требует.</td>
           </tr>
           <tr>
             <td class="name"><code>Query&lt;T&gt;.asFlow().mapToList()</code></td>
@@ -1145,7 +1145,7 @@ suspend fun upsert(…)</code></pre>
 
   <section>
     <h2>Вопросы</h2>
-    <p class="note">Решены 01–07 и 18–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
+    <p class="note">Решены 01–07, 09, 12 и 18–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
     <div class="questions">
       <div class="q">
         <div class="num">01</div>
@@ -1207,7 +1207,7 @@ suspend fun upsert(…)</code></pre>
         <div class="num">09</div>
         <div class="body">
           <div class="ask">Как раскладываем конвертеры типов?</div>
-          <div class="why"><strong>Рекомендация: класс на тип, по файлу</strong> — продолжаем нынешние <code>adapter/</code>: <code>UserIdConverter</code>, <code>BranchIdConverter</code> и так далее. Альтернатива: один класс <code>Converters</code> со всеми функциями — компактнее, но нарушает «один класс — один файл». Риск, который снимает 4.1: часть id — <code>value class</code> (<code>UserId</code>, <code>Commit.Id</code>, <code>Conversation.Id</code>), часть — обычные <code>data class</code> (<code>Branch.Id</code>, <code>Member.Id</code>).  <strong>Находка из Урока 2:</strong> Room 2.8.5 и 3.0.3 приняли <code>@JvmInline value class</code> без конвертера и как тип поля сущности, и как параметр <code>@Query</code>, и как параметр <code>@Delete</code> (проверено: сгенерированы привязки, тесты записи, чтения и удаления проходят). Если чтение и параметры DAO подтвердятся, конвертеры понадобятся только для <code>Branch.Id</code> и <code>Member.Id</code> (обычные <code>data class</code>) и составных значений. Уточняет 4.1. Блокирует 4.1.</div>
+          <div class="why"><strong>Решено: класс на тип, по файлу, и только там, где без конвертера не обойтись.</strong> Исходная рекомендация: <strong>класс на тип, по файлу</strong> — продолжаем нынешние <code>adapter/</code>: <code>UserIdConverter</code>, <code>BranchIdConverter</code> и так далее. Альтернатива: один класс <code>Converters</code> со всеми функциями — компактнее, но нарушает «один класс — один файл». Риск, который снимает 4.1: часть id — <code>value class</code> (<code>UserId</code>, <code>Commit.Id</code>, <code>Conversation.Id</code>), часть — обычные <code>data class</code> (<code>Branch.Id</code>, <code>Member.Id</code>).  <strong>Находка из Урока 2:</strong> Room 2.8.5 и 3.0.3 приняли <code>@JvmInline value class</code> без конвертера и как тип поля сущности, и как параметр <code>@Query</code>, и как параметр <code>@Delete</code> (проверено: сгенерированы привязки, тесты записи, чтения и удаления проходят). Если чтение и параметры DAO подтвердятся, конвертеры понадобятся только для <code>Branch.Id</code> и <code>Member.Id</code> (обычные <code>data class</code>) и составных значений. Уточняет 4.1. Итог: четыре конвертера — <code>BranchIdConverter</code>, <code>MemberIdConverter</code>, <code>UserIdSetConverter</code>, <code>CommitReplyConverter</code>; <code>object</code> с парой <code>decode</code>/<code>encode</code>, как у адаптеров. KSP принял схему с <code>value class</code> из чужих модулей, в том числе nullable, без конвертеров. Меняет 4.1, 4.2.</div>
         </div>
       </div>
       <div class="q">
@@ -1228,7 +1228,7 @@ suspend fun upsert(…)</code></pre>
         <div class="num">12</div>
         <div class="body">
           <div class="ask">Включаем ли внешние ключи?</div>
-          <div class="why">Сейчас они объявлены в схеме, но выключены (<code>DbCleaning</code> прямо об этом пишет). Ожидание: Room их включает сам, и вставка коммита без разговора начнёт падать, а удаление родителя — каскадировать. <strong>Рекомендация: оставить включёнными и привести порядок записи в репозиториях в соответствие.</strong> Альтернатива: выключить в колбэке открытия и сохранить нынешнее поведение — но объявленные ключи останутся декорацией. Проверка ожидания — 7.4. Блокирует 4.3, 7.1.</div>
+          <div class="why">Сейчас они объявлены в схеме, но выключены (<code>DbCleaning</code> прямо об этом пишет). Ожидание: Room их включает сам, и вставка коммита без разговора начнёт падать, а удаление родителя — каскадировать. <strong>Решено: оставить включёнными и привести порядок записи в репозиториях в соответствие.</strong> Альтернатива: выключить в колбэке открытия и сохранить нынешнее поведение — но объявленные ключи останутся декорацией. Проверка ожидания — 7.4. Меняет 4.3, 7.1.</div>
         </div>
       </div>
       <div class="q">
@@ -1301,7 +1301,7 @@ suspend fun upsert(…)</code></pre>
     <h2>Трекер</h2>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>20</b> из 69 · 29%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>27</b> из 69 · 39%</span>
         <span class="tracker-hint">отметки записаны в этом файле; автор ставит их, когда проверка пункта пройдена</span>
       </div>
       <div class="tracker-bar"><span id="tracker-bar" style="width: 16%"></span></div>
@@ -1436,7 +1436,7 @@ suspend fun upsert(…)</code></pre>
             <td class="dep">Только после 2.5. Проверка: коммит <code>17292b28</code> на ветках <code>room</code> и <code>room-my</code>: методы DAO, <code>Key</code> в сущности, тест и тестовые зависимости. Открытым остаётся только пункт 2.2 (вопрос 18): решение по экспорту схемы отложено.</td>
           </tr>
 
-          <tr class="group" data-group-header="b3"><td colspan="5">Блок 3 · Урок 3: подключаем Settings<span class="status new">текущий</span><span class="gcount">4/6</span></td></tr>
+          <tr class="group" data-group-header="b3"><td colspan="5">Блок 3 · Урок 3: подключаем Settings<span class="gcount">4/6</span></td></tr>
           <tr data-item="3.1" data-group="b3">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.1</span></td>
             <td class="name"><code>AuthSessionPersistenceImpl</code></td>
@@ -1480,58 +1480,58 @@ suspend fun upsert(…)</code></pre>
             <td class="dep">Только после 3.5. Проверка: коммит содержит проводку и удаления, без нового кода Room. Отклонение по вашей просьбе «атомарными правками»: три коммита вместо одного — <code>fcb6583f</code> сессия, <code>2195b094</code> курсор, <code>495bb34b</code> удаление <code>PersistedDB</code>. Каждое промежуточное состояние рабочее: ключи сессии и курсора не пересекаются.</td>
           </tr>
 
-          <tr class="group" data-group-header="b4"><td colspan="5">Блок 4 · Урок 4: схема чата<span class="gcount">0/7</span></td></tr>
-          <tr data-item="4.1" data-group="b4">
+          <tr class="group" data-group-header="b4"><td colspan="5">Блок 4 · Урок 4: схема чата<span class="gcount">7/7</span></td></tr>
+          <tr data-item="4.1" data-group="b4" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.1</span></td>
             <td class="name">Конвертеры id</td>
-            <td class="what">В пакете <code>converter</code> — <code>UserIdConverter</code>, <code>ConversationIdConverter</code>, <code>BranchIdConverter</code>, <code>CommitIdConverter</code>, <code>MemberIdConverter</code>; в каждом пара <code>@TypeConverter</code>-функций «из базы» и «в базу».</td>
+            <td class="what">В пакете <code>converter</code> — <code>UserIdConverter</code>, <code>ConversationIdConverter</code>, <code>BranchIdConverter</code>, <code>CommitIdConverter</code>, <code>MemberIdConverter</code>; в каждом пара <code>@ColumnTypeConverter</code>-функций «из базы» и «в базу».</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Блокирует вопрос 09. Проверка: тест круга «в базу → из базы» на каждый; отдельно проверить, что <code>value class</code> проходят KSP и что nullable-колонки (<code>ownerId</code>, <code>invitedId</code>) не требуют второго конвертера. Находка из Урока 2: <code>value class</code> Room 2.8.5 и 3.0.3 принимают и без конвертера — сначала проверить чтение и параметры DAO, конвертеры писать только там, где без них не собирается.</td>
+            <td class="dep">Блокирует вопрос 09. Проверка: тест круга «в базу → из базы» на каждый; отдельно проверить, что <code>value class</code> проходят KSP и что nullable-колонки (<code>ownerId</code>, <code>invitedId</code>) не требуют второго конвертера. Находка из Урока 2: <code>value class</code> Room 2.8.5 и 3.0.3 принимают и без конвертера — сначала проверить чтение и параметры DAO, конвертеры писать только там, где без них не собирается. Факт: по вопросу 09 написаны только <code>BranchIdConverter</code> и <code>MemberIdConverter</code> (<code>Branch.Id</code>, <code>Member.Id</code> — обычные <code>data class</code>), тесты круга зелёные; коммит <code>4d11094e</code>. <code>value class</code> и nullable-колонки проверены на уровне схемы в 4.3; в работе — тестами чтения блока 5, потому что Room вызывает конвертеры только в коде DAO.</td>
           </tr>
-          <tr data-item="4.2" data-group="b4">
+          <tr data-item="4.2" data-group="b4" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.2</span></td>
             <td class="name">Составные значения</td>
             <td class="what"><code>UserIdSetConverter</code> (<code>Set&lt;UserId&gt;</code> ↔ JSON) и <code>CommitReplyConverter</code> (<code>Commit.Reply</code> ↔ JSON). Тест <code>CommitReplyAdapterTest</code> копируется как <code>CommitReplyConverterTest</code>; старый уйдёт вместе с адаптером в 9.1.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: тест круга со спецсимволами и переносом строки зелёный — он же ловит потерю плагина сериализации.</td>
+            <td class="dep">Проверка: тест круга со спецсимволами и переносом строки зелёный — он же ловит потерю плагина сериализации. Факт: коммит <code>a0aeb762</code>; вложенный <code>ReplyJson</code> адаптера вынесен по <code>kotlin.md</code> в <code>entity/CommitReplyJson.kt</code> (<code>internal</code>), формат JSON прежний. <code>UserIdSetConverterTest</code> проверяет и пустой набор.</td>
           </tr>
-          <tr data-item="4.3" data-group="b4">
+          <tr data-item="4.3" data-group="b4" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.3</span></td>
             <td class="name">Сущности</td>
             <td class="what"><code>ChatConversationEntity</code>, <code>UserEntity</code>, <code>ChatMemberEntity</code> (ключ <code>conversationId, id</code>), <code>ChatBranchEntity</code> (индекс по <code>conversationId</code>), <code>ChatCommitEntity</code> (два индекса, <code>defaultValue = "'text'"</code>), <code>MergeRequestEntity</code>; внешние ключи с <code>CASCADE</code>; <code>tableName</code> — как в <code>.sq</code>.</td>
             <td class="size"><span class="size-chip l">L</span></td>
-            <td class="dep">Блокирует вопрос 12. Проверка: экспортированный JSON сверен с <code>CREATE TABLE</code> и <code>CREATE INDEX</code> из <code>.sq</code> — столбцы, <code>NOT NULL</code>, порядок ключа, индексы, <code>unreadCount DEFAULT 0</code>.</td>
+            <td class="dep">Блокирует вопрос 12. Проверка: экспортированный JSON сверен с <code>CREATE TABLE</code> и <code>CREATE INDEX</code> из <code>.sq</code> — столбцы, <code>NOT NULL</code>, порядок ключа, индексы, <code>unreadCount DEFAULT 0</code>. Факт: коммит <code>a1810a6e</code>; <code>createSql</code> совпадает с <code>.sq</code> по столбцам, <code>NOT NULL</code>, <code>DEFAULT 0</code> и <code>DEFAULT 'text'</code>, ключу <code>(conversationId, id)</code>, трём индексам с прежними именами и трём каскадам. Отличие — только оформление Room: обратные кавычки, <code>IF NOT EXISTS</code>.</td>
           </tr>
-          <tr data-item="4.4" data-group="b4">
+          <tr data-item="4.4" data-group="b4" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.4</span></td>
             <td class="name"><code>ChatDatabase</code></td>
-            <td class="what"><code>@Database</code> с шестью сущностями, <code>@TypeConverters</code> со всеми конвертерами, <code>version = 1</code>, <code>exportSchema = true</code>; DAO пока нет.</td>
+            <td class="what"><code>@Database</code> с шестью сущностями, <code>@ColumnTypeConverters</code> со всеми конвертерами, <code>version = 1</code>, <code>exportSchema = true</code>; DAO пока нет.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: KSP собирает базу, JSON схемы создан.</td>
+            <td class="dep">Проверка: KSP собирает базу, JSON схемы создан. Факт: сделано одной правкой с 4.3 — сущности без базы KSP не проверяет. KSP без предупреждений, конвертеры-<code>object</code> приняты.</td>
           </tr>
-          <tr data-item="4.5" data-group="b4">
+          <tr data-item="4.5" data-group="b4" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.5</span></td>
             <td class="name">Проверки</td>
             <td class="what"><code>./gradlew prePushCheck</code> и <code>./gradlew test</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: оба зелёные; приложение работает на SQLDelight, как раньше.</td>
+            <td class="dep">Проверка: оба зелёные; приложение работает на SQLDelight, как раньше. Факт: <code>prePushCheck</code>, <code>test</code>, <code>:app:android:assembleDebug</code> — код 0 после каждого из 4.1, 4.2, 4.3–4.4.</td>
           </tr>
-          <tr data-item="4.6" data-group="b4">
+          <tr data-item="4.6" data-group="b4" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.6</span></td>
             <td class="name">Ревью и аппрув</td>
             <td class="what">Изменение отдаётся без коммита.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: ваш аппрув. Блок 5 — отдельным «давай дальше».</td>
+            <td class="dep">Проверка: ваш аппрув. Блок 5 — отдельным «давай дальше». Факт: аппрув дан на каждый пункт отдельно.</td>
           </tr>
-          <tr data-item="4.7" data-group="b4">
+          <tr data-item="4.7" data-group="b4" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.7</span></td>
             <td class="name">Коммит</td>
             <td class="what"><code>[database] Add Room chat schema</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Только после 4.6. Проверка: коммит содержит конвертеры, сущности, базу и схему.</td>
+            <td class="dep">Только после 4.6. Проверка: коммит содержит конвертеры, сущности, базу и схему. Отклонение по вашей просьбе «атомарными правками»: три коммита — <code>4d11094e</code> конвертеры id, <code>a0aeb762</code> составные конвертеры, <code>a1810a6e</code> сущности, база и схема.</td>
           </tr>
 
-          <tr class="group" data-group-header="b5"><td colspan="5">Блок 5 · Урок 5: чтение I<span class="gcount">0/6</span></td></tr>
+          <tr class="group" data-group-header="b5"><td colspan="5">Блок 5 · Урок 5: чтение I<span class="status new">текущий</span><span class="gcount">0/6</span></td></tr>
           <tr data-item="5.1" data-group="b5">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.1</span></td>
             <td class="name"><code>UserDao</code> и <code>ChatMemberDao</code></td>
