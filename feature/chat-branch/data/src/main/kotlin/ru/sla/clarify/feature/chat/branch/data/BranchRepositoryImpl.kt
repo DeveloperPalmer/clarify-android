@@ -508,7 +508,7 @@ class BranchRepositoryImpl @Inject constructor(
       selfUserId = userId,
       isPending = isPending
     )
-    chatDatabase.chatCommitDao().insertOrReplace(row)
+    chatDatabase.chatCommitDao().insertOrReplaceIfConversationExists(row)
   }
 
   private fun oldestCursor(conversationId: Conversation.Id): Flow<CommitCursor?> {
@@ -562,7 +562,7 @@ class BranchRepositoryImpl @Inject constructor(
       return
     }
     chatDatabase.withWriteTransaction {
-      commits.forEach { chatDatabase.chatCommitDao().insertOrReplace(it) }
+      commits.forEach { chatDatabase.chatCommitDao().insertOrReplaceIfConversationExists(it) }
     }
   }
 
