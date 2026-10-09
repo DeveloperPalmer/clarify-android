@@ -31,8 +31,8 @@ internal fun jsonHeaders(): Headers {
 }
 
 /**
- * PathFinder мокается, а не создаётся настоящий: его `create` — suspend и требует хранилища на
- * SQLDelight, то есть Android. Транспорту от него нужен ровно один адрес.
+ * PathFinder мокается, а не создаётся настоящий: его `create` — suspend и требует хранилища,
+ * которому нужен Android. Транспорту от него нужен ровно один адрес.
  */
 internal fun pathFinderOf(baseUrl: String): PathFinder {
   val pathFinder = mockk<PathFinder>()
