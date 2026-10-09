@@ -8,7 +8,6 @@ import me.tatarka.inject.annotations.Provides
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
 import ru.sla.clarify.database.InMemoryDB
-import ru.sla.clarify.database.PersistedDB
 import ru.sla.clarify.database.SettingsDatabase
 import ru.sla.clarify.database.User
 import ru.sla.clarify.database.adapter.BranchIdAdapter
@@ -77,12 +76,5 @@ interface DatabaseModule {
         mergedIntoBranchIdAdapter = BranchIdAdapter
       )
     )
-  }
-
-  @SingleIn(AppScope::class)
-  @Provides
-  fun providePersistedDatabase(@ApplicationContext context: Context): PersistedDB {
-    val driver = AndroidSqliteDriver(PersistedDB.Schema, context, name = "clarify.db")
-    return PersistedDB(driver)
   }
 }

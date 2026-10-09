@@ -14,11 +14,9 @@ android {
   sourceSets {
     debug {
       kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/InMemoryDB/debug"))
-      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/PersistedDB/debug"))
     }
     release {
       kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/InMemoryDB/release"))
-      kotlin.srcDir(new File(genRoot, "generated/sqldelight/code/PersistedDB/release"))
     }
   }
 }
@@ -29,10 +27,6 @@ sqldelight {
       packageName = "ru.sla.clarify.database"
       srcDirs('src/main/sqldelight/memory')
     }
-    PersistedDB {
-      packageName = "ru.sla.clarify.database"
-      srcDirs('src/main/sqldelight/persisted')
-    }
   }
 }
 
@@ -40,14 +34,13 @@ room3 {
   schemaDirectory "$projectDir/schemas"
 }
 
-// KSP по умолчанию запускается до кодогенерации Sqldelight; Dagger'у нужны сгенерированные типы InMemoryDB / PersistedDB.
+// KSP по умолчанию запускается до кодогенерации Sqldelight; Dagger'у нужен сгенерированный тип InMemoryDB.
 afterEvaluate {
   ["Debug", "Release"].each { vn ->
     def kspTask = tasks.findByName("ksp${vn}Kotlin")
     if (kspTask != null) {
       kspTask.dependsOn(
         tasks.named("generate${vn}InMemoryDBInterface"),
-        tasks.named("generate${vn}PersistedDBInterface"),
       )
     }
   }
