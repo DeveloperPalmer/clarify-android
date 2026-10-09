@@ -1,0 +1,1857 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQLDelight → Room, план</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper:        #f2f5f4;
+  --surface:      #ffffff;
+  --surface-sunk: #e8edeb;
+  --ink:          #16201f;
+  --ink-soft:     #46534f;
+  --ink-faint:    #75837e;
+  --rule:         #d3dbd8;
+  --rule-strong:  #b3bfbb;
+  --accent:       #0d6360;
+  --accent-soft:  #d9e9e6;
+  --warn:         #8f5b10;
+  --warn-soft:    #f5e7cd;
+  --risk:         #93372f;
+  --risk-soft:    #f6dfdb;
+  --ok:           #3f6b34;
+  --ok-soft:      #dfeed8;
+  --done:         #00a63e;
+  --done-soft:    #d4f7e0;
+  --done-line:    #7fd9a2;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:        #101615;
+    --surface:      #182120;
+    --surface-sunk: #0b100f;
+    --ink:          #e6ecea;
+    --ink-soft:     #a9b6b2;
+    --ink-faint:    #7c8985;
+    --rule:         #2b3937;
+    --rule-strong:  #3d504c;
+    --accent:       #5ec6bd;
+    --accent-soft:  #14322f;
+    --warn:         #d9a45c;
+    --warn-soft:    #362813;
+    --risk:         #e08a80;
+    --risk-soft:    #3a1e1a;
+    --ok:           #9ec98e;
+    --ok-soft:      #1e2c18;
+    --done:         #34e57c;
+    --done-soft:    #0e3a22;
+    --done-line:    #1f6b41;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper:        #101615;
+  --surface:      #182120;
+  --surface-sunk: #0b100f;
+  --ink:          #e6ecea;
+  --ink-soft:     #a9b6b2;
+  --ink-faint:    #7c8985;
+  --rule:         #2b3937;
+  --rule-strong:  #3d504c;
+  --accent:       #5ec6bd;
+  --accent-soft:  #14322f;
+  --warn:         #d9a45c;
+  --warn-soft:    #362813;
+  --risk:         #e08a80;
+  --risk-soft:    #3a1e1a;
+  --ok:           #9ec98e;
+  --ok-soft:      #1e2c18;
+  --done:         #34e57c;
+  --done-soft:    #0e3a22;
+  --done-line:    #1f6b41;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 40px 24px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+/* ---------- masthead ---------- */
+
+.masthead { display: flex; flex-direction: column; gap: 16px; }
+
+.eyebrow {
+  font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+}
+.eyebrow .sep { color: var(--rule-strong); }
+.eyebrow a { color: inherit; }
+
+h1 {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(30px, 4.2vw, 44px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.standfirst {
+  max-width: 66ch;
+  font-size: 16.5px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  padding-top: 4px;
+  font-size: 13px;
+  color: var(--ink-faint);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+.meta b { color: var(--ink-soft); font-weight: 500; }
+
+/* ---------- flow rail ---------- */
+
+.rail-wrap { overflow-x: auto; padding-bottom: 6px; }
+.rail {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  min-width: 900px;
+}
+.rail.short { min-width: 640px; }
+.rail-step {
+  flex: 1 1 0;
+  border-top: 3px solid var(--rule);
+  padding: 10px 8px 0;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ink-faint);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rail-step .n {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  color: var(--rule-strong);
+}
+.rail-step.in {
+  border-top-color: var(--accent);
+  color: var(--ink);
+  font-weight: 500;
+}
+.rail-step.in .n { color: var(--accent); }
+.rail-step.edge { border-top-style: dashed; }
+
+.rail-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin-top: 12px;
+}
+.swatch {
+  display: inline-block;
+  width: 22px;
+  height: 3px;
+  vertical-align: middle;
+  margin-right: 7px;
+}
+
+/* ---------- sections ---------- */
+
+section { display: flex; flex-direction: column; gap: 18px; }
+
+h2 {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-weight: 600;
+  font-size: 23px;
+  letter-spacing: -0.01em;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+h3 {
+  font-family: "IBM Plex Sans Condensed", sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+p { margin: 0; max-width: 72ch; }
+p.note { color: var(--ink-soft); }
+
+/* ---------- diagram ---------- */
+
+.diagram-wrap { overflow-x: auto; padding-bottom: 6px; }
+.diagram {
+  display: block;
+  width: 100%;
+  min-width: 760px;
+  height: auto;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+.diagram .box { fill: var(--surface); stroke: var(--rule-strong); stroke-width: 1; }
+.diagram .box.live { fill: var(--accent-soft); stroke: var(--accent); }
+.diagram .box.sub { stroke-dasharray: 3 3; }
+.diagram .lbl { fill: var(--ink); font-size: 13px; }
+.diagram .lbl.live { fill: var(--accent); font-weight: 500; }
+.diagram .lbl.sub { fill: var(--ink-faint); font-size: 11px; }
+.diagram .edge { stroke: var(--rule-strong); fill: none; stroke-width: 1.5; }
+.diagram .edge.loop { stroke: var(--accent); }
+.diagram .edge.kill { stroke: var(--risk); stroke-dasharray: 4 4; }
+.diagram .m-rule { fill: var(--rule-strong); }
+.diagram .m-accent { fill: var(--accent); }
+.diagram .m-risk { fill: var(--risk); }
+.diagram .note {
+  fill: var(--ink-faint);
+  font-family: "IBM Plex Sans Condensed", sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.diagram .note.loop { fill: var(--accent); }
+.diagram .note.kill { fill: var(--risk); }
+
+/* ---------- scope split ---------- */
+
+.scope {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+.scope-col { display: flex; flex-direction: column; gap: 10px; }
+.scope-col ul { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.scope-col li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 14px;
+  padding-left: 14px;
+  border-left: 2px solid var(--rule);
+}
+.scope-col.own li { border-left-color: var(--accent); }
+.scope-col li .key {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  flex: 0 0 auto;
+  min-width: 74px;
+}
+
+/* ---------- table ---------- */
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+table { border-collapse: collapse; width: 100%; min-width: 940px; }
+
+thead th {
+  text-align: left;
+  font-family: "IBM Plex Sans Condensed", sans-serif;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 12px 14px;
+  background: var(--surface-sunk);
+  border-bottom: 1px solid var(--rule-strong);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  font-size: 14px;
+}
+tbody tr:last-child td { border-bottom: none; }
+
+tr.group td {
+  background: var(--surface-sunk);
+  border-bottom: 1px solid var(--rule-strong);
+  font-family: "IBM Plex Sans Condensed", sans-serif;
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding: 10px 14px;
+}
+tr.group td .status { text-transform: none; letter-spacing: 0; }
+
+td.id {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  width: 1%;
+}
+td.name { font-weight: 500; min-width: 190px; }
+td.what { color: var(--ink-soft); min-width: 300px; }
+td.dep { color: var(--ink-soft); min-width: 190px; font-size: 13.5px; }
+td.size { width: 1%; }
+td.seq { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; min-width: 300px; }
+td.mark { width: 1%; white-space: nowrap; text-align: center; font-family: "IBM Plex Mono", monospace; }
+.yes { color: var(--ok); font-weight: 500; }
+.no { color: var(--ink-faint); }
+
+code, .mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.88em;
+  background: var(--surface-sunk);
+  padding: 1px 4px;
+  border-radius: 2px;
+  word-break: break-word;
+}
+tr.group td code { background: transparent; padding: 0; }
+td.seq code { background: transparent; padding: 0; font-size: inherit; }
+
+.size-chip {
+  display: inline-block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.size-chip.l, .size-chip.xl { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+
+/* ---------- definition ---------- */
+
+.def {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 14px;
+  border-left: 2px solid var(--accent);
+  max-width: 72ch;
+}
+.def .quote {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-size: 16.5px;
+  line-height: 1.4;
+}
+.def .src {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+h2 .letter {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 500;
+  color: var(--accent);
+  margin-right: 10px;
+}
+.scope-col.bad li { border-left-color: var(--risk); }
+
+/* ---------- code pair ---------- */
+
+.code-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+.code-block {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.code-block .label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--rule);
+  font-family: "IBM Plex Sans Condensed", sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.code-block .label .status { margin-left: 0; }
+.code-block .label .file {
+  margin-left: auto;
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 400;
+  font-size: 11.5px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.code-block pre {
+  margin: 0;
+  padding: 14px;
+  overflow-x: auto;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  tab-size: 2;
+}
+.code-block pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  word-break: normal;
+}
+.code-block .c { color: var(--ink-faint); }
+.code-block .bad-line { color: var(--risk); }
+.code-block .good-line { color: var(--ok); }
+.code-block .caption {
+  padding: 10px 14px;
+  border-top: 1px solid var(--rule);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+
+/* ---------- tracker ---------- */
+
+.tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+}
+.tracker-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+}
+.tracker-count {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.tracker-count b { color: var(--done); font-weight: 500; }
+.tracker-hint { font-size: 13px; color: var(--ink-faint); }
+.tracker-reset {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-faint);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.tracker-reset:hover { color: var(--ink); border-color: var(--ink-faint); }
+.tracker-reset.armed { color: var(--risk); border-color: var(--risk); background: var(--risk-soft); }
+
+.tracker-bar {
+  height: 6px;
+  background: var(--surface-sunk);
+  overflow: hidden;
+}
+.tracker-bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--done);
+  transition: width 220ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tracker-bar span { transition: none; }
+}
+
+.sync {
+  font-size: 12.5px;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--ink-faint);
+}
+.sync.live { color: var(--done); }
+
+/* span.tick = static plan tracker (variant A); button.tick = reader self-check (variant B) */
+.tick {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+.tick .mark {
+  width: 10px;
+  color: transparent;
+  font-size: 11px;
+}
+button.tick {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  cursor: pointer;
+  text-align: left;
+}
+button.tick:hover { color: var(--ink); }
+button.tick:hover .mark { color: var(--rule-strong); }
+button.tick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+tr.done td.id .tick,
+tr.done td.id button.tick:hover { color: var(--done); font-weight: 500; }
+tr.done td.id .tick .mark { color: var(--done); }
+tr.done td.id { box-shadow: inset 3px 0 0 var(--done); }
+tr.done td.name { color: var(--ink-faint); }
+tr.done td.name code { opacity: 0.75; }
+
+.jkey {
+  display: inline-block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-soft);
+}
+.jkey:hover { border-bottom-color: var(--accent); }
+
+.gcount {
+  display: inline-block;
+  margin-left: 10px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.gcount.full { color: var(--done); }
+
+.status {
+  display: inline-block;
+  font-family: "IBM Plex Sans Condensed", sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  margin-left: 8px;
+}
+.status.reuse { background: var(--ok-soft); color: var(--ok); }
+.status.new   { background: var(--accent-soft); color: var(--accent); }
+.status.risk  { background: var(--risk-soft); color: var(--risk); }
+.status.part  { background: var(--warn-soft); color: var(--warn); }
+
+/* ---------- questions ---------- */
+
+.questions { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--rule); }
+.q {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 0 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.q .num {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  color: var(--risk);
+  padding-top: 1px;
+}
+.q .body { display: flex; flex-direction: column; gap: 5px; }
+.q .ask { font-weight: 500; }
+.q .why { color: var(--ink-soft); font-size: 14px; max-width: 78ch; }
+
+/* ---------- reuse cards ---------- */
+
+.reuse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+.reuse-card {
+  background: var(--surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.reuse-card .path {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  color: var(--accent);
+  word-break: break-all;
+}
+.reuse-card .desc { font-size: 13.5px; color: var(--ink-soft); }
+
+footer {
+  border-top: 1px solid var(--rule);
+  padding-top: 18px;
+  font-size: 13px;
+  color: var(--ink-faint);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 600px) {
+  .page { padding: 28px 16px 64px; gap: 34px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>Clarify</span><span class="sep">/</span>
+      <span>модуль database</span><span class="sep">/</span>
+      <span>SQLDelight → Room</span><span class="sep">/</span>
+      <span>учебный план</span>
+    </div>
+    <h1>Хранилище чата: от SQLDelight к Room, урок за уроком</h1>
+    <p class="standfirst">
+      План переписывает локальную базу с SQLDelight на Room в том порядке, в каком это удобно учить: от одной
+      таблицы из двух столбцов до шести таблиц чата с join-ами, внешними ключами и транзакциями. У каждого
+      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–04, 06, 07 и 19–21, открыты
+      05 и 08–18: у каждого есть рекомендация и пункт, который он блокирует.
+    </p>
+    <div class="meta">
+      <span><b>Формат:</b> учебный план + трекер</span>
+      <span><b>Объём:</b> 2 базы, 7 таблиц, 45 запросов, 5 репозиториев</span>
+      <span><b>Библиотека:</b> Room 3.0.3</span>
+      <span><b>Обновлено:</b> 01.10.2026</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Где мы и куда идём</h2>
+    <p class="note">
+      Сейчас в модуле <code>database</code> живут две базы SQLDelight. <code>PersistedDB</code> — одна
+      таблица <code>Settings</code> (токены сессии, курсор событий), файл <code>clarify.db</code> переживает
+      перезапуск. <code>InMemoryDB</code> — шесть таблиц кэша чата, создаётся с <code>name = null</code> и
+      умирает вместе с процессом. Обе используются через сгенерированные <code>*Queries</code>: около ста
+      обращений в пяти репозиториях, двадцать транзакций. Тестов на запросы нет — только на адаптер
+      <code>CommitReplyAdapter</code>.
+    </p>
+    <div class="rail-wrap">
+      <div class="rail">
+        <div class="rail-step"><span class="n">0</span>Подготовка</div>
+        <div class="rail-step"><span class="n">1</span>Settings в Room</div>
+        <div class="rail-step in"><span class="n">2</span>Тесты DAO</div>
+        <div class="rail-step"><span class="n">3</span>Подключение Settings</div>
+        <div class="rail-step"><span class="n">4</span>Схема чата</div>
+        <div class="rail-step"><span class="n">5</span>Чтение I</div>
+        <div class="rail-step"><span class="n">6</span>Чтение II</div>
+        <div class="rail-step"><span class="n">7</span>Запись</div>
+        <div class="rail-step"><span class="n">8</span>Подключение чата</div>
+        <div class="rail-step"><span class="n">9</span>Уборка</div>
+        <div class="rail-step edge"><span class="n">10</span>Правила проекта</div>
+      </div>
+    </div>
+    <div class="rail-legend">
+      <span><span class="swatch" style="background: var(--accent)"></span>текущий этап</span>
+      <span><span class="swatch" style="background: var(--rule)"></span>впереди</span>
+      <span><span class="swatch" style="background: var(--rule-strong)"></span>этап 10 — штриховой: нужен ваш явный «да»</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Этапы одной таблицей</h2>
+    <p class="note">
+      Этап — один атомарный кусок: он собирается, проверяется, отдаётся на ревью без коммита и коммитится
+      только после аппрува. Следующий этап начинается после отдельного «давай дальше».
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>№</th><th>Этап</th><th>Что входит</th><th>Размер</th><th>Зависимости</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="id">0</td>
+            <td class="name">Подготовка</td>
+            <td class="what">Базовый прогон тестов, ревью плана, коммит документа.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Ответы на открытые вопросы.</td>
+          </tr>
+          <tr>
+            <td class="id">1</td>
+            <td class="name">Первая таблица: Settings в Room</td>
+            <td class="what">Gradle, <code>@Entity</code>, <code>@Dao</code>, <code>@Database</code>, экспорт схемы, провайдер базы в DI. Потребителей пока нет.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Вопросы 02, 04, 07 решены.</td>
+          </tr>
+          <tr>
+            <td class="id">2</td>
+            <td class="name">Как проверять DAO</td>
+            <td class="what">Методы <code>SettingsDao</code>, решение по экспорту схемы, тест in-memory Room в обычном JVM-тесте без эмулятора.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Этап 1. Вопросы 06, 18, 19.</td>
+          </tr>
+          <tr>
+            <td class="id">3</td>
+            <td class="name">Подключаем Settings</td>
+            <td class="what">Два потребителя, удаление <code>Settings.sq</code> и <code>PersistedDB</code>.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Этап 2. Вопрос 05.</td>
+          </tr>
+          <tr>
+            <td class="id">4</td>
+            <td class="name">Схема чата</td>
+            <td class="what">Конвертеры типов-обёрток, шесть сущностей, <code>ChatDatabase</code> без запросов.</td>
+            <td class="size"><span class="size-chip l">L</span></td>
+            <td class="dep">Этап 3. Вопросы 09, 12.</td>
+          </tr>
+          <tr>
+            <td class="id">5</td>
+            <td class="name">Чтение I: пользователи, участники, разговоры</td>
+            <td class="what">DAO с <code>JOIN</code>, подзапросом <code>COUNT</code>, <code>HAVING</code>, <code>IN</code>-списками и тесты.</td>
+            <td class="size"><span class="size-chip l">L</span></td>
+            <td class="dep">Этап 4. Вопросы 10, 11.</td>
+          </tr>
+          <tr>
+            <td class="id">6</td>
+            <td class="name">Чтение II: ветки и коммиты</td>
+            <td class="what">DAO с <code>LEFT JOIN</code>, курсорами и тесты.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Этап 5.</td>
+          </tr>
+          <tr>
+            <td class="id">7</td>
+            <td class="name">Запись</td>
+            <td class="what">Вставки, изменения, удаления; семантика <code>INSERT OR REPLACE</code> при включённых внешних ключах.</td>
+            <td class="size"><span class="size-chip l">L</span></td>
+            <td class="dep">Этап 6. Вопросы 12, 13, 15.</td>
+          </tr>
+          <tr>
+            <td class="id">8</td>
+            <td class="name">Подключаем чат</td>
+            <td class="what">DI, очистка сессии, пять репозиториев и мапперы — одним куском.</td>
+            <td class="size"><span class="size-chip xl">XL</span></td>
+            <td class="dep">Этап 7. Вопросы 05, 14, 15, 16.</td>
+          </tr>
+          <tr>
+            <td class="id">9</td>
+            <td class="name">Уборка SQLDelight</td>
+            <td class="what"><code>.sq</code>, адаптеры, плагин, обвязка сборки, каталог версий, упоминания в комментариях.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Этап 8. Вопросы 08, 11.</td>
+          </tr>
+          <tr>
+            <td class="id">10</td>
+            <td class="name">Правила проекта</td>
+            <td class="what">Судьба <code>.claude/rules/sqldelight.md</code>, предложение правил по Room.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Этап 9. Вопрос 17.</td>
+          </tr>
+          <tr>
+            <td class="id">—</td>
+            <td class="name">Практика миграций Room<span class="status part">отдельная задача</span></td>
+            <td class="what">Не планируется: <code>Migration</code>, <code>AutoMigration</code>, проверка миграций тестом.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Только если появится первое изменение схемы <code>SettingsDatabase</code>; сейчас ни схемы, ни данных, которые стоило бы мигрировать.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Границы</h2>
+    <div class="scope">
+      <div class="scope-col own">
+        <h3>Входит</h3>
+        <ul>
+          <li><span class="key">две базы</span><span>обе уходят в Room — иначе сборка навсегда держит два генератора и хак порядка KSP</span></li>
+          <li><span class="key">схема 1:1</span><span>таблицы, ключи, индексы и каскады переносятся как есть: так видно, что именно меняет библиотека, а не дизайн</span></li>
+          <li><span class="key">тесты DAO</span><span>на SQLDelight запросы не проверялись; Room-запрос без теста — вера на слово, а для учёбы тест и есть лаборатория</span></li>
+          <li><span class="key">экспорт схемы</span><span>JSON схемы в git — эталон, с которым потом сверяются миграции</span></li>
+          <li><span class="key">мапперы</span><span>строка Room → доменная модель живёт в пакете <code>mapper</code>, как требует <code>kotlin.md</code></span></li>
+        </ul>
+      </div>
+      <div class="scope-col">
+        <h3>Не делаем</h3>
+        <ul>
+          <li><span class="key">pathfinder</span><span><code>SqlDelightStore</code> — внешняя библиотека со своим файлом БД; заменить её значит писать своё хранилище, это другая задача (вопрос 08)</span></li>
+          <li><span class="key">данные</span><span>перенос содержимого старой <code>clarify.db</code> — решено: данные тестовые, вход заново дешевле миграции (вопрос 07)</span></li>
+          <li><span class="key">миграции</span><span>по вашему слову не нужны: данные тестовые, изменений схемы нет — вернёмся к теме с первым изменением</span></li>
+          <li><span class="key">дизайн схемы</span><span>переделка таблиц смешала бы две причины для падения тестов</span></li>
+          <li><span class="key">KMP, Paging</span><span>проект Android-only, списки кэша маленькие</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Словарь: что чему соответствует</h2>
+    <p class="note">
+      Всё, что в SQLDelight делал <code>.sq</code>-файл, в Room раскладывается по аннотациям и классам.
+      Правая колонка — главное: места, где это не просто переименование.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>SQLDelight</th><th>Room</th><th>Что меняется по сути</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="name"><code>CREATE TABLE</code> в <code>.sq</code></td>
+            <td class="what"><code>@Entity</code> + <code>@PrimaryKey</code>, <code>indices</code>, <code>foreignKeys</code></td>
+            <td class="dep">Схема пишется на Kotlin; SQL из неё Room генерирует сам и экспортирует в JSON.</td>
+          </tr>
+          <tr>
+            <td class="name">именованный запрос в <code>.sq</code></td>
+            <td class="what">метод DAO с <code>@Query</code></td>
+            <td class="dep">SQL остаётся строкой в аннотации; KSP проверяет его при сборке по схеме.</td>
+          </tr>
+          <tr>
+            <td class="name"><code>ColumnAdapter</code> и <code>AS Тип</code></td>
+            <td class="what"><code>@TypeConverter</code>, подключённый на базе</td>
+            <td class="dep">Тип колонки больше не виден в схеме — он выводится из типа поля сущности.</td>
+          </tr>
+          <tr>
+            <td class="name"><code>Query&lt;T&gt;.asFlow().mapToList()</code></td>
+            <td class="what">метод DAO, возвращающий <code>Flow&lt;List&lt;T&gt;&gt;</code></td>
+            <td class="dep">Тот же принцип: перевыпуск на любую запись в таблицу. Дедупликация из <code>Flows.kt</code> теряет типовую гарантию (вопрос 11).</td>
+          </tr>
+          <tr>
+            <td class="name"><code>executeAsOneOrNull()</code> в <code>withContext(IO)</code></td>
+            <td class="what"><code>suspend</code>-метод DAO</td>
+            <td class="dep">Room сам уходит с главного потока; обёртка <code>withContext(Dispatchers.IO)</code> перестаёт быть нужной.</td>
+          </tr>
+          <tr>
+            <td class="name">лямбда-маппер <code>select(id, ::mapToUser)</code></td>
+            <td class="what">класс-проекция строки + <code>toDomainModel()</code></td>
+            <td class="dep">Столбцы перестают передаваться по позициям; на каждый <code>JOIN</code> появляется свой класс (вопрос 10).</td>
+          </tr>
+          <tr>
+            <td class="name"><code>database.transaction { }</code></td>
+            <td class="what"><code>database.withTransaction { }</code></td>
+            <td class="dep">Лямбда становится <code>suspend</code>: внутри можно вызывать suspend-DAO (вопрос 14). Форму для Room 3 проверит пункт 8.1.</td>
+          </tr>
+          <tr>
+            <td class="name"><code>INSERT OR REPLACE</code></td>
+            <td class="what"><code>@Upsert</code> или <code>@Query</code> с <code>ON CONFLICT</code></td>
+            <td class="dep">REPLACE — это «удалить и вставить»; при включённых внешних ключах он каскадом сносит дочерние строки (вопросы 12, 13).</td>
+          </tr>
+          <tr>
+            <td class="name">внешние ключи: в драйвере выключены</td>
+            <td class="what">включаются при открытии базы (ожидание, проверяется в 7.4)</td>
+            <td class="dep">Молчаливый <code>ON DELETE CASCADE</code>, которого не было, вдруг работает, а вставка сироты начинает падать.</td>
+          </tr>
+          <tr>
+            <td class="name"><code>AndroidSqliteDriver(name = null)</code></td>
+            <td class="what"><code>Room.inMemoryDatabaseBuilder&lt;T&gt;()</code> + <code>setDriver(AndroidSQLiteDriver())</code></td>
+            <td class="dep">База по-прежнему умирает вместе с процессом; закрывать её нельзя.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Код первого урока</h2>
+    <p class="note">
+      Слева — всё, что сейчас описывает <code>Settings</code> в SQLDelight. Справа — то же тремя аннотациями.
+      Это наброски: они не компилировались.
+    </p>
+    <div class="code-pair">
+      <div class="code-block">
+        <div class="label"><span class="status risk">сейчас</span>таблица и запросы в одном файле<span class="file">Settings.sq</span></div>
+        <pre><code>CREATE TABLE Settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+selectByKey:
+SELECT value FROM Settings WHERE key = ? LIMIT 1;
+
+insertOrReplace:
+INSERT OR REPLACE INTO Settings VALUES (:key, :value);
+
+deleteByKey:
+DELETE FROM Settings WHERE key = ?;</code></pre>
+        <div class="caption">Схема и запросы рядом; типы Kotlin рождаются кодогенерацией, потребитель ходит в <code>settingsQueries</code>.</div>
+      </div>
+      <div class="code-block">
+        <div class="label"><span class="status new">набросок</span>три роли — три файла<span class="file">entity/ · dao/ · SettingsDatabase.kt</span></div>
+        <pre><code>@Entity(tableName = "Settings")
+data class SettingsEntity(
+  @PrimaryKey val key: Key,
+  val value: String
+) {
+  @JvmInline
+  value class Key(val key: String)
+}
+
+@Dao
+interface SettingsDao {
+  @Query("SELECT value FROM Settings WHERE key = :key LIMIT 1")
+  suspend fun select(key: SettingsEntity.Key): String?
+
+  @Query("SELECT value FROM Settings WHERE key = :key LIMIT 1")
+  fun observe(key: SettingsEntity.Key): Flow&lt;String?&gt;
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertOrReplace(entity: SettingsEntity)
+
+  @Delete(SettingsEntity::class)
+  suspend fun delete(key: SettingsEntity.Key)
+}
+
+@Database(entities = [SettingsEntity::class], version = 1, exportSchema = true)
+abstract class SettingsDatabase : RoomDatabase() {
+  abstract fun settingsDao(): SettingsDao
+}</code></pre>
+        <div class="caption">Сущность — это строка, DAO — набор запросов, база — точка входа. Реализацию DAO и базы пишет KSP.</div>
+      </div>
+    </div>
+
+    <h3>Как читать этот код: ваше понимание и уточнения</h3>
+    <p class="note">
+      Средняя колонка — как понято с первого прочтения, правая — что к этому стоит добавить. Метки:
+      <span class="status reuse">верно</span> понято правильно,
+      <span class="status new">уточнено</span> верно по сути, но есть деталь,
+      <span class="status part">дополнено</span> было непонятно, объяснение добавлено.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Часть</th><th>Как понято</th><th>Уточнение</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="name"><code>@Database</code><span class="status new">уточнено</span></td>
+            <td class="what">Абстрактный класс, в котором описаны DAO.</td>
+            <td class="dep">Класс наследует <code>RoomDatabase</code>, а каждый DAO отдаётся абстрактным методом: <code>abstract fun settingsDao(): SettingsDao</code>. Тело классу не нужно — реализацию <code>SettingsDatabase_Impl</code> пишет KSP при сборке. Поэтому базу нельзя создать через конструктор: её собирает билдер.</td>
+          </tr>
+          <tr>
+            <td class="name"><code>entities</code><span class="status reuse">верно</span></td>
+            <td class="what">Массив таблиц, каждая описана data-классом.</td>
+            <td class="dep">Таблица появляется только у того класса, что перечислен в <code>entities</code> и помечен <code>@Entity</code>. Имя таблицы — <code>tableName</code>, первичный ключ — <code>@PrimaryKey</code>, тип столбца Room выводит из типа поля (<code>String</code> → <code>TEXT</code>). Для <code>ChatDatabase</code> в списке будет шесть сущностей.</td>
+          </tr>
+          <tr>
+            <td class="name"><code>version</code><span class="status new">уточнено</span></td>
+            <td class="what">Версию поднимаем при миграции.</td>
+            <td class="dep">Поднимаем при любом изменении схемы: новая таблица, столбец, индекс. Миграция — это отдельная инструкция, как перенести данные со старой версии на новую. Room хранит в служебной таблице <code>room_master_table</code> хэш схемы (<code>identity_hash</code>, он виден в <code>1.json</code>) и сверяет его с кодом при открытии. Схема изменилась, версия нет — база не откроется с ошибкой о целостности. У нас данные тестовые и миграции не пишем, но версию всё равно поднимаем.</td>
+          </tr>
+          <tr>
+            <td class="name"><code>exportSchema</code><span class="status part">дополнено</span></td>
+            <td class="what">Не понял, что делает.</td>
+            <td class="dep">При сборке Room записывает описание схемы в JSON: таблицы, столбцы, ключи, индексы, хэш. Файл лежит там, куда указывает <code>schemaDirectory</code>, — у нас <code>database/schemas/&lt;класс базы&gt;/&lt;версия&gt;.json</code>, по файлу на каждую версию. Зачем он: <strong>1)</strong> схема попадает в git, и изменение таблицы видно в ревью как обычный дифф; <strong>2)</strong> это эталон для миграций — тест миграции берёт JSON старой версии и проверяет, что после неё база совпала со схемой новой; <strong>3)</strong> автомиграции строятся как разница двух JSON. Без <code>schemaDirectory</code> Room при <code>exportSchema = true</code> предупредит об этом — плагин <code>androidx.room3</code> в <code>build.gradle</code> как раз его и задаёт. Откройте <code>1.json</code> и найдите <code>createSql</code>: это SQL, который Room выполнит при создании базы.</td>
+          </tr>
+          <tr>
+            <td class="name"><code>@Dao</code><span class="status new">уточнено</span></td>
+            <td class="what">Интерфейс, описывающий запросы к базе в формате SQL; проверяется на этапе компиляции.</td>
+            <td class="dep">SQL нужен не всегда: <code>@Insert</code>, <code>@Update</code>, <code>@Delete</code>, <code>@Upsert</code> генерируют запрос сами, свой SQL пишется в <code>@Query</code>. Компиляция проверяет, что таблицы и столбцы из запроса есть в сущностях, а типы параметров и результата подходят. <code>@Delete</code> принимает объект сущности, список объектов или частичный класс только с полями первичного ключа — тогда пишется <code>@Delete(SettingsEntity::class)</code>, а поле класса называется как столбец. Опечатка в имени столбца ломает сборку. Смысл запроса она не проверяет: перепутанное условие <code>WHERE</code> соберётся — для этого и нужны тесты из Урока 2. Тип результата задаёт поведение: <code>suspend</code> — разовый вызов в фоне, <code>Flow</code> — подписка, которая получает новое значение после любой записи в таблицу.</td>
+          </tr>
+          <tr>
+            <td class="name">Создание базы<span class="status new">уточнено</span></td>
+            <td class="what">Подключаем через <code>Room.buildDatabase</code>; можно ещё подключить базу в памяти через InMemory.</td>
+            <td class="dep">Метод называется <code>Room.databaseBuilder(context, SettingsDatabase::class.java, "settings.db")</code>, а в Room 3 перед <code>.build()</code> обязательно добавляется <code>.setDriver(AndroidSQLiteDriver())</code>. Он создаёт файл на диске, данные переживают перезапуск процесса. Для памяти — <code>Room.inMemoryDatabaseBuilder&lt;ChatDatabase&gt;()</code> тоже с драйвером: имени файла нет, база умирает вместе с процессом, как сегодняшняя <code>InMemoryDB</code> с <code>name = null</code>. Это разные билдеры, а не режим одной базы. Экземпляр дорогой (внутри пул соединений), поэтому в DI он один на процесс.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      Как всё связано: <code>@Database</code> владеет списком <code>@Entity</code> и отдаёт <code>@Dao</code>; DAO
+      обращаются к таблицам этих сущностей; билдер превращает описание в живой объект. Три аннотации — три роли:
+      что хранится, как спрашивать, где живёт.
+    </p>
+
+    <h3>Урок семь: та же вставка, две судьбы</h3>
+    <div class="code-pair">
+      <div class="code-block">
+        <div class="label"><span class="status risk">сейчас</span>REPLACE, пока ключи выключены<span class="file">ChatConversation.sq</span></div>
+        <pre><code>INSERT OR REPLACE INTO ChatConversation(
+  id, type, name, ownerId, lastCommit,
+  lastCommitSenderId, lastCommitTimestamp, unreadCount
+)
+VALUES (
+  :id, :type, :name, :ownerId, :lastCommit,
+  :lastCommitSenderId, :lastCommitTimestamp,
+  <span class="c">-- сохраняем непрочитанное старой строки</span>
+  COALESCE((SELECT unreadCount FROM ChatConversation WHERE id = :id), 0)
+);</code></pre>
+        <div class="caption">Строка удаляется и вставляется заново; безобидно ровно до тех пор, пока на неё не ссылаются дочерние таблицы с включёнными ключами.</div>
+      </div>
+      <div class="code-block">
+        <div class="label"><span class="status new">набросок</span>обновление на месте<span class="file">ChatConversationDao.kt</span></div>
+        <pre><code>@Query(
+  """
+  INSERT INTO ChatConversation(
+    id, type, name, ownerId, lastCommit,
+    lastCommitSenderId, lastCommitTimestamp, unreadCount
+  )
+  VALUES (
+    :id, :type, :name, :ownerId, :lastCommit,
+    :lastCommitSenderId, :lastCommitTimestamp, 0
+  )
+  ON CONFLICT(id) DO UPDATE SET
+    type = excluded.type,
+    name = excluded.name,
+    ownerId = excluded.ownerId,
+    lastCommit = excluded.lastCommit,
+    lastCommitSenderId = excluded.lastCommitSenderId,
+    lastCommitTimestamp = excluded.lastCommitTimestamp
+  """
+)
+suspend fun upsert(…)</code></pre>
+        <div class="caption">Строка живёт, дети целы, <code>unreadCount</code> просто не входит в <code>SET</code>. Поддерживает ли парсер Room такую форму — проверяет 7.1; запасной путь указан там же.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Курс по урокам: что, зачем, куда, почему</h2>
+    <p class="note">
+      Тот же рассказ повторяется при сдаче каждого этапа, только с реальным диффом. Здесь — заранее, чтобы
+      видеть весь маршрут.
+    </p>
+
+    <h3>Урок 1 · Первая таблица: Settings в Room</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Подключаем Room и описываем первую таблицу тремя аннотациями: <code>@Entity</code> — строка, <code>@Dao</code> — запросы, <code>@Database</code> — точка входа. Базу сразу заводим в DI.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc"><code>Settings</code> — два текстовых столбца. На ней виден весь контур Room без побочных эффектов: ни join-ов, ни ключей, ни конвертеров.</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc">Модуль <code>database</code>: <code>entity/SettingsEntity.kt</code>, <code>dao/SettingsDao.kt</code>, <code>SettingsDatabase.kt</code>; провайдер — в <code>di/DatabaseModule.kt</code>. Версии — в <code>gradle/libs.versions.toml</code>.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc">Room — аннотационный процессор: KSP читает аннотации и пишет реализацию на этапе сборки, поэтому опечатка в SQL ломает компиляцию, а не рантайм. Плагин <code>androidx.room3</code> кладёт JSON схемы в <code>schemas/</code> — эталон для будущих миграций.</div></div>
+    </div>
+
+    <h3>Урок 2 · Как проверять DAO</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Тест <code>SettingsDao</code> на in-memory базе в обычном JVM-тесте, без эмулятора.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc">С SQLDelight запросы не проверялись вовсе. Дальше переписывается сорок пять запросов; тест превращает «кажется, то же самое» в факт.</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc"><code>database/src/test</code>, JUnit 5 — как уже стоит в проекте.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc">Память SQLite принадлежит соединению: если Room откроет несколько, запись и подписка увидят разные базы. Поэтому в тесте обязателен случай «записали — <code>Flow</code> получил». Урок спайковый: если путь не работает, он отдаётся на ревью и откатывается.</div></div>
+    </div>
+
+    <h3>Урок 3 · Подключаем Settings</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Два потребителя (<code>AuthSessionPersistenceImpl</code>, <code>PersistedEventCursorStore</code>) переходят на <code>SettingsDao</code>; <code>Settings.sq</code> и <code>PersistedDB</code> исчезают.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc">Первый полный круг «старое → новое» на маленьком кусочке. Проблемы с файлом БД и токенами всплывут здесь, а не посреди чата.</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc"><code>DatabaseModule</code>, два класса в <code>auth-session</code> и <code>app/data</code>, блок <code>sqldelight {}</code> в <code>database/build.gradle</code>.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc">Токены — единственное, что переживает перезапуск; сломать их значит разлогинить, поэтому проверяем руками. Suspend-методы Room сами уходят с главного потока — <code>withContext(Dispatchers.IO)</code> вокруг них убираем.</div></div>
+    </div>
+
+    <h3>Урок 4 · Схема чата</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Учим Room типам-обёрткам через конвертеры, описываем шесть таблиц сущностями с индексами и внешними ключами, собираем <code>ChatDatabase</code> без запросов.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc">Схема — фундамент запросов. Экспортированный JSON можно положить рядом с <code>CREATE TABLE</code> из <code>.sq</code> и убедиться, что ничего не потеряно.</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc"><code>converter/</code>, <code>entity/</code>, <code>ChatDatabase.kt</code> в модуле <code>database</code>.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc">В SQLDelight тип колонки задавало слово <code>AS</code> в <code>.sq</code>, в Room — функция-конвертер на базе. Составной ключ <code>ChatMember</code> и индексы переносим дословно: порядок колонок ключа — это индекс, а не косметика.</div></div>
+    </div>
+
+    <h3>Урок 5 · Чтение I: пользователи, участники, разговоры</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Все виды <code>SELECT</code>, что есть в проекте: простые, <code>JOIN</code>, подзапрос <code>COUNT</code>, <code>GROUP BY … HAVING</code>, <code>IN</code>-список.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc">После этого урока остальные таблицы проходятся по аналогии: каждый приём уже встречался.</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc"><code>dao/UserDao</code>, <code>ChatMemberDao</code>, <code>ChatConversationDao</code>; классы-проекции — в <code>entity/</code>.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc">SQLDelight отдавал столбцы в лямбду, Room возвращает класс, поэтому на каждый <code>JOIN</code> появляется проекция. Наблюдаемый запрос по-прежнему перевыпускает значение на любую запись в таблицу — отсюда вопрос о дедупликации.</div></div>
+    </div>
+
+    <h3>Урок 6 · Чтение II: ветки и коммиты</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Ветки с <code>LEFT JOIN</code> на запрос слияния; коммиты с курсорами, фильтром <code>createdAtNanos &gt; 0</code> и <code>IN</code>-списком.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc">Самые горячие таблицы: на них держатся ленты сообщений и граф хронологии.</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc"><code>dao/ChatBranchDao</code>, <code>dao/ChatCommitDao</code>. У <code>MergeRequest</code> своих чтений нет — он читается только через ветку.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc">Nullable-столбцы <code>LEFT JOIN</code> — место, где теряется инвариант «запрос слияния есть целиком или нет вовсе». Тест фиксирует его до того, как на нём построят маппер.</div></div>
+    </div>
+
+    <h3>Урок 7 · Запись</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Вставки, изменения, удаления и семантика <code>INSERT OR REPLACE</code> при включённых внешних ключах.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc">REPLACE — «удалить и вставить». Пока ключи выключены, это незаметно; Room их включает, и REPLACE разговора каскадом снесёт его ветки и коммиты.</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc">Методы записи в тех же DAO, тесты каскадов и ключей рядом с ними.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc">Самый поучительный урок: одна и та же строка SQL ведёт себя по-разному в зависимости от настройки соединения. <code>unreadCount</code> сегодня хранит <code>COALESCE</code> — это поведение надо сохранить.</div></div>
+    </div>
+
+    <h3>Урок 8 · Подключаем чат</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Провайдер <code>ChatDatabase</code>, очистка сессии и пять репозиториев переходят на DAO вместе с мапперами.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc">Данные общие: один репозиторий пишет, другой читает. Переносить по одному нельзя — между коммитами приложение работало бы на двух разных базах.</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc"><code>DatabaseModule</code>, <code>DbCleaning</code>, <code>AuthSessionRepositoryImpl</code>, репозитории разговоров, групп, личных чатов, хронологии и веток.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc">Транзакция из блокирующей лямбды становится suspend-лямбдой. Мапперы с позиционных столбцов переходят на «проекция → <code>toDomainModel()</code>», как велит <code>kotlin.md</code>.</div></div>
+    </div>
+
+    <h3>Урок 9 · Уборка SQLDelight</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Удаляем <code>.sq</code>, адаптеры, плагин, обвязку сборки и записи каталога версий.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc">Пока оба живут, сборка тащит два генератора и хак «KSP после SQLDelight».</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc"><code>database/</code>, <code>gradle/libs.versions.toml</code>, KDoc в <code>FirestoreListenerGuard</code> и комментарий в <code>Mocks.kt</code>.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc"><code>pathfinder-store-sqldelight</code> остаётся, поэтому SQLDelight продолжит жить в графе транзитивно. Пункт 9.4 показывает, откуда именно.</div></div>
+    </div>
+
+    <h3>Урок 10 · Правила проекта</h3>
+    <div class="reuse-grid">
+      <div class="reuse-card"><div class="path">Что</div><div class="desc">Решаем судьбу <code>.claude/rules/sqldelight.md</code> и предлагаем готовый текст правил по Room.</div></div>
+      <div class="reuse-card"><div class="path">Зачем</div><div class="desc">Правило привязано к <code>**/*.sq</code> — файлов не останется, а описанные в нём причины (порядок колонок и ключа, типизированные id) пережили библиотеку.</div></div>
+      <div class="reuse-card"><div class="path">Куда</div><div class="desc"><code>.claude/rules/</code>, по файлу на тему.</div></div>
+      <div class="reuse-card"><div class="path">Почему так</div><div class="desc">По <code>workflow.md</code> новое правило появляется только с явным «да» на конкретную формулировку, поэтому текст приходит в чат, а не в файл.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Вопросы</h2>
+    <p class="note">Решены 01–04, 06, 07 и 19–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
+    <div class="questions">
+      <div class="q">
+        <div class="num">01</div>
+        <div class="body">
+          <div class="ask">В каком порядке переносим базы?</div>
+          <div class="why">Баз две: <code>PersistedDB</code> (одна таблица) и <code>InMemoryDB</code> (шесть). <strong>Решено: по очереди, сначала Settings, потом чат.</strong> Альтернатива «всё сразу» отвергнута: хуже ревью и нет плавной кривой обучения. Меняет блоки 1–3 и 4–8.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">02</div>
+        <div class="body">
+          <div class="ask">Какую версию и способ подключения Room берём?</div>
+          <div class="why"><strong>Решено: Room 2.8.5 и Room Gradle plugin.</strong> 2.8.5 — последняя стабильная 2.x. Плагин сам настраивает экспорт схем, KSP в проекте уже есть. Меняет пункт 1.1. <strong>Поправка:</strong> довод «Room 3 пока не существует» оказался неверным — Room 3.0 вышел стабильным; решение заменено вопросом 20 (Room 3.0.3, плагин <code>androidx.room3</code>).</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">03</div>
+        <div class="body">
+          <div class="ask">Коммитим по закрытии пункта или после ревью?</div>
+          <div class="why"><code>workflow.md</code> велит коммитить сразу, документ про планы — после аппрува. <strong>Решено: ревью, потом коммит.</strong> Заголовок — одна короткая строка в стиле истории (<code>[database] …</code>), без тела и без <code>Co-Authored-By</code>; пуш и PR — ваши. Меняет все пункты «Коммит».</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">04</div>
+        <div class="body">
+          <div class="ask">Как называем Room-классы и где раскладываем?</div>
+          <div class="why"><strong>Решено: <code>SettingsDatabase</code> и <code>ChatDatabase</code>; сущности — <code>&lt;Имя&gt;Entity</code> в пакете <code>entity</code>, DAO — <code>&lt;Имя&gt;Dao</code> в <code>dao</code>, конвертеры — в <code>converter</code>.</strong> База названа по содержимому: время жизни — свойство билдера, а не класса. Суффикс <code>Entity</code> нужен, чтобы не столкнуться со сгенерированными SQLDelight <code>ChatCommit</code> и <code>User</code>, пока оба живут. Меняет 1.2–1.4, 4.1–4.4.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">05</div>
+        <div class="body">
+          <div class="ask">Что внедряем в потребителей: базу целиком или отдельные DAO?</div>
+          <div class="why"><strong>Рекомендация: базу</strong> — как сегодня. Репозиториям нужны транзакции поверх нескольких таблиц, а <code>withTransaction</code> вызывается на базе; DAO берётся из неё. Альтернатива: провайдить каждый DAO отдельно — короче для <code>Settings</code>, но репозитории с транзакциями всё равно потребуют базу. Блокирует 3.1, 3.2.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">06</div>
+        <div class="body">
+          <div class="ask">Чем проверяем DAO без эмулятора?</div>
+          <div class="why"><strong>Решено: JVM-тест с <code>BundledSQLiteDriver</code> (<code>sqlite-bundled-jvm</code>).</strong> Спайк выполнен и одобрен вами: пять тестов DAO проходят без эмулятора и Robolectric, in-memory база общая для соединений, на Room 3 — без <code>Context</code>. Запасные пути (Robolectric, <code>androidTest</code>) не понадобились. Меняет 2.3.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">07</div>
+        <div class="body">
+          <div class="ask">Что делать со старым файлом <code>clarify.db</code>, созданным SQLDelight?</div>
+          <div class="why"><strong>Решено: данные не переносим, потеря допустима — все данные тестовые.</strong> Переносить содержимое и писать для этого миграцию не нужно. Остаётся механизм, чтобы Room не споткнулся о чужой файл; пока действует прежняя рекомендация: новый файл, например <code>clarify-settings.db</code>. Меняет 1.5, 3.4. Исходный текст вопроса:<br><strong>Рекомендация: новый файл, например <code>clarify-settings.db</code>.</strong> Room при открытии сверяет схему, а SQLDelight создавала <code>key TEXT PRIMARY KEY</code> без <code>NOT NULL</code> — ожидание: Room отвергнет такой файл с исключением, а не со штатной миграцией. Цена: на устройствах, где уже входили, придётся войти заново; старый файл остаётся сиротой. Альтернатива: то же имя и удаление файла перед открытием. Ожидание проверяется в 3.4 на устройстве со старой базой; выбор механизма вы подтверждаете на ревью 1.7.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">08</div>
+        <div class="body">
+          <div class="ask">Что делаем с <code>pathfinder-store-sqldelight</code>?</div>
+          <div class="why"><strong>Рекомендация: оставить.</strong> Библиотека хранит окружения в собственной БД; после уборки SQLDelight в проекте останется транзитивно, но не в нашем коде и не в нашей сборке. Альтернатива: заменить хранилище своим — совсем другая задача, и годится ли для этого интерфейс <code>PathFinder.create</code>, не проверено. Блокирует 9.1.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">09</div>
+        <div class="body">
+          <div class="ask">Как раскладываем конвертеры типов?</div>
+          <div class="why"><strong>Рекомендация: класс на тип, по файлу</strong> — продолжаем нынешние <code>adapter/</code>: <code>UserIdConverter</code>, <code>BranchIdConverter</code> и так далее. Альтернатива: один класс <code>Converters</code> со всеми функциями — компактнее, но нарушает «один класс — один файл». Риск, который снимает 4.1: часть id — <code>value class</code> (<code>UserId</code>, <code>Commit.Id</code>, <code>Conversation.Id</code>), часть — обычные <code>data class</code> (<code>Branch.Id</code>, <code>Member.Id</code>).  <strong>Находка из Урока 2:</strong> Room 2.8.5 и 3.0.3 приняли <code>@JvmInline value class</code> без конвертера и как тип поля сущности, и как параметр <code>@Query</code>, и как параметр <code>@Delete</code> (проверено: сгенерированы привязки, тесты записи, чтения и удаления проходят). Если чтение и параметры DAO подтвердятся, конвертеры понадобятся только для <code>Branch.Id</code> и <code>Member.Id</code> (обычные <code>data class</code>) и составных значений. Уточняет 4.1. Блокирует 4.1.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">10</div>
+        <div class="body">
+          <div class="ask">Какую форму имеют проекции запросов с <code>JOIN</code>?</div>
+          <div class="why"><strong>Рекомендация: плоский класс-строка на запрос</strong> со столбцами в порядке <code>SELECT</code>; маппер — расширение <code>toDomainModel()</code> в пакете <code>mapper</code>. Альтернатива: <code>@Embedded</code> с вложенной сущностью — меньше полей, но nullable-вложение при <code>LEFT JOIN</code> прячет инвариант «запрос слияния целиком или никак». Блокирует 5.2.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">11</div>
+        <div class="body">
+          <div class="ask">Как сохранить гарантию «наблюдаемый запрос всегда дедуплицирован»?</div>
+          <div class="why">Сегодня <code>Flows.kt</code> — единственная точка, возвращающая <code>Flow</code>; сырого потока нет в API по типу. DAO Room вернёт <code>Flow</code> напрямую, и гарантия превращается в дисциплину. <strong>Рекомендация: DAO возвращают <code>Flow</code>, репозитории вешают <code>distinctUntilChanged()</code>; причина (потерянный дневной лимит Firestore, <code>SnapshotIdSet</code>) переезжает в KDoc DAO и в будущее правило по Room.</strong> Альтернатива: оставить обёртки-расширения над DAO — тип снова защищает, но появляется второй слой. Блокирует 5.1.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">12</div>
+        <div class="body">
+          <div class="ask">Включаем ли внешние ключи?</div>
+          <div class="why">Сейчас они объявлены в схеме, но выключены (<code>DbCleaning</code> прямо об этом пишет). Ожидание: Room их включает сам, и вставка коммита без разговора начнёт падать, а удаление родителя — каскадировать. <strong>Рекомендация: оставить включёнными и привести порядок записи в репозиториях в соответствие.</strong> Альтернатива: выключить в колбэке открытия и сохранить нынешнее поведение — но объявленные ключи останутся декорацией. Проверка ожидания — 7.4. Блокирует 4.3, 7.1.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">13</div>
+        <div class="body">
+          <div class="ask">Чем заменяем <code>INSERT OR REPLACE</code> в таблицах с детьми?</div>
+          <div class="why"><strong>Рекомендация: <code>@Query</code> с <code>INSERT … ON CONFLICT(id) DO UPDATE</code>, где <code>unreadCount</code> не входит в <code>SET</code></strong> — строка живёт, дети целы, счётчик сохраняется. Альтернативы: <code>@Upsert</code> — перезапишет <code>unreadCount</code>; <code>OnConflictStrategy.REPLACE</code> — каскад (вопрос 12). Запасной путь, если парсер Room не примет такой SQL: <code>@Update</code> и <code>@Insert(IGNORE)</code> в одной транзакции. Блокирует 7.1.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">14</div>
+        <div class="body">
+          <div class="ask">Как репозиторий открывает транзакцию и что для этого тянет в зависимости?</div>
+          <div class="why"><strong>Рекомендация: репозиторий зовёт <code>database.withTransaction</code>, <code>room3-runtime</code> лежит в <code>api</code> модуля <code>database</code>.</strong> Сегодня репозитории уже импортируют <code>app.cash.sqldelight.Query</code>, то есть знают библиотеку; новой связи это не создаёт. Альтернатива: собственная функция-обёртка в <code>database</code> — репозитории Room не импортируют, но обёртка просто пересказывает <code>withTransaction</code>. В Room 3 форму транзакции (<code>withTransaction</code> или <code>useWriterConnection</code>) нужно проверить в 8.1: в документации, которую я читал, она не описана. Блокирует 8.1.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">15</div>
+        <div class="body">
+          <div class="ask">Как очищаем чат при выходе из сессии?</div>
+          <div class="why"><strong>Рекомендация: <code>clearAllTables()</code>.</strong> Закрывает проблему из TODO в <code>DbCleaning</code>: забыть добавить таблицу больше нельзя. Минус: вызов блокирующий и запрещён на главном потоке — сигнатуру и поток вызова проверяет 8.2. Альтернатива: явные <code>deleteAll</code> в каждом DAO с учётом порядка внешних ключей. Блокирует 7.3, 8.2.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">16</div>
+        <div class="body">
+          <div class="ask">Переключение пяти репозиториев — одним коммитом или несколькими?</div>
+          <div class="why"><strong>Рекомендация: одним.</strong> Данные общие, между пятью коммитами одни репозитории писали бы в Room, а другие читали бы SQLDelight — каждое промежуточное состояние формально собирается, но не работает. Альтернатива: коммит на репозиторий — история подробнее, но половина коммитов ломает приложение. Блокирует 8.3–8.10.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">17</div>
+        <div class="body">
+          <div class="ask">Что делаем с <code>.claude/rules/sqldelight.md</code>?</div>
+          <div class="why"><strong>Рекомендация: удалить файл вместе с последним <code>.sq</code> и предложить <code>room.md</code> готовым текстом в чате.</strong> Переносить стоит причины: порядок колонок и порядок ключа — разные решения, типизированные id, составное значение одной колонкой. Правило пишется только с вашего «да» на конкретную формулировку. Альтернатива: оставить файл без изменений — но он привязан к <code>*.sq</code> и перестанет срабатывать. Блокирует 10.1.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">18</div>
+        <div class="body">
+          <div class="ask">Экспортируем ли схему Room в JSON?</div>
+          <div class="why">В коммите автора <code>exportSchema = false</code>, папки <code>schemas/</code> нет; блок <code>room3 { schemaDirectory }</code> в <code>build.gradle</code> при этом ничего не делает. <strong>Рекомендация: <code>true</code>.</strong> Схема попадает в git, изменение таблицы видно в ревью, а пункт 4.3 сверяет JSON с <code>CREATE TABLE</code> из <code>.sq</code>. Альтернатива: <code>false</code> и убрать <code>schemaDirectory</code> — меньше файлов в репозитории, но без эталона схемы и без сверки в 4.3. Блокирует 2.2, проверку в 4.3.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">19</div>
+        <div class="body">
+          <div class="ask">Чем записываем строку в <code>Settings</code>: <code>@Upsert</code> или заменой?</div>
+          <div class="why"><strong>Решено: <code>@Insert(onConflict = REPLACE)</code> — одобрено вместе с кодом Урока 2.</strong> Обе записи равнозначны для таблицы без дочерних. У <code>@Upsert</code> путь «строка уже есть» опирается на разбор исключения базы, а в JVM-тесте драйвер бросает класс-заглушку без сообщения; на Room 3 проверено — тот же результат. Исходная рекомендация совпала с решением. Для таблиц с детьми вопрос 13 решается отдельно. Меняет 1.3 и 2.1.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">20</div>
+        <div class="body">
+          <div class="ask">Остаёмся на Room 2.8.5 или переходим на Room 3?</div>
+          <div class="why"><strong>Решено: переходим на Room 3.0.3</strong> (артефакты <code>androidx.room3</code>, плагин <code>androidx.room3</code>). Базовые коммиты пересозданы на Room 3, Урок 2 закоммичен поверх. Меняет 1.1, 1.5, 8.1. Исходный текст вопроса:<br>Вопрос 02 решался при ошибочной посылке «Room 3 нет». Сейчас стабильна версия 3.0.3 (09.09.2026), артефакты <code>androidx.room3:room3-runtime</code> и <code>room3-compiler</code>, плагин <code>androidx.room3</code>, блок <code>room3 { }</code>; Room 2.x в режиме поддержки. Отличия по официальным заметкам: только KSP; DAO-функции — <code>suspend</code>, если не возвращают реактивный тип; <code>SQLiteDriver</code> обязателен; <code>Context</code> не нужен ни билдеру, ни in-memory билдеру; <code>SupportSQLite</code> убран. <strong>Рекомендация: перейти на Room 3.0.3 сейчас</strong>, пока написано два урока и переносить почти нечего: учим актуальный API, а JVM-тесты не нуждаются в <code>mockk&lt;Context&gt;</code>. Что проверить спайком до решения: совместимость с AGP 9.2.1, Kotlin 2.4.10 и KSP 2.3.9, работу <code>value class</code> как типа поля, поведение <code>@Insert(REPLACE)</code> и необходимость драйвера на устройстве. Альтернатива: остаться на 2.8.5 — стабильнее известно, но придётся мигрировать позже. <strong>Спайк выполнен на ветке <code>room-my</code>, ждёт вашего ревью.</strong> Базовые коммиты там пересозданы на Room 3 (<code>0eeb3144</code> зависимости, <code>92a9854d</code> код), Урок 2 лежит поверх без коммита. Работает: плагин <code>androidx.room3</code> и KSP на AGP 9.2.1, Kotlin 2.4.10, KSP 2.3.9; сборка модуля, <code>spotlessCheck</code> и <code>checkDebugDuplicateClasses</code> зелёные; 5 тестов DAO проходят с <code>Room.inMemoryDatabaseBuilder&lt;T&gt;()</code> без <code>Context</code> и без <code>mockk</code>. Нужно учесть: Room 3 тянет <code>androidx.sqlite</code> 2.7.1, поэтому тестовый драйвер поднят с 2.6.2 до 2.7.1; драйвер обязателен и в продакшене — в провайдере добавлен <code>AndroidSQLiteDriver()</code>. Не решено спайком: <code>@Upsert</code> на JVM по-прежнему падает тем же исключением-заглушкой, так что вопрос 19 остаётся. <strong>Не проверено:</strong> сборка приложения и граф DI с новым провайдером, полный <code>prePushCheck</code> и <code>test</code> по всем модулям, работа <code>AndroidSQLiteDriver</code> на устройстве. Блокирует 1.1 и все пункты, где есть импорты <code>androidx.room</code>.</div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="num">21</div>
+        <div class="body">
+          <div class="ask">Как удаляем строку из <code>Settings</code> по ключу?</div>
+          <div class="why"><strong>Решено: <code>@Delete(SettingsEntity::class)</code> с параметром <code>SettingsEntity.Key</code></strong> — выбор автора: удаление остаётся аннотацией, без SQL. Условие: поле параметра называется как столбец (<code>key</code>); при <code>Key(val value)</code> Room удаляет по столбцу <code>value</code>. Исходная рекомендация была иной: <code>@Query("DELETE FROM Settings WHERE key = :key")</code> — короче, но с SQL в строке. Меняет 2.1.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Трекер</h2>
+    <div class="tracker">
+      <div class="tracker-top">
+        <span class="tracker-count" id="tracker-count">Выполнено <b>11</b> из 69 · 16%</span>
+        <span class="tracker-hint">отметки записаны в этом файле; автор ставит их, когда проверка пункта пройдена</span>
+      </div>
+      <div class="tracker-bar"><span id="tracker-bar" style="width: 16%"></span></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>№</th><th>Пункт</th><th>Что делаем</th><th>Размер</th><th>Зависимости и проверка</th></tr></thead>
+        <tbody>
+
+          <tr class="group" data-group-header="b0"><td colspan="5">Блок 0 · Подготовка<span class="status new">сейчас</span><span class="gcount">1/3</span></td></tr>
+          <tr data-item="0.1" data-group="b0" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>0.1</span></td>
+            <td class="name">Базовая линия</td>
+            <td class="what">Прогнать <code>./gradlew test</code> до первой правки, чтобы отличать новые падения от старых.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: тесты завершились с кодом 0 на чистом дереве; прогон сделан 01.10.2026.</td>
+          </tr>
+          <tr data-item="0.2" data-group="b0">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>0.2</span></td>
+            <td class="name">Ревью и аппрув плана</td>
+            <td class="what">Вы читаете документ и отвечаете на открытые вопросы 05 и 08–18 или принимаете рекомендации.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ответы вписаны в вопросы как «Решено». Блок 1 начат по вашей просьбе до этого аппрува и ни от одного открытого вопроса не зависит; блоки 2–10 стартуют после отдельного «давай дальше».</td>
+          </tr>
+          <tr data-item="0.3" data-group="b0">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>0.3</span></td>
+            <td class="name">Коммит</td>
+            <td class="what">Заголовок: <code>[docs] Add the SQLDelight to Room plan</code>. Сейчас рабочая ветка — <code>dev</code>; ветку под работу создаю перед первым коммитом, имя — по вашему слову.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 0.2. Проверка: <code>git log</code> показывает коммит с одним файлом <code>docs/plans/sqldelight-to-room.html</code>.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b1"><td colspan="5">Блок 1 · Урок 1: Settings в Room<span class="gcount">6/8</span></td></tr>
+          <tr data-item="1.1" data-group="b1" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>1.1</span></td>
+            <td class="name">Gradle</td>
+            <td class="what">В <code>libs.versions.toml</code>: <code>androidx-room3 = "3.0.3"</code>, <code>androidx-room3-runtime</code>, <code>androidx-room3-compiler</code>, плагин <code>androidx-room3</code>. В <code>database/build.gradle</code>: плагин, <code>room3 { schemaDirectory("$projectDir/schemas") }</code>, <code>ksp libs.androidx.room3.compiler</code>, <code>implementation libs.androidx.room3.runtime</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Вопросы 02 и 20: Room 3.0.3. Компилятор подключается через <code>ksp</code>: как <code>implementation</code> он тянет в приложение <code>com.intellij:annotations:12.0</code> и валит <code>checkDebugDuplicateClasses</code>. <code>implementation</code> вместо <code>api</code>: потребителей из других модулей пока нет, <code>api</code> появится вместе с вопросом 14. Проверка: <code>:database:assembleDebug</code> проходит вместе с SQLDelight. Факт: <code>room-ktx</code> не понадобился.</td>
+          </tr>
+          <tr data-item="1.2" data-group="b1" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>1.2</span></td>
+            <td class="name"><code>SettingsEntity</code></td>
+            <td class="what"><code>@Entity(tableName = "Settings")</code>, <code>@PrimaryKey val key: String</code>, <code>val value: String</code>; пакет <code>ru.sla.clarify.database.entity</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Вопрос 04 решён. Проверка: имя таблицы совпадает с нынешним <code>Settings</code>. Отклонение автора: поле <code>key</code> имеет тип <code>SettingsEntity.Key</code> (<code>@JvmInline value class Key(val key: String)</code>), а не <code>String</code>; в схеме столбец остаётся <code>TEXT NOT NULL</code>.</td>
+          </tr>
+          <tr data-item="1.3" data-group="b1" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>1.3</span></td>
+            <td class="name"><code>SettingsDao</code></td>
+            <td class="what"><code>@Dao interface SettingsDao</code> — пока без методов: по решению автора методы пишутся в Уроке 2 (пункт 2.1).</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: KSP принимает пустой DAO. Отклонение от первой редакции плана: методы вынесены в блок 2.</td>
+          </tr>
+          <tr data-item="1.4" data-group="b1" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>1.4</span></td>
+            <td class="name"><code>SettingsDatabase</code> и схема</td>
+            <td class="what"><code>@Database(entities = [SettingsEntity::class], version = 1, exportSchema = false)</code>, <code>abstract fun settingsDao()</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Отклонение автора: экспорт схемы выключен, <code>schemas/1.json</code> не создаётся; решение — вопрос 18, пункт 2.2. Проверка: KSP собирает базу, <code>SettingsDatabase_Impl</code> сгенерирован.</td>
+          </tr>
+          <tr data-item="1.5" data-group="b1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>1.5</span></td>
+            <td class="name">DI: <code>provideSettingsDatabase</code></td>
+            <td class="what"><code>Room.databaseBuilder(context, SettingsDatabase::class.java, name).setDriver(AndroidSQLiteDriver()).build()</code> в <code>DatabaseModule</code>, <code>@SingleIn(AppScope::class)</code> — один на процесс, как сегодня. DAO в граф отдельно не вносится; что получают потребители — вопрос 05.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Вопрос 07: данные не переносим, файл новый (в ветке автора — <code>settings.db</code>). Провайдер подключён к графу DI, значит используется, даже пока его никто не запрашивает (правило «код подключён»). Room 3 требует драйвер: без <code>setDriver</code> код собирается, но по документации база не откроется. Проверка: граф DI собирается с провайдером, приложение собирается. Факт: компиляция модуля прошла; сборка приложения на Room 3 не запускалась — пункт возвращён в невыполненные.</td>
+          </tr>
+          <tr data-item="1.6" data-group="b1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>1.6</span></td>
+            <td class="name">Проверки</td>
+            <td class="what"><code>./gradlew :database:assembleDebug</code>, <code>./gradlew :app:android:checkDebugDuplicateClasses</code>, <code>./gradlew prePushCheck</code>, <code>./gradlew test</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: все четыре зелёные на Room 3. Факт: на Room 2.8.5 пройдены все четыре; на пересозданных коммитах Room 3 пройдены компиляция модуля, <code>spotlessCheck</code>, <code>checkDebugDuplicateClasses</code> и тесты модуля, а <code>prePushCheck</code>, <code>test</code> по всем модулям и сборка приложения не запускались — их вы остановили. Одним полным прогоном закрываются 1.5, 1.6 и 2.4. Замечание: detekt в <code>:app:data</code> печатает «3 compiler errors found during analysis»; причину не установил — сравнить с чистым деревом не удалось из-за блокировки <code>classes.jar</code>. Блокировку снимает <code>./gradlew --stop</code>: файл держал демон Gradle.</td>
+          </tr>
+          <tr data-item="1.7" data-group="b1" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>1.7</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита, с рассказом «что, зачем, куда, почему».</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув. Блок 2 начинается отдельным «давай дальше».</td>
+          </tr>
+          <tr data-item="1.8" data-group="b1" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>1.8</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[database] Add Room settings database</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 1.7. Проверка: коммиты автора на ветках <code>room</code> и <code>room-my</code>: <code>0eeb3144</code> с зависимостями Room 3 и <code>92a9854d</code> с кодом (сущность, пустой DAO, база, провайдер с драйвером); оба пересозданы на Room 3 после решения по вопросу 20. Прежние варианты на Room 2 (<code>d9359db9</code>, <code>0c7a7d65</code>, <code>a2d3d67e</code>, мой <code>be64d01f</code>) остались только в reflog.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b2"><td colspan="5">Блок 2 · Урок 2: как проверять DAO<span class="status new">текущий</span><span class="gcount">4/6</span></td></tr>
+          <tr data-item="2.1" data-group="b2" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>2.1</span></td>
+            <td class="name"><code>SettingsDao</code>: методы</td>
+            <td class="what">Четыре метода: <code>select</code> (suspend) и <code>observe</code> (<code>Flow</code>) принимают <code>SettingsEntity.Key</code>; <code>insertOrReplace</code> — <code>@Insert(onConflict = REPLACE)</code>; <code>delete</code> — <code>@Delete(SettingsEntity::class)</code> с параметром <code>SettingsEntity.Key</code>. Для <code>Settings</code> замена строки безопасна: у таблицы нет дочерних, и это то же поведение, что было у <code>INSERT OR REPLACE</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Вопросы 19, 21. Поле частичного класса должно называться как столбец (<code>key</code>): Room сопоставляет их по именам, и <code>Key(val value)</code> дало бы <code>DELETE … WHERE value = ?</code>. Проверка: KSP принимает запросы, сгенерирован <code>DELETE FROM Settings WHERE key = ?</code>; тест <code>delete removes only the given key</code> зелёный.</td>
+          </tr>
+          <tr data-item="2.2" data-group="b2">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>2.2</span></td>
+            <td class="name">Экспорт схемы</td>
+            <td class="what">Решить, включать ли <code>exportSchema = true</code>; при «да» — файл <code>database/schemas/…/1.json</code> попадает в git.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Блокирует вопрос 18. Проверка: решение записано; при «да» JSON появился после сборки и совпадает по столбцам с <code>SettingsEntity</code>.</td>
+          </tr>
+          <tr data-item="2.3" data-group="b2" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>2.3</span></td>
+            <td class="name">Спайк: <code>SettingsDaoTest</code></td>
+            <td class="what">Тест на in-memory Room в JVM-тесте: вставка, чтение, обновление того же ключа, удаление и случай «записали — подписка <code>Flow</code> получила значение». Путь — по вопросу 06; добавляются <code>testImplementation</code>-зависимости.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Вопрос 06 решён. Проверка: <code>./gradlew :database:test</code> зелёный. Факт на Room 3.0.3: 5 тестов DAO проходят; драйвер <code>sqlite-bundled-jvm:2.7.1</code> (Room 3 тянет <code>androidx.sqlite</code> 2.7.1), билдер <code>Room.inMemoryDatabaseBuilder&lt;T&gt;()</code> без <code>Context</code> и без <code>mockk</code>; тест <code>observe</code> видит запись — база общая для соединений. Путь обновления через <code>@Upsert</code> не проходил на Room 2.8.5 и не проходит на Room 3: исключение приходит классом-заглушкой <code>android.database.SQLException</code> из <code>android.jar</code> без сообщения, и Room не опознаёт конфликт ключа; вопрос 19 решён заменой строки.</td>
+          </tr>
+          <tr data-item="2.4" data-group="b2">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>2.4</span></td>
+            <td class="name">Проверки</td>
+            <td class="what"><code>./gradlew prePushCheck</code> и <code>./gradlew test</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: <code>test</code>, <code>checkDebugDuplicateClasses</code>, <code>prePushCheck</code> — код 0 на Room 3. Факт: на Room 3 пройдены тесты модуля, <code>spotlessCheck</code> и <code>checkDebugDuplicateClasses</code>; полный <code>prePushCheck</code> и <code>test</code> по всем модулям не запускались — пункт возвращён в невыполненные до общего прогона.</td>
+          </tr>
+          <tr data-item="2.5" data-group="b2" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>2.5</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув. Блок 3 — отдельным «давай дальше».</td>
+          </tr>
+          <tr data-item="2.6" data-group="b2" data-done="1">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>2.6</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[database] Add the settings DAO with JVM tests</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 2.5. Проверка: коммит <code>17292b28</code> на ветках <code>room</code> и <code>room-my</code>: методы DAO, <code>Key</code> в сущности, тест и тестовые зависимости. Открытым остаётся только пункт 2.2 (вопрос 18): решение по экспорту схемы отложено.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b3"><td colspan="5">Блок 3 · Урок 3: подключаем Settings<span class="gcount">0/6</span></td></tr>
+          <tr data-item="3.1" data-group="b3">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.1</span></td>
+            <td class="name"><code>AuthSessionPersistenceImpl</code></td>
+            <td class="what">Обращения к <code>settingsQueries</code> заменяются на <code>settingsDao()</code>; <code>asFlow().mapToOneOrNull(IO)</code> становится <code>observe(key)</code>; обёртки <code>withContext(Dispatchers.IO)</code> убираются.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Проверка вручную: вход, убийство процесса, повторный запуск — сессия на месте; выход чистит ключи.</td>
+          </tr>
+          <tr data-item="3.2" data-group="b3">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.2</span></td>
+            <td class="name"><code>PersistedEventCursorStore</code></td>
+            <td class="what">Три обращения (<code>read</code>, <code>save</code>, <code>clear</code>) переходят на DAO.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: курсор события переживает перезапуск процесса.</td>
+          </tr>
+          <tr data-item="3.3" data-group="b3">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.3</span></td>
+            <td class="name">Удаление <code>PersistedDB</code></td>
+            <td class="what">Удалить <code>Settings.sq</code>, базу <code>PersistedDB</code> из блока <code>sqldelight {}</code>, её <code>kotlin.srcDir</code> и <code>dependsOn generate…PersistedDBInterface</code>, а также <code>providePersistedDatabase</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: сборка без <code>PersistedDB</code>; поиск по <code>PersistedDB</code> пуст.</td>
+          </tr>
+          <tr data-item="3.4" data-group="b3">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.4</span></td>
+            <td class="name">Проверки</td>
+            <td class="what"><code>./gradlew prePushCheck</code>, <code>./gradlew test</code>, ручной прогон на устройстве, где уже есть старая <code>clarify.db</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: всё зелёное; со старым файлом приложение стартует, сессии нет — вход заново (данные тестовые, потеря допустима).</td>
+          </tr>
+          <tr data-item="3.5" data-group="b3">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.5</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув. Блок 4 — отдельным «давай дальше».</td>
+          </tr>
+          <tr data-item="3.6" data-group="b3">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.6</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[database] Switch settings storage to Room</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 3.5. Проверка: коммит содержит проводку и удаления, без нового кода Room.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b4"><td colspan="5">Блок 4 · Урок 4: схема чата<span class="gcount">0/7</span></td></tr>
+          <tr data-item="4.1" data-group="b4">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.1</span></td>
+            <td class="name">Конвертеры id</td>
+            <td class="what">В пакете <code>converter</code> — <code>UserIdConverter</code>, <code>ConversationIdConverter</code>, <code>BranchIdConverter</code>, <code>CommitIdConverter</code>, <code>MemberIdConverter</code>; в каждом пара <code>@TypeConverter</code>-функций «из базы» и «в базу».</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Блокирует вопрос 09. Проверка: тест круга «в базу → из базы» на каждый; отдельно проверить, что <code>value class</code> проходят KSP и что nullable-колонки (<code>ownerId</code>, <code>invitedId</code>) не требуют второго конвертера. Находка из Урока 2: <code>value class</code> Room 2.8.5 и 3.0.3 принимают и без конвертера — сначала проверить чтение и параметры DAO, конвертеры писать только там, где без них не собирается.</td>
+          </tr>
+          <tr data-item="4.2" data-group="b4">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.2</span></td>
+            <td class="name">Составные значения</td>
+            <td class="what"><code>UserIdSetConverter</code> (<code>Set&lt;UserId&gt;</code> ↔ JSON) и <code>CommitReplyConverter</code> (<code>Commit.Reply</code> ↔ JSON). Тест <code>CommitReplyAdapterTest</code> копируется как <code>CommitReplyConverterTest</code>; старый уйдёт вместе с адаптером в 9.1.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: тест круга со спецсимволами и переносом строки зелёный — он же ловит потерю плагина сериализации.</td>
+          </tr>
+          <tr data-item="4.3" data-group="b4">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.3</span></td>
+            <td class="name">Сущности</td>
+            <td class="what"><code>ChatConversationEntity</code>, <code>UserEntity</code>, <code>ChatMemberEntity</code> (ключ <code>conversationId, id</code>), <code>ChatBranchEntity</code> (индекс по <code>conversationId</code>), <code>ChatCommitEntity</code> (два индекса, <code>defaultValue = "'text'"</code>), <code>MergeRequestEntity</code>; внешние ключи с <code>CASCADE</code>; <code>tableName</code> — как в <code>.sq</code>.</td>
+            <td class="size"><span class="size-chip l">L</span></td>
+            <td class="dep">Блокирует вопрос 12. Проверка: экспортированный JSON сверен с <code>CREATE TABLE</code> и <code>CREATE INDEX</code> из <code>.sq</code> — столбцы, <code>NOT NULL</code>, порядок ключа, индексы, <code>unreadCount DEFAULT 0</code>.</td>
+          </tr>
+          <tr data-item="4.4" data-group="b4">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.4</span></td>
+            <td class="name"><code>ChatDatabase</code></td>
+            <td class="what"><code>@Database</code> с шестью сущностями, <code>@TypeConverters</code> со всеми конвертерами, <code>version = 1</code>, <code>exportSchema = true</code>; DAO пока нет.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: KSP собирает базу, JSON схемы создан.</td>
+          </tr>
+          <tr data-item="4.5" data-group="b4">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.5</span></td>
+            <td class="name">Проверки</td>
+            <td class="what"><code>./gradlew prePushCheck</code> и <code>./gradlew test</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: оба зелёные; приложение работает на SQLDelight, как раньше.</td>
+          </tr>
+          <tr data-item="4.6" data-group="b4">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.6</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув. Блок 5 — отдельным «давай дальше».</td>
+          </tr>
+          <tr data-item="4.7" data-group="b4">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.7</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[database] Add Room chat schema</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 4.6. Проверка: коммит содержит конвертеры, сущности, базу и схему.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b5"><td colspan="5">Блок 5 · Урок 5: чтение I<span class="gcount">0/6</span></td></tr>
+          <tr data-item="5.1" data-group="b5">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.1</span></td>
+            <td class="name"><code>UserDao</code> и <code>ChatMemberDao</code></td>
+            <td class="what">Чтения: <code>select</code>, <code>selectWithoutProfile</code>, <code>selectIds</code>, <code>selectGroup</code>, <code>selectDirect</code>, <code>selectDirectById</code>. Разовые — <code>suspend</code>, наблюдаемые — <code>Flow</code>. Имена без имени таблицы, как в нынешних запросах.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Блокирует вопрос 11. Проверка: KSP принимает все запросы; <code>LEFT JOIN User</code> возвращает строки и без профиля.</td>
+          </tr>
+          <tr data-item="5.2" data-group="b5">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.2</span></td>
+            <td class="name"><code>ChatConversationDao</code></td>
+            <td class="what"><code>selectDirects</code>, <code>selectGroups</code> (<code>JOIN</code> + подзапрос <code>COUNT</code>), <code>selectGroup</code>, <code>selectIds</code>, <code>selectIdByMembers</code> (<code>GROUP BY … HAVING</code>, <code>IN :memberIds</code>); классы-проекции в <code>entity/</code>.</td>
+            <td class="size"><span class="size-chip l">L</span></td>
+            <td class="dep">Блокирует вопрос 10. Проверка: проекции содержат ровно те столбцы, что отдают нынешние запросы.</td>
+          </tr>
+          <tr data-item="5.3" data-group="b5">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.3</span></td>
+            <td class="name">Тесты чтения</td>
+            <td class="what">На каждый запрос: входные строки, ожидаемая выборка, порядок. Особые случаи: <code>selectIdByMembers</code> совпадает только по полному набору участников; <code>selectDirects</code> не показывает самого текущего пользователя как собеседника.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Проверка: <code>./gradlew :database:test</code> зелёный.</td>
+          </tr>
+          <tr data-item="5.4" data-group="b5">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.4</span></td>
+            <td class="name">Проверки</td>
+            <td class="what"><code>./gradlew prePushCheck</code> и <code>./gradlew test</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: оба зелёные.</td>
+          </tr>
+          <tr data-item="5.5" data-group="b5">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.5</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув. Блок 6 — отдельным «давай дальше».</td>
+          </tr>
+          <tr data-item="5.6" data-group="b5">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.6</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[database] Add Room read queries for conversations</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 5.5. Проверка: коммит содержит DAO, проекции и тесты.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b6"><td colspan="5">Блок 6 · Урок 6: чтение II<span class="gcount">0/6</span></td></tr>
+          <tr data-item="6.1" data-group="b6">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.1</span></td>
+            <td class="name"><code>ChatBranchDao</code></td>
+            <td class="what"><code>selectIds</code>, <code>selectByConversation</code>, <code>selectById</code>; последние два — <code>LEFT JOIN MergeRequest</code> с проекцией, где поля запроса слияния nullable.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Форма проекции — по вопросу 10. Проверка: сортировка по <code>createdAt ASC</code> сохранена.</td>
+          </tr>
+          <tr data-item="6.2" data-group="b6">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.2</span></td>
+            <td class="name"><code>ChatCommitDao</code></td>
+            <td class="what"><code>select</code>, <code>selectByConversation</code>, <code>selectOldestCursor</code>, <code>selectEditState</code>, <code>selectByIds</code> (<code>IN :ids</code>).</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Проверка: порядок <code>createdAtNanos</code>, <code>id</code> совпадает с нынешним (<code>DESC</code> в ленте, <code>ASC</code> в истории и курсоре).</td>
+          </tr>
+          <tr data-item="6.3" data-group="b6">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.3</span></td>
+            <td class="name">Тесты чтения</td>
+            <td class="what">Ветка без запроса слияния даёт null во всех полях слияния; фильтр <code>createdAtNanos &gt; 0</code> отсекает оптимистичные коммиты; <code>IN</code> с пустым и непустым списком; курсор — самый старый коммит ветки.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Проверка: <code>./gradlew :database:test</code> зелёный.</td>
+          </tr>
+          <tr data-item="6.4" data-group="b6">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.4</span></td>
+            <td class="name">Проверки</td>
+            <td class="what"><code>./gradlew prePushCheck</code> и <code>./gradlew test</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: оба зелёные.</td>
+          </tr>
+          <tr data-item="6.5" data-group="b6">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.5</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув. Блок 7 — отдельным «давай дальше».</td>
+          </tr>
+          <tr data-item="6.6" data-group="b6">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.6</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[database] Add Room read queries for branches and commits</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 6.5. Проверка: коммит содержит два DAO, проекции и тесты.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b7"><td colspan="5">Блок 7 · Урок 7: запись<span class="gcount">0/7</span></td></tr>
+          <tr data-item="7.1" data-group="b7">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.1</span></td>
+            <td class="name">Вставки</td>
+            <td class="what">Запись для всех шести таблиц по вопросу 13; для разговора и ветки <code>unreadCount</code> сохраняется (нынешний <code>COALESCE</code>). Параметры — по одному на столбец, как в нынешних <code>INSERT</code>.</td>
+            <td class="size"><span class="size-chip l">L</span></td>
+            <td class="dep">Блокируют вопросы 12, 13. Проверка: парсер Room принимает <code>ON CONFLICT … DO UPDATE</code>; если нет — запасной путь из вопроса 13.</td>
+          </tr>
+          <tr data-item="7.2" data-group="b7">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.2</span></td>
+            <td class="name">Изменения</td>
+            <td class="what"><code>updateUnreadCount</code> (разговор, ветка), <code>updateName</code>, <code>updateEdit</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: метод меняет ровно перечисленные столбцы.</td>
+          </tr>
+          <tr data-item="7.3" data-group="b7">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.3</span></td>
+            <td class="name">Удаления</td>
+            <td class="what"><code>delete</code> для разговора, ветки, коммита, запроса слияния; <code>deleteById</code> и <code>deleteExcept</code> (<code>NOT IN :memberIds</code>) для участников; <code>deleteAll</code> — только если вопрос 15 решён в пользу явной очистки.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Блокирует вопрос 15. Проверка: <code>deleteExcept</code> с пустым и непустым списком ведёт себя как нынешний запрос.</td>
+          </tr>
+          <tr data-item="7.4" data-group="b7">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.4</span></td>
+            <td class="name">Тесты ключей и каскадов</td>
+            <td class="what">Вставка коммита без разговора отвергается; повторная запись разговора не удаляет его ветки и коммиты; повторная запись не обнуляет <code>unreadCount</code>; удаление разговора каскадом удаляет детей.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Проверка: тесты зелёные — тем самым подтверждено или опровергнуто ожидание из вопроса 12, а таблица словаря обновляется по факту.</td>
+          </tr>
+          <tr data-item="7.5" data-group="b7">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.5</span></td>
+            <td class="name">Проверки</td>
+            <td class="what"><code>./gradlew prePushCheck</code> и <code>./gradlew test</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: оба зелёные.</td>
+          </tr>
+          <tr data-item="7.6" data-group="b7">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.6</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув. Блок 8 — отдельным «давай дальше».</td>
+          </tr>
+          <tr data-item="7.7" data-group="b7">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.7</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[database] Add Room write queries for chat</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 7.6. Проверка: коммит содержит методы записи и тесты.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b8"><td colspan="5">Блок 8 · Урок 8: подключаем чат<span class="gcount">0/10</span></td></tr>
+          <tr data-item="8.1" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.1</span></td>
+            <td class="name">DI: <code>provideChatDatabase</code></td>
+            <td class="what"><code>Room.inMemoryDatabaseBuilder&lt;ChatDatabase&gt;()</code> с <code>setDriver(AndroidSQLiteDriver())</code> в <code>DatabaseModule</code>, один на процесс; <code>provideInMemoryDatabase</code> удаляется. Как репозитории открывают транзакцию — по вопросу 14; <code>room3-runtime</code> лежит в <code>implementation</code>, на <code>api</code> поднимается, если потребителям из других модулей нужен его тип.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Блокируют вопросы 05, 14. Проверка: база создаётся один раз на процесс и не закрывается; драйвер задан — без него Room 3 не откроет базу.</td>
+          </tr>
+          <tr data-item="8.2" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.2</span></td>
+            <td class="name">Очистка сессии</td>
+            <td class="what"><code>cleanupBySessionKey</code> в <code>DbCleaning.kt</code> и его вызов в <code>AuthSessionRepositoryImpl</code> переходят на способ из вопроса 15.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Блокирует вопрос 15. Проверка: вызов идёт не с главного потока; после выхода из аккаунта все таблицы чата пусты.</td>
+          </tr>
+          <tr data-item="8.3" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.3</span></td>
+            <td class="name"><code>ConversationRepositoryImpl</code></td>
+            <td class="what">Запросы и транзакции на DAO; <code>mapToConversation</code> и <code>mapToGroup</code> заменяются мапперами <code>toDomainModel()</code> над проекциями из 5.2.</td>
+            <td class="size"><span class="size-chip l">L</span></td>
+            <td class="dep">Проверка: список разговоров и профиль пользователя совпадают с прежними на тех же данных.</td>
+          </tr>
+          <tr data-item="8.4" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.4</span></td>
+            <td class="name"><code>GroupThreadRepositoryImpl</code></td>
+            <td class="what">Группа, её участники, переименование, добавление и удаление участников.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Проверка: участники группы и имя совпадают с прежними.</td>
+          </tr>
+          <tr data-item="8.5" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.5</span></td>
+            <td class="name"><code>DirectThreadRepositoryImpl</code></td>
+            <td class="what">Лента личного чата, оптимистичные правка и удаление, курсор истории, ветки; <code>Query&lt;Conversation.Id&gt;</code> в <code>selectDirectConversationId</code> уходит вместе с <code>app.cash.sqldelight.Query</code>.</td>
+            <td class="size"><span class="size-chip l">L</span></td>
+            <td class="dep">Проверка: отправка, правка и удаление у себя и у всех, ответ на сообщение.</td>
+          </tr>
+          <tr data-item="8.6" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.6</span></td>
+            <td class="name"><code>ChronologyRepositoryImpl</code></td>
+            <td class="what">Ветки, коммиты и участники для графа хронологии; <code>selectDirectConversationId</code>.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Проверка: граф хронологии строится из тех же данных.</td>
+          </tr>
+          <tr data-item="8.7" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.7</span></td>
+            <td class="name"><code>BranchRepositoryImpl</code></td>
+            <td class="what">Самый большой репозиторий (≈ 680 строк): ветка, её коммиты, участники, запрос слияния, непрочитанное.</td>
+            <td class="size"><span class="size-chip xl">XL</span></td>
+            <td class="dep">Проверка: создание ветки, запрос слияния и его одобрение, непрочитанные счётчики.</td>
+          </tr>
+          <tr data-item="8.8" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.8</span></td>
+            <td class="name">Проверки</td>
+            <td class="what"><code>./gradlew prePushCheck</code>, <code>./gradlew test</code>, поиск <code>InMemoryDB</code> и <code>inMemoryDB</code> в потребителях пуст, ручной прогон: личный чат, группа, ветка, непрочитанные, выход и вход другим пользователем.</td>
+            <td class="size"><span class="size-chip l">L</span></td>
+            <td class="dep">Проверка: всё зелёное; при включённых ключах (вопрос 12) нет <code>SQLiteConstraintException</code> в журнале ни в одном из сценариев.</td>
+          </tr>
+          <tr data-item="8.9" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.9</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита, по репозиториям.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув. Блок 9 — отдельным «давай дальше».</td>
+          </tr>
+          <tr data-item="8.10" data-group="b8">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.10</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[database] Switch chat storage to Room</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 8.9, одним коммитом по вопросу 16. Проверка: коммит содержит проводку, очистку и пять репозиториев с мапперами.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b9"><td colspan="5">Блок 9 · Урок 9: уборка SQLDelight<span class="gcount">0/6</span></td></tr>
+          <tr data-item="9.1" data-group="b9">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.1</span></td>
+            <td class="name">Код и обвязка</td>
+            <td class="what">Удалить шесть оставшихся <code>.sq</code>, <code>adapter/</code> (семь файлов) и <code>CommitReplyAdapterTest</code>, SQLDelight-версию <code>Flows.kt</code>, блок <code>sqldelight {}</code>, <code>afterEvaluate</code> с <code>dependsOn</code>, <code>sourceSets</code>, <code>alias(libs.plugins.sqldelight)</code>, <code>api libs.sqldelight.coroutines</code>, <code>implementation libs.sqldelight.android.driver</code>.</td>
+            <td class="size"><span class="size-chip">M</span></td>
+            <td class="dep">Блокируют вопросы 08, 11. Проверка: <code>:database:assembleDebug</code> без SQLDelight-задач.</td>
+          </tr>
+          <tr data-item="9.2" data-group="b9">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.2</span></td>
+            <td class="name">Каталог версий</td>
+            <td class="what">Убрать <code>sqldelight</code>, <code>sqldelight-android-driver</code>, <code>sqldelight-coroutines</code> и плагин <code>sqldelight</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: в <code>libs.versions.toml</code> SQLDelight встречается только в строке <code>pathfinder-store</code>.</td>
+          </tr>
+          <tr data-item="9.3" data-group="b9">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.3</span></td>
+            <td class="name">Упоминания в тексте</td>
+            <td class="what">KDoc в <code>FirestoreListenerGuard</code> («SQLDelight-Flow»), комментарий в <code>app/data/…/Mocks.kt</code>. Формулировки — по условию, а не по устройству соседа (<code>documentation.md</code>).</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: поиск <code>SQLDelight</code> по <code>*.kt</code> даёт только <code>PathfinderConfiguration.kt</code>.</td>
+          </tr>
+          <tr data-item="9.4" data-group="b9">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.4</span></td>
+            <td class="name">Проверки</td>
+            <td class="what"><code>./gradlew clean prePushCheck</code>, <code>./gradlew test</code>, <code>./gradlew :app:data:dependencies</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: всё зелёное; SQLDelight в графе — только через <code>pathfinder-store</code>.</td>
+          </tr>
+          <tr data-item="9.5" data-group="b9">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.5</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув. Блок 10 — отдельным «давай дальше».</td>
+          </tr>
+          <tr data-item="9.6" data-group="b9">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.6</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[database] Remove SQLDelight from the database module</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 9.5. Проверка: коммит состоит из удалений и правок каталога.</td>
+          </tr>
+
+          <tr class="group" data-group-header="b10"><td colspan="5">Блок 10 · Урок 10: правила проекта<span class="gcount">0/4</span></td></tr>
+          <tr data-item="10.1" data-group="b10">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>10.1</span></td>
+            <td class="name">Формулировки</td>
+            <td class="what">Готовый текст <code>room.md</code> с причиной у каждого правила и решение по <code>sqldelight.md</code> — в чат, не в файл.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Блокирует вопрос 17. Проверка: у каждого предложенного правила записана причина; в <code>.claude/rules/</code> ничего не изменилось до вашего «да».</td>
+          </tr>
+          <tr data-item="10.2" data-group="b10">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>10.2</span></td>
+            <td class="name">Проверки</td>
+            <td class="what">После «да» файлы правил записаны; фронтматтер <code>paths</code> указывает на <code>**/*.kt</code> и существующие файлы Room.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: правила в <code>.claude/rules/</code>, по файлу на тему; формулировки совпадают с одобренными.</td>
+          </tr>
+          <tr data-item="10.3" data-group="b10">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>10.3</span></td>
+            <td class="name">Ревью и аппрув</td>
+            <td class="what">Изменение отдаётся без коммита.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Проверка: ваш аппрув.</td>
+          </tr>
+          <tr data-item="10.4" data-group="b10">
+            <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>10.4</span></td>
+            <td class="name">Коммит</td>
+            <td class="what"><code>[docs] Replace the SQLDelight rules with Room rules</code>.</td>
+            <td class="size"><span class="size-chip">S</span></td>
+            <td class="dep">Только после 10.3. Проверка: коммит содержит только файлы в <code>.claude/rules/</code>.</td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div>Источники: <a href="https://developer.android.com/jetpack/androidx/releases/room3" target="_blank" rel="noreferrer">Room 3 — релизы AndroidX</a> (3.0.3, отличия от 2.x); <a href="https://android-developers.googleblog.com/2026/03/room-30-modernizing-room.html" target="_blank" rel="noreferrer">Room 3.0 — анонс</a>; <a href="https://developer.android.com/training/data-storage/room/accessing-data" target="_blank" rel="noreferrer">Room — доступ к данным через DAO</a> (<code>@Insert</code>, <code>@Delete</code>); <a href="https://developer.android.com/jetpack/androidx/releases/room" target="_blank" rel="noreferrer">Room — релизы AndroidX</a> (версии, требования к Kotlin и KSP, Room Gradle plugin); <a href="https://dl.google.com/android/maven2/androidx/room3/room3-runtime/maven-metadata.xml" target="_blank" rel="noreferrer">maven-metadata <code>room3-runtime</code></a> (последняя стабильная — 3.0.3).</div>
+    <div>Оговорка: наброски кода не компилировались, DI и обработка ошибок в них опущены. Всё, что про Room сказано как ожидание — включение внешних ключей, приём чужого файла БД, форма <code>ON CONFLICT</code>, in-memory в JVM-тесте, <code>value class</code> в конвертерах, — документацией не проверено и закрывается пунктом трекера, на который ссылается.</div>
+  </footer>
+
+</div>
+<script>
+  // marks live in this file: rows with data-done="1" are done
+  (function () {
+    var rows = Array.prototype.slice.call(document.querySelectorAll('tr[data-item]'));
+    var headers = Array.prototype.slice.call(document.querySelectorAll('tr[data-group-header]'));
+    var total = rows.length;
+    var done = 0;
+    rows.forEach(function (row) {
+      var isDone = row.dataset.done === '1';
+      if (isDone) done += 1;
+      row.classList.toggle('done', isDone);
+    });
+    headers.forEach(function (header) {
+      var group = header.dataset.groupHeader;
+      var kids = rows.filter(function (row) { return row.dataset.group === group; });
+      var kidsDone = kids.filter(function (row) { return row.dataset.done === '1'; }).length;
+      var out = header.querySelector('.gcount');
+      if (!out) return;
+      out.textContent = kidsDone + '/' + kids.length;
+      out.classList.toggle('full', kids.length > 0 && kidsDone === kids.length);
+    });
+    var pct = total ? Math.round((done / total) * 100) : 0;
+    document.getElementById('tracker-bar').style.width = pct + '%';
+    document.getElementById('tracker-count').innerHTML = 'Выполнено <b>' + done + '</b> из ' + total + ' · ' + pct + '%';   // localise the words
+  })();
+</script>
+</body>
+</html>
