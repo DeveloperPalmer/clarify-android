@@ -15,7 +15,7 @@ fun InMemoryDB.cleanupBySessionKey(key: String) {
   transaction {
     log { "cleaning up data for session key=$key" }
     // Внешние ключи на драйвере не включены, поэтому ON DELETE CASCADE ничего не делает:
-    // каждую таблицу нужно чистить явно. Settings живёт в PersistedDB (в ней хранится сама
+    // каждую таблицу нужно чистить явно. Settings живёт в SettingsDatabase (в ней хранится сама
     // сессия — токены/userId, ей управляет AuthSessionPersistence) и здесь не трогается.
     userQueries.deleteAll()
     chatMemberQueries.deleteAll()
