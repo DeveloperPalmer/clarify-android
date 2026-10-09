@@ -25,6 +25,7 @@ import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.ChatDatabase
 import ru.sla.clarify.database.entity.ChatCommitEntity
+import ru.sla.clarify.database.upsertBranch
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.BranchRecord
 import ru.sla.clarify.entity.chat.ChatChange
@@ -425,28 +426,8 @@ class BranchRepositoryImpl @Inject constructor(
       if (branch == null) {
         chatDatabase.chatBranchDao().delete(branchId)
       } else {
-        applyInsertOrReplaceBranch(branch)
+        chatDatabase.upsertBranch(branch)
       }
-    }
-  }
-
-  private suspend fun applyInsertOrReplaceBranch(branch: BranchRecord) {
-    chatDatabase.chatBranchDao().upsert(
-      id = branch.id,
-      conversationId = branch.conversationId,
-      parentBranchId = branch.parentBranchId,
-      branchedFromCommitId = branch.branchedFromCommitId,
-      name = branch.name,
-      lastCommit = branch.lastCommitText,
-      lastCommitTimestamp = branch.lastCommitAtSeconds,
-      createdAt = branch.createdAtSeconds,
-      createdById = branch.createdById
-    )
-    val mergeRequest = branch.mergeRequest
-    if (mergeRequest != null) {
-      chatDatabase.mergeRequestDao().insertOrReplace(mergeRequest.toCacheRow(branch.id))
-    } else {
-      chatDatabase.mergeRequestDao().delete(branch.id)
     }
   }
 
