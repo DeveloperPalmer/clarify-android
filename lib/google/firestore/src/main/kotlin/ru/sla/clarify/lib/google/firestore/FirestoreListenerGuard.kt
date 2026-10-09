@@ -15,8 +15,8 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * Каждый `addSnapshotListener` стоит как минимум один read на первый snapshot. Если клиентский
  * код случайно пересоздаёт один и тот же listener много раз в секунду (классическая причина —
- * `flatMapLatest` поверх SQLDelight-Flow без `distinctUntilChanged`, см.
- * `database/extension/Flows.kt`), это незаметно сожжёт дневную квоту за минуты.
+ * `flatMapLatest` поверх наблюдаемого запроса к базе, который перевыпускает одно и то же значение
+ * без `distinctUntilChanged`), это незаметно сожжёт дневную квоту за минуты.
  *
  * Поведение при срабатывании: лог + (если [crashOnViolation] = true, по умолчанию) краш
  * приложения через `Handler(Looper.getMainLooper()).post { throw ... }`. Краш бросается
