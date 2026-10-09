@@ -9,6 +9,7 @@ import ru.sla.clarify.database.converter.CommitReplyConverter
 import ru.sla.clarify.database.converter.DistinctFlowConverter
 import ru.sla.clarify.database.converter.MemberIdConverter
 import ru.sla.clarify.database.converter.UserIdSetConverter
+import ru.sla.clarify.database.dao.ChatConversationDao
 import ru.sla.clarify.database.dao.ChatMemberDao
 import ru.sla.clarify.database.dao.UserDao
 import ru.sla.clarify.database.entity.ChatBranchEntity
@@ -43,4 +44,6 @@ abstract class ChatDatabase : RoomDatabase() {
   abstract fun userDao(): UserDao
 
   abstract fun chatMemberDao(): ChatMemberDao
+
+  abstract fun chatConversationDao(): ChatConversationDao
 }
