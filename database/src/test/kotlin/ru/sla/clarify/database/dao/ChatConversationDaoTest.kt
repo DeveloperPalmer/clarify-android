@@ -199,6 +199,45 @@ class ChatConversationDaoTest {
     }
   }
 
+  @Test
+  fun `updateUnreadCount changes only the counter of the given conversation`() = runTest {
+    upsertGroup(name = "group")
+    insertConversation("g2", "group", timestamp = 2, name = "other")
+
+    dao.updateUnreadCount(Conversation.Id("g1"), 4)
+
+    dao.observeGroups().test {
+      assertEquals(
+        mapOf("other" to 0L, "group" to 4L),
+        awaitItem().associate { it.name to it.unreadCount }
+      )
+    }
+  }
+
+  @Test
+  fun `updateName changes only the name`() = runTest {
+    upsertGroup(name = "old")
+    execute("UPDATE ChatConversation SET unreadCount = 2 WHERE id = 'g1'")
+
+    dao.updateName(Conversation.Id("g1"), "new")
+
+    dao.observeGroup(Conversation.Id("g1")).test {
+      assertEquals(
+        GroupRow(
+          id = Conversation.Id("g1"),
+          name = "new",
+          ownerId = UserId("owner"),
+          lastCommit = null,
+          lastCommitSenderId = null,
+          lastCommitTimestamp = 1,
+          unreadCount = 2,
+          memberCount = 0
+        ),
+        awaitItem()
+      )
+    }
+  }
+
   private suspend fun upsertGroup(name: String) {
     dao.upsert(
       id = Conversation.Id("g1"),

@@ -162,6 +162,20 @@ class ChatCommitDaoTest {
     )
   }
 
+  @Test
+  fun `updateEdit changes only text, edit time and status`() = runTest {
+    insertConversation("c1")
+    insertCommit("a", branchId = "b1", createdAtNanos = 1, withReply = true)
+    val before = dao.selectByIds(listOf(Commit.Id("a"))).single()
+
+    dao.updateEdit(Commit.Id("a"), text = "edited", editedAtNanos = 9, status = "sending")
+
+    assertEquals(
+      before.copy(text = "edited", editedAtNanos = 9, status = "sending"),
+      dao.selectByIds(listOf(Commit.Id("a"))).single()
+    )
+  }
+
   private suspend fun insertConversation(id: String) {
     execute("INSERT INTO ChatConversation (id, type, lastCommitTimestamp) VALUES ('$id', 'group', 0)")
   }

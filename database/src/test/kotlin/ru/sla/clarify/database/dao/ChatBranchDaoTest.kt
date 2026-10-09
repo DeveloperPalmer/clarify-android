@@ -109,6 +109,18 @@ class ChatBranchDaoTest {
     assertEquals(0L, dao.selectById(Branch.Id("b1"))?.unreadCount)
   }
 
+  @Test
+  fun `updateUnreadCount changes only the counter of the given branch`() = runTest {
+    insertConversation("c1")
+    insertBranch("b1", "c1", createdAt = 1)
+    insertBranch("b2", "c1", createdAt = 2)
+
+    dao.updateUnreadCount(Branch.Id("b1"), 7)
+
+    assertEquals(branchRow("b1", createdAt = 1).copy(unreadCount = 7), dao.selectById(Branch.Id("b1")))
+    assertEquals(branchRow("b2", createdAt = 2), dao.selectById(Branch.Id("b2")))
+  }
+
   private suspend fun upsertBranch(name: String) {
     dao.upsert(
       id = Branch.Id("b1"),

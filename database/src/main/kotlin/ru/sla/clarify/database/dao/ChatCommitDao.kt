@@ -134,4 +134,16 @@ interface ChatCommitDao {
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertOrReplace(entity: ChatCommitEntity)
+
+  @Query(
+    """
+    UPDATE ChatCommit
+    SET
+      text = :text,
+      editedAtNanos = :editedAtNanos,
+      status = :status
+    WHERE id = :id
+    """
+  )
+  suspend fun updateEdit(id: Commit.Id, text: String, editedAtNanos: Long?, status: String)
 }

@@ -163,4 +163,24 @@ interface ChatConversationDao {
     lastCommitSenderId: UserId?,
     lastCommitTimestamp: Long
   )
+
+  @Query(
+    """
+    UPDATE ChatConversation
+    SET
+      unreadCount = :unreadCount
+    WHERE id = :id
+    """
+  )
+  suspend fun updateUnreadCount(id: Conversation.Id, unreadCount: Long)
+
+  @Query(
+    """
+    UPDATE ChatConversation
+    SET
+      name = :name
+    WHERE id = :id
+    """
+  )
+  suspend fun updateName(id: Conversation.Id, name: String?)
 }
