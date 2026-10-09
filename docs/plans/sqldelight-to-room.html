@@ -671,8 +671,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <p class="standfirst">
       План переписывает локальную базу с SQLDelight на Room в том порядке, в каком это удобно учить: от одной
       таблицы из двух столбцов до шести таблиц чата с join-ами, внешними ключами и транзакциями. У каждого
-      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–07, 09, 12 и 18–21, открыты
-      08, 10, 11 и 13–17: у каждого есть рекомендация и пункт, который он блокирует.
+      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–07, 09–12 и 18–21, открыты
+      08 и 13–17: у каждого есть рекомендация и пункт, который он блокирует.
     </p>
     <div class="meta">
       <span><b>Формат:</b> учебный план + трекер</span>
@@ -699,8 +699,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         <div class="rail-step"><span class="n">2</span>Тесты DAO</div>
         <div class="rail-step"><span class="n">3</span>Подключение Settings</div>
         <div class="rail-step"><span class="n">4</span>Схема чата</div>
-        <div class="rail-step in"><span class="n">5</span>Чтение I</div>
-        <div class="rail-step"><span class="n">6</span>Чтение II</div>
+        <div class="rail-step"><span class="n">5</span>Чтение I</div>
+        <div class="rail-step in"><span class="n">6</span>Чтение II</div>
         <div class="rail-step"><span class="n">7</span>Запись</div>
         <div class="rail-step"><span class="n">8</span>Подключение чата</div>
         <div class="rail-step"><span class="n">9</span>Уборка</div>
@@ -866,8 +866,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
           </tr>
           <tr>
             <td class="name"><code>Query&lt;T&gt;.asFlow().mapToList()</code></td>
-            <td class="what">метод DAO, возвращающий <code>Flow&lt;List&lt;T&gt;&gt;</code></td>
-            <td class="dep">Тот же принцип: перевыпуск на любую запись в таблицу. Дедупликация из <code>Flows.kt</code> теряет типовую гарантию (вопрос 11).</td>
+            <td class="what">метод DAO, возвращающий <code>DistinctFlow&lt;List&lt;T&gt;&gt;</code></td>
+            <td class="dep">Тот же принцип: перевыпуск на любую запись в таблицы запроса, включая таблицы подзапросов. Встроенный <code>Flow</code> Room дедупликацию из <code>Flows.kt</code> теряет; её возвращает свой тип через <code>@DaoReturnTypeConverter</code> — механизм Room 3 (вопрос 11).</td>
           </tr>
           <tr>
             <td class="name"><code>executeAsOneOrNull()</code> в <code>withContext(IO)</code></td>
@@ -881,8 +881,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
           </tr>
           <tr>
             <td class="name"><code>database.transaction { }</code></td>
-            <td class="what"><code>database.withTransaction { }</code></td>
-            <td class="dep">Лямбда становится <code>suspend</code>: внутри можно вызывать suspend-DAO (вопрос 14). Форму для Room 3 проверит пункт 8.1.</td>
+            <td class="what"><code>database.withWriteTransaction { }</code></td>
+            <td class="dep">Лямбда становится <code>suspend</code>: внутри можно вызывать suspend-DAO (вопрос 14). В Room 3 <code>withTransaction</code> на базе нет: есть <code>withWriteTransaction</code> и <code>withReadTransaction</code> — найдено в артефакте <code>room3-runtime</code> 3.0.3; поведение проверит 8.1.</td>
           </tr>
           <tr>
             <td class="name"><code>INSERT OR REPLACE</code></td>
@@ -1145,7 +1145,7 @@ suspend fun upsert(…)</code></pre>
 
   <section>
     <h2>Вопросы</h2>
-    <p class="note">Решены 01–07, 09, 12 и 18–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
+    <p class="note">Решены 01–07, 09–12 и 18–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
     <div class="questions">
       <div class="q">
         <div class="num">01</div>
@@ -1214,14 +1214,14 @@ suspend fun upsert(…)</code></pre>
         <div class="num">10</div>
         <div class="body">
           <div class="ask">Какую форму имеют проекции запросов с <code>JOIN</code>?</div>
-          <div class="why"><strong>Рекомендация: плоский класс-строка на запрос</strong> со столбцами в порядке <code>SELECT</code>; маппер — расширение <code>toDomainModel()</code> в пакете <code>mapper</code>. Альтернатива: <code>@Embedded</code> с вложенной сущностью — меньше полей, но nullable-вложение при <code>LEFT JOIN</code> прячет инвариант «запрос слияния целиком или никак». Блокирует 5.2.</div>
+          <div class="why"><strong>Решено: плоский класс-строка на запрос</strong> со столбцами в порядке <code>SELECT</code>; маппер — расширение <code>toDomainModel()</code> в пакете <code>mapper</code>. Альтернатива: <code>@Embedded</code> с вложенной сущностью — меньше полей, но nullable-вложение при <code>LEFT JOIN</code> прячет инвариант «запрос слияния целиком или никак». Итог: <code>DirectMemberRow</code>, <code>GroupMemberRow</code>, <code>DirectConversationRow</code>, <code>GroupConversationRow</code>, <code>GroupRow</code> в <code>entity/</code>; nullable — ровно поля со стороны <code>LEFT JOIN</code>. Меняет 5.1, 5.2.</div>
         </div>
       </div>
       <div class="q">
         <div class="num">11</div>
         <div class="body">
           <div class="ask">Как сохранить гарантию «наблюдаемый запрос всегда дедуплицирован»?</div>
-          <div class="why">Сегодня <code>Flows.kt</code> — единственная точка, возвращающая <code>Flow</code>; сырого потока нет в API по типу. DAO Room вернёт <code>Flow</code> напрямую, и гарантия превращается в дисциплину. <strong>Рекомендация: DAO возвращают <code>Flow</code>, репозитории вешают <code>distinctUntilChanged()</code>; причина (потерянный дневной лимит Firestore, <code>SnapshotIdSet</code>) переезжает в KDoc DAO и в будущее правило по Room.</strong> Альтернатива: оставить обёртки-расширения над DAO — тип снова защищает, но появляется второй слой. Блокирует 5.1.</div>
+          <div class="why">Сегодня <code>Flows.kt</code> — единственная точка, возвращающая <code>Flow</code>; сырого потока нет в API по типу. DAO Room вернёт <code>Flow</code> напрямую, и гарантия превращается в дисциплину. <strong>Рекомендация: DAO возвращают <code>Flow</code>, репозитории вешают <code>distinctUntilChanged()</code>; причина (потерянный дневной лимит Firestore, <code>SnapshotIdSet</code>) переезжает в KDoc DAO и в будущее правило по Room.</strong> Альтернатива: оставить обёртки-расширения над DAO — тип снова защищает, но появляется второй слой. <strong>Решено иначе: DAO отдают свой тип <code>DistinctFlow&lt;T&gt;</code>.</strong> Его конструктор закрыт и всегда добавляет <code>distinctUntilChanged()</code>; строит его единственный <code>@DaoReturnTypeConverter</code> — <code>DistinctFlowConverter</code>, подключённый на <code>ChatDatabase</code>. DAO остаются интерфейсами, гарантия видна в сигнатуре каждого запроса, причина — в KDoc <code>DistinctFlow</code>. Промежуточный вариант — абстрактный DAO с <code>protected</code> сырым методом и публичной обёрткой — работал, но удваивал каждую декларацию и отвергнут вами. Остаётся дыра: <code>Flow&lt;T&gt;</code> в DAO никто не запрещает — её закрывает ревью и правило блока 10. Тест на чувствительность: без <code>distinctUntilChanged()</code> в <code>DistinctFlow</code> тест повторов падает. Меняет 5.1.</div>
         </div>
       </div>
       <div class="q">
@@ -1242,7 +1242,7 @@ suspend fun upsert(…)</code></pre>
         <div class="num">14</div>
         <div class="body">
           <div class="ask">Как репозиторий открывает транзакцию и что для этого тянет в зависимости?</div>
-          <div class="why"><strong>Рекомендация: репозиторий зовёт <code>database.withTransaction</code>, <code>room3-runtime</code> лежит в <code>api</code> модуля <code>database</code>.</strong> Сегодня репозитории уже импортируют <code>app.cash.sqldelight.Query</code>, то есть знают библиотеку; новой связи это не создаёт. Альтернатива: собственная функция-обёртка в <code>database</code> — репозитории Room не импортируют, но обёртка просто пересказывает <code>withTransaction</code>. В Room 3 форму транзакции (<code>withTransaction</code> или <code>useWriterConnection</code>) нужно проверить в 8.1: в документации, которую я читал, она не описана. Блокирует 8.1.</div>
+          <div class="why"><strong>Рекомендация: репозиторий зовёт <code>database.withTransaction</code>, <code>room3-runtime</code> лежит в <code>api</code> модуля <code>database</code>.</strong> Сегодня репозитории уже импортируют <code>app.cash.sqldelight.Query</code>, то есть знают библиотеку; новой связи это не создаёт. Альтернатива: собственная функция-обёртка в <code>database</code> — репозитории Room не импортируют, но обёртка просто пересказывает <code>withTransaction</code>. В Room 3 форму транзакции (<code>withTransaction</code> или <code>useWriterConnection</code>) нужно проверить в 8.1: в документации, которую я читал, она не описана. Находка блока 5: в <code>room3-runtime</code> 3.0.3 это <code>withWriteTransaction</code> и <code>withReadTransaction</code> — расширения на <code>RoomDatabase</code>; <code>withTransaction</code> есть только у <code>Transactor</code> внутри <code>useWriterConnection</code>. Блокирует 8.1.</div>
         </div>
       </div>
       <div class="q">
@@ -1301,7 +1301,7 @@ suspend fun upsert(…)</code></pre>
     <h2>Трекер</h2>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>27</b> из 69 · 39%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>33</b> из 69 · 48%</span>
         <span class="tracker-hint">отметки записаны в этом файле; автор ставит их, когда проверка пункта пройдена</span>
       </div>
       <div class="tracker-bar"><span id="tracker-bar" style="width: 16%"></span></div>
@@ -1500,7 +1500,7 @@ suspend fun upsert(…)</code></pre>
             <td class="name">Сущности</td>
             <td class="what"><code>ChatConversationEntity</code>, <code>UserEntity</code>, <code>ChatMemberEntity</code> (ключ <code>conversationId, id</code>), <code>ChatBranchEntity</code> (индекс по <code>conversationId</code>), <code>ChatCommitEntity</code> (два индекса, <code>defaultValue = "'text'"</code>), <code>MergeRequestEntity</code>; внешние ключи с <code>CASCADE</code>; <code>tableName</code> — как в <code>.sq</code>.</td>
             <td class="size"><span class="size-chip l">L</span></td>
-            <td class="dep">Блокирует вопрос 12. Проверка: экспортированный JSON сверен с <code>CREATE TABLE</code> и <code>CREATE INDEX</code> из <code>.sq</code> — столбцы, <code>NOT NULL</code>, порядок ключа, индексы, <code>unreadCount DEFAULT 0</code>. Факт: коммит <code>a1810a6e</code>; <code>createSql</code> совпадает с <code>.sq</code> по столбцам, <code>NOT NULL</code>, <code>DEFAULT 0</code> и <code>DEFAULT 'text'</code>, ключу <code>(conversationId, id)</code>, трём индексам с прежними именами и трём каскадам. Отличие — только оформление Room: обратные кавычки, <code>IF NOT EXISTS</code>.</td>
+            <td class="dep">Блокирует вопрос 12. Проверка: экспортированный JSON сверен с <code>CREATE TABLE</code> и <code>CREATE INDEX</code> из <code>.sq</code> — столбцы, <code>NOT NULL</code>, порядок ключа, индексы, <code>unreadCount DEFAULT 0</code>. Факт: коммит <code>fd91ee18</code>; <code>createSql</code> совпадает с <code>.sq</code> по столбцам, <code>NOT NULL</code>, <code>DEFAULT 0</code> и <code>DEFAULT 'text'</code>, ключу <code>(conversationId, id)</code>, трём индексам с прежними именами и трём каскадам. Отличие — только оформление Room: обратные кавычки, <code>IF NOT EXISTS</code>.</td>
           </tr>
           <tr data-item="4.4" data-group="b4" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>4.4</span></td>
@@ -1528,54 +1528,54 @@ suspend fun upsert(…)</code></pre>
             <td class="name">Коммит</td>
             <td class="what"><code>[database] Add Room chat schema</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Только после 4.6. Проверка: коммит содержит конвертеры, сущности, базу и схему. Отклонение по вашей просьбе «атомарными правками»: три коммита — <code>4d11094e</code> конвертеры id, <code>a0aeb762</code> составные конвертеры, <code>a1810a6e</code> сущности, база и схема.</td>
+            <td class="dep">Только после 4.6. Проверка: коммит содержит конвертеры, сущности, базу и схему. Отклонение по вашей просьбе «атомарными правками»: три коммита — <code>4d11094e</code> конвертеры id, <code>a0aeb762</code> составные конвертеры, <code>fd91ee18</code> сущности, база и схема.</td>
           </tr>
 
-          <tr class="group" data-group-header="b5"><td colspan="5">Блок 5 · Урок 5: чтение I<span class="status new">текущий</span><span class="gcount">0/6</span></td></tr>
-          <tr data-item="5.1" data-group="b5">
+          <tr class="group" data-group-header="b5"><td colspan="5">Блок 5 · Урок 5: чтение I<span class="gcount">6/6</span></td></tr>
+          <tr data-item="5.1" data-group="b5" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.1</span></td>
             <td class="name"><code>UserDao</code> и <code>ChatMemberDao</code></td>
             <td class="what">Чтения: <code>select</code>, <code>selectWithoutProfile</code>, <code>selectIds</code>, <code>selectGroup</code>, <code>selectDirect</code>, <code>selectDirectById</code>. Разовые — <code>suspend</code>, наблюдаемые — <code>Flow</code>. Имена без имени таблицы, как в нынешних запросах.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Блокирует вопрос 11. Проверка: KSP принимает все запросы; <code>LEFT JOIN User</code> возвращает строки и без профиля.</td>
+            <td class="dep">Вопрос 11 решён. Проверка: KSP принимает все запросы; <code>LEFT JOIN User</code> возвращает строки и без профиля. Факт: коммит <code>b69fdabb</code> — <code>UserDao.observe</code>; <code>ChatMemberDao</code>: <code>observeWithoutProfile</code>, <code>selectIds</code>, <code>observeGroup</code>, <code>selectDirect</code> и <code>observeDirect</code> (оба используются), <code>observeDirectById</code>; имена — <code>observe…</code> для подписки, <code>select…</code> для разового чтения, как в <code>SettingsDao</code>. Вместе с ними <code>DistinctFlow</code> и его конвертер.</td>
           </tr>
-          <tr data-item="5.2" data-group="b5">
+          <tr data-item="5.2" data-group="b5" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.2</span></td>
             <td class="name"><code>ChatConversationDao</code></td>
             <td class="what"><code>selectDirects</code>, <code>selectGroups</code> (<code>JOIN</code> + подзапрос <code>COUNT</code>), <code>selectGroup</code>, <code>selectIds</code>, <code>selectIdByMembers</code> (<code>GROUP BY … HAVING</code>, <code>IN :memberIds</code>); классы-проекции в <code>entity/</code>.</td>
             <td class="size"><span class="size-chip l">L</span></td>
-            <td class="dep">Блокирует вопрос 10. Проверка: проекции содержат ровно те столбцы, что отдают нынешние запросы.</td>
+            <td class="dep">Вопрос 10 решён. Проверка: проекции содержат ровно те столбцы, что отдают нынешние запросы. Факт: коммит <code>8615a021</code>; SQL перенесён дословно, кроме <code>IN :memberIds</code> → <code>IN (:memberIds)</code> — синтаксис Room. <code>selectIdByMembers</code> есть в двух видах, подписка и разовое чтение: оба используются.</td>
           </tr>
-          <tr data-item="5.3" data-group="b5">
+          <tr data-item="5.3" data-group="b5" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.3</span></td>
             <td class="name">Тесты чтения</td>
             <td class="what">На каждый запрос: входные строки, ожидаемая выборка, порядок. Особые случаи: <code>selectIdByMembers</code> совпадает только по полному набору участников; <code>selectDirects</code> не показывает самого текущего пользователя как собеседника.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Проверка: <code>./gradlew :database:test</code> зелёный.</td>
+            <td class="dep">Проверка: <code>./gradlew :database:test</code> зелёный. Факт: тесты лежат в коммитах своих DAO — <code>UserDaoTest</code> (3), <code>ChatMemberDaoTest</code> (5), <code>ChatConversationDaoTest</code> (6); строки вставляются сырым SQL через <code>useWriterConnection { it.executeSQL(…) }</code>, DAO записи появятся в блоке 7.</td>
           </tr>
-          <tr data-item="5.4" data-group="b5">
+          <tr data-item="5.4" data-group="b5" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.4</span></td>
             <td class="name">Проверки</td>
             <td class="what"><code>./gradlew prePushCheck</code> и <code>./gradlew test</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: оба зелёные.</td>
+            <td class="dep">Проверка: оба зелёные. Факт: код 0 после 5.1 и 5.2; detekt потребовал <code>@Suppress("SpreadOperator")</code> в конвертере — с причиной, как в <code>ArrayUnionSerializer</code>.</td>
           </tr>
-          <tr data-item="5.5" data-group="b5">
+          <tr data-item="5.5" data-group="b5" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.5</span></td>
             <td class="name">Ревью и аппрув</td>
             <td class="what">Изменение отдаётся без коммита.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: ваш аппрув. Блок 6 — отдельным «давай дальше».</td>
+            <td class="dep">Проверка: ваш аппрув. Блок 6 — отдельным «давай дальше». Факт: аппрув дан на каждый пункт отдельно.</td>
           </tr>
-          <tr data-item="5.6" data-group="b5">
+          <tr data-item="5.6" data-group="b5" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>5.6</span></td>
             <td class="name">Коммит</td>
             <td class="what"><code>[database] Add Room read queries for conversations</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Только после 5.5. Проверка: коммит содержит DAO, проекции и тесты.</td>
+            <td class="dep">Только после 5.5. Проверка: коммит содержит DAO, проекции и тесты. Факт: два коммита — <code>b69fdabb</code> пользователи и участники, <code>8615a021</code> разговоры. Попутно форматирование <code>ChatCommitEntity</code>, недоделанное <code>spotlessApply</code> за один проход, влито в коммит схемы <code>fd91ee18</code>.</td>
           </tr>
 
-          <tr class="group" data-group-header="b6"><td colspan="5">Блок 6 · Урок 6: чтение II<span class="gcount">0/6</span></td></tr>
+          <tr class="group" data-group-header="b6"><td colspan="5">Блок 6 · Урок 6: чтение II<span class="status new">текущий</span><span class="gcount">0/6</span></td></tr>
           <tr data-item="6.1" data-group="b6">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.1</span></td>
             <td class="name"><code>ChatBranchDao</code></td>
