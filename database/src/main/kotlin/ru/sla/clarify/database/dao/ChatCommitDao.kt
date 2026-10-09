@@ -4,6 +4,7 @@ import androidx.room3.Dao
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
+import androidx.room3.Transaction
 import ru.sla.clarify.database.DistinctFlow
 import ru.sla.clarify.database.entity.ChatCommitEntity
 import ru.sla.clarify.database.entity.ChronologyCommitRow
@@ -132,8 +133,28 @@ interface ChatCommitDao {
   )
   suspend fun selectByIds(ids: List<Commit.Id>): List<ChatCommitEntity>
 
+  @Query(
+    """
+    SELECT
+      EXISTS (SELECT 1 FROM ChatConversation WHERE id = :conversationId)
+    """
+  )
+  suspend fun selectConversationExists(conversationId: Conversation.Id): Boolean
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertOrReplace(entity: ChatCommitEntity)
+
+  /**
+   * Пишет коммит, только пока его разговор есть в кэше. Разговор удаляют из кэша раньше, чем
+   * отменяется живой слушатель ленты, и последний снимок может прийти уже без родителя: вставка
+   * упала бы на внешнем ключе. Такой коммит больше некому показывать — он пропускается.
+   */
+  @Transaction
+  suspend fun insertOrReplaceIfConversationExists(entity: ChatCommitEntity) {
+    if (selectConversationExists(entity.conversationId)) {
+      insertOrReplace(entity)
+    }
+  }
 
   @Query(
     """

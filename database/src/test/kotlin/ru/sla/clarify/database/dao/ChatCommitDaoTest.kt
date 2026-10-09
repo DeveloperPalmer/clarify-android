@@ -187,6 +187,42 @@ class ChatCommitDaoTest {
     assertEquals(listOf(Commit.Id("b")), dao.select(Conversation.Id("c1"), Branch.Id("b1")).map { it.id })
   }
 
+  /**
+   * Коммит без разговора в кэше пропускается, а не роняет запись на внешнем ключе.
+   */
+  @Test
+  fun `insertOrReplaceIfConversationExists skips a commit without its conversation`() = runTest {
+    dao.insertOrReplaceIfConversationExists(textCommit("a", conversationId = "missing"))
+
+    assertEquals(emptyList<ChatCommitEntity>(), dao.selectByIds(listOf(Commit.Id("a"))))
+  }
+
+  @Test
+  fun `insertOrReplaceIfConversationExists writes a commit of a cached conversation`() = runTest {
+    insertConversation("c1")
+
+    dao.insertOrReplaceIfConversationExists(textCommit("a", conversationId = "c1"))
+
+    assertEquals(listOf(textCommit("a", conversationId = "c1")), dao.selectByIds(listOf(Commit.Id("a"))))
+  }
+
+  private fun textCommit(id: String, conversationId: String): ChatCommitEntity {
+    return ChatCommitEntity(
+      id = Commit.Id(id),
+      conversationId = Conversation.Id(conversationId),
+      branchId = Branch.Id("b1"),
+      senderId = UserId("alice"),
+      type = "text",
+      text = "$id text",
+      replyCommit = null,
+      invitedId = null,
+      createdAtNanos = 1,
+      isSelf = false,
+      status = "sent",
+      editedAtNanos = null
+    )
+  }
+
   private suspend fun insertConversation(id: String) {
     execute("INSERT INTO ChatConversation (id, type, lastCommitTimestamp) VALUES ('$id', 'group', 0)")
   }
