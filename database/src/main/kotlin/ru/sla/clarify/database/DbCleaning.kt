@@ -7,8 +7,8 @@ import ru.sla.log.log
 //   'sessionKey' и удалять только строки этого ключа
 
 /**
- * Чистит все таблицы кэша чата. Settings живёт в [SettingsDatabase] (в ней хранится сама сессия —
- * токены/userId, ей управляет AuthSessionPersistence) и здесь не трогается.
+ * Чистит все таблицы [ChatDatabase] и только их: [SettingsDatabase] — отдельная база, и эта очистка
+ * её не задевает.
  */
 suspend fun ChatDatabase.cleanupBySessionKey(key: String) {
   log { "cleaning up data for session key=$key" }
