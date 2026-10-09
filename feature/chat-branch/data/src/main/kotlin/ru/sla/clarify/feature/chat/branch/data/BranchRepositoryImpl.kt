@@ -1,9 +1,9 @@
 package ru.sla.clarify.feature.chat.branch.data
 
+import androidx.room3.withWriteTransaction
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.chat.api.BranchApi
@@ -24,10 +23,8 @@ import ru.sla.clarify.chat.api.UnreadCountApi
 import ru.sla.clarify.core.domain.date.nowEpochNanos
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.InMemoryDB
-import ru.sla.clarify.database.chat.ChatCommit
-import ru.sla.clarify.database.extension.observeList
-import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.database.ChatDatabase
+import ru.sla.clarify.database.entity.ChatCommitEntity
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.BranchRecord
 import ru.sla.clarify.entity.chat.ChatChange
@@ -40,18 +37,14 @@ import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.branch.data.entity.DeleteForEveryoneWrite
 import ru.sla.clarify.feature.chat.branch.data.entity.EditState
-import ru.sla.clarify.feature.chat.branch.data.mapper.toCursor
 import ru.sla.clarify.feature.chat.branch.data.mapper.toDomainModel
 import ru.sla.clarify.feature.chat.branch.domain.BranchRepository
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
 import ru.sla.clarify.feature.chat.branch.domain.entity.EditTargetNotFoundException
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams
 import ru.sla.clarify.mapper.data.lastCommitWriteAfterDeleting
-import ru.sla.clarify.mapper.data.mapToBranch
-import ru.sla.clarify.mapper.data.mapToCommit
-import ru.sla.clarify.mapper.data.mapToMember
-import ru.sla.clarify.mapper.data.mapToUser
 import ru.sla.clarify.mapper.data.toCacheRow
+import ru.sla.clarify.mapper.data.toDomainModel
 import ru.sla.clarify.mapper.data.toReplyRecord
 import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
@@ -70,7 +63,7 @@ class BranchRepositoryImpl @Inject constructor(
   private val memberApi: MemberApi,
   private val mergeRequestApi: MergeRequestApi,
   private val unreadCountApi: UnreadCountApi,
-  private val inMemoryDB: InMemoryDB,
+  private val chatDatabase: ChatDatabase,
   private val authSessionPersistence: AuthSessionPersistence
 ) : BranchRepository {
 
@@ -167,16 +160,14 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   override suspend fun sendCommit(text: String, replyCommit: Commit.Message?) {
-    return withContext(Dispatchers.IO) {
-      val conversationId = requireConversationId()
-      commitApi.createBranchCommit(
-        conversationId = conversationId.value,
-        branchId = branchId.value,
-        text = text,
-        memberUids = memberUids(conversationId),
-        replyCommit = replyCommit?.toReplyRecord()
-      )
-    }
+    val conversationId = requireConversationId()
+    commitApi.createBranchCommit(
+      conversationId = conversationId.value,
+      branchId = branchId.value,
+      text = text,
+      memberUids = memberUids(conversationId),
+      replyCommit = replyCommit?.toReplyRecord()
+    )
   }
 
   override suspend fun editCommit(id: Commit.Id, text: String) {
@@ -249,35 +240,32 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   private suspend fun buildDeleteForEveryoneWrite(ids: List<Commit.Id>): DeleteForEveryoneWrite {
-    return withContext(Dispatchers.IO) {
-      val peerId = branchPeerId()
-      val deletedIds = ids.toSet()
-      val conversationId = requireConversationId()
+    val peerId = branchPeerId()
+    val deletedIds = ids.toSet()
+    val conversationId = requireConversationId()
 
-      val branchCommits = inMemoryDB.chatCommitQueries
-        .select(conversationId, branchId, ::mapToCommit)
-        .executeAsList()
+    val branchCommits = chatDatabase.chatCommitDao()
+      .select(conversationId, branchId)
+      .map { it.toDomainModel() }
 
-      val peerLastReadAt = memberApi.readMember(
-        conversationId = conversationId.value,
-        memberId = peerId.value
-      )
+    val peerLastReadAt = memberApi.readMember(
+      conversationId = conversationId.value,
+      memberId = peerId.value
+    )
 
-      DeleteForEveryoneWrite(
-        peerId = peerId,
-        lastCommit = branchCommits.lastCommitWriteAfterDeleting(deletedIds),
-        peerUnreadDelta = branchCommits.unreadDelta(deletedIds, peerLastReadAt)
-      )
-    }
+    return DeleteForEveryoneWrite(
+      peerId = peerId,
+      lastCommit = branchCommits.lastCommitWriteAfterDeleting(deletedIds),
+      peerUnreadDelta = branchCommits.unreadDelta(deletedIds, peerLastReadAt)
+    )
   }
 
   private suspend fun branchPeerId(): Peer.Id {
     val userId = requireUserId()
     val conversationId = requireConversationId()
 
-    val memberId = inMemoryDB.chatMemberQueries
-      .selectDirect(conversationId, ::mapToMember)
-      .executeAsList()
+    val memberId = chatDatabase.chatMemberDao()
+      .selectDirect(conversationId)
       .firstOrNull { it.id.value != userId.value }
       ?.id
 
@@ -289,93 +277,79 @@ class BranchRepositoryImpl @Inject constructor(
   }
 
   override suspend fun markAsRead() {
-    return withContext(Dispatchers.IO) {
-      unreadCountApi.updateBranchUnreadCount(
-        branchId = branchId.value,
-        conversationId = requireConversationId().value
-      )
-    }
+    unreadCountApi.updateBranchUnreadCount(
+      branchId = branchId.value,
+      conversationId = requireConversationId().value
+    )
   }
 
   override suspend fun markReadUpTo(lastReadAt: LocalDateTime) {
-    return withContext(Dispatchers.IO) {
-      val conversationId = requireConversationId()
-      val current = lastReadWatermark.value
-      if (current != null && !lastReadAt.isAfter(current)) {
-        log { "Branch: lastReadAt ($lastReadAt) is not after current watermark ($current), skipping" }
-        return@withContext
-      }
-      lastReadWatermark.value = lastReadAt
-      memberApi.updateReadWatermark(
-        conversationId = conversationId.value,
-        lastReadAt = lastReadAt
-      )
-      unreadCountApi.updateBranchUnreadCount(
-        branchId = branchId.value,
-        conversationId = conversationId.value
-      )
+    val conversationId = requireConversationId()
+    val current = lastReadWatermark.value
+    if (current != null && !lastReadAt.isAfter(current)) {
+      log { "Branch: lastReadAt ($lastReadAt) is not after current watermark ($current), skipping" }
+      return
     }
+    lastReadWatermark.value = lastReadAt
+    memberApi.updateReadWatermark(
+      conversationId = conversationId.value,
+      lastReadAt = lastReadAt
+    )
+    unreadCountApi.updateBranchUnreadCount(
+      branchId = branchId.value,
+      conversationId = conversationId.value
+    )
   }
 
   override suspend fun openMergeRequest() {
-    return withContext(Dispatchers.IO) {
-      mergeRequestApi.createOpenMergeRequest(
-        branchId = branchId.value,
-        conversationId = requireConversationId().value
-      )
-    }
+    mergeRequestApi.createOpenMergeRequest(
+      branchId = branchId.value,
+      conversationId = requireConversationId().value
+    )
   }
 
   override suspend fun approveMergeRequest() {
-    return withContext(Dispatchers.IO) {
-      val conversationId = requireConversationId()
-      mergeRequestApi.updateMergeApproval(
-        branchId = branchId.value,
-        conversationId = conversationId.value,
-        memberUids = memberUids(conversationId)
-      )
-    }
+    val conversationId = requireConversationId()
+    mergeRequestApi.updateMergeApproval(
+      branchId = branchId.value,
+      conversationId = conversationId.value,
+      memberUids = memberUids(conversationId)
+    )
   }
 
   override suspend fun revokeMergeRequestApproval() {
-    return withContext(Dispatchers.IO) {
-      mergeRequestApi.deleteMergeRequestApproval(
-        branchId = branchId.value,
-        conversationId = requireConversationId().value
-      )
-    }
+    mergeRequestApi.deleteMergeRequestApproval(
+      branchId = branchId.value,
+      conversationId = requireConversationId().value
+    )
   }
 
   override suspend fun cancelMergeRequest() {
-    return withContext(Dispatchers.IO) {
-      mergeRequestApi.deleteMergeRequest(
-        branchId = branchId.value,
-        conversationId = requireConversationId().value
-      )
-    }
+    mergeRequestApi.deleteMergeRequest(
+      branchId = branchId.value,
+      conversationId = requireConversationId().value
+    )
   }
 
   override suspend fun finalizeMergeRequest() {
-    return withContext(Dispatchers.IO) {
-      mergeRequestApi.updateMergeFinalize(
-        branchId = branchId.value,
-        conversationId = requireConversationId().value
-      )
-    }
+    mergeRequestApi.updateMergeFinalize(
+      branchId = branchId.value,
+      conversationId = requireConversationId().value
+    )
   }
 
   override val user: Flow<User?> = flow {
     val userId = authSessionPersistence.withKey { readUserId(it) }
     if (userId == null) return@flow emit(null)
-    inMemoryDB.userQueries
-      .select(userId, ::mapToUser)
-      .observeOneOrNull()
+    chatDatabase.userDao()
+      .observe(userId)
+      .map { it?.toDomainModel() }
       .collect { emit(it) }
   }
 
-  override val branch: Flow<Branch?> = inMemoryDB.chatBranchQueries
-    .selectById(branchId, ::mapToBranch)
-    .observeOneOrNull()
+  override val branch: Flow<Branch?> = chatDatabase.chatBranchDao()
+    .observeById(branchId)
+    .map { it?.toDomainModel() }
 
   override val hasCommitsHistory: Flow<Boolean> = hasCommitsHistoryCache
 
@@ -383,9 +357,9 @@ class BranchRepositoryImpl @Inject constructor(
     val conversationId = requireConversationId()
     val selfId = requireUserId()
 
-    val commitsFlow = inMemoryDB.chatCommitQueries
-      .select(conversationId, branchId, ::mapToCommit)
-      .observeList()
+    val commitsFlow = chatDatabase.chatCommitDao()
+      .observe(conversationId, branchId)
+      .map { rows -> rows.map { it.toDomainModel() } }
 
     val peerReadAtFlow = peerReadAt(conversationId, selfId)
 
@@ -409,28 +383,25 @@ class BranchRepositoryImpl @Inject constructor(
 
   override val members: Flow<List<Member>> = flow {
     val conversationId = requireConversationId()
-    inMemoryDB.chatMemberQueries
-      .selectDirect(conversationId, ::mapToMember)
-      .observeList()
+    chatDatabase.chatMemberDao()
+      .observeDirect(conversationId)
+      .map { rows -> rows.map { it.toDomainModel() } }
       .collect { emit(it) }
   }
 
   override fun member(id: UserId): Flow<Member?> = flow {
     val memberId = Member.Id(id.value)
     val conversationId = requireConversationId()
-    inMemoryDB.chatMemberQueries
-      .selectDirectById(conversationId, memberId, ::mapToMember)
-      .observeOneOrNull()
+    chatDatabase.chatMemberDao()
+      .observeDirectById(conversationId, memberId)
+      .map { it?.toDomainModel() }
       .collect { emit(it) }
   }
 
   private fun peerReadAt(conversationId: Conversation.Id, selfId: UserId): Flow<LocalDateTime?> = flow {
-    val member = withContext(Dispatchers.IO) {
-      inMemoryDB.chatMemberQueries
-        .selectDirect(conversationId, ::mapToMember)
-        .executeAsList()
-        .firstOrNull { it.id.value != selfId.value }
-    }
+    val member = chatDatabase.chatMemberDao()
+      .selectDirect(conversationId)
+      .firstOrNull { it.id.value != selfId.value }
     if (member == null) {
       emit(null)
     } else {
@@ -443,27 +414,24 @@ class BranchRepositoryImpl @Inject constructor(
     }
   }
 
-  private fun memberUids(conversationId: Conversation.Id): List<String> {
-    return inMemoryDB.chatMemberQueries
+  private suspend fun memberUids(conversationId: Conversation.Id): List<String> {
+    return chatDatabase.chatMemberDao()
       .selectIds(conversationId)
-      .executeAsList()
       .map { it.value }
   }
 
   private suspend fun applyBranchChanges(branch: BranchRecord?) {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.transaction {
-        if (branch == null) {
-          inMemoryDB.chatBranchQueries.delete(branchId)
-        } else {
-          applyInsertOrReplaceBranch(branch)
-        }
+    chatDatabase.withWriteTransaction {
+      if (branch == null) {
+        chatDatabase.chatBranchDao().delete(branchId)
+      } else {
+        applyInsertOrReplaceBranch(branch)
       }
     }
   }
 
-  private fun applyInsertOrReplaceBranch(branch: BranchRecord) {
-    inMemoryDB.chatBranchQueries.insertOrReplace(
+  private suspend fun applyInsertOrReplaceBranch(branch: BranchRecord) {
+    chatDatabase.chatBranchDao().upsert(
       id = branch.id,
       conversationId = branch.conversationId,
       parentBranchId = branch.parentBranchId,
@@ -476,41 +444,29 @@ class BranchRepositoryImpl @Inject constructor(
     )
     val mergeRequest = branch.mergeRequest
     if (mergeRequest != null) {
-      inMemoryDB.mergeRequestQueries.insertOrReplace(
-        branchId = branch.id,
-        initiatorId = mergeRequest.initiatorId,
-        approvedByIds = mergeRequest.approvedByIds,
-        status = mergeRequest.status.value,
-        requestedAt = mergeRequest.requestedAtSeconds,
-        mergedAt = mergeRequest.mergedAtSeconds,
-        mergedIntoBranchId = mergeRequest.mergedIntoBranchId
-      )
+      chatDatabase.mergeRequestDao().insertOrReplace(mergeRequest.toCacheRow(branch.id))
     } else {
-      inMemoryDB.mergeRequestQueries.delete(branch.id)
+      chatDatabase.mergeRequestDao().delete(branch.id)
     }
   }
 
   private suspend fun applyUpdateUnreadCount(branchId: Branch.Id, unreadCount: Long) {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.chatBranchQueries.updateUnreadCount(
-        id = branchId,
-        unreadCount = unreadCount
-      )
-    }
+    chatDatabase.chatBranchDao().updateUnreadCount(
+      id = branchId,
+      unreadCount = unreadCount
+    )
   }
 
   private suspend fun applyInsertOrReplaceCommits(conversationId: Conversation.Id, commits: List<CommitRecord>) {
-    return withContext(Dispatchers.IO) {
-      val userId = requireUserId()
-      inMemoryDB.transaction {
-        commits.forEach { item ->
-          applyInsertOrReplaceCommit(
-            conversationId = conversationId,
-            commit = item,
-            userId = userId,
-            isPending = false
-          )
-        }
+    val userId = requireUserId()
+    chatDatabase.withWriteTransaction {
+      commits.forEach { item ->
+        applyInsertOrReplaceCommit(
+          conversationId = conversationId,
+          commit = item,
+          userId = userId,
+          isPending = false
+        )
       }
     }
   }
@@ -520,30 +476,28 @@ class BranchRepositoryImpl @Inject constructor(
     userId: UserId,
     changes: List<ChatChange<CommitRecord>>
   ) {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.transaction {
-        changes.forEach { change ->
-          val commit = change.data
-          when (change.changeType) {
-            ChatChange.Type.Added,
-            ChatChange.Type.Modified -> {
-              applyInsertOrReplaceCommit(
-                conversationId = conversationId,
-                commit = commit,
-                userId = userId,
-                isPending = change.isPending
-              )
-            }
-            ChatChange.Type.Removed -> {
-              inMemoryDB.chatCommitQueries.delete(commit.id)
-            }
+    chatDatabase.withWriteTransaction {
+      changes.forEach { change ->
+        val commit = change.data
+        when (change.changeType) {
+          ChatChange.Type.Added,
+          ChatChange.Type.Modified -> {
+            applyInsertOrReplaceCommit(
+              conversationId = conversationId,
+              commit = commit,
+              userId = userId,
+              isPending = change.isPending
+            )
+          }
+          ChatChange.Type.Removed -> {
+            chatDatabase.chatCommitDao().delete(commit.id)
           }
         }
       }
     }
   }
 
-  private fun applyInsertOrReplaceCommit(
+  private suspend fun applyInsertOrReplaceCommit(
     conversationId: Conversation.Id,
     commit: CommitRecord,
     userId: UserId,
@@ -554,113 +508,67 @@ class BranchRepositoryImpl @Inject constructor(
       selfUserId = userId,
       isPending = isPending
     )
-    inMemoryDB.chatCommitQueries.insertOrReplace(
-      id = row.id,
-      conversationId = row.conversationId,
-      branchId = row.branchId,
-      senderId = row.senderId,
-      type = row.type,
-      text = row.text,
-      replyCommit = row.replyCommit,
-      invitedId = row.invitedId,
-      createdAtNanos = row.createdAtNanos,
-      isSelf = row.isSelf,
-      status = row.status,
-      editedAtNanos = row.editedAtNanos
-    )
+    chatDatabase.chatCommitDao().insertOrReplace(row)
   }
 
   private fun oldestCursor(conversationId: Conversation.Id): Flow<CommitCursor?> {
-    return inMemoryDB.chatCommitQueries
-      .selectOldestCursor(conversationId, branchId)
-      .observeOneOrNull()
-      .map { oldest -> oldest?.toCursor() }
+    return chatDatabase.chatCommitDao()
+      .observeOldestCursor(conversationId, branchId)
+      .map { it?.toDomainModel() }
   }
 
   private suspend fun readOldestCursor(conversationId: Conversation.Id): CommitCursor? {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.chatCommitQueries
-        .selectOldestCursor(conversationId, branchId)
-        .executeAsOneOrNull()
-        ?.toCursor()
-    }
+    return chatDatabase.chatCommitDao()
+      .selectOldestCursor(conversationId, branchId)
+      ?.toDomainModel()
   }
 
   private suspend fun readEditState(id: Commit.Id): EditState? {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.chatCommitQueries
-        .selectEditState(id)
-        .executeAsOneOrNull()
-        ?.toDomainModel()
-    }
+    return chatDatabase.chatCommitDao()
+      .selectEditState(id)
+      ?.toDomainModel()
   }
 
   private suspend fun applyEditStatus(id: Commit.Id, text: String, status: Commit.Status) {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.chatCommitQueries.updateEdit(
-        id = id,
-        text = text,
-        status = status.value,
-        editedAtNanos = nowEpochNanos()
-      )
-    }
+    chatDatabase.chatCommitDao().updateEdit(
+      id = id,
+      text = text,
+      editedAtNanos = nowEpochNanos(),
+      status = status.value
+    )
   }
 
   private suspend fun applyRevertEdit(id: Commit.Id, previous: EditState) {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.chatCommitQueries.updateEdit(
-        id = id,
-        text = previous.text,
-        status = previous.status,
-        editedAtNanos = previous.editedAtNanos
-      )
-    }
+    chatDatabase.chatCommitDao().updateEdit(
+      id = id,
+      text = previous.text,
+      editedAtNanos = previous.editedAtNanos,
+      status = previous.status
+    )
   }
 
   private suspend fun applyDeleteCommits(ids: List<Commit.Id>) {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.transaction { ids.forEach { inMemoryDB.chatCommitQueries.delete(it) } }
+    chatDatabase.withWriteTransaction {
+      ids.forEach { chatDatabase.chatCommitDao().delete(it) }
     }
   }
 
-  private suspend fun readCachedCommits(ids: List<Commit.Id>): List<ChatCommit> {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.chatCommitQueries
-        .selectByIds(ids)
-        .executeAsList()
-    }
+  private suspend fun readCachedCommits(ids: List<Commit.Id>): List<ChatCommitEntity> {
+    return chatDatabase.chatCommitDao().selectByIds(ids)
   }
 
-  private suspend fun restoreCommits(commits: List<ChatCommit>) {
+  private suspend fun restoreCommits(commits: List<ChatCommitEntity>) {
     if (commits.isEmpty()) {
       return
     }
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.transaction {
-        commits.forEach { commit ->
-          inMemoryDB.chatCommitQueries.insertOrReplace(
-            id = commit.id,
-            conversationId = commit.conversationId,
-            branchId = commit.branchId,
-            senderId = commit.senderId,
-            invitedId = commit.invitedId,
-            type = commit.type,
-            status = commit.status,
-            text = commit.text,
-            replyCommit = commit.replyCommit,
-            isSelf = commit.isSelf,
-            editedAtNanos = commit.editedAtNanos,
-            createdAtNanos = commit.createdAtNanos
-          )
-        }
-      }
+    chatDatabase.withWriteTransaction {
+      commits.forEach { chatDatabase.chatCommitDao().insertOrReplace(it) }
     }
   }
 
-  private fun requireConversationId(): Conversation.Id {
-    val conversationId = inMemoryDB.chatBranchQueries
-      .selectById(branchId, ::mapToBranch)
-      .executeAsOneOrNull()
+  private suspend fun requireConversationId(): Conversation.Id {
+    val conversationId = chatDatabase.chatBranchDao()
+      .selectById(branchId)
       ?.conversationId
     return requireNotNull(conversationId) {
       "conversationId not found for branch ${branchId.value}"

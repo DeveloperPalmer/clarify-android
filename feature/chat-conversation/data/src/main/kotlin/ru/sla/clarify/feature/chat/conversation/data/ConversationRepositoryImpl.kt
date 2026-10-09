@@ -1,13 +1,13 @@
 package ru.sla.clarify.feature.chat.conversation.data
 
-import kotlinx.coroutines.Dispatchers
+import androidx.room3.withWriteTransaction
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.chat.api.ConversationApi
@@ -18,19 +18,18 @@ import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.InMemoryDB
-import ru.sla.clarify.database.extension.observeList
-import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.database.ChatDatabase
+import ru.sla.clarify.database.entity.ChatMemberEntity
 import ru.sla.clarify.entity.chat.ChatChange
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.ConversationRecord
 import ru.sla.clarify.entity.chat.Member
 import ru.sla.clarify.entity.chat.Peer
-import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToConversation
-import ru.sla.clarify.feature.chat.conversation.data.mapper.mapToGroup
+import ru.sla.clarify.feature.chat.conversation.data.mapper.toDomainModel
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
-import ru.sla.clarify.mapper.data.mapToUser
+import ru.sla.clarify.mapper.data.toCacheRow
+import ru.sla.clarify.mapper.data.toDomainModel
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
@@ -40,7 +39,7 @@ class ConversationRepositoryImpl @Inject constructor(
   private val conversationApi: ConversationApi,
   private val unreadCountApi: UnreadCountApi,
   private val userApi: UserApi,
-  private val inMemoryDB: InMemoryDB,
+  private val chatDatabase: ChatDatabase,
   private val authSessionPersistence: AuthSessionPersistence
 ) : ConversationRepository {
 
@@ -51,29 +50,20 @@ class ConversationRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnMemberProfiles() {
     val userId = findUserId() ?: return
-    inMemoryDB.chatMemberQueries
-      .selectWithoutProfile(Member.Id(userId.value))
-      .observeList()
+    chatDatabase.chatMemberDao()
+      .observeWithoutProfile(Member.Id(userId.value))
       .collect(::applyMemberProfiles)
   }
 
   override suspend fun subscribeOnConversationsUnreadCounts() {
-    inMemoryDB.chatConversationQueries
-      .selectIds()
-      .observeList()
+    chatDatabase.chatConversationDao()
+      .observeIds()
       .collectLatest(::subscribeOnConversationsUnreadCounts)
   }
 
   override suspend fun fetchCurrentUser() {
-    return withContext(Dispatchers.IO) {
-      val currentUser = userApi.readCurrentUser()
-      inMemoryDB.userQueries.insertOrReplace(
-        id = currentUser.id,
-        email = currentUser.email.value,
-        displayName = currentUser.displayName,
-        photoUrl = currentUser.photoUrl
-      )
-    }
+    val currentUser = userApi.readCurrentUser()
+    chatDatabase.userDao().insertOrReplace(currentUser.toCacheRow())
   }
 
   override suspend fun getPeerByEmail(email: Email): Peer.Id {
@@ -82,60 +72,58 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   override suspend fun createGroupConversation(name: GroupName): Conversation.Id {
-    return withContext(Dispatchers.IO) {
-      val userId = findUserId()
-      val conversationId = Conversation.Id(conversationApi.createGroupConversation(name))
-      if (userId != null) {
-        inMemoryDB.transaction {
-          inMemoryDB.chatConversationQueries.insertOrReplace(
-            id = conversationId,
-            type = ConversationRecord.Type.Group.value,
-            name = name.value,
-            ownerId = userId,
-            lastCommit = null,
-            lastCommitSenderId = null,
-            lastCommitTimestamp = 0L
-          )
-          inMemoryDB.chatMemberQueries.insertOrReplace(
+    val userId = findUserId()
+    val conversationId = Conversation.Id(conversationApi.createGroupConversation(name))
+    if (userId != null) {
+      chatDatabase.withWriteTransaction {
+        chatDatabase.chatConversationDao().upsert(
+          id = conversationId,
+          type = ConversationRecord.Type.Group.value,
+          name = name.value,
+          ownerId = userId,
+          lastCommit = null,
+          lastCommitSenderId = null,
+          lastCommitTimestamp = 0L
+        )
+        chatDatabase.chatMemberDao().insertOrReplace(
+          ChatMemberEntity(
             id = Member.Id(userId.value),
             conversationId = conversationId
           )
-        }
+        )
       }
-      conversationId
     }
+    return conversationId
   }
 
   override suspend fun deleteConversations(ids: List<Conversation.Id>) {
-    return withContext(Dispatchers.IO) {
-      conversationApi.deleteConversations(ids.map { it.value })
-      inMemoryDB.transaction {
-        ids.forEach {
-          inMemoryDB.chatConversationQueries.delete(it)
-          inMemoryDB.chatMemberQueries.delete(it)
-        }
+    conversationApi.deleteConversations(ids.map { it.value })
+    chatDatabase.withWriteTransaction {
+      ids.forEach {
+        chatDatabase.chatConversationDao().delete(it)
+        chatDatabase.chatMemberDao().delete(it)
       }
     }
   }
 
   override val user: Flow<User?> = flow {
     val userId = findUserId() ?: return@flow emit(null)
-    inMemoryDB.userQueries
-      .select(userId, ::mapToUser)
-      .observeOneOrNull()
+    chatDatabase.userDao()
+      .observe(userId)
+      .map { it?.toDomainModel() }
       .collect { emit(it) }
   }
 
   override val conversations: Flow<List<Conversation>> = flow {
     val userId = findUserId() ?: return@flow emit(emptyList())
 
-    val directs = inMemoryDB.chatConversationQueries
-      .selectDirects(Member.Id(userId.value), ::mapToConversation)
-      .observeList()
+    val directs = chatDatabase.chatConversationDao()
+      .observeDirects(Member.Id(userId.value))
+      .map { rows -> rows.map { it.toDomainModel() } }
 
-    val groups = inMemoryDB.chatConversationQueries
-      .selectGroups(::mapToGroup)
-      .observeList()
+    val groups = chatDatabase.chatConversationDao()
+      .observeGroups()
+      .map { rows -> rows.map { it.toDomainModel() } }
 
     combine(
       flow = directs,
@@ -169,31 +157,29 @@ class ConversationRepositoryImpl @Inject constructor(
   }
 
   private suspend fun applyConversationsChanges(changes: List<ChatChange<ConversationRecord>>) {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.transaction {
-        changes.forEach { change ->
-          when (change.changeType) {
-            ChatChange.Type.Added,
-            ChatChange.Type.Modified -> {
-              applyConversationChanges(change.data)
-            }
-            ChatChange.Type.Removed -> {
-              val conversationId = change.data.id
-              inMemoryDB.chatConversationQueries.delete(conversationId)
-              inMemoryDB.chatMemberQueries.delete(conversationId)
-            }
+    chatDatabase.withWriteTransaction {
+      changes.forEach { change ->
+        when (change.changeType) {
+          ChatChange.Type.Added,
+          ChatChange.Type.Modified -> {
+            applyConversationChanges(change.data)
+          }
+          ChatChange.Type.Removed -> {
+            val conversationId = change.data.id
+            chatDatabase.chatConversationDao().delete(conversationId)
+            chatDatabase.chatMemberDao().delete(conversationId)
           }
         }
       }
     }
   }
 
-  private fun applyConversationChanges(conversation: ConversationRecord) {
+  private suspend fun applyConversationChanges(conversation: ConversationRecord) {
     applyMembers(
       conversationId = conversation.id,
       memberIds = conversation.memberIds
     )
-    inMemoryDB.chatConversationQueries.insertOrReplace(
+    chatDatabase.chatConversationDao().upsert(
       id = conversation.id,
       type = conversation.type.value,
       name = conversation.name,
@@ -204,43 +190,36 @@ class ConversationRepositoryImpl @Inject constructor(
     )
   }
 
-  private fun applyMembers(conversationId: Conversation.Id, memberIds: List<Member.Id>) {
+  private suspend fun applyMembers(conversationId: Conversation.Id, memberIds: List<Member.Id>) {
     if (memberIds.isEmpty()) {
-      inMemoryDB.chatMemberQueries.delete(conversationId)
+      chatDatabase.chatMemberDao().delete(conversationId)
       return
     }
 
-    inMemoryDB.chatMemberQueries.deleteExcept(
+    chatDatabase.chatMemberDao().deleteExcept(
       conversationId = conversationId,
       memberIds = memberIds
     )
     memberIds.forEach { memberId ->
-      inMemoryDB.chatMemberQueries.insertOrReplace(
-        conversationId = conversationId,
-        id = memberId
+      chatDatabase.chatMemberDao().insertOrReplace(
+        ChatMemberEntity(
+          id = memberId,
+          conversationId = conversationId
+        )
       )
     }
   }
 
   private suspend fun applyInsertOrReplace(memberId: Member.Id) {
     val user = userApi.readUser(UserId(memberId.value)) ?: return
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.userQueries.insertOrReplace(
-        id = user.id,
-        email = user.email.value,
-        displayName = user.displayName,
-        photoUrl = user.photoUrl
-      )
-    }
+    chatDatabase.userDao().insertOrReplace(user.toCacheRow())
   }
 
   private suspend fun applyUpdateUnreadCount(conversationId: Conversation.Id, unreadCount: Long) {
-    return withContext(Dispatchers.IO) {
-      inMemoryDB.chatConversationQueries.updateUnreadCount(
-        id = conversationId,
-        unreadCount = unreadCount
-      )
-    }
+    chatDatabase.chatConversationDao().updateUnreadCount(
+      id = conversationId,
+      unreadCount = unreadCount
+    )
   }
 
   private suspend fun findUserId(): UserId? {

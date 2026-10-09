@@ -1,10 +1,9 @@
 package ru.sla.clarify.feature.chronology.data
 
-import app.cash.sqldelight.Query
+import androidx.room3.withWriteTransaction
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -12,30 +11,26 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.chat.api.CommitApi
 import ru.sla.clarify.chat.api.UnreadCountApi
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.InMemoryDB
-import ru.sla.clarify.database.extension.observeList
-import ru.sla.clarify.database.extension.observeOneOrNull
+import ru.sla.clarify.database.ChatDatabase
 import ru.sla.clarify.entity.chat.Branch
 import ru.sla.clarify.entity.chat.CommitRecord
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.ConversationRecord
 import ru.sla.clarify.entity.chat.Member
-import ru.sla.clarify.feature.chronology.data.mapper.mapToBranchCommit
+import ru.sla.clarify.feature.chronology.data.mapper.toBranchCommit
 import ru.sla.clarify.feature.chronology.domain.ChronologyRepository
 import ru.sla.clarify.feature.chronology.domain.di.ChronologyScope
 import ru.sla.clarify.feature.chronology.domain.entity.BaselineHistory
 import ru.sla.clarify.feature.chronology.domain.entity.BranchHistory
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
 import ru.sla.clarify.feature.chronology.domain.entity.TargetParams
-import ru.sla.clarify.mapper.data.mapToBranch
-import ru.sla.clarify.mapper.data.mapToMember
 import ru.sla.clarify.mapper.data.toCacheRow
+import ru.sla.clarify.mapper.data.toDomainModel
 import ru.sla.log.log
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
@@ -54,7 +49,7 @@ class ChronologyRepositoryImpl @Inject constructor(
   params: TargetParams,
   private val commitApi: CommitApi,
   private val unreadCountApi: UnreadCountApi,
-  private val inMemoryDB: InMemoryDB,
+  private val chatDatabase: ChatDatabase,
   private val authSessionPersistence: AuthSessionPersistence
 ) : ChronologyRepository {
 
@@ -68,9 +63,8 @@ class ChronologyRepositoryImpl @Inject constructor(
     val conversationId = awaitConversationId()
     // За списком веток, а не по нему один раз: на холодном старте хронология успевает открыться
     // раньше, чем приедет первый снимок веток беседы, и однократное чтение застало бы пустоту.
-    inMemoryDB.chatBranchQueries
-      .selectIds(conversationId)
-      .observeList()
+    chatDatabase.chatBranchDao()
+      .observeIds(conversationId)
       .collect { branchIds ->
         applyFetchMissingCommits(
           conversationId = conversationId,
@@ -83,18 +77,17 @@ class ChronologyRepositoryImpl @Inject constructor(
     val conversationId = awaitConversationId()
     val baselineId = Branch.Id(conversationId.value)
 
-    val branchesFlow = inMemoryDB.chatBranchQueries
-      .selectByConversation(conversationId, ::mapToBranch)
-      .observeList()
+    val branchesFlow = chatDatabase.chatBranchDao()
+      .observeByConversation(conversationId)
+      .map { rows -> rows.map { it.toDomainModel() } }
 
-    val commitsFlow = inMemoryDB.chatCommitQueries
-      .selectByConversation(conversationId, ::mapToBranchCommit)
-      .observeList()
-      .map { rows -> rows.groupBy({ it.first }, { it.second }) }
+    val commitsFlow = chatDatabase.chatCommitDao()
+      .observeByConversation(conversationId)
+      .map { rows -> rows.map { it.toBranchCommit() }.groupBy({ it.first }, { it.second }) }
 
-    val membersFlow = inMemoryDB.chatMemberQueries
-      .selectDirect(conversationId, ::mapToMember)
-      .observeList()
+    val membersFlow = chatDatabase.chatMemberDao()
+      .observeDirect(conversationId)
+      .map { rows -> rows.map { it.toDomainModel() } }
 
     // Непрочитанное магистрали — счётчик беседы, тот же, что показывает чат: граф прочитанность
     // показывает, а не считает (решение владельца, журнал, итерация 39, п. 1).
@@ -163,30 +156,15 @@ class ChronologyRepositoryImpl @Inject constructor(
     conversationId: Conversation.Id,
     commits: List<CommitRecord>
   ) {
-    return withContext(Dispatchers.IO) {
-      val userId = requireUserId()
-      inMemoryDB.transaction {
-        commits.forEach { commit ->
-          val row = commit.toCacheRow(
-            conversationId = conversationId,
-            selfUserId = userId,
-            isPending = false
-          )
-          inMemoryDB.chatCommitQueries.insertOrReplace(
-            id = row.id,
-            conversationId = row.conversationId,
-            branchId = row.branchId,
-            senderId = row.senderId,
-            type = row.type,
-            text = row.text,
-            replyCommit = row.replyCommit,
-            invitedId = row.invitedId,
-            createdAtNanos = row.createdAtNanos,
-            isSelf = row.isSelf,
-            status = row.status,
-            editedAtNanos = row.editedAtNanos
-          )
-        }
+    val userId = requireUserId()
+    chatDatabase.withWriteTransaction {
+      commits.forEach { commit ->
+        val row = commit.toCacheRow(
+          conversationId = conversationId,
+          selfUserId = userId,
+          isPending = false
+        )
+        chatDatabase.chatCommitDao().insertOrReplace(row)
       }
     }
   }
@@ -194,24 +172,23 @@ class ChronologyRepositoryImpl @Inject constructor(
   private suspend fun awaitConversationId(): Conversation.Id {
     findConversationId()?.let { return it }
 
-    return selectDirectConversationId(directMemberIds())
-      .observeOneOrNull()
+    val memberIds = directMemberIds()
+    return chatDatabase.chatConversationDao()
+      .observeIdByMembers(
+        type = ConversationRecord.Type.Direct.value,
+        memberIds = memberIds,
+        memberCount = memberIds.size.toLong()
+      )
       .filterNotNull()
       .first()
   }
 
   private suspend fun findConversationId(): Conversation.Id? {
     val memberIds = directMemberIds()
-    return withContext(Dispatchers.IO) {
-      selectDirectConversationId(memberIds).executeAsOneOrNull()
-    }
-  }
-
-  private fun selectDirectConversationId(memberIds: List<Member.Id>): Query<Conversation.Id> {
-    return inMemoryDB.chatConversationQueries.selectIdByMembers(
+    return chatDatabase.chatConversationDao().selectIdByMembers(
+      type = ConversationRecord.Type.Direct.value,
       memberIds = memberIds,
-      memberCount = memberIds.size.toLong(),
-      type = ConversationRecord.Type.Direct.value
+      memberCount = memberIds.size.toLong()
     )
   }
 

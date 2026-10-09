@@ -4,7 +4,8 @@ import ru.sla.clarify.core.domain.date.TIME_FORMATTER_HOUR_MINUTE
 import ru.sla.clarify.core.domain.date.toLocalDateTime
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.core.resources.R
-import ru.sla.clarify.database.chat.ChatCommit
+import ru.sla.clarify.database.entity.ChatCommitEntity
+import ru.sla.clarify.database.entity.CommitRow
 import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.CommitRecord
 import ru.sla.clarify.entity.chat.Conversation
@@ -19,19 +20,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 
-@Suppress("LongParameterList") // сигнатура строки ChatCommit
-fun mapToCommit(
-  id: Commit.Id,
-  senderId: UserId,
-  type: String,
-  text: String,
-  replyCommit: Commit.Reply?,
-  invitedId: UserId?,
-  createdAtNanos: Long,
-  isSelf: Boolean,
-  status: String,
-  editedAtNanos: Long?
-): Commit {
+fun CommitRow.toDomainModel(): Commit {
   val localTimestamp = (createdAtNanos / NANOS_PER_MILLI).toLocalDateTime()
 
   return when (CommitRecord.Type.fromValue(type)) {
@@ -61,9 +50,10 @@ fun mapToCommit(
 }
 
 /**
- * Обратна [mapToCommit]: пришедшее снаружи сообщение в строку кэша. Единый источник истины для
- * отображения записи в [ChatCommit], общий для всех репозиториев тредов (direct/group/branch),
- * так что поля вроде [ChatCommit.createdAtNanos] задаются ровно в одном месте.
+ * Обратна [CommitRow.toDomainModel]: пришедшее снаружи сообщение в строку кэша. Единый источник
+ * истины для отображения записи в [ChatCommitEntity], общий для всех репозиториев тредов
+ * (direct/group/branch), так что поля вроде [ChatCommitEntity.createdAtNanos] задаются ровно в одном
+ * месте.
  *
  * Что своё, а что чужое, знает только вызывающий: [selfUserId] приходит параметром, а запись
  * несёт отправителя как есть.
@@ -72,8 +62,8 @@ fun CommitRecord.toCacheRow(
   conversationId: Conversation.Id,
   selfUserId: UserId,
   isPending: Boolean
-): ChatCommit {
-  return ChatCommit(
+): ChatCommitEntity {
+  return ChatCommitEntity(
     id = id,
     conversationId = conversationId,
     branchId = branchId,
