@@ -4,7 +4,7 @@ import ru.sla.clarify.database.entity.GroupConversationRow
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.mapper.data.formatLastCommitTimestamp
 
-// TODO: @sla Conversation. ownerId, lastCommitSenderId and memberCount of GroupConversationRow are unused
+// TODO: @sla Conversation. ownerId, lastCommitSenderId и memberCount из GroupConversationRow не используются
 internal fun GroupConversationRow.toDomainModel(): Conversation.Group {
   return Conversation.Group(
     id = id,

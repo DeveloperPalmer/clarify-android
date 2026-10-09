@@ -23,7 +23,7 @@ internal fun DirectConversationRow.toDomainModel(): Conversation {
       )
     }
     ConversationRecord.Type.Group -> {
-      // TODO: @sla Conversation. Remove GroupConversationRow mapper. Add Group mapper here instead of throw error
+      // TODO: @sla Conversation. Убрать маппер GroupConversationRow и собирать группу здесь, а не бросать ошибку
       error("unexpected conversation type: $type")
     }
   }
