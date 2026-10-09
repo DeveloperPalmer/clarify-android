@@ -1,12 +1,16 @@
 package ru.sla.clarify.database
 
 import androidx.room3.ColumnTypeConverters
+import androidx.room3.DaoReturnTypeConverters
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
 import ru.sla.clarify.database.converter.BranchIdConverter
 import ru.sla.clarify.database.converter.CommitReplyConverter
+import ru.sla.clarify.database.converter.DistinctFlowConverter
 import ru.sla.clarify.database.converter.MemberIdConverter
 import ru.sla.clarify.database.converter.UserIdSetConverter
+import ru.sla.clarify.database.dao.ChatMemberDao
+import ru.sla.clarify.database.dao.UserDao
 import ru.sla.clarify.database.entity.ChatBranchEntity
 import ru.sla.clarify.database.entity.ChatCommitEntity
 import ru.sla.clarify.database.entity.ChatConversationEntity
@@ -32,4 +36,11 @@ import ru.sla.clarify.database.entity.UserEntity
   UserIdSetConverter::class,
   CommitReplyConverter::class
 )
-abstract class ChatDatabase : RoomDatabase()
+@DaoReturnTypeConverters(
+  DistinctFlowConverter::class
+)
+abstract class ChatDatabase : RoomDatabase() {
+  abstract fun userDao(): UserDao
+
+  abstract fun chatMemberDao(): ChatMemberDao
+}
