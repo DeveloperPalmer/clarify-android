@@ -671,8 +671,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <p class="standfirst">
       План переписывает локальную базу с SQLDelight на Room в том порядке, в каком это удобно учить: от одной
       таблицы из двух столбцов до шести таблиц чата с join-ами, внешними ключами и транзакциями. У каждого
-      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–07 и 09–21, открыты
-      08 и 17: у каждого есть рекомендация и пункт, который он блокирует.
+      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–16 и 18–21, открыт
+      17: у каждого есть рекомендация и пункт, который он блокирует.
     </p>
     <div class="meta">
       <span><b>Формат:</b> учебный план + трекер</span>
@@ -703,8 +703,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         <div class="rail-step"><span class="n">6</span>Чтение II</div>
         <div class="rail-step"><span class="n">7</span>Запись</div>
         <div class="rail-step"><span class="n">8</span>Подключение чата</div>
-        <div class="rail-step in"><span class="n">9</span>Уборка</div>
-        <div class="rail-step edge"><span class="n">10</span>Правила проекта</div>
+        <div class="rail-step"><span class="n">9</span>Уборка</div>
+        <div class="rail-step edge in"><span class="n">10</span>Правила проекта</div>
       </div>
     </div>
     <div class="rail-legend">
@@ -1145,7 +1145,7 @@ suspend fun upsert(…)</code></pre>
 
   <section>
     <h2>Вопросы</h2>
-    <p class="note">Решены 01–07 и 09–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
+    <p class="note">Решены 01–16 и 18–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
     <div class="questions">
       <div class="q">
         <div class="num">01</div>
@@ -1200,7 +1200,7 @@ suspend fun upsert(…)</code></pre>
         <div class="num">08</div>
         <div class="body">
           <div class="ask">Что делаем с <code>pathfinder-store-sqldelight</code>?</div>
-          <div class="why"><strong>Рекомендация: оставить.</strong> Библиотека хранит окружения в собственной БД; после уборки SQLDelight в проекте останется транзитивно, но не в нашем коде и не в нашей сборке. Альтернатива: заменить хранилище своим — совсем другая задача, и годится ли для этого интерфейс <code>PathFinder.create</code>, не проверено. Блокирует 9.1.</div>
+          <div class="why"><strong>Решено: оставить.</strong> Библиотека хранит окружения в собственной БД; после уборки SQLDelight в проекте останется транзитивно, но не в нашем коде и не в нашей сборке. Альтернатива: заменить хранилище своим — совсем другая задача, и годится ли для этого интерфейс <code>PathFinder.create</code>, не проверено. Следствие: без нашей зависимости 2.3.2 библиотека получает SQLDelight своей версии — 2.0.1. Сейчас это ни на что не влияет: <code>createPathfinder()</code> нигде не вызывается и хранилище не открывается; проверить при подключении. Меняет 9.1.</div>
         </div>
       </div>
       <div class="q">
@@ -1301,7 +1301,7 @@ suspend fun upsert(…)</code></pre>
     <h2>Трекер</h2>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>57</b> из 69 · 83%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>63</b> из 69 · 91%</span>
         <span class="tracker-hint">отметки записаны в этом файле; автор ставит их, когда проверка пункта пройдена</span>
       </div>
       <div class="tracker-bar"><span id="tracker-bar" style="width: 16%"></span></div>
@@ -1742,51 +1742,51 @@ suspend fun upsert(…)</code></pre>
             <td class="dep">Только после 8.9, одним коммитом по вопросу 16. Проверка: коммит содержит проводку, очистку и пять репозиториев с мапперами. Факт: коммит <code>f03743a4</code>, 26 файлов.</td>
           </tr>
 
-          <tr class="group" data-group-header="b9"><td colspan="5">Блок 9 · Урок 9: уборка SQLDelight<span class="status new">текущий</span><span class="gcount">0/6</span></td></tr>
-          <tr data-item="9.1" data-group="b9">
+          <tr class="group" data-group-header="b9"><td colspan="5">Блок 9 · Урок 9: уборка SQLDelight<span class="gcount">6/6</span></td></tr>
+          <tr data-item="9.1" data-group="b9" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.1</span></td>
             <td class="name">Код и обвязка</td>
             <td class="what">Удалить шесть оставшихся <code>.sq</code>, <code>adapter/</code> (семь файлов) и <code>CommitReplyAdapterTest</code>, SQLDelight-версию <code>Flows.kt</code>, блок <code>sqldelight {}</code>, <code>afterEvaluate</code> с <code>dependsOn</code>, <code>sourceSets</code>, <code>alias(libs.plugins.sqldelight)</code>, <code>api libs.sqldelight.coroutines</code>, <code>implementation libs.sqldelight.android.driver</code>.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Блокируют вопросы 08, 11. Проверка: <code>:database:assembleDebug</code> без SQLDelight-задач.</td>
+            <td class="dep">Блокируют вопросы 08, 11. Проверка: <code>:database:assembleDebug</code> без SQLDelight-задач. Факт: после <code>clean</code> в сборке ноль задач SQLDelight, в <code>generated</code> — только <code>ksp</code> и ресурсы. Плагин сериализации остался — на нём <code>CommitReplyJson</code>.</td>
           </tr>
-          <tr data-item="9.2" data-group="b9">
+          <tr data-item="9.2" data-group="b9" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.2</span></td>
             <td class="name">Каталог версий</td>
             <td class="what">Убрать <code>sqldelight</code>, <code>sqldelight-android-driver</code>, <code>sqldelight-coroutines</code> и плагин <code>sqldelight</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: в <code>libs.versions.toml</code> SQLDelight встречается только в строке <code>pathfinder-store</code>.</td>
+            <td class="dep">Проверка: в <code>libs.versions.toml</code> SQLDelight встречается только в строке <code>pathfinder-store</code>. Факт: так и есть.</td>
           </tr>
-          <tr data-item="9.3" data-group="b9">
+          <tr data-item="9.3" data-group="b9" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.3</span></td>
             <td class="name">Упоминания в тексте</td>
             <td class="what">KDoc в <code>FirestoreListenerGuard</code> («SQLDelight-Flow»), комментарий в <code>app/data/…/Mocks.kt</code>. Формулировки — по условию, а не по устройству соседа (<code>documentation.md</code>).</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: поиск <code>SQLDelight</code> по <code>*.kt</code> даёт только <code>PathfinderConfiguration.kt</code>.</td>
+            <td class="dep">Проверка: поиск <code>SQLDelight</code> по <code>*.kt</code> даёт только <code>PathfinderConfiguration.kt</code>. Факт: так и есть; KDoc <code>FirestoreListenerGuard</code> больше не ссылается на <code>Flows.kt</code>, <code>Mocks.kt</code> говорит об условии («хранилищу нужен Android»), а не об устройстве библиотеки. Коммит <code>fb802b64</code>.</td>
           </tr>
-          <tr data-item="9.4" data-group="b9">
+          <tr data-item="9.4" data-group="b9" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.4</span></td>
             <td class="name">Проверки</td>
             <td class="what"><code>./gradlew clean prePushCheck</code>, <code>./gradlew test</code>, <code>./gradlew :app:data:dependencies</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: всё зелёное; SQLDelight в графе — только через <code>pathfinder-store</code>.</td>
+            <td class="dep">Проверка: всё зелёное; SQLDelight в графе — только через <code>pathfinder-store</code>. Факт: <code>clean prePushCheck test :app:android:assembleDebug</code> — код 0; в <code>:app:data:dependencies</code> SQLDelight 2.0.1 только под <code>pathfinder-store-sqldelight</code>. Приложение на эмуляторе стартует, данные на месте.</td>
           </tr>
-          <tr data-item="9.5" data-group="b9">
+          <tr data-item="9.5" data-group="b9" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.5</span></td>
             <td class="name">Ревью и аппрув</td>
             <td class="what">Изменение отдаётся без коммита.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: ваш аппрув. Блок 10 — отдельным «давай дальше».</td>
+            <td class="dep">Проверка: ваш аппрув. Блок 10 — отдельным «давай дальше». Факт: аппрув дан.</td>
           </tr>
-          <tr data-item="9.6" data-group="b9">
+          <tr data-item="9.6" data-group="b9" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.6</span></td>
             <td class="name">Коммит</td>
             <td class="what"><code>[database] Remove SQLDelight from the database module</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Только после 9.5. Проверка: коммит состоит из удалений и правок каталога.</td>
+            <td class="dep">Только после 9.5. Проверка: коммит состоит из удалений и правок каталога. Факт: <code>4348978d</code> — удаления и каталог; правка текстов 9.3 отдельным коммитом <code>fb802b64</code>.</td>
           </tr>
 
-          <tr class="group" data-group-header="b10"><td colspan="5">Блок 10 · Урок 10: правила проекта<span class="gcount">0/4</span></td></tr>
+          <tr class="group" data-group-header="b10"><td colspan="5">Блок 10 · Урок 10: правила проекта<span class="status new">текущий</span><span class="gcount">0/4</span></td></tr>
           <tr data-item="10.1" data-group="b10">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>10.1</span></td>
             <td class="name">Формулировки</td>
