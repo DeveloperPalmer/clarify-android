@@ -8,7 +8,7 @@ import ru.sla.clarify.database.entity.SettingsEntity
 @Database(
   version = 1,
   entities = [SettingsEntity::class],
-  exportSchema = false
+  exportSchema = true
 )
 abstract class SettingsDatabase : RoomDatabase() {
   abstract fun settingsDao(): SettingsDao
