@@ -671,8 +671,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <p class="standfirst">
       План переписывает локальную базу с SQLDelight на Room в том порядке, в каком это удобно учить: от одной
       таблицы из двух столбцов до шести таблиц чата с join-ами, внешними ключами и транзакциями. У каждого
-      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–07, 09–12 и 18–21, открыты
-      08 и 13–17: у каждого есть рекомендация и пункт, который он блокирует.
+      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–07, 09–13, 15 и 18–21, открыты
+      08, 14, 16 и 17: у каждого есть рекомендация и пункт, который он блокирует.
     </p>
     <div class="meta">
       <span><b>Формат:</b> учебный план + трекер</span>
@@ -701,8 +701,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         <div class="rail-step"><span class="n">4</span>Схема чата</div>
         <div class="rail-step"><span class="n">5</span>Чтение I</div>
         <div class="rail-step"><span class="n">6</span>Чтение II</div>
-        <div class="rail-step in"><span class="n">7</span>Запись</div>
-        <div class="rail-step"><span class="n">8</span>Подключение чата</div>
+        <div class="rail-step"><span class="n">7</span>Запись</div>
+        <div class="rail-step in"><span class="n">8</span>Подключение чата</div>
         <div class="rail-step"><span class="n">9</span>Уборка</div>
         <div class="rail-step edge"><span class="n">10</span>Правила проекта</div>
       </div>
@@ -886,12 +886,12 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
           </tr>
           <tr>
             <td class="name"><code>INSERT OR REPLACE</code></td>
-            <td class="what"><code>@Upsert</code> или <code>@Query</code> с <code>ON CONFLICT</code></td>
-            <td class="dep">REPLACE — это «удалить и вставить»; при включённых внешних ключах он каскадом сносит дочерние строки (вопросы 12, 13).</td>
+            <td class="what"><code>@Query</code> с <code>ON CONFLICT (id) DO UPDATE</code> у родителей, <code>@Insert(REPLACE)</code> у остальных</td>
+            <td class="dep">REPLACE — это «удалить и вставить»; при включённых внешних ключах он каскадом сносит дочерние строки (вопросы 12, 13). Проверено тестом: <code>INSERT OR REPLACE</code> разговора уносит его ветки, коммиты и запросы слияния, <code>upsert</code> — нет.</td>
           </tr>
           <tr>
             <td class="name">внешние ключи: в драйвере выключены</td>
-            <td class="what">включаются при открытии базы (ожидание, проверяется в 7.4)</td>
+            <td class="what">включаются при открытии базы — проверено в 7.4</td>
             <td class="dep">Молчаливый <code>ON DELETE CASCADE</code>, которого не было, вдруг работает, а вставка сироты начинает падать.</td>
           </tr>
           <tr>
@@ -1145,7 +1145,7 @@ suspend fun upsert(…)</code></pre>
 
   <section>
     <h2>Вопросы</h2>
-    <p class="note">Решены 01–07, 09–12 и 18–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
+    <p class="note">Решены 01–07, 09–13, 15 и 18–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
     <div class="questions">
       <div class="q">
         <div class="num">01</div>
@@ -1228,14 +1228,14 @@ suspend fun upsert(…)</code></pre>
         <div class="num">12</div>
         <div class="body">
           <div class="ask">Включаем ли внешние ключи?</div>
-          <div class="why">Сейчас они объявлены в схеме, но выключены (<code>DbCleaning</code> прямо об этом пишет). Ожидание: Room их включает сам, и вставка коммита без разговора начнёт падать, а удаление родителя — каскадировать. <strong>Решено: оставить включёнными и привести порядок записи в репозиториях в соответствие.</strong> Альтернатива: выключить в колбэке открытия и сохранить нынешнее поведение — но объявленные ключи останутся декорацией. Проверка ожидания — 7.4. Меняет 4.3, 7.1.</div>
+          <div class="why">Сейчас они объявлены в схеме, но выключены (<code>DbCleaning</code> прямо об этом пишет). Ожидание: Room их включает сам, и вставка коммита без разговора начнёт падать, а удаление родителя — каскадировать. <strong>Решено: оставить включёнными и привести порядок записи в репозиториях в соответствие.</strong> <strong>Ожидание подтверждено в 7.4:</strong> Room 3 включает ключи сам — сирота отвергается, удаление родителя каскадирует. Альтернатива: выключить в колбэке открытия и сохранить нынешнее поведение — но объявленные ключи останутся декорацией. Проверка ожидания — 7.4. Меняет 4.3, 7.1.</div>
         </div>
       </div>
       <div class="q">
         <div class="num">13</div>
         <div class="body">
           <div class="ask">Чем заменяем <code>INSERT OR REPLACE</code> в таблицах с детьми?</div>
-          <div class="why"><strong>Рекомендация: <code>@Query</code> с <code>INSERT … ON CONFLICT(id) DO UPDATE</code>, где <code>unreadCount</code> не входит в <code>SET</code></strong> — строка живёт, дети целы, счётчик сохраняется. Альтернативы: <code>@Upsert</code> — перезапишет <code>unreadCount</code>; <code>OnConflictStrategy.REPLACE</code> — каскад (вопрос 12). Запасной путь, если парсер Room не примет такой SQL: <code>@Update</code> и <code>@Insert(IGNORE)</code> в одной транзакции. Блокирует 7.1.</div>
+          <div class="why"><strong>Решено: <code>@Query</code> с <code>INSERT … ON CONFLICT(id) DO UPDATE</code>, где <code>unreadCount</code> не входит в <code>SET</code></strong> — строка живёт, дети целы, счётчик сохраняется. Альтернативы: <code>@Upsert</code> — перезапишет <code>unreadCount</code>; <code>OnConflictStrategy.REPLACE</code> — каскад (вопрос 12). Запасной путь, если парсер Room не примет такой SQL: <code>@Update</code> и <code>@Insert(IGNORE)</code> в одной транзакции — не понадобился: парсер Room форму принял. Таблицы без детей (<code>User</code>, <code>ChatMember</code>, <code>ChatCommit</code>, <code>MergeRequest</code>) — по вашему решению <code>@Insert(REPLACE)</code> с сущностью, а не параметр на столбец: так же сделан <code>SettingsDao</code>, правило <code>.sq</code> о параметрах уходит в блоке 10. Меняет 7.1.</div>
         </div>
       </div>
       <div class="q">
@@ -1249,7 +1249,7 @@ suspend fun upsert(…)</code></pre>
         <div class="num">15</div>
         <div class="body">
           <div class="ask">Как очищаем чат при выходе из сессии?</div>
-          <div class="why"><strong>Рекомендация: <code>clearAllTables()</code>.</strong> Закрывает проблему из TODO в <code>DbCleaning</code>: забыть добавить таблицу больше нельзя. Минус: вызов блокирующий и запрещён на главном потоке — сигнатуру и поток вызова проверяет 8.2. Альтернатива: явные <code>deleteAll</code> в каждом DAO с учётом порядка внешних ключей. Блокирует 7.3, 8.2.</div>
+          <div class="why"><strong>Решено: <code>clearAllTables()</code>.</strong> Закрывает проблему из TODO в <code>DbCleaning</code>: забыть добавить таблицу больше нельзя. Минус «вызов блокирующий и запрещён на главном потоке» к Room 3 не относится: там <code>clearAllTables()</code> — <code>suspend</code> (найдено в <code>room3-runtime</code> 3.0.3). Альтернатива: явные <code>deleteAll</code> в каждом DAO с учётом порядка внешних ключей. <code>deleteAll</code> в DAO не написаны. Меняет 7.3, 8.2.</div>
         </div>
       </div>
       <div class="q">
@@ -1301,7 +1301,7 @@ suspend fun upsert(…)</code></pre>
     <h2>Трекер</h2>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>39</b> из 69 · 57%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>46</b> из 69 · 67%</span>
         <span class="tracker-hint">отметки записаны в этом файле; автор ставит их, когда проверка пункта пройдена</span>
       </div>
       <div class="tracker-bar"><span id="tracker-bar" style="width: 16%"></span></div>
@@ -1619,58 +1619,58 @@ suspend fun upsert(…)</code></pre>
             <td class="dep">Только после 6.5. Проверка: коммит содержит два DAO, проекции и тесты. Факт: два коммита — <code>58067d3e</code> ветки, <code>db6f0116</code> коммиты.</td>
           </tr>
 
-          <tr class="group" data-group-header="b7"><td colspan="5">Блок 7 · Урок 7: запись<span class="status new">текущий</span><span class="gcount">0/7</span></td></tr>
-          <tr data-item="7.1" data-group="b7">
+          <tr class="group" data-group-header="b7"><td colspan="5">Блок 7 · Урок 7: запись<span class="gcount">7/7</span></td></tr>
+          <tr data-item="7.1" data-group="b7" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.1</span></td>
             <td class="name">Вставки</td>
             <td class="what">Запись для всех шести таблиц по вопросу 13; для разговора и ветки <code>unreadCount</code> сохраняется (нынешний <code>COALESCE</code>). Параметры — по одному на столбец, как в нынешних <code>INSERT</code>.</td>
             <td class="size"><span class="size-chip l">L</span></td>
-            <td class="dep">Блокируют вопросы 12, 13. Проверка: парсер Room принимает <code>ON CONFLICT … DO UPDATE</code>; если нет — запасной путь из вопроса 13.</td>
+            <td class="dep">Вопросы 12, 13 решены. Проверка: парсер Room принимает <code>ON CONFLICT … DO UPDATE</code>; если нет — запасной путь из вопроса 13. Факт: коммит <code>3469c1e3</code> — принимает. <code>upsert</code> разговора (7 параметров) и ветки (9); <code>unreadCount</code> не входит ни во вставку, ни в <code>SET</code>: новая строка получает <code>DEFAULT 0</code>, существующая сохраняет счётчик. <code>insertOrReplace(entity)</code> у четырёх таблиц без детей; появился <code>MergeRequestDao</code>.</td>
           </tr>
-          <tr data-item="7.2" data-group="b7">
+          <tr data-item="7.2" data-group="b7" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.2</span></td>
             <td class="name">Изменения</td>
             <td class="what"><code>updateUnreadCount</code> (разговор, ветка), <code>updateName</code>, <code>updateEdit</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: метод меняет ровно перечисленные столбцы.</td>
+            <td class="dep">Проверка: метод меняет ровно перечисленные столбцы. Факт: коммит <code>b3094994</code>; тесты сравнивают строку целиком до и после.</td>
           </tr>
-          <tr data-item="7.3" data-group="b7">
+          <tr data-item="7.3" data-group="b7" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.3</span></td>
             <td class="name">Удаления</td>
             <td class="what"><code>delete</code> для разговора, ветки, коммита, запроса слияния; <code>deleteById</code> и <code>deleteExcept</code> (<code>NOT IN :memberIds</code>) для участников; <code>deleteAll</code> — только если вопрос 15 решён в пользу явной очистки.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Блокирует вопрос 15. Проверка: <code>deleteExcept</code> с пустым и непустым списком ведёт себя как нынешний запрос.</td>
+            <td class="dep">Вопрос 15 решён. Проверка: <code>deleteExcept</code> с пустым и непустым списком ведёт себя как нынешний запрос. Факт: коммит <code>62b834e8</code>; пустой список — <code>NOT IN ()</code>, удаляет всех участников разговора, как и SQLDelight (<code>createArguments(0)</code> → <code>()</code>). Удаления — <code>@Query</code>, не <code>@Delete(Entity::class)</code>: у <code>Conversation.Id(val value)</code> поле называется <code>value</code>, и Room удалял бы по столбцу <code>value</code> (вопрос 21).</td>
           </tr>
-          <tr data-item="7.4" data-group="b7">
+          <tr data-item="7.4" data-group="b7" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.4</span></td>
             <td class="name">Тесты ключей и каскадов</td>
             <td class="what">Вставка коммита без разговора отвергается; повторная запись разговора не удаляет его ветки и коммиты; повторная запись не обнуляет <code>unreadCount</code>; удаление разговора каскадом удаляет детей.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Проверка: тесты зелёные — тем самым подтверждено или опровергнуто ожидание из вопроса 12, а таблица словаря обновляется по факту.</td>
+            <td class="dep">Проверка: тесты зелёные — тем самым подтверждено или опровергнуто ожидание из вопроса 12, а таблица словаря обновляется по факту. Факт: коммит <code>968f4e83</code>, <code>ChatDatabaseForeignKeysTest</code> — подтверждено. Текст ошибки в JVM-тесте не проверяется: приходит заглушка <code>android.database.SQLException</code> без сообщения, проверяется результат. Следствие для блока 8: запись коммита раньше разговора на Room упадёт — это ловит ручной прогон 8.8.</td>
           </tr>
-          <tr data-item="7.5" data-group="b7">
+          <tr data-item="7.5" data-group="b7" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.5</span></td>
             <td class="name">Проверки</td>
             <td class="what"><code>./gradlew prePushCheck</code> и <code>./gradlew test</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: оба зелёные.</td>
+            <td class="dep">Проверка: оба зелёные. Факт: код 0 после каждого из 7.1–7.4; повторный <code>spotlessApply</code> ничего не меняет.</td>
           </tr>
-          <tr data-item="7.6" data-group="b7">
+          <tr data-item="7.6" data-group="b7" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.6</span></td>
             <td class="name">Ревью и аппрув</td>
             <td class="what">Изменение отдаётся без коммита.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: ваш аппрув. Блок 8 — отдельным «давай дальше».</td>
+            <td class="dep">Проверка: ваш аппрув. Блок 8 — отдельным «давай дальше». Факт: аппрув дан на каждый пункт отдельно.</td>
           </tr>
-          <tr data-item="7.7" data-group="b7">
+          <tr data-item="7.7" data-group="b7" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.7</span></td>
             <td class="name">Коммит</td>
             <td class="what"><code>[database] Add Room write queries for chat</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Только после 7.6. Проверка: коммит содержит методы записи и тесты.</td>
+            <td class="dep">Только после 7.6. Проверка: коммит содержит методы записи и тесты. Факт: четыре коммита — <code>3469c1e3</code> вставки, <code>b3094994</code> изменения, <code>62b834e8</code> удаления, <code>968f4e83</code> тесты ключей и каскадов.</td>
           </tr>
 
-          <tr class="group" data-group-header="b8"><td colspan="5">Блок 8 · Урок 8: подключаем чат<span class="gcount">0/10</span></td></tr>
+          <tr class="group" data-group-header="b8"><td colspan="5">Блок 8 · Урок 8: подключаем чат<span class="status new">текущий</span><span class="gcount">0/10</span></td></tr>
           <tr data-item="8.1" data-group="b8">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.1</span></td>
             <td class="name">DI: <code>provideChatDatabase</code></td>
