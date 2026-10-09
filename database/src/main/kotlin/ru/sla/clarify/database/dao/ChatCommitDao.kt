@@ -20,40 +20,14 @@ interface ChatCommitDao {
 
   @Query(
     """
-    SELECT
-      id,
-      senderId,
-      type,
-      text,
-      replyCommit,
-      invitedId,
-      createdAtNanos,
-      isSelf,
-      status,
-      editedAtNanos
-    FROM ChatCommit
-    WHERE conversationId = :conversationId AND branchId = :branchId
-    ORDER BY createdAtNanos DESC, id DESC
+    $FEED_QUERY
     """
   )
   suspend fun select(conversationId: Conversation.Id, branchId: Branch.Id): List<CommitRow>
 
   @Query(
     """
-    SELECT
-      id,
-      senderId,
-      type,
-      text,
-      replyCommit,
-      invitedId,
-      createdAtNanos,
-      isSelf,
-      status,
-      editedAtNanos
-    FROM ChatCommit
-    WHERE conversationId = :conversationId AND branchId = :branchId
-    ORDER BY createdAtNanos DESC, id DESC
+    $FEED_QUERY
     """
   )
   fun observe(conversationId: Conversation.Id, branchId: Branch.Id): DistinctFlow<List<CommitRow>>
@@ -85,26 +59,14 @@ interface ChatCommitDao {
 
   @Query(
     """
-    SELECT
-      id,
-      createdAtNanos
-    FROM ChatCommit
-    WHERE conversationId = :conversationId AND branchId = :branchId AND createdAtNanos > 0
-    ORDER BY createdAtNanos ASC, id ASC
-    LIMIT 1
+    $OLDEST_CURSOR_QUERY
     """
   )
   suspend fun selectOldestCursor(conversationId: Conversation.Id, branchId: Branch.Id): CommitCursorRow?
 
   @Query(
     """
-    SELECT
-      id,
-      createdAtNanos
-    FROM ChatCommit
-    WHERE conversationId = :conversationId AND branchId = :branchId AND createdAtNanos > 0
-    ORDER BY createdAtNanos ASC, id ASC
-    LIMIT 1
+    $OLDEST_CURSOR_QUERY
     """
   )
   fun observeOldestCursor(
@@ -176,3 +138,30 @@ interface ChatCommitDao {
   )
   suspend fun delete(id: Commit.Id)
 }
+
+private const val FEED_QUERY = """
+    SELECT
+      id,
+      senderId,
+      type,
+      text,
+      replyCommit,
+      invitedId,
+      createdAtNanos,
+      isSelf,
+      status,
+      editedAtNanos
+    FROM ChatCommit
+    WHERE conversationId = :conversationId AND branchId = :branchId
+    ORDER BY createdAtNanos DESC, id DESC
+"""
+
+private const val OLDEST_CURSOR_QUERY = """
+    SELECT
+      id,
+      createdAtNanos
+    FROM ChatCommit
+    WHERE conversationId = :conversationId AND branchId = :branchId AND createdAtNanos > 0
+    ORDER BY createdAtNanos ASC, id ASC
+    LIMIT 1
+"""

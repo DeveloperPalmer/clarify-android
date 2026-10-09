@@ -84,15 +84,7 @@ interface ChatConversationDao {
 
   @Query(
     """
-    SELECT
-      ChatConversation.id
-    FROM ChatConversation
-    INNER JOIN ChatMember
-      ON ChatMember.conversationId = ChatConversation.id
-    WHERE ChatConversation.type = :type
-    GROUP BY ChatConversation.id
-    HAVING COUNT(*) = :memberCount
-      AND COUNT(CASE WHEN ChatMember.id IN (:memberIds) THEN 1 END) = :memberCount
+    $ID_BY_MEMBERS_QUERY
     """
   )
   fun observeIdByMembers(
@@ -103,15 +95,7 @@ interface ChatConversationDao {
 
   @Query(
     """
-    SELECT
-      ChatConversation.id
-    FROM ChatConversation
-    INNER JOIN ChatMember
-      ON ChatMember.conversationId = ChatConversation.id
-    WHERE ChatConversation.type = :type
-    GROUP BY ChatConversation.id
-    HAVING COUNT(*) = :memberCount
-      AND COUNT(CASE WHEN ChatMember.id IN (:memberIds) THEN 1 END) = :memberCount
+    $ID_BY_MEMBERS_QUERY
     """
   )
   suspend fun selectIdByMembers(
@@ -192,3 +176,15 @@ interface ChatConversationDao {
   )
   suspend fun delete(id: Conversation.Id)
 }
+
+private const val ID_BY_MEMBERS_QUERY = """
+    SELECT
+      ChatConversation.id
+    FROM ChatConversation
+    INNER JOIN ChatMember
+      ON ChatMember.conversationId = ChatConversation.id
+    WHERE ChatConversation.type = :type
+    GROUP BY ChatConversation.id
+    HAVING COUNT(*) = :memberCount
+      AND COUNT(CASE WHEN ChatMember.id IN (:memberIds) THEN 1 END) = :memberCount
+"""
