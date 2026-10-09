@@ -24,26 +24,7 @@ interface ChatBranchDao {
 
   @Query(
     """
-    SELECT
-      ChatBranch.id,
-      ChatBranch.conversationId,
-      ChatBranch.parentBranchId,
-      ChatBranch.branchedFromCommitId,
-      ChatBranch.name,
-      ChatBranch.lastCommit,
-      ChatBranch.lastCommitTimestamp,
-      ChatBranch.unreadCount,
-      ChatBranch.createdAt,
-      ChatBranch.createdById,
-      MergeRequest.status AS mergeRequestStatus,
-      MergeRequest.initiatorId AS mergeRequestInitiatorId,
-      MergeRequest.requestedAt AS mergeRequestRequestedAt,
-      MergeRequest.approvedByIds AS mergeRequestApprovedByIds,
-      MergeRequest.mergedAt AS mergeRequestMergedAt,
-      MergeRequest.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
-    FROM ChatBranch
-    LEFT JOIN MergeRequest
-      ON MergeRequest.branchId = ChatBranch.id
+    $BRANCH_ROW_SELECT
     WHERE ChatBranch.conversationId = :conversationId
     ORDER BY ChatBranch.createdAt ASC
     """
@@ -52,26 +33,7 @@ interface ChatBranchDao {
 
   @Query(
     """
-    SELECT
-      ChatBranch.id,
-      ChatBranch.conversationId,
-      ChatBranch.parentBranchId,
-      ChatBranch.branchedFromCommitId,
-      ChatBranch.name,
-      ChatBranch.lastCommit,
-      ChatBranch.lastCommitTimestamp,
-      ChatBranch.unreadCount,
-      ChatBranch.createdAt,
-      ChatBranch.createdById,
-      MergeRequest.status AS mergeRequestStatus,
-      MergeRequest.initiatorId AS mergeRequestInitiatorId,
-      MergeRequest.requestedAt AS mergeRequestRequestedAt,
-      MergeRequest.approvedByIds AS mergeRequestApprovedByIds,
-      MergeRequest.mergedAt AS mergeRequestMergedAt,
-      MergeRequest.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
-    FROM ChatBranch
-    LEFT JOIN MergeRequest
-      ON MergeRequest.branchId = ChatBranch.id
+    $BRANCH_ROW_SELECT
     WHERE ChatBranch.id = :id
     """
   )
@@ -79,26 +41,7 @@ interface ChatBranchDao {
 
   @Query(
     """
-    SELECT
-      ChatBranch.id,
-      ChatBranch.conversationId,
-      ChatBranch.parentBranchId,
-      ChatBranch.branchedFromCommitId,
-      ChatBranch.name,
-      ChatBranch.lastCommit,
-      ChatBranch.lastCommitTimestamp,
-      ChatBranch.unreadCount,
-      ChatBranch.createdAt,
-      ChatBranch.createdById,
-      MergeRequest.status AS mergeRequestStatus,
-      MergeRequest.initiatorId AS mergeRequestInitiatorId,
-      MergeRequest.requestedAt AS mergeRequestRequestedAt,
-      MergeRequest.approvedByIds AS mergeRequestApprovedByIds,
-      MergeRequest.mergedAt AS mergeRequestMergedAt,
-      MergeRequest.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
-    FROM ChatBranch
-    LEFT JOIN MergeRequest
-      ON MergeRequest.branchId = ChatBranch.id
+    $BRANCH_ROW_SELECT
     WHERE ChatBranch.id = :id
     """
   )
@@ -174,3 +117,26 @@ interface ChatBranchDao {
   )
   suspend fun delete(id: Branch.Id)
 }
+
+private const val BRANCH_ROW_SELECT = """
+    SELECT
+      ChatBranch.id,
+      ChatBranch.conversationId,
+      ChatBranch.parentBranchId,
+      ChatBranch.branchedFromCommitId,
+      ChatBranch.name,
+      ChatBranch.lastCommit,
+      ChatBranch.lastCommitTimestamp,
+      ChatBranch.unreadCount,
+      ChatBranch.createdAt,
+      ChatBranch.createdById,
+      MergeRequest.status AS mergeRequestStatus,
+      MergeRequest.initiatorId AS mergeRequestInitiatorId,
+      MergeRequest.requestedAt AS mergeRequestRequestedAt,
+      MergeRequest.approvedByIds AS mergeRequestApprovedByIds,
+      MergeRequest.mergedAt AS mergeRequestMergedAt,
+      MergeRequest.mergedIntoBranchId AS mergeRequestMergedIntoBranchId
+    FROM ChatBranch
+    LEFT JOIN MergeRequest
+      ON MergeRequest.branchId = ChatBranch.id
+"""

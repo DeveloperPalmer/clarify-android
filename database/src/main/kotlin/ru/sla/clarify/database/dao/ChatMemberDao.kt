@@ -53,13 +53,7 @@ interface ChatMemberDao {
 
   @Query(
     """
-    SELECT
-      ChatMember.id,
-      User.displayName,
-      User.photoUrl
-    FROM ChatMember
-    LEFT JOIN User
-      ON User.id = ChatMember.id
+    $DIRECT_MEMBER_ROW_SELECT
     WHERE ChatMember.conversationId = :conversationId
     """
   )
@@ -67,13 +61,7 @@ interface ChatMemberDao {
 
   @Query(
     """
-    SELECT
-      ChatMember.id,
-      User.displayName,
-      User.photoUrl
-    FROM ChatMember
-    LEFT JOIN User
-      ON User.id = ChatMember.id
+    $DIRECT_MEMBER_ROW_SELECT
     WHERE ChatMember.conversationId = :conversationId
     """
   )
@@ -81,13 +69,7 @@ interface ChatMemberDao {
 
   @Query(
     """
-    SELECT
-      ChatMember.id,
-      User.displayName,
-      User.photoUrl
-    FROM ChatMember
-    LEFT JOIN User
-      ON User.id = ChatMember.id
+    $DIRECT_MEMBER_ROW_SELECT
     WHERE ChatMember.conversationId = :conversationId AND ChatMember.id = :id
     """
   )
@@ -120,3 +102,13 @@ interface ChatMemberDao {
   )
   suspend fun deleteById(conversationId: Conversation.Id, id: Member.Id)
 }
+
+private const val DIRECT_MEMBER_ROW_SELECT = """
+    SELECT
+      ChatMember.id,
+      User.displayName,
+      User.photoUrl
+    FROM ChatMember
+    LEFT JOIN User
+      ON User.id = ChatMember.id
+"""
