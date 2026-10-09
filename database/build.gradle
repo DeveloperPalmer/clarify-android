@@ -58,13 +58,13 @@ dependencies {
   api project(":core:domain")
   api project(":auth-session:domain")
   api libs.sqldelight.coroutines
+  api libs.androidx.room3.runtime
 
   implementation project(":feature:chat-conversation:domain")
   implementation libs.firebase.auth
   implementation libs.firebase.firestore
   implementation libs.kotlinx.serialization.json
   implementation libs.sqldelight.android.driver
-  implementation libs.androidx.room3.runtime
   ksp libs.androidx.room3.compiler
 
 
