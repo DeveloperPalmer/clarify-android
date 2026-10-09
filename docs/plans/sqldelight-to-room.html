@@ -1301,7 +1301,7 @@ suspend fun upsert(…)</code></pre>
     <h2>Трекер</h2>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>16</b> из 69 · 23%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>20</b> из 69 · 29%</span>
         <span class="tracker-hint">отметки записаны в этом файле; автор ставит их, когда проверка пункта пройдена</span>
       </div>
       <div class="tracker-bar"><span id="tracker-bar" style="width: 16%"></span></div>
@@ -1436,48 +1436,48 @@ suspend fun upsert(…)</code></pre>
             <td class="dep">Только после 2.5. Проверка: коммит <code>17292b28</code> на ветках <code>room</code> и <code>room-my</code>: методы DAO, <code>Key</code> в сущности, тест и тестовые зависимости. Открытым остаётся только пункт 2.2 (вопрос 18): решение по экспорту схемы отложено.</td>
           </tr>
 
-          <tr class="group" data-group-header="b3"><td colspan="5">Блок 3 · Урок 3: подключаем Settings<span class="status new">текущий</span><span class="gcount">0/6</span></td></tr>
+          <tr class="group" data-group-header="b3"><td colspan="5">Блок 3 · Урок 3: подключаем Settings<span class="status new">текущий</span><span class="gcount">4/6</span></td></tr>
           <tr data-item="3.1" data-group="b3">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.1</span></td>
             <td class="name"><code>AuthSessionPersistenceImpl</code></td>
             <td class="what">Обращения к <code>settingsQueries</code> заменяются на <code>settingsDao()</code>; <code>asFlow().mapToOneOrNull(IO)</code> становится <code>observe(key)</code>; обёртки <code>withContext(Dispatchers.IO)</code> убираются.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Проверка вручную: вход, убийство процесса, повторный запуск — сессия на месте; выход чистит ключи.</td>
+            <td class="dep">Проверка вручную: вход, убийство процесса, повторный запуск — сессия на месте; выход чистит ключи. Факт: код в коммите <code>fcb6583f</code>; <code>room3-runtime</code> поднят в <code>api</code> модуля <code>database</code> — без него потребитель не компилируется (<code>Cannot access 'androidx.room3.RoomDatabase'</code>), ожидание из вопроса 05 подтверждено. На эмуляторе приложение стартует, <code>settings.db</code> создан. Ручная проверка со входом за вами — пункт открыт до неё.</td>
           </tr>
           <tr data-item="3.2" data-group="b3">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.2</span></td>
             <td class="name"><code>PersistedEventCursorStore</code></td>
             <td class="what">Три обращения (<code>read</code>, <code>save</code>, <code>clear</code>) переходят на DAO.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: курсор события переживает перезапуск процесса.</td>
+            <td class="dep">Проверка: курсор события переживает перезапуск процесса. Факт: код в коммите <code>2195b094</code>; приложение стартует на эмуляторе. Проверка со входом за вами — пункт открыт до неё.</td>
           </tr>
-          <tr data-item="3.3" data-group="b3">
+          <tr data-item="3.3" data-group="b3" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.3</span></td>
             <td class="name">Удаление <code>PersistedDB</code></td>
             <td class="what">Удалить <code>Settings.sq</code>, базу <code>PersistedDB</code> из блока <code>sqldelight {}</code>, её <code>kotlin.srcDir</code> и <code>dependsOn generate…PersistedDBInterface</code>, а также <code>providePersistedDatabase</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: сборка без <code>PersistedDB</code>; поиск по <code>PersistedDB</code> пуст.</td>
+            <td class="dep">Проверка: сборка без <code>PersistedDB</code>; поиск по <code>PersistedDB</code> пуст. Факт: поиск пуст, после <code>:database:clean</code> SQLDelight генерирует только <code>InMemoryDB</code>.</td>
           </tr>
-          <tr data-item="3.4" data-group="b3">
+          <tr data-item="3.4" data-group="b3" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.4</span></td>
             <td class="name">Проверки</td>
             <td class="what"><code>./gradlew prePushCheck</code>, <code>./gradlew test</code>, ручной прогон на устройстве, где уже есть старая <code>clarify.db</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: всё зелёное; со старым файлом приложение стартует, сессии нет — вход заново (данные тестовые, потеря допустима).</td>
+            <td class="dep">Проверка: всё зелёное; со старым файлом приложение стартует, сессии нет — вход заново (данные тестовые, потеря допустима). Факт 09.10.2026: <code>prePushCheck</code>, <code>test</code>, <code>:app:android:assembleDebug</code> — код 0; на эмуляторе со старым <code>clarify.db</code> приложение стартует без падений на экране входа. <code>clarify.db</code> остаётся на устройстве сиротой.</td>
           </tr>
-          <tr data-item="3.5" data-group="b3">
+          <tr data-item="3.5" data-group="b3" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.5</span></td>
             <td class="name">Ревью и аппрув</td>
             <td class="what">Изменение отдаётся без коммита.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: ваш аппрув. Блок 4 — отдельным «давай дальше».</td>
+            <td class="dep">Проверка: ваш аппрув. Блок 4 — отдельным «давай дальше». Факт: аппрув дан на каждый пункт отдельно.</td>
           </tr>
-          <tr data-item="3.6" data-group="b3">
+          <tr data-item="3.6" data-group="b3" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.6</span></td>
             <td class="name">Коммит</td>
             <td class="what"><code>[database] Switch settings storage to Room</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Только после 3.5. Проверка: коммит содержит проводку и удаления, без нового кода Room.</td>
+            <td class="dep">Только после 3.5. Проверка: коммит содержит проводку и удаления, без нового кода Room. Отклонение по вашей просьбе «атомарными правками»: три коммита вместо одного — <code>fcb6583f</code> сессия, <code>2195b094</code> курсор, <code>495bb34b</code> удаление <code>PersistedDB</code>. Каждое промежуточное состояние рабочее: ключи сессии и курсора не пересекаются.</td>
           </tr>
 
           <tr class="group" data-group-header="b4"><td colspan="5">Блок 4 · Урок 4: схема чата<span class="gcount">0/7</span></td></tr>
