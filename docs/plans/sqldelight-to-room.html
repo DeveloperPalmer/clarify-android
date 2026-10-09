@@ -700,8 +700,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         <div class="rail-step"><span class="n">3</span>Подключение Settings</div>
         <div class="rail-step"><span class="n">4</span>Схема чата</div>
         <div class="rail-step"><span class="n">5</span>Чтение I</div>
-        <div class="rail-step in"><span class="n">6</span>Чтение II</div>
-        <div class="rail-step"><span class="n">7</span>Запись</div>
+        <div class="rail-step"><span class="n">6</span>Чтение II</div>
+        <div class="rail-step in"><span class="n">7</span>Запись</div>
         <div class="rail-step"><span class="n">8</span>Подключение чата</div>
         <div class="rail-step"><span class="n">9</span>Уборка</div>
         <div class="rail-step edge"><span class="n">10</span>Правила проекта</div>
@@ -1301,7 +1301,7 @@ suspend fun upsert(…)</code></pre>
     <h2>Трекер</h2>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>33</b> из 69 · 48%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>39</b> из 69 · 57%</span>
         <span class="tracker-hint">отметки записаны в этом файле; автор ставит их, когда проверка пункта пройдена</span>
       </div>
       <div class="tracker-bar"><span id="tracker-bar" style="width: 16%"></span></div>
@@ -1575,51 +1575,51 @@ suspend fun upsert(…)</code></pre>
             <td class="dep">Только после 5.5. Проверка: коммит содержит DAO, проекции и тесты. Факт: два коммита — <code>b69fdabb</code> пользователи и участники, <code>8615a021</code> разговоры. Попутно форматирование <code>ChatCommitEntity</code>, недоделанное <code>spotlessApply</code> за один проход, влито в коммит схемы <code>fd91ee18</code>.</td>
           </tr>
 
-          <tr class="group" data-group-header="b6"><td colspan="5">Блок 6 · Урок 6: чтение II<span class="status new">текущий</span><span class="gcount">0/6</span></td></tr>
-          <tr data-item="6.1" data-group="b6">
+          <tr class="group" data-group-header="b6"><td colspan="5">Блок 6 · Урок 6: чтение II<span class="gcount">6/6</span></td></tr>
+          <tr data-item="6.1" data-group="b6" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.1</span></td>
             <td class="name"><code>ChatBranchDao</code></td>
             <td class="what"><code>selectIds</code>, <code>selectByConversation</code>, <code>selectById</code>; последние два — <code>LEFT JOIN MergeRequest</code> с проекцией, где поля запроса слияния nullable.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Форма проекции — по вопросу 10. Проверка: сортировка по <code>createdAt ASC</code> сохранена.</td>
+            <td class="dep">Форма проекции — по вопросу 10. Проверка: сортировка по <code>createdAt ASC</code> сохранена. Факт: коммит <code>58067d3e</code> — <code>observeIds</code>, <code>observeByConversation</code>, <code>observeById</code> и <code>selectById</code> (оба используются); одна проекция <code>BranchRow</code> на три запроса с <code>LEFT JOIN MergeRequest</code>, их выборки совпадают.</td>
           </tr>
-          <tr data-item="6.2" data-group="b6">
+          <tr data-item="6.2" data-group="b6" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.2</span></td>
             <td class="name"><code>ChatCommitDao</code></td>
             <td class="what"><code>select</code>, <code>selectByConversation</code>, <code>selectOldestCursor</code>, <code>selectEditState</code>, <code>selectByIds</code> (<code>IN :ids</code>).</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Проверка: порядок <code>createdAtNanos</code>, <code>id</code> совпадает с нынешним (<code>DESC</code> в ленте, <code>ASC</code> в истории и курсоре).</td>
+            <td class="dep">Проверка: порядок <code>createdAtNanos</code>, <code>id</code> совпадает с нынешним (<code>DESC</code> в ленте, <code>ASC</code> в истории и курсоре). Факт: коммит <code>db6f0116</code> — восемь методов на пять запросов; проекции <code>CommitRow</code>, <code>ChronologyCommitRow</code>, <code>CommitCursorRow</code>, <code>CommitEditStateRow</code>; <code>selectByIds</code> отдаёт <code>ChatCommitEntity</code>, анонимный <code>?</code> получил имя <code>ids</code>.</td>
           </tr>
-          <tr data-item="6.3" data-group="b6">
+          <tr data-item="6.3" data-group="b6" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.3</span></td>
             <td class="name">Тесты чтения</td>
             <td class="what">Ветка без запроса слияния даёт null во всех полях слияния; фильтр <code>createdAtNanos &gt; 0</code> отсекает оптимистичные коммиты; <code>IN</code> с пустым и непустым списком; курсор — самый старый коммит ветки.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Проверка: <code>./gradlew :database:test</code> зелёный.</td>
+            <td class="dep">Проверка: <code>./gradlew :database:test</code> зелёный. Факт: <code>ChatBranchDaoTest</code> (4), <code>ChatCommitDaoTest</code> (5) — в коммитах своих DAO. Ветка без запроса слияния даёт <code>null</code> во всех шести полях; через конвертеры в работе прошли <code>Set&lt;UserId&gt;?</code>, <code>Branch.Id?</code>, <code>Commit.Reply?</code>, <code>Boolean</code> и <code>DEFAULT 'text'</code>.</td>
           </tr>
-          <tr data-item="6.4" data-group="b6">
+          <tr data-item="6.4" data-group="b6" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.4</span></td>
             <td class="name">Проверки</td>
             <td class="what"><code>./gradlew prePushCheck</code> и <code>./gradlew test</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: оба зелёные.</td>
+            <td class="dep">Проверка: оба зелёные. Факт: код 0 после 6.1 и 6.2; повторный <code>spotlessApply</code> ничего не меняет.</td>
           </tr>
-          <tr data-item="6.5" data-group="b6">
+          <tr data-item="6.5" data-group="b6" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.5</span></td>
             <td class="name">Ревью и аппрув</td>
             <td class="what">Изменение отдаётся без коммита.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: ваш аппрув. Блок 7 — отдельным «давай дальше».</td>
+            <td class="dep">Проверка: ваш аппрув. Блок 7 — отдельным «давай дальше». Факт: аппрув дан на каждый пункт отдельно.</td>
           </tr>
-          <tr data-item="6.6" data-group="b6">
+          <tr data-item="6.6" data-group="b6" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>6.6</span></td>
             <td class="name">Коммит</td>
             <td class="what"><code>[database] Add Room read queries for branches and commits</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Только после 6.5. Проверка: коммит содержит два DAO, проекции и тесты.</td>
+            <td class="dep">Только после 6.5. Проверка: коммит содержит два DAO, проекции и тесты. Факт: два коммита — <code>58067d3e</code> ветки, <code>db6f0116</code> коммиты.</td>
           </tr>
 
-          <tr class="group" data-group-header="b7"><td colspan="5">Блок 7 · Урок 7: запись<span class="gcount">0/7</span></td></tr>
+          <tr class="group" data-group-header="b7"><td colspan="5">Блок 7 · Урок 7: запись<span class="status new">текущий</span><span class="gcount">0/7</span></td></tr>
           <tr data-item="7.1" data-group="b7">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>7.1</span></td>
             <td class="name">Вставки</td>
