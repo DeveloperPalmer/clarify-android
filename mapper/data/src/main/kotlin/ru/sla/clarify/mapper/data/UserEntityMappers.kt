@@ -1,12 +1,13 @@
 package ru.sla.clarify.mapper.data
 
+import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.database.entity.UserEntity
 
-fun User.toCacheRow(): UserEntity {
-  return UserEntity(
+fun UserEntity.toDomainModel(): User {
+  return User(
     id = id,
-    email = email.value,
+    email = Email(email),
     displayName = displayName,
     photoUrl = photoUrl
   )

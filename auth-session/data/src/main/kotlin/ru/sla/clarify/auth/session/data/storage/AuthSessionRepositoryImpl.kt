@@ -1,8 +1,6 @@
 package ru.sla.clarify.auth.session.data.storage
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
 import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.refresh.AccessTokenRefresher
 import ru.sla.clarify.auth.session.domain.AuthSessionRepository
@@ -11,13 +9,13 @@ import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.UserId
-import ru.sla.clarify.database.InMemoryDB
+import ru.sla.clarify.database.ChatDatabase
 import ru.sla.clarify.database.cleanupBySessionKey
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 
 @ContributesBinding(AppScope::class)
 class AuthSessionRepositoryImpl @Inject constructor(
-  private val inMemoryDB: InMemoryDB,
+  private val chatDatabase: ChatDatabase,
   private val authSessionPersistence: AuthSessionPersistence,
   private val accessTokenRefresher: AccessTokenRefresher
 ) : AuthSessionRepository {
@@ -80,8 +78,6 @@ class AuthSessionRepositoryImpl @Inject constructor(
   }
 
   override suspend fun cleanupStorage(key: SessionKey) {
-    withContext(Dispatchers.IO) {
-      inMemoryDB.cleanupBySessionKey(key.value)
-    }
+    chatDatabase.cleanupBySessionKey(key.value)
   }
 }
