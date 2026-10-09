@@ -95,4 +95,28 @@ interface ChatMemberDao {
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertOrReplace(entity: ChatMemberEntity)
+
+  @Query(
+    """
+    DELETE FROM ChatMember
+    WHERE conversationId = :conversationId
+    """
+  )
+  suspend fun delete(conversationId: Conversation.Id)
+
+  @Query(
+    """
+    DELETE FROM ChatMember
+    WHERE conversationId = :conversationId AND id NOT IN (:memberIds)
+    """
+  )
+  suspend fun deleteExcept(conversationId: Conversation.Id, memberIds: List<Member.Id>)
+
+  @Query(
+    """
+    DELETE FROM ChatMember
+    WHERE conversationId = :conversationId AND id = :id
+    """
+  )
+  suspend fun deleteById(conversationId: Conversation.Id, id: Member.Id)
 }

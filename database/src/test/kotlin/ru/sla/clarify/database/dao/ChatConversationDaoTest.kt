@@ -238,6 +238,18 @@ class ChatConversationDaoTest {
     }
   }
 
+  @Test
+  fun `delete removes only the given conversation`() = runTest {
+    insertConversation("d1", "direct", timestamp = 1)
+    insertConversation("g1", "group", timestamp = 2)
+
+    dao.delete(Conversation.Id("d1"))
+
+    dao.observeIds().test {
+      assertEquals(listOf(Conversation.Id("g1")), awaitItem())
+    }
+  }
+
   private suspend fun upsertGroup(name: String) {
     dao.upsert(
       id = Conversation.Id("g1"),

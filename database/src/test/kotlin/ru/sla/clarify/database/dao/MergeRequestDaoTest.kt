@@ -7,6 +7,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import ru.sla.clarify.core.domain.entity.UserId
@@ -63,6 +64,28 @@ class MergeRequestDaoTest {
     assertEquals(setOf(UserId("alice")), branch?.mergeRequestApprovedByIds)
     assertEquals(20L, branch?.mergeRequestMergedAt)
     assertEquals(Branch.Id("main"), branch?.mergeRequestMergedIntoBranchId)
+  }
+
+  @Test
+  fun `delete removes the request but keeps the branch`() = runTest {
+    insertBranch()
+    dao.insertOrReplace(
+      MergeRequestEntity(
+        branchId = Branch.Id("b1"),
+        status = "open",
+        initiatorId = UserId("author"),
+        requestedAt = 10,
+        approvedByIds = emptySet(),
+        mergedAt = null,
+        mergedIntoBranchId = null
+      )
+    )
+
+    dao.delete(Branch.Id("b1"))
+
+    val branch = database.chatBranchDao().selectById(Branch.Id("b1"))
+    assertEquals(Branch.Id("b1"), branch?.id)
+    assertNull(branch?.mergeRequestStatus)
   }
 
   private suspend fun insertBranch() {

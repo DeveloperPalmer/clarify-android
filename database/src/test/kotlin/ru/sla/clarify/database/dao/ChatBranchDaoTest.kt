@@ -121,6 +121,18 @@ class ChatBranchDaoTest {
     assertEquals(branchRow("b2", createdAt = 2), dao.selectById(Branch.Id("b2")))
   }
 
+  @Test
+  fun `delete removes only the given branch`() = runTest {
+    insertConversation("c1")
+    insertBranch("b1", "c1", createdAt = 1)
+    insertBranch("b2", "c1", createdAt = 2)
+
+    dao.delete(Branch.Id("b1"))
+
+    assertNull(dao.selectById(Branch.Id("b1")))
+    assertEquals(branchRow("b2", createdAt = 2), dao.selectById(Branch.Id("b2")))
+  }
+
   private suspend fun upsertBranch(name: String) {
     dao.upsert(
       id = Branch.Id("b1"),
