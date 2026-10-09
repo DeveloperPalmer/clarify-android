@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import ru.sla.clarify.database.ChatDatabase
+import ru.sla.clarify.database.entity.ChatMemberEntity
 import ru.sla.clarify.database.entity.DirectMemberRow
 import ru.sla.clarify.database.entity.GroupMemberRow
 import ru.sla.clarify.entity.chat.Conversation
@@ -118,6 +119,16 @@ class ChatMemberDaoTest {
     dao.observeDirectById(Conversation.Id("c1"), Member.Id("bob")).test {
       assertNull(awaitItem())
     }
+  }
+
+  @Test
+  fun `insertOrReplace keeps a single row per member of a conversation`() = runTest {
+    val member = ChatMemberEntity(id = Member.Id("alice"), conversationId = Conversation.Id("c1"))
+
+    dao.insertOrReplace(member)
+    dao.insertOrReplace(member)
+
+    assertEquals(listOf(Member.Id("alice")), dao.selectIds(Conversation.Id("c1")))
   }
 
   private suspend fun insertMember(conversationId: String, id: String) {

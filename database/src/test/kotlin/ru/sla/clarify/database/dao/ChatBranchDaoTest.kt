@@ -85,6 +85,44 @@ class ChatBranchDaoTest {
     assertNull(dao.selectById(Branch.Id("missing")))
   }
 
+  /**
+   * Повторная запись ветки обновляет её поля, но не трогает локальный счётчик непрочитанного.
+   */
+  @Test
+  fun `upsert updates the row and keeps unreadCount`() = runTest {
+    insertConversation("c1")
+    upsertBranch(name = "old")
+    execute("UPDATE ChatBranch SET unreadCount = 3 WHERE id = 'b1'")
+
+    upsertBranch(name = "new")
+
+    val branch = dao.selectById(Branch.Id("b1"))
+    assertEquals("new", branch?.name)
+    assertEquals(3L, branch?.unreadCount)
+  }
+
+  @Test
+  fun `upsert of a new branch starts with zero unread`() = runTest {
+    insertConversation("c1")
+    upsertBranch(name = "new")
+
+    assertEquals(0L, dao.selectById(Branch.Id("b1"))?.unreadCount)
+  }
+
+  private suspend fun upsertBranch(name: String) {
+    dao.upsert(
+      id = Branch.Id("b1"),
+      conversationId = Conversation.Id("c1"),
+      parentBranchId = Branch.Id("main"),
+      branchedFromCommitId = Commit.Id("commit"),
+      name = name,
+      lastCommit = null,
+      lastCommitTimestamp = 0,
+      createdAt = 1,
+      createdById = UserId("author")
+    )
+  }
+
   private fun branchRow(id: String, createdAt: Long): BranchRow {
     return BranchRow(
       id = Branch.Id(id),

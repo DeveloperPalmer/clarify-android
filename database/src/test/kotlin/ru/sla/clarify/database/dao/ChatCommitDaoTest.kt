@@ -129,6 +129,39 @@ class ChatCommitDaoTest {
     )
   }
 
+  @Test
+  fun `insertOrReplace stores every column and replaces by id`() = runTest {
+    insertConversation("c1")
+    val commit = ChatCommitEntity(
+      id = Commit.Id("a"),
+      conversationId = Conversation.Id("c1"),
+      branchId = Branch.Id("b1"),
+      senderId = UserId("alice"),
+      type = "invite",
+      text = "hello",
+      replyCommit = Commit.Reply(
+        id = Commit.Id("z"),
+        senderId = UserId("bob"),
+        isSelf = false,
+        text = "quoted"
+      ),
+      invitedId = UserId("carol"),
+      createdAtNanos = 5,
+      isSelf = true,
+      status = "sending",
+      editedAtNanos = 7
+    )
+
+    dao.insertOrReplace(commit)
+    assertEquals(listOf(commit), dao.selectByIds(listOf(Commit.Id("a"))))
+
+    dao.insertOrReplace(commit.copy(status = "sent", invitedId = null))
+    assertEquals(
+      listOf(commit.copy(status = "sent", invitedId = null)),
+      dao.selectByIds(listOf(Commit.Id("a")))
+    )
+  }
+
   private suspend fun insertConversation(id: String) {
     execute("INSERT INTO ChatConversation (id, type, lastCommitTimestamp) VALUES ('$id', 'group', 0)")
   }

@@ -2,9 +2,11 @@ package ru.sla.clarify.database.dao
 
 import androidx.room3.Dao
 import androidx.room3.Query
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.DistinctFlow
 import ru.sla.clarify.database.entity.BranchRow
 import ru.sla.clarify.entity.chat.Branch
+import ru.sla.clarify.entity.chat.Commit
 import ru.sla.clarify.entity.chat.Conversation
 
 @Dao
@@ -101,4 +103,56 @@ interface ChatBranchDao {
     """
   )
   suspend fun selectById(id: Branch.Id): BranchRow?
+
+  /**
+   * Не `INSERT OR REPLACE`: замена — это удаление и вставка, и внешний ключ каскадом удалил бы
+   * запрос слияния ветки. `unreadCount` в обновление не входит — счётчик ведётся локально, и
+   * повторная запись ветки с сервера его не сбрасывает.
+   */
+  @Query(
+    """
+    INSERT INTO ChatBranch (
+      id,
+      conversationId,
+      parentBranchId,
+      branchedFromCommitId,
+      name,
+      lastCommit,
+      lastCommitTimestamp,
+      createdAt,
+      createdById
+    )
+    VALUES (
+      :id,
+      :conversationId,
+      :parentBranchId,
+      :branchedFromCommitId,
+      :name,
+      :lastCommit,
+      :lastCommitTimestamp,
+      :createdAt,
+      :createdById
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      conversationId = excluded.conversationId,
+      parentBranchId = excluded.parentBranchId,
+      branchedFromCommitId = excluded.branchedFromCommitId,
+      name = excluded.name,
+      lastCommit = excluded.lastCommit,
+      lastCommitTimestamp = excluded.lastCommitTimestamp,
+      createdAt = excluded.createdAt,
+      createdById = excluded.createdById
+    """
+  )
+  suspend fun upsert(
+    id: Branch.Id,
+    conversationId: Conversation.Id,
+    parentBranchId: Branch.Id,
+    branchedFromCommitId: Commit.Id,
+    name: String,
+    lastCommit: String?,
+    lastCommitTimestamp: Long,
+    createdAt: Long,
+    createdById: UserId
+  )
 }
