@@ -146,4 +146,12 @@ interface ChatCommitDao {
     """
   )
   suspend fun updateEdit(id: Commit.Id, text: String, editedAtNanos: Long?, status: String)
+
+  @Query(
+    """
+    DELETE FROM ChatCommit
+    WHERE id = :id
+    """
+  )
+  suspend fun delete(id: Commit.Id)
 }

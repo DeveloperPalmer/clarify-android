@@ -131,6 +131,60 @@ class ChatMemberDaoTest {
     assertEquals(listOf(Member.Id("alice")), dao.selectIds(Conversation.Id("c1")))
   }
 
+  @Test
+  fun `delete removes all members of the conversation only`() = runTest {
+    insertMember("c1", "alice")
+    insertMember("c1", "bob")
+    insertMember("c2", "alice")
+
+    dao.delete(Conversation.Id("c1"))
+
+    assertEquals(emptyList<Member.Id>(), dao.selectIds(Conversation.Id("c1")))
+    assertEquals(listOf(Member.Id("alice")), dao.selectIds(Conversation.Id("c2")))
+  }
+
+  @Test
+  fun `deleteExcept keeps only the listed members of the conversation`() = runTest {
+    insertMember("c1", "alice")
+    insertMember("c1", "bob")
+    insertMember("c1", "carol")
+    insertMember("c2", "bob")
+
+    dao.deleteExcept(Conversation.Id("c1"), listOf(Member.Id("alice"), Member.Id("carol")))
+
+    assertEquals(
+      setOf(Member.Id("alice"), Member.Id("carol")),
+      dao.selectIds(Conversation.Id("c1")).toSet()
+    )
+    assertEquals(listOf(Member.Id("bob")), dao.selectIds(Conversation.Id("c2")))
+  }
+
+  /**
+   * Пустой список означает «не оставить никого»: `NOT IN ()` истинно для любой строки.
+   */
+  @Test
+  fun `deleteExcept with an empty list removes every member of the conversation`() = runTest {
+    insertMember("c1", "alice")
+    insertMember("c2", "bob")
+
+    dao.deleteExcept(Conversation.Id("c1"), emptyList())
+
+    assertEquals(emptyList<Member.Id>(), dao.selectIds(Conversation.Id("c1")))
+    assertEquals(listOf(Member.Id("bob")), dao.selectIds(Conversation.Id("c2")))
+  }
+
+  @Test
+  fun `deleteById removes the member from the given conversation only`() = runTest {
+    insertMember("c1", "alice")
+    insertMember("c1", "bob")
+    insertMember("c2", "alice")
+
+    dao.deleteById(Conversation.Id("c1"), Member.Id("alice"))
+
+    assertEquals(listOf(Member.Id("bob")), dao.selectIds(Conversation.Id("c1")))
+    assertEquals(listOf(Member.Id("alice")), dao.selectIds(Conversation.Id("c2")))
+  }
+
   private suspend fun insertMember(conversationId: String, id: String) {
     execute("INSERT INTO ChatMember (id, conversationId) VALUES ('$id', '$conversationId')")
   }

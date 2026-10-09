@@ -183,4 +183,12 @@ interface ChatConversationDao {
     """
   )
   suspend fun updateName(id: Conversation.Id, name: String?)
+
+  @Query(
+    """
+    DELETE FROM ChatConversation
+    WHERE id = :id
+    """
+  )
+  suspend fun delete(id: Conversation.Id)
 }

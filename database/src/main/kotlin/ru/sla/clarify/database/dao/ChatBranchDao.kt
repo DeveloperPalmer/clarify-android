@@ -165,4 +165,12 @@ interface ChatBranchDao {
     """
   )
   suspend fun updateUnreadCount(id: Branch.Id, unreadCount: Long)
+
+  @Query(
+    """
+    DELETE FROM ChatBranch
+    WHERE id = :id
+    """
+  )
+  suspend fun delete(id: Branch.Id)
 }

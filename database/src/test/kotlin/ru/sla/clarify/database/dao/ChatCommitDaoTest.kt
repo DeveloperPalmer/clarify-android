@@ -176,6 +176,17 @@ class ChatCommitDaoTest {
     )
   }
 
+  @Test
+  fun `delete removes only the given commit`() = runTest {
+    insertConversation("c1")
+    insertCommit("a", branchId = "b1", createdAtNanos = 1)
+    insertCommit("b", branchId = "b1", createdAtNanos = 2)
+
+    dao.delete(Commit.Id("a"))
+
+    assertEquals(listOf(Commit.Id("b")), dao.select(Conversation.Id("c1"), Branch.Id("b1")).map { it.id })
+  }
+
   private suspend fun insertConversation(id: String) {
     execute("INSERT INTO ChatConversation (id, type, lastCommitTimestamp) VALUES ('$id', 'group', 0)")
   }
