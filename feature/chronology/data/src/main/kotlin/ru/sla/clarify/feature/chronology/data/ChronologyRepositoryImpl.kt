@@ -164,7 +164,7 @@ class ChronologyRepositoryImpl @Inject constructor(
           selfUserId = userId,
           isPending = false
         )
-        chatDatabase.chatCommitDao().insertOrReplace(row)
+        chatDatabase.chatCommitDao().insertOrReplaceIfConversationExists(row)
       }
     }
   }

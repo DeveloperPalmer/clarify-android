@@ -419,7 +419,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       selfUserId = userId,
       isPending = isPending
     )
-    chatDatabase.chatCommitDao().insertOrReplace(row)
+    chatDatabase.chatCommitDao().insertOrReplaceIfConversationExists(row)
   }
 
   private suspend fun applyBranchesChanges(changes: List<ChatChange<BranchRecord>>) {
@@ -498,7 +498,7 @@ class DirectThreadRepositoryImpl @Inject constructor(
       return
     }
     chatDatabase.withWriteTransaction {
-      commits.forEach { chatDatabase.chatCommitDao().insertOrReplace(it) }
+      commits.forEach { chatDatabase.chatCommitDao().insertOrReplaceIfConversationExists(it) }
     }
   }
 
