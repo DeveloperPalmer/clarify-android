@@ -671,8 +671,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <p class="standfirst">
       План переписывает локальную базу с SQLDelight на Room в том порядке, в каком это удобно учить: от одной
       таблицы из двух столбцов до шести таблиц чата с join-ами, внешними ключами и транзакциями. У каждого
-      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–07, 09–13, 15 и 18–21, открыты
-      08, 14, 16 и 17: у каждого есть рекомендация и пункт, который он блокирует.
+      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–07 и 09–21, открыты
+      08 и 17: у каждого есть рекомендация и пункт, который он блокирует.
     </p>
     <div class="meta">
       <span><b>Формат:</b> учебный план + трекер</span>
@@ -702,8 +702,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         <div class="rail-step"><span class="n">5</span>Чтение I</div>
         <div class="rail-step"><span class="n">6</span>Чтение II</div>
         <div class="rail-step"><span class="n">7</span>Запись</div>
-        <div class="rail-step in"><span class="n">8</span>Подключение чата</div>
-        <div class="rail-step"><span class="n">9</span>Уборка</div>
+        <div class="rail-step"><span class="n">8</span>Подключение чата</div>
+        <div class="rail-step in"><span class="n">9</span>Уборка</div>
         <div class="rail-step edge"><span class="n">10</span>Правила проекта</div>
       </div>
     </div>
@@ -1145,7 +1145,7 @@ suspend fun upsert(…)</code></pre>
 
   <section>
     <h2>Вопросы</h2>
-    <p class="note">Решены 01–07, 09–13, 15 и 18–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
+    <p class="note">Решены 01–07 и 09–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
     <div class="questions">
       <div class="q">
         <div class="num">01</div>
@@ -1242,7 +1242,7 @@ suspend fun upsert(…)</code></pre>
         <div class="num">14</div>
         <div class="body">
           <div class="ask">Как репозиторий открывает транзакцию и что для этого тянет в зависимости?</div>
-          <div class="why"><strong>Рекомендация: репозиторий зовёт <code>database.withTransaction</code>, <code>room3-runtime</code> лежит в <code>api</code> модуля <code>database</code>.</strong> Сегодня репозитории уже импортируют <code>app.cash.sqldelight.Query</code>, то есть знают библиотеку; новой связи это не создаёт. Альтернатива: собственная функция-обёртка в <code>database</code> — репозитории Room не импортируют, но обёртка просто пересказывает <code>withTransaction</code>. В Room 3 форму транзакции (<code>withTransaction</code> или <code>useWriterConnection</code>) нужно проверить в 8.1: в документации, которую я читал, она не описана. Находка блока 5: в <code>room3-runtime</code> 3.0.3 это <code>withWriteTransaction</code> и <code>withReadTransaction</code> — расширения на <code>RoomDatabase</code>; <code>withTransaction</code> есть только у <code>Transactor</code> внутри <code>useWriterConnection</code>. Блокирует 8.1.</div>
+          <div class="why"><strong>Решено: репозиторий зовёт <code>database.withWriteTransaction</code>, <code>room3-runtime</code> лежит в <code>api</code> модуля <code>database</code>.</strong> Сегодня репозитории уже импортируют <code>app.cash.sqldelight.Query</code>, то есть знают библиотеку; новой связи это не создаёт. Альтернатива: собственная функция-обёртка в <code>database</code> — репозитории Room не импортируют, но обёртка просто пересказывает <code>withTransaction</code>. В Room 3 форму транзакции (<code>withTransaction</code> или <code>useWriterConnection</code>) нужно проверить в 8.1: в документации, которую я читал, она не описана. Находка блока 5: в <code>room3-runtime</code> 3.0.3 это <code>withWriteTransaction</code> и <code>withReadTransaction</code> — расширения на <code>RoomDatabase</code>; <code>withTransaction</code> есть только у <code>Transactor</code> внутри <code>useWriterConnection</code>. Итог: двадцать транзакций в пяти репозиториях — <code>chatDatabase.withWriteTransaction { … }</code>, лямбда <code>suspend</code>, поэтому вызываемые внутри помощники стали <code>suspend</code>. Меняет 8.1, 8.3–8.7.</div>
         </div>
       </div>
       <div class="q">
@@ -1256,7 +1256,7 @@ suspend fun upsert(…)</code></pre>
         <div class="num">16</div>
         <div class="body">
           <div class="ask">Переключение пяти репозиториев — одним коммитом или несколькими?</div>
-          <div class="why"><strong>Рекомендация: одним.</strong> Данные общие, между пятью коммитами одни репозитории писали бы в Room, а другие читали бы SQLDelight — каждое промежуточное состояние формально собирается, но не работает. Альтернатива: коммит на репозиторий — история подробнее, но половина коммитов ломает приложение. Блокирует 8.3–8.10.</div>
+          <div class="why"><strong>Решено: ревью по шагам, коммит один.</strong> Исходная рекомендация: <strong>одним.</strong> Данные общие, между пятью коммитами одни репозитории писали бы в Room, а другие читали бы SQLDelight — каждое промежуточное состояние формально собирается, но не работает. Альтернатива: коммит на репозиторий — история подробнее, но половина коммитов ломает приложение. Каждый репозиторий отдавался на ревью отдельной правкой в рабочем дереве, коммит — один, после ручного прогона 8.8. Пока репозитории переключались по одному, общие мапперы жили переходниками (<code>mapToCommit</code> → <code>CommitRow.toDomainModel()</code> и т. п.), а <code>toCacheRow</code> сразу стал отдавать <code>ChatCommitEntity</code>: имена полей совпадают с SQLDelight-строкой, и непереключённые репозитории собирались без правок. Меняет 8.3–8.10.</div>
         </div>
       </div>
       <div class="q">
@@ -1301,7 +1301,7 @@ suspend fun upsert(…)</code></pre>
     <h2>Трекер</h2>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>46</b> из 69 · 67%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>57</b> из 69 · 83%</span>
         <span class="tracker-hint">отметки записаны в этом файле; автор ставит их, когда проверка пункта пройдена</span>
       </div>
       <div class="tracker-bar"><span id="tracker-bar" style="width: 16%"></span></div>
@@ -1436,13 +1436,13 @@ suspend fun upsert(…)</code></pre>
             <td class="dep">Только после 2.5. Проверка: коммит <code>17292b28</code> на ветках <code>room</code> и <code>room-my</code>: методы DAO, <code>Key</code> в сущности, тест и тестовые зависимости. Открытым остаётся только пункт 2.2 (вопрос 18): решение по экспорту схемы отложено.</td>
           </tr>
 
-          <tr class="group" data-group-header="b3"><td colspan="5">Блок 3 · Урок 3: подключаем Settings<span class="gcount">4/6</span></td></tr>
-          <tr data-item="3.1" data-group="b3">
+          <tr class="group" data-group-header="b3"><td colspan="5">Блок 3 · Урок 3: подключаем Settings<span class="gcount">5/6</span></td></tr>
+          <tr data-item="3.1" data-group="b3" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.1</span></td>
             <td class="name"><code>AuthSessionPersistenceImpl</code></td>
             <td class="what">Обращения к <code>settingsQueries</code> заменяются на <code>settingsDao()</code>; <code>asFlow().mapToOneOrNull(IO)</code> становится <code>observe(key)</code>; обёртки <code>withContext(Dispatchers.IO)</code> убираются.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Проверка вручную: вход, убийство процесса, повторный запуск — сессия на месте; выход чистит ключи. Факт: код в коммите <code>fcb6583f</code>; <code>room3-runtime</code> поднят в <code>api</code> модуля <code>database</code> — без него потребитель не компилируется (<code>Cannot access 'androidx.room3.RoomDatabase'</code>), ожидание из вопроса 05 подтверждено. На эмуляторе приложение стартует, <code>settings.db</code> создан. Ручная проверка со входом за вами — пункт открыт до неё.</td>
+            <td class="dep">Проверка вручную: вход, убийство процесса, повторный запуск — сессия на месте; выход чистит ключи. Факт: код в коммите <code>fcb6583f</code>; <code>room3-runtime</code> поднят в <code>api</code> модуля <code>database</code> — без него потребитель не компилируется (<code>Cannot access 'androidx.room3.RoomDatabase'</code>), ожидание из вопроса 05 подтверждено. На эмуляторе приложение стартует, <code>settings.db</code> создан. Ручная проверка со входом за вами — пункт открыт до неё. Факт 09.10.2026: сессия пережила переустановку и перезапуск процесса на эмуляторе; выход из аккаунта и вход другим пользователем проверены вами в 8.8.</td>
           </tr>
           <tr data-item="3.2" data-group="b3">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>3.2</span></td>
@@ -1670,79 +1670,79 @@ suspend fun upsert(…)</code></pre>
             <td class="dep">Только после 7.6. Проверка: коммит содержит методы записи и тесты. Факт: четыре коммита — <code>3469c1e3</code> вставки, <code>b3094994</code> изменения, <code>62b834e8</code> удаления, <code>968f4e83</code> тесты ключей и каскадов.</td>
           </tr>
 
-          <tr class="group" data-group-header="b8"><td colspan="5">Блок 8 · Урок 8: подключаем чат<span class="status new">текущий</span><span class="gcount">0/10</span></td></tr>
-          <tr data-item="8.1" data-group="b8">
+          <tr class="group" data-group-header="b8"><td colspan="5">Блок 8 · Урок 8: подключаем чат<span class="gcount">10/10</span></td></tr>
+          <tr data-item="8.1" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.1</span></td>
             <td class="name">DI: <code>provideChatDatabase</code></td>
             <td class="what"><code>Room.inMemoryDatabaseBuilder&lt;ChatDatabase&gt;()</code> с <code>setDriver(AndroidSQLiteDriver())</code> в <code>DatabaseModule</code>, один на процесс; <code>provideInMemoryDatabase</code> удаляется. Как репозитории открывают транзакцию — по вопросу 14; <code>room3-runtime</code> лежит в <code>implementation</code>, на <code>api</code> поднимается, если потребителям из других модулей нужен его тип.</td>
             <td class="size"><span class="size-chip">S</span></td>
             <td class="dep">Блокируют вопросы 05, 14. Проверка: база создаётся один раз на процесс и не закрывается; драйвер задан — без него Room 3 не откроет базу.</td>
           </tr>
-          <tr data-item="8.2" data-group="b8">
+          <tr data-item="8.2" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.2</span></td>
             <td class="name">Очистка сессии</td>
             <td class="what"><code>cleanupBySessionKey</code> в <code>DbCleaning.kt</code> и его вызов в <code>AuthSessionRepositoryImpl</code> переходят на способ из вопроса 15.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Блокирует вопрос 15. Проверка: вызов идёт не с главного потока; после выхода из аккаунта все таблицы чата пусты.</td>
+            <td class="dep">Блокирует вопрос 15. Проверка: вызов идёт не с главного потока; после выхода из аккаунта все таблицы чата пусты. Факт: <code>DbCleaning</code> — <code>clearAllTables()</code>, он <code>suspend</code>; <code>withContext(IO)</code> в <code>AuthSessionRepositoryImpl</code> убран. Из TODO остался один пункт — чистка по ключу сессии. Выход и вход другим пользователем проверены вами в 8.8.</td>
           </tr>
-          <tr data-item="8.3" data-group="b8">
+          <tr data-item="8.3" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.3</span></td>
             <td class="name"><code>ConversationRepositoryImpl</code></td>
             <td class="what">Запросы и транзакции на DAO; <code>mapToConversation</code> и <code>mapToGroup</code> заменяются мапперами <code>toDomainModel()</code> над проекциями из 5.2.</td>
             <td class="size"><span class="size-chip l">L</span></td>
-            <td class="dep">Проверка: список разговоров и профиль пользователя совпадают с прежними на тех же данных.</td>
+            <td class="dep">Проверка: список разговоров и профиль пользователя совпадают с прежними на тех же данных. Факт: мапперы <code>DirectConversationRow</code>/<code>GroupConversationRow.toDomainModel()</code>, <code>UserEntity.toDomainModel()</code>, <code>User.toCacheRow()</code>. Разговоры пишутся <code>upsert</code>. Изменение поведения: удаление разговора сервером теперь каскадом уносит его ветки и коммиты из кэша.</td>
           </tr>
-          <tr data-item="8.4" data-group="b8">
+          <tr data-item="8.4" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.4</span></td>
             <td class="name"><code>GroupThreadRepositoryImpl</code></td>
             <td class="what">Группа, её участники, переименование, добавление и удаление участников.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Проверка: участники группы и имя совпадают с прежними.</td>
+            <td class="dep">Проверка: участники группы и имя совпадают с прежними. Факт: мапперы <code>GroupRow</code>, <code>GroupMemberRow.toDomainModel()</code> вместо лямбд в репозитории; <code>toCacheRow</code> отдаёт <code>ChatCommitEntity</code>, тело <code>mapToCommit</code> переехало в <code>CommitRow.toDomainModel()</code>.</td>
           </tr>
-          <tr data-item="8.5" data-group="b8">
+          <tr data-item="8.5" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.5</span></td>
             <td class="name"><code>DirectThreadRepositoryImpl</code></td>
             <td class="what">Лента личного чата, оптимистичные правка и удаление, курсор истории, ветки; <code>Query&lt;Conversation.Id&gt;</code> в <code>selectDirectConversationId</code> уходит вместе с <code>app.cash.sqldelight.Query</code>.</td>
             <td class="size"><span class="size-chip l">L</span></td>
-            <td class="dep">Проверка: отправка, правка и удаление у себя и у всех, ответ на сообщение.</td>
+            <td class="dep">Проверка: отправка, правка и удаление у себя и у всех, ответ на сообщение. Факт: SQLDelight-<code>Query</code> и <code>selectDirectConversationId</code> удалены; откат удаления — над <code>List&lt;ChatCommitEntity&gt;</code>; <code>applyBranchesChanges</code> ждёт <code>awaitConversationId()</code> до записи — ради внешнего ключа ветки. Новые общие мапперы: <code>CommitCursorRow.toDomainModel()</code>, <code>BranchRecord.MergeRequest.toCacheRow()</code>, <code>BranchRow</code>/<code>DirectMemberRow.toDomainModel()</code>.</td>
           </tr>
-          <tr data-item="8.6" data-group="b8">
+          <tr data-item="8.6" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.6</span></td>
             <td class="name"><code>ChronologyRepositoryImpl</code></td>
             <td class="what">Ветки, коммиты и участники для графа хронологии; <code>selectDirectConversationId</code>.</td>
             <td class="size"><span class="size-chip">M</span></td>
-            <td class="dep">Проверка: граф хронологии строится из тех же данных.</td>
+            <td class="dep">Проверка: граф хронологии строится из тех же данных. Факт: <code>mapToBranchCommit</code> → <code>ChronologyCommitRow.toBranchCommit()</code>; на эмуляторе граф строится, шесть веток догружены.</td>
           </tr>
-          <tr data-item="8.7" data-group="b8">
+          <tr data-item="8.7" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.7</span></td>
             <td class="name"><code>BranchRepositoryImpl</code></td>
             <td class="what">Самый большой репозиторий (≈ 680 строк): ветка, её коммиты, участники, запрос слияния, непрочитанное.</td>
             <td class="size"><span class="size-chip xl">XL</span></td>
-            <td class="dep">Проверка: создание ветки, запрос слияния и его одобрение, непрочитанные счётчики.</td>
+            <td class="dep">Проверка: создание ветки, запрос слияния и его одобрение, непрочитанные счётчики. Факт: <code>requireConversationId()</code> стал <code>suspend</code>, <code>withContext(IO)</code> вокруг вызовов merge request убраны; переходники <code>mapToCommit</code>, <code>mapToBranch</code>, <code>mapToMember</code>, <code>mapToUser</code> и <code>provideInMemoryDatabase</code> удалены.</td>
           </tr>
-          <tr data-item="8.8" data-group="b8">
+          <tr data-item="8.8" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.8</span></td>
             <td class="name">Проверки</td>
             <td class="what"><code>./gradlew prePushCheck</code>, <code>./gradlew test</code>, поиск <code>InMemoryDB</code> и <code>inMemoryDB</code> в потребителях пуст, ручной прогон: личный чат, группа, ветка, непрочитанные, выход и вход другим пользователем.</td>
             <td class="size"><span class="size-chip l">L</span></td>
-            <td class="dep">Проверка: всё зелёное; при включённых ключах (вопрос 12) нет <code>SQLiteConstraintException</code> в журнале ни в одном из сценариев.</td>
+            <td class="dep">Проверка: всё зелёное; при включённых ключах (вопрос 12) нет <code>SQLiteConstraintException</code> в журнале ни в одном из сценариев. Факт: <code>prePushCheck</code>, <code>test</code>, <code>:app:android:assembleDebug</code> — код 0 после каждого шага. Чтение на эмуляторе — список, два личных чата, хронология, список веток, слитая ветка — без ошибок ключей; отправку, правку, удаление, группу, ветку с запросом слияния, непрочитанные и смену пользователя проверили вы. Попутно: detekt в долго живущем демоне Gradle анализирует по устаревшему <code>classes.jar</code> и пишет ложное «compiler errors» — лечится <code>./gradlew --stop</code>.</td>
           </tr>
-          <tr data-item="8.9" data-group="b8">
+          <tr data-item="8.9" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.9</span></td>
             <td class="name">Ревью и аппрув</td>
             <td class="what">Изменение отдаётся без коммита, по репозиториям.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: ваш аппрув. Блок 9 — отдельным «давай дальше».</td>
+            <td class="dep">Проверка: ваш аппрув. Блок 9 — отдельным «давай дальше». Факт: аппрув дан на каждый шаг 8.1–8.7 отдельно.</td>
           </tr>
-          <tr data-item="8.10" data-group="b8">
+          <tr data-item="8.10" data-group="b8" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>8.10</span></td>
             <td class="name">Коммит</td>
             <td class="what"><code>[database] Switch chat storage to Room</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Только после 8.9, одним коммитом по вопросу 16. Проверка: коммит содержит проводку, очистку и пять репозиториев с мапперами.</td>
+            <td class="dep">Только после 8.9, одним коммитом по вопросу 16. Проверка: коммит содержит проводку, очистку и пять репозиториев с мапперами. Факт: коммит <code>f03743a4</code>, 26 файлов.</td>
           </tr>
 
-          <tr class="group" data-group-header="b9"><td colspan="5">Блок 9 · Урок 9: уборка SQLDelight<span class="gcount">0/6</span></td></tr>
+          <tr class="group" data-group-header="b9"><td colspan="5">Блок 9 · Урок 9: уборка SQLDelight<span class="status new">текущий</span><span class="gcount">0/6</span></td></tr>
           <tr data-item="9.1" data-group="b9">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>9.1</span></td>
             <td class="name">Код и обвязка</td>
