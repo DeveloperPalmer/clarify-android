@@ -77,4 +77,22 @@ class SettingsDaoTest {
       assertEquals("v", awaitItem())
     }
   }
+
+  /**
+   * Запись другого ключа таблицу задевает, а значение не меняет — до подписчика доходит только
+   * следующее настоящее изменение.
+   */
+  @Test
+  fun `observe skips writes that leave the value unchanged`() = runTest {
+    dao.insertOrReplace(SettingsEntity(key = Key("k"), value = "v1"))
+
+    dao.observe(Key("k")).test {
+      assertEquals("v1", awaitItem())
+
+      dao.insertOrReplace(SettingsEntity(key = Key("other"), value = "x"))
+      dao.insertOrReplace(SettingsEntity(key = Key("k"), value = "v2"))
+
+      assertEquals("v2", awaitItem())
+    }
+  }
 }
