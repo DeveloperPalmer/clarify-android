@@ -13,6 +13,7 @@ import ru.sla.clarify.database.dao.ChatBranchDao
 import ru.sla.clarify.database.dao.ChatCommitDao
 import ru.sla.clarify.database.dao.ChatConversationDao
 import ru.sla.clarify.database.dao.ChatMemberDao
+import ru.sla.clarify.database.dao.MergeRequestDao
 import ru.sla.clarify.database.dao.UserDao
 import ru.sla.clarify.database.entity.ChatBranchEntity
 import ru.sla.clarify.database.entity.ChatCommitEntity
@@ -52,4 +53,6 @@ abstract class ChatDatabase : RoomDatabase() {
   abstract fun chatBranchDao(): ChatBranchDao
 
   abstract fun chatCommitDao(): ChatCommitDao
+
+  abstract fun mergeRequestDao(): MergeRequestDao
 }

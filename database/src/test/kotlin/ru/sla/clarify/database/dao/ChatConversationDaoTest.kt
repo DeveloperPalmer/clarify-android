@@ -173,6 +173,44 @@ class ChatConversationDaoTest {
     }
   }
 
+  /**
+   * Повторная запись разговора обновляет его поля, но не трогает локальный счётчик непрочитанного.
+   */
+  @Test
+  fun `upsert updates the row and keeps unreadCount`() = runTest {
+    upsertGroup(name = "old")
+    execute("UPDATE ChatConversation SET unreadCount = 5 WHERE id = 'g1'")
+
+    upsertGroup(name = "new")
+
+    dao.observeGroup(Conversation.Id("g1")).test {
+      val group = awaitItem()
+      assertEquals("new", group?.name)
+      assertEquals(5L, group?.unreadCount)
+    }
+  }
+
+  @Test
+  fun `upsert of a new conversation starts with zero unread`() = runTest {
+    upsertGroup(name = "new")
+
+    dao.observeGroup(Conversation.Id("g1")).test {
+      assertEquals(0L, awaitItem()?.unreadCount)
+    }
+  }
+
+  private suspend fun upsertGroup(name: String) {
+    dao.upsert(
+      id = Conversation.Id("g1"),
+      type = "group",
+      name = name,
+      ownerId = UserId("owner"),
+      lastCommit = null,
+      lastCommitSenderId = null,
+      lastCommitTimestamp = 1
+    )
+  }
+
   private suspend fun selectIdByMembers(type: String, vararg ids: String): Conversation.Id? {
     return dao.selectIdByMembers(type, ids.map(Member::Id), ids.size.toLong())
   }

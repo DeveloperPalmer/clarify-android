@@ -1,6 +1,8 @@
 package ru.sla.clarify.database.dao
 
 import androidx.room3.Dao
+import androidx.room3.Insert
+import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import ru.sla.clarify.database.DistinctFlow
 import ru.sla.clarify.database.entity.ChatCommitEntity
@@ -129,4 +131,7 @@ interface ChatCommitDao {
     """
   )
   suspend fun selectByIds(ids: List<Commit.Id>): List<ChatCommitEntity>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertOrReplace(entity: ChatCommitEntity)
 }

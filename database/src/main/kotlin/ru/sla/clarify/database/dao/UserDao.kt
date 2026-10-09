@@ -1,6 +1,8 @@
 package ru.sla.clarify.database.dao
 
 import androidx.room3.Dao
+import androidx.room3.Insert
+import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.DistinctFlow
@@ -11,4 +13,7 @@ interface UserDao {
 
   @Query("SELECT * FROM User WHERE id = :id LIMIT 1")
   fun observe(id: UserId): DistinctFlow<UserEntity?>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertOrReplace(entity: UserEntity)
 }

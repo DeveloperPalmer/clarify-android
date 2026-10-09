@@ -1,8 +1,11 @@
 package ru.sla.clarify.database.dao
 
 import androidx.room3.Dao
+import androidx.room3.Insert
+import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import ru.sla.clarify.database.DistinctFlow
+import ru.sla.clarify.database.entity.ChatMemberEntity
 import ru.sla.clarify.database.entity.DirectMemberRow
 import ru.sla.clarify.database.entity.GroupMemberRow
 import ru.sla.clarify.entity.chat.Conversation
@@ -89,4 +92,7 @@ interface ChatMemberDao {
     """
   )
   fun observeDirectById(conversationId: Conversation.Id, id: Member.Id): DistinctFlow<DirectMemberRow?>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertOrReplace(entity: ChatMemberEntity)
 }

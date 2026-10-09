@@ -76,6 +76,18 @@ class UserDaoTest {
     }
   }
 
+  @Test
+  fun `insertOrReplace replaces the profile of the same user`() = runTest {
+    val user = UserEntity(id = UserId("alice"), email = "a@mail", displayName = "Alice", photoUrl = null)
+
+    dao.insertOrReplace(user)
+    dao.insertOrReplace(user.copy(displayName = "Alice B"))
+
+    dao.observe(UserId("alice")).test {
+      assertEquals(user.copy(displayName = "Alice B"), awaitItem())
+    }
+  }
+
   private suspend fun insertUser(id: String, photoUrl: String?) {
     val photo = photoUrl?.let { "'$it'" } ?: "NULL"
     execute("INSERT INTO User VALUES ('$id', '$id@mail', '$id name', $photo)")

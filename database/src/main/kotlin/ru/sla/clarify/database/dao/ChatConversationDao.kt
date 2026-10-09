@@ -2,6 +2,7 @@ package ru.sla.clarify.database.dao
 
 import androidx.room3.Dao
 import androidx.room3.Query
+import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.DistinctFlow
 import ru.sla.clarify.database.entity.DirectConversationRow
 import ru.sla.clarify.database.entity.GroupConversationRow
@@ -118,4 +119,48 @@ interface ChatConversationDao {
     memberIds: List<Member.Id>,
     memberCount: Long
   ): Conversation.Id?
+
+  /**
+   * Не `INSERT OR REPLACE`: замена — это удаление и вставка, и внешние ключи каскадом удалили бы
+   * ветки и коммиты разговора. `unreadCount` в обновление не входит — счётчик ведётся локально, и
+   * повторная запись разговора с сервера его не сбрасывает.
+   */
+  @Query(
+    """
+    INSERT INTO ChatConversation (
+      id,
+      type,
+      name,
+      ownerId,
+      lastCommit,
+      lastCommitSenderId,
+      lastCommitTimestamp
+    )
+    VALUES (
+      :id,
+      :type,
+      :name,
+      :ownerId,
+      :lastCommit,
+      :lastCommitSenderId,
+      :lastCommitTimestamp
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      type = excluded.type,
+      name = excluded.name,
+      ownerId = excluded.ownerId,
+      lastCommit = excluded.lastCommit,
+      lastCommitSenderId = excluded.lastCommitSenderId,
+      lastCommitTimestamp = excluded.lastCommitTimestamp
+    """
+  )
+  suspend fun upsert(
+    id: Conversation.Id,
+    type: String,
+    name: String?,
+    ownerId: UserId?,
+    lastCommit: String?,
+    lastCommitSenderId: UserId?,
+    lastCommitTimestamp: Long
+  )
 }
