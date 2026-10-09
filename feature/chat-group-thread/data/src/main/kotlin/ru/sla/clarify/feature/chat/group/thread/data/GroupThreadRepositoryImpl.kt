@@ -4,6 +4,8 @@ import androidx.room3.withWriteTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import me.tatarka.inject.annotations.Inject
@@ -53,6 +55,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
 
   override suspend fun subscribeOnCommitChanges() {
     val userId = requireUserId()
+    awaitCachedConversation()
     commitApi.groupCommitsLive(
       conversationId = conversationId.value,
       limit = LIVE_COMMIT_LIMIT
@@ -72,6 +75,7 @@ class GroupThreadRepositoryImpl @Inject constructor(
       before = null
     )
     val userId = requireUserId()
+    awaitCachedConversation()
     chatDatabase.withWriteTransaction {
       historyCommits.forEach { commit ->
         applyInsertOrReplaceCommit(
@@ -260,7 +264,18 @@ class GroupThreadRepositoryImpl @Inject constructor(
       selfUserId = userId,
       isPending = isPending
     )
-    chatDatabase.chatCommitDao().insertOrReplace(row)
+    chatDatabase.chatCommitDao().insertOrReplaceIfConversationExists(row)
+  }
+
+  /**
+   * Коммит ссылается на разговор внешним ключом, поэтому писать ленту можно, только когда группа
+   * уже есть в кэше. Тред может открыться раньше, чем список разговоров её туда положит.
+   */
+  private suspend fun awaitCachedConversation() {
+    chatDatabase.chatConversationDao()
+      .observeGroup(conversationId)
+      .filterNotNull()
+      .first()
   }
 
   private suspend fun applyMemberChanges(changes: List<ChatChange<Member.Id>>) {
