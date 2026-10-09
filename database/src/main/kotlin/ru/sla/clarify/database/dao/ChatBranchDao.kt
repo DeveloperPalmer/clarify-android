@@ -155,4 +155,14 @@ interface ChatBranchDao {
     createdAt: Long,
     createdById: UserId
   )
+
+  @Query(
+    """
+    UPDATE ChatBranch
+    SET
+      unreadCount = :unreadCount
+    WHERE id = :id
+    """
+  )
+  suspend fun updateUnreadCount(id: Branch.Id, unreadCount: Long)
 }
