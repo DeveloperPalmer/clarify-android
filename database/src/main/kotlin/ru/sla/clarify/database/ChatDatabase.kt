@@ -10,6 +10,7 @@ import ru.sla.clarify.database.converter.DistinctFlowConverter
 import ru.sla.clarify.database.converter.MemberIdConverter
 import ru.sla.clarify.database.converter.UserIdSetConverter
 import ru.sla.clarify.database.dao.ChatBranchDao
+import ru.sla.clarify.database.dao.ChatCommitDao
 import ru.sla.clarify.database.dao.ChatConversationDao
 import ru.sla.clarify.database.dao.ChatMemberDao
 import ru.sla.clarify.database.dao.UserDao
@@ -49,4 +50,6 @@ abstract class ChatDatabase : RoomDatabase() {
   abstract fun chatConversationDao(): ChatConversationDao
 
   abstract fun chatBranchDao(): ChatBranchDao
+
+  abstract fun chatCommitDao(): ChatCommitDao
 }
