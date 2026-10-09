@@ -671,8 +671,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <p class="standfirst">
       План переписывает локальную базу с SQLDelight на Room в том порядке, в каком это удобно учить: от одной
       таблицы из двух столбцов до шести таблиц чата с join-ами, внешними ключами и транзакциями. У каждого
-      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены вопросы 01–16 и 18–21, открыт
-      17: у каждого есть рекомендация и пункт, который он блокирует.
+      урока записано, что делаем, зачем, куда это ложится и почему именно так. Решены все вопросы, 01–21.
     </p>
     <div class="meta">
       <span><b>Формат:</b> учебный план + трекер</span>
@@ -704,7 +703,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         <div class="rail-step"><span class="n">7</span>Запись</div>
         <div class="rail-step"><span class="n">8</span>Подключение чата</div>
         <div class="rail-step"><span class="n">9</span>Уборка</div>
-        <div class="rail-step edge in"><span class="n">10</span>Правила проекта</div>
+        <div class="rail-step edge"><span class="n">10</span>Правила проекта</div>
       </div>
     </div>
     <div class="rail-legend">
@@ -1145,7 +1144,7 @@ suspend fun upsert(…)</code></pre>
 
   <section>
     <h2>Вопросы</h2>
-    <p class="note">Решены 01–16 и 18–21. Остальные открыты: у каждого рекомендация выделена жирным, альтернатива и блокируемый пункт названы.</p>
+    <p class="note">Решены все, 01–21.</p>
     <div class="questions">
       <div class="q">
         <div class="num">01</div>
@@ -1263,7 +1262,7 @@ suspend fun upsert(…)</code></pre>
         <div class="num">17</div>
         <div class="body">
           <div class="ask">Что делаем с <code>.claude/rules/sqldelight.md</code>?</div>
-          <div class="why"><strong>Рекомендация: удалить файл вместе с последним <code>.sq</code> и предложить <code>room.md</code> готовым текстом в чате.</strong> Переносить стоит причины: порядок колонок и порядок ключа — разные решения, типизированные id, составное значение одной колонкой. Правило пишется только с вашего «да» на конкретную формулировку. Альтернатива: оставить файл без изменений — но он привязан к <code>*.sq</code> и перестанет срабатывать. Блокирует 10.1.</div>
+          <div class="why"><strong>Решено: удалить файл и перенести всё в <code>room.md</code></strong> — без отдельного <code>sql.md</code>. Исходная рекомендация: удалить файл вместе с последним <code>.sq</code> и предложить <code>room.md</code> готовым текстом в чате. Переносить стоит причины: порядок колонок и порядок ключа — разные решения, типизированные id, составное значение одной колонкой. Правило пишется только с вашего «да» на конкретную формулировку. Альтернатива: оставить файл без изменений — но он привязан к <code>*.sq</code> и перестанет срабатывать. Разделы об оформлении SQL перенесены почти дословно и относятся теперь к <code>@Query</code>; правило «значения <code>INSERT</code>» переписано: строка целиком — <code>@Insert</code> с сущностью (вопрос 13), <code>@Query</code>-вставка — там, где нужен <code>ON CONFLICT … DO UPDATE</code>. Меняет 10.1.</div>
         </div>
       </div>
       <div class="q">
@@ -1301,7 +1300,7 @@ suspend fun upsert(…)</code></pre>
     <h2>Трекер</h2>
     <div class="tracker">
       <div class="tracker-top">
-        <span class="tracker-count" id="tracker-count">Выполнено <b>63</b> из 69 · 91%</span>
+        <span class="tracker-count" id="tracker-count">Выполнено <b>68</b> из 69 · 99%</span>
         <span class="tracker-hint">отметки записаны в этом файле; автор ставит их, когда проверка пункта пройдена</span>
       </div>
       <div class="tracker-bar"><span id="tracker-bar" style="width: 16%"></span></div>
@@ -1311,7 +1310,7 @@ suspend fun upsert(…)</code></pre>
         <thead><tr><th>№</th><th>Пункт</th><th>Что делаем</th><th>Размер</th><th>Зависимости и проверка</th></tr></thead>
         <tbody>
 
-          <tr class="group" data-group-header="b0"><td colspan="5">Блок 0 · Подготовка<span class="status new">сейчас</span><span class="gcount">2/3</span></td></tr>
+          <tr class="group" data-group-header="b0"><td colspan="5">Блок 0 · Подготовка<span class="gcount">3/3</span></td></tr>
           <tr data-item="0.1" data-group="b0" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>0.1</span></td>
             <td class="name">Базовая линия</td>
@@ -1319,12 +1318,12 @@ suspend fun upsert(…)</code></pre>
             <td class="size"><span class="size-chip">S</span></td>
             <td class="dep">Проверка: тесты завершились с кодом 0 на чистом дереве; прогон сделан 01.10.2026.</td>
           </tr>
-          <tr data-item="0.2" data-group="b0">
+          <tr data-item="0.2" data-group="b0" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>0.2</span></td>
             <td class="name">Ревью и аппрув плана</td>
             <td class="what">Вы читаете документ и отвечаете на открытые вопросы 05 и 08–18 или принимаете рекомендации.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: ответы вписаны в вопросы как «Решено». Блок 1 начат по вашей просьбе до этого аппрува и ни от одного открытого вопроса не зависит; блоки 2–10 стартуют после отдельного «давай дальше».</td>
+            <td class="dep">Проверка: ответы вписаны в вопросы как «Решено». Блок 1 начат по вашей просьбе до этого аппрува и ни от одного открытого вопроса не зависит; блоки 2–10 стартуют после отдельного «давай дальше». Факт: все вопросы 01–21 решены и вписаны как «Решено»; последним — вопрос 17 в блоке 10.</td>
           </tr>
           <tr data-item="0.3" data-group="b0" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>0.3</span></td>
@@ -1786,34 +1785,34 @@ suspend fun upsert(…)</code></pre>
             <td class="dep">Только после 9.5. Проверка: коммит состоит из удалений и правок каталога. Факт: <code>4348978d</code> — удаления и каталог; правка текстов 9.3 отдельным коммитом <code>fb802b64</code>.</td>
           </tr>
 
-          <tr class="group" data-group-header="b10"><td colspan="5">Блок 10 · Урок 10: правила проекта<span class="status new">текущий</span><span class="gcount">0/4</span></td></tr>
-          <tr data-item="10.1" data-group="b10">
+          <tr class="group" data-group-header="b10"><td colspan="5">Блок 10 · Урок 10: правила проекта<span class="gcount">4/4</span></td></tr>
+          <tr data-item="10.1" data-group="b10" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>10.1</span></td>
             <td class="name">Формулировки</td>
             <td class="what">Готовый текст <code>room.md</code> с причиной у каждого правила и решение по <code>sqldelight.md</code> — в чат, не в файл.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Блокирует вопрос 17. Проверка: у каждого предложенного правила записана причина; в <code>.claude/rules/</code> ничего не изменилось до вашего «да».</td>
+            <td class="dep">Блокирует вопрос 17. Проверка: у каждого предложенного правила записана причина; в <code>.claude/rules/</code> ничего не изменилось до вашего «да». Факт: четыре новых раздела одобрены как есть; адаптации перенесённых разделов показаны отдельно и одобрены на ревью 10.3.</td>
           </tr>
-          <tr data-item="10.2" data-group="b10">
+          <tr data-item="10.2" data-group="b10" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>10.2</span></td>
             <td class="name">Проверки</td>
             <td class="what">После «да» файлы правил записаны; фронтматтер <code>paths</code> указывает на <code>**/*.kt</code> и существующие файлы Room.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: правила в <code>.claude/rules/</code>, по файлу на тему; формулировки совпадают с одобренными.</td>
+            <td class="dep">Проверка: правила в <code>.claude/rules/</code>, по файлу на тему; формулировки совпадают с одобренными. Факт: один файл <code>room.md</code>, <code>paths: "database/src/main/kotlin/**"</code>; <code>sqldelight.md</code> удалён.</td>
           </tr>
-          <tr data-item="10.3" data-group="b10">
+          <tr data-item="10.3" data-group="b10" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>10.3</span></td>
             <td class="name">Ревью и аппрув</td>
             <td class="what">Изменение отдаётся без коммита.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Проверка: ваш аппрув.</td>
+            <td class="dep">Проверка: ваш аппрув. Факт: аппрув дан.</td>
           </tr>
-          <tr data-item="10.4" data-group="b10">
+          <tr data-item="10.4" data-group="b10" data-done="1">
             <td class="id"><span class="tick"><span class="mark" aria-hidden="true">✓</span>10.4</span></td>
             <td class="name">Коммит</td>
             <td class="what"><code>[docs] Replace the SQLDelight rules with Room rules</code>.</td>
             <td class="size"><span class="size-chip">S</span></td>
-            <td class="dep">Только после 10.3. Проверка: коммит содержит только файлы в <code>.claude/rules/</code>.</td>
+            <td class="dep">Только после 10.3. Проверка: коммит содержит только файлы в <code>.claude/rules/</code>. Факт: коммит <code>a55b683e</code> — <code>room.md</code> и удаление <code>sqldelight.md</code>. Новые правила нашли два места в уроках 1–2: <code>SettingsDao.observe</code> отдаёт голый <code>Flow</code>, его <code>SELECT</code> написан в строку.</td>
           </tr>
 
         </tbody>
