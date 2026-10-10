@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "d89518e27d2d245e171185c3b142281a",
+    "identityHash": "7efd94ac5129dc9f6ba4332a4a8e98ec",
     "entities": [
       {
         "tableName": "ChatConversation",
@@ -301,15 +301,6 @@
         },
         "indices": [
           {
-            "name": "ChatCommit_conversationId",
-            "unique": false,
-            "columnNames": [
-              "conversationId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `ChatCommit_conversationId` ON `${TABLE_NAME}` (`conversationId`)"
-          },
-          {
             "name": "ChatCommit_branchId",
             "unique": false,
             "columnNames": [
@@ -403,7 +394,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd89518e27d2d245e171185c3b142281a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7efd94ac5129dc9f6ba4332a4a8e98ec')"
     ]
   }
 }

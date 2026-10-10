@@ -23,10 +23,6 @@ import ru.sla.clarify.entity.chat.Conversation
   ],
   indices = [
     Index(
-      value = ["conversationId"],
-      name = "ChatCommit_conversationId"
-    ),
-    Index(
       value = ["conversationId", "branchId", "createdAtNanos"],
       name = "ChatCommit_branchId"
     )

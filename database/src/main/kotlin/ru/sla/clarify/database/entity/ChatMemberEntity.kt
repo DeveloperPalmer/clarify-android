@@ -14,7 +14,7 @@ import ru.sla.clarify.entity.chat.Member
 @Entity(
   tableName = "ChatMember",
   primaryKeys = ["conversationId", "id"],
-  withoutRowId = true,
+  withoutRowId = true
 )
 data class ChatMemberEntity(
   val id: Member.Id,
