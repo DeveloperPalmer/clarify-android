@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "06c04f6380c851357de70324e33a327a",
+    "identityHash": "d89518e27d2d245e171185c3b142281a",
     "entities": [
       {
         "tableName": "ChatConversation",
@@ -98,7 +98,7 @@
       },
       {
         "tableName": "ChatMember",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `conversationId` TEXT NOT NULL, PRIMARY KEY(`conversationId`, `id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `conversationId` TEXT NOT NULL, PRIMARY KEY(`conversationId`, `id`)) WITHOUT ROWID",
         "fields": [
           {
             "fieldPath": "id",
@@ -119,7 +119,8 @@
             "conversationId",
             "id"
           ]
-        }
+        },
+        "withoutRowId": true
       },
       {
         "tableName": "ChatBranch",
@@ -402,7 +403,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '06c04f6380c851357de70324e33a327a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd89518e27d2d245e171185c3b142281a')"
     ]
   }
 }
