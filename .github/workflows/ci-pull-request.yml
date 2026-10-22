@@ -12,4 +12,5 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
+      - run: ./gradlew prePushCheck
       - run: ./gradlew assembleDebug
