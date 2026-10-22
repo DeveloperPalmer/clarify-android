@@ -1,0 +1,7 @@
+name: validation
+on: push
+jobs:
+  validation:
+    runs-on: ubuntu-24.04 # метку закрепляем явно, см. «Ловушки»
+    steps:
+      - run: echo "привет, раннер"
