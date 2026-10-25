@@ -22,7 +22,6 @@ plexus = "1.0.0"
 amvi = "0.9.1"
 way = "0.9.9"
 dagger = "2.60.1"
-anvil = "0.5.4"
 material3 = "1.4.0"
 # Additional versions
 ktlint = "1.8.0"
@@ -116,7 +115,6 @@ way-compose = { module = "ru.kode:way-compose", version.ref = "way" }
 
 detekt-rules-compose = { module = "ru.kode:detekt-rules-compose", version.ref = "detekt-rules-compose" }
 spotless-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
-anvil-plugin = { module = "dev.zacsweers.anvil:gradle-plugin", version.ref = "anvil" }
 kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 detekt-plugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 cachefix-plugin = { module = "org.gradle.android.cache-fix:org.gradle.android.cache-fix.gradle.plugin", version.ref = "cachefix" }
