@@ -3,7 +3,6 @@ package ru.sla.clarify.feature.chat.branch.data
 import androidx.room3.withWriteTransaction
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,7 +55,6 @@ import javax.inject.Inject
 
 @Suppress("TooManyFunctions")
 @SingleIn(BranchScope::class)
-@ContributesBinding(BranchScope::class)
 class BranchRepositoryImpl @Inject constructor(
   params: TargetParams,
   private val branchApi: BranchApi,

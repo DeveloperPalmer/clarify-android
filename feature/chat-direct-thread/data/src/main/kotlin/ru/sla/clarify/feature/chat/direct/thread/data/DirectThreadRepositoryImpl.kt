@@ -3,7 +3,6 @@ package ru.sla.clarify.feature.chat.direct.thread.data
 import androidx.room3.withWriteTransaction
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -63,7 +62,6 @@ import javax.inject.Inject
 
 @Suppress("TooManyFunctions")
 @SingleIn(DirectThreadScope::class)
-@ContributesBinding(DirectThreadScope::class)
 class DirectThreadRepositoryImpl @Inject constructor(
   params: TargetParams,
   private val branchApi: BranchApi,

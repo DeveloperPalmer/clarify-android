@@ -1,7 +1,6 @@
 package ru.sla.clarify.feature.chat.group.thread.data
 
 import androidx.room3.withWriteTransaction
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -38,7 +37,6 @@ import java.time.LocalDateTime
 import javax.inject.Inject
 
 @SingleIn(GroupThreadScope::class)
-@ContributesBinding(GroupThreadScope::class)
 class GroupThreadRepositoryImpl @Inject constructor(
   target: TargetParams,
   private val commitApi: CommitApi,

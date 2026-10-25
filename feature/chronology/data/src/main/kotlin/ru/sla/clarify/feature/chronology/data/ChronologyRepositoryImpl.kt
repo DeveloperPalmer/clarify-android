@@ -4,7 +4,6 @@ import androidx.room3.withWriteTransaction
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -44,7 +43,6 @@ import javax.inject.Inject
  * ленты веток в кэш не кладёт никто, пока ветку не открыли: их эта реализация и догружает.
  */
 @SingleIn(ChronologyScope::class)
-@ContributesBinding(ChronologyScope::class)
 class ChronologyRepositoryImpl @Inject constructor(
   params: TargetParams,
   private val commitApi: CommitApi,

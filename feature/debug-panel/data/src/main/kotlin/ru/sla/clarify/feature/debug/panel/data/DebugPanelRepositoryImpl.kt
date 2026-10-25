@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.debug.panel.data
 
-import com.squareup.anvil.annotations.ContributesBinding
 import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
@@ -13,7 +12,6 @@ import ru.sla.clarify.feature.debug.panel.domain.entity.UserJsonError
 import javax.inject.Inject
 
 @SingleIn(DebugPanelScope::class)
-@ContributesBinding(DebugPanelScope::class)
 class DebugPanelRepositoryImpl @Inject constructor(
   private val userApi: UserApi,
   private val debugConfig: DebugConfig

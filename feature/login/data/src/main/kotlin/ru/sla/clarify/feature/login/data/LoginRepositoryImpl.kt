@@ -1,6 +1,5 @@
 package ru.sla.clarify.feature.login.data
 
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.tasks.await
 import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
@@ -17,7 +16,6 @@ import javax.inject.Inject
 import ru.sla.clarify.lib.google.authenticator.SignInResult as GoogleSignInResult
 
 @SingleIn(LoginScope::class)
-@ContributesBinding(LoginScope::class)
 class LoginRepositoryImpl @Inject constructor(
   private val userApi: UserApi,
   private val googleAuthenticator: GoogleAuthenticator
