@@ -1,7 +1,6 @@
 package ru.sla.clarify.feature.chat.conversation.data
 
 import androidx.room3.withWriteTransaction
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
@@ -34,7 +33,6 @@ import ru.sla.clarify.mapper.data.toDomainModel
 import javax.inject.Inject
 
 @SingleIn(AppScope::class)
-@ContributesBinding(AppScope::class)
 class ConversationRepositoryImpl @Inject constructor(
   private val conversationApi: ConversationApi,
   private val unreadCountApi: UnreadCountApi,

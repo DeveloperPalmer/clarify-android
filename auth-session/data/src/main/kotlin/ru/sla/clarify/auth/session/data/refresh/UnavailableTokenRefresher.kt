@@ -1,11 +1,9 @@
 package ru.sla.clarify.auth.session.data.refresh
 
-import com.squareup.anvil.annotations.ContributesBinding
 import ru.sla.clarify.auth.session.domain.TokenRefresher
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshRejectedException
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
-import ru.sla.clarify.core.domain.di.scope.AppScope
 import javax.inject.Inject
 
 /**
@@ -17,7 +15,6 @@ import javax.inject.Inject
  *
  * Заменяется реализацией, вызывающей операцию обновления, как только та появится.
  */
-@ContributesBinding(AppScope::class)
 class UnavailableTokenRefresher @Inject constructor() : TokenRefresher {
 
   override suspend fun refresh(token: RefreshToken): AuthTokens {

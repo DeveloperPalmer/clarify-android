@@ -1,19 +1,16 @@
 package ru.sla.clarify.auth.session.data.storage
 
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.flow.Flow
 import ru.sla.clarify.auth.session.data.refresh.AccessTokenRefresher
 import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
-import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.ChatDatabase
 import ru.sla.clarify.database.cleanupBySessionKey
 import javax.inject.Inject
 
-@ContributesBinding(AppScope::class)
 class AuthSessionRepositoryImpl @Inject constructor(
   private val chatDatabase: ChatDatabase,
   private val authSessionPersistence: AuthSessionPersistence,

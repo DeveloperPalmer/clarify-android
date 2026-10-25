@@ -1,6 +1,5 @@
 package ru.sla.clarify.app.data.channel
 
-import com.squareup.anvil.annotations.ContributesBinding
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocketSession
 import ru.kode.pathfinder.PathFinder
@@ -16,7 +15,6 @@ import javax.inject.Inject
  * смениться в дебаг-панели.
  */
 @SingleIn(AppScope::class)
-@ContributesBinding(AppScope::class)
 class KtorChannelTransport @Inject constructor(
   private val client: HttpClient,
   private val pathFinder: PathFinder

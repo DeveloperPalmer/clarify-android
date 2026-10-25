@@ -1,6 +1,5 @@
 package ru.sla.clarify.app.data.channel
 
-import com.squareup.anvil.annotations.ContributesBinding
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
@@ -9,7 +8,6 @@ import ru.sla.clarify.database.entity.SettingsEntity
 import javax.inject.Inject
 
 @SingleIn(AppScope::class)
-@ContributesBinding(AppScope::class)
 class PersistedEventCursorStore @Inject constructor(
   private val database: SettingsDatabase
 ) : EventCursorStore {
