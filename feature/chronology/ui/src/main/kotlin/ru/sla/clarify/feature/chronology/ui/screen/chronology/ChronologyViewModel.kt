@@ -1,7 +1,6 @@
 package ru.sla.clarify.feature.chronology.ui.screen.chronology
 
 import kotlinx.coroutines.flow.map
-import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.MachineDsl
 import ru.dimsuz.unicorn2.machine
@@ -13,6 +12,7 @@ import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.feature.chronology.domain.ChronologyModel
 import ru.sla.clarify.feature.chronology.ui.mapper.toChronology
 import ru.sla.clarify.feature.chronology.ui.routing.FlowEvent
+import javax.inject.Inject
 
 class ChronologyViewModel @Inject constructor(
   private val eventSink: FlowEventSink,

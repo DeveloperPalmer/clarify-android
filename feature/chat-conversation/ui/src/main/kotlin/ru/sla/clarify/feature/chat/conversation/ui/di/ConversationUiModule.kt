@@ -1,15 +1,17 @@
 package ru.sla.clarify.feature.chat.conversation.ui.di
 
-import me.tatarka.inject.annotations.Provides
-import me.tatarka.inject.annotations.Qualifier
+import com.squareup.anvil.annotations.ContributesTo
+import dagger.Module
+import dagger.Provides
 import ru.sla.clarify.core.ui.WiredComposableScreen
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.chat.conversation.ui.screen.conversation.ConversationScreen
 import ru.sla.clarify.feature.chat.conversation.ui.screen.conversation.ConversationViewModel
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
+import javax.inject.Qualifier
 
 @ContributesTo(ConversationScope::class)
-interface ConversationUiModule {
+@Module
+object ConversationUiModule {
   @Provides
   @WiredScreen(Screen.Conversation)
   fun provideConversationScreen(model: ConversationViewModel): WiredComposableScreen {

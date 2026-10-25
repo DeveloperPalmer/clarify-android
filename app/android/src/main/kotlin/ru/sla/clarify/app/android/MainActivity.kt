@@ -52,7 +52,6 @@ import ru.sla.clarify.app.android.debug.DebugPanelNotification
 import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
 import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.clarify.app.routing.AppFlow
-import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.routing.FlowEventMediator
 import ru.sla.clarify.core.routing.noTransition
 import ru.sla.clarify.core.routing.popTransition
@@ -64,7 +63,6 @@ import ru.sla.clarify.core.ui.event.LocalDropdownMenuAnchor
 import ru.sla.clarify.core.ui.event.LocalViewEventsHostMediator
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.debug.panel.routing.DebugPanelFlow
-import ru.sla.clarify.feature.debug.panel.routing.di.DebugPanelFlowComponent
 import ru.sla.clarify.uikit.animation.LocalSharedTransitionScope
 import ru.sla.clarify.uikit.event.ViewEventsHost
 import ru.sla.clarify.uikit.theme.AppTheme
@@ -113,13 +111,13 @@ class MainActivity : ComponentActivity() {
     installSplashScreen().setKeepOnScreenCondition { splashScreenLoading.value }
 
     val appComponent = (applicationContext!! as Application).appComponent
-    val conversationRepository = appComponent.conversationRepository
+    val conversationRepository = appComponent.conversationRepository()
 
     val flowEventMediator = FlowEventMediator(coroutineScope)
-    val appFlowComponent = (appComponent as AppFlowComponent.Factory).createAppFlowComponent(
-      activity = this,
-      eventSink = flowEventMediator
-    )
+    val appFlowComponent = appComponent.appFlowComponentBuilder()
+      .eventSink(flowEventMediator)
+      .activity(this)
+      .build()
 
     val service = NavigationService<Unit>(
       nodeBuilder = AppFlow.nodeBuilder(appFlowComponent),
@@ -159,7 +157,7 @@ class MainActivity : ComponentActivity() {
           CompositionLocalProvider(
             LocalSharedTransitionScope provides this,
             LocalDropdownMenuAnchor provides remember { DropdownMenuAnchorState() },
-            LocalViewEventsHostMediator provides appFlowComponent.viewEventsHostMediator
+            LocalViewEventsHostMediator provides appFlowComponent.viewEventsHostMediator()
           ) {
             PredictiveNodeHost(
               service = service,
@@ -237,9 +235,9 @@ class MainActivity : ComponentActivity() {
     if (showDebugPanel.value) return
     val mediator = FlowEventMediator(coroutineScope)
     val appComponent = (applicationContext!! as Application).appComponent
-    val component = (appComponent as DebugPanelFlowComponent.Factory).createDebugPanelFlowComponent(
-      eventSink = mediator
-    )
+    val component = appComponent.debugPanelFlowComponentBuilder()
+      .eventSink(mediator)
+      .build()
     val service = NavigationService<DebugPanelFlow.Result>(
       nodeBuilder = DebugPanelFlow.nodeBuilder(component),
       onFinishRequest = {

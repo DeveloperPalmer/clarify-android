@@ -1,17 +1,19 @@
 package ru.sla.clarify.feature.debug.panel.ui.di
 
-import me.tatarka.inject.annotations.Provides
-import me.tatarka.inject.annotations.Qualifier
+import com.squareup.anvil.annotations.ContributesTo
+import dagger.Module
+import dagger.Provides
 import ru.sla.clarify.core.ui.WiredComposableScreen
 import ru.sla.clarify.feature.debug.panel.domain.di.DebugPanelScope
 import ru.sla.clarify.feature.debug.panel.ui.screen.featuretoggles.FeatureTogglesScreen
 import ru.sla.clarify.feature.debug.panel.ui.screen.featuretoggles.FeatureTogglesViewModel
 import ru.sla.clarify.feature.debug.panel.ui.screen.main.DebugPanelScreen
 import ru.sla.clarify.feature.debug.panel.ui.screen.main.DebugPanelViewModel
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
+import javax.inject.Qualifier
 
 @ContributesTo(DebugPanelScope::class)
-interface DebugPanelUiModule {
+@Module
+object DebugPanelUiModule {
   @Provides
   @WiredScreen(Screen.Main)
   fun provideMainScreen(model: DebugPanelViewModel): WiredComposableScreen {

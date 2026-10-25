@@ -1,15 +1,17 @@
 package ru.sla.clarify.feature.login.ui.di
 
-import me.tatarka.inject.annotations.Provides
-import me.tatarka.inject.annotations.Qualifier
+import com.squareup.anvil.annotations.ContributesTo
+import dagger.Module
+import dagger.Provides
 import ru.sla.clarify.core.ui.WiredComposableScreen
 import ru.sla.clarify.feature.login.domain.LoginScope
 import ru.sla.clarify.feature.login.ui.screen.credentials.CredentialsScreen
 import ru.sla.clarify.feature.login.ui.screen.credentials.CredentialsViewModel
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
+import javax.inject.Qualifier
 
 @ContributesTo(LoginScope::class)
-interface LoginUiModule {
+@Module
+object LoginUiModule {
   @Provides
   @WiredScreen(Screen.Credentials)
   fun provideCredentialsScreen(model: CredentialsViewModel): WiredComposableScreen {

@@ -1,40 +1,52 @@
 package ru.sla.clarify.app.routing.di
 
 import android.app.Activity
+import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.annotations.MergeSubcomponent
+import dagger.BindsInstance
+import dagger.Module
+import dagger.Provides
 import kotlinx.coroutines.CoroutineScope
-import me.tatarka.inject.annotations.Provides
 import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.core.domain.createCoroutineScope
 import ru.sla.clarify.core.domain.di.scope.ActivityContext
 import ru.sla.clarify.core.domain.di.scope.AppScope
+import ru.sla.clarify.core.domain.di.scope.ForScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.event.ViewEventsHostMediator
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesSubcomponent
-import software.amazon.lastmile.kotlin.inject.anvil.ForScope
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import ru.sla.clarify.feature.chat.conversation.routing.di.ConversationFlowComponent
+import ru.sla.clarify.feature.login.routing.di.LoginFlowComponent
 
 @SingleIn(AppFlowScope::class)
-@ContributesSubcomponent(AppFlowScope::class)
+@MergeSubcomponent(AppFlowScope::class)
 interface AppFlowComponent {
-  val nodeFactory: AppFlowNodeFactory
-  val viewEventsHostMediator: ViewEventsHostMediator
+  fun nodeFactory(): AppFlowNodeFactory
 
-  @Provides
-  fun provideAppFlowComponent(): AppFlowComponent = this
+  fun conversationFlowComponent(): ConversationFlowComponent
+  fun loginFlowComponent(): LoginFlowComponent
 
+  fun viewEventsHostMediator(): ViewEventsHostMediator
+
+  @MergeSubcomponent.Builder
+  interface Builder {
+    @BindsInstance
+    fun eventSink(sink: FlowEventSink): Builder
+
+    @BindsInstance
+    fun activity(@ActivityContext activity: Activity): Builder
+
+    fun build(): AppFlowComponent
+  }
+}
+
+@ContributesTo(AppFlowScope::class)
+@Module
+object AppFlowModule {
   @Provides
   @SingleIn(AppFlowScope::class)
   @ForScope(AppFlowScope::class)
   fun provideCoroutineScope(@ForScope(AppScope::class) parent: CoroutineScope): CoroutineScope {
     return createCoroutineScope(parent)
-  }
-
-  @ContributesSubcomponent.Factory(AppScope::class)
-  interface Factory {
-    fun createAppFlowComponent(
-      @ActivityContext
-      activity: Activity,
-      eventSink: FlowEventSink
-    ): AppFlowComponent
   }
 }

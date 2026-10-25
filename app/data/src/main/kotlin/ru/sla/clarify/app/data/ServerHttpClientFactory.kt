@@ -19,7 +19,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerializationException
-import me.tatarka.inject.annotations.Inject
 import ru.kode.pathfinder.PathFinder
 import ru.sla.clarify.app.data.entity.ServerErrorBody
 import ru.sla.clarify.app.data.entity.ServerException
@@ -29,8 +28,9 @@ import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshRejectedException
 import ru.sla.clarify.core.domain.di.scope.AppScope
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import java.io.IOException
+import javax.inject.Inject
 
 /**
  * Собирает единственный на приложение [HttpClient]: адрес, таймауты, разбор JSON, токен сессии
@@ -42,8 +42,7 @@ import java.io.IOException
  * конфигурации не виден и молча меняется от добавления соседнего плагина.
  */
 @SingleIn(AppScope::class)
-@Inject
-class ServerHttpClientFactory(
+class ServerHttpClientFactory @Inject constructor(
   private val pathFinder: PathFinder,
   private val authSessionRepository: AuthSessionRepository
 ) {

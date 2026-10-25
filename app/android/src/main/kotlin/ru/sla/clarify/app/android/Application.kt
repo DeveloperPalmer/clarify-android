@@ -3,7 +3,7 @@ package ru.sla.clarify.app.android
 import android.app.Application
 import ru.sla.clarify.app.android.di.AppComponent
 import ru.sla.clarify.app.android.di.AppComponentHolder
-import ru.sla.clarify.app.android.di.create
+import ru.sla.clarify.app.android.di.DaggerAppComponent
 import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
 import ru.sla.clarify.app.domain.buildconfig.BuildType
 import ru.sla.log.LogPriority
@@ -13,7 +13,9 @@ import ru.sla.log.android.AndroidLogDriver
 
 class Application : Application(), AppComponentHolder, BuildConfigProvider {
 
-  override val appComponent: AppComponent = AppComponent::class.create(this)
+  override val appComponent: AppComponent = DaggerAppComponent.builder()
+    .applicationContext(this)
+    .build()
 
   override val buildType: BuildType = when (val type = BuildConfig.BUILD_TYPE) {
     "debug" -> BuildType.Dev

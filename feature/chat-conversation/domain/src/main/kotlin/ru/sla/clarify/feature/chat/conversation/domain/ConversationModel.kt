@@ -4,16 +4,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.ReactiveModel
+import ru.sla.clarify.core.domain.di.scope.ForScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.entity.chat.Conversation
 import ru.sla.clarify.entity.chat.Peer
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
-import software.amazon.lastmile.kotlin.inject.anvil.ForScope
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import javax.inject.Inject
 
 @SingleIn(ConversationScope::class)
 class ConversationModel @Inject constructor(

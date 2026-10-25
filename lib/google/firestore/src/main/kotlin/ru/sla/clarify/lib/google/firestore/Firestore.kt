@@ -5,6 +5,7 @@ import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
+import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -12,7 +13,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.chat.api.BranchApi
 import ru.sla.clarify.chat.api.CommitApi
@@ -23,6 +23,7 @@ import ru.sla.clarify.chat.api.UnreadCountApi
 import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.date.toLocalDateTime
 import ru.sla.clarify.core.domain.di.scope.AppScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
@@ -79,9 +80,8 @@ import ru.sla.clarify.lib.google.firestore.entity.write.UpdateUserParams
 import ru.sla.clarify.lib.google.firestore.mapper.mapDocumentChanges
 import ru.sla.clarify.lib.google.firestore.mapper.toDomainModel
 import ru.sla.clarify.lib.google.firestore.mapper.toNetworkModel
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
+import javax.inject.Inject
 
 @Suppress("TooManyFunctions", "LargeClass")
 @SingleIn(AppScope::class)

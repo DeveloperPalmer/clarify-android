@@ -5,11 +5,11 @@ import android.content.SharedPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
-import me.tatarka.inject.annotations.Inject
 import ru.kode.plexus.core.Config
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import ru.sla.clarify.core.domain.di.scope.SingleIn
+import javax.inject.Inject
 
 @SingleIn(AppScope::class)
 class DebugConfig @Inject constructor(@ApplicationContext context: Context) : Config {

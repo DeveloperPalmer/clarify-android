@@ -1,12 +1,12 @@
 package ru.sla.clarify.app.data.channel
 
-import me.tatarka.inject.annotations.Inject
+import com.squareup.anvil.annotations.ContributesBinding
 import ru.sla.clarify.auth.session.domain.entity.SessionKey
 import ru.sla.clarify.core.domain.di.scope.AppScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.SettingsDatabase
 import ru.sla.clarify.database.entity.SettingsEntity
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import javax.inject.Inject
 
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)

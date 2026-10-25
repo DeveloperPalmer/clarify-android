@@ -1,7 +1,6 @@
 package ru.sla.clarify.feature.debug.panel.ui.screen.featuretoggles
 
 import kotlinx.coroutines.flow.map
-import me.tatarka.inject.annotations.Inject
 import ru.dimsuz.unicorn2.Machine
 import ru.dimsuz.unicorn2.machine
 import ru.kode.plexus.core.FeatureConfigsManager
@@ -10,6 +9,7 @@ import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.core.ui.screen.ViewModel
 import ru.sla.clarify.feature.debug.panel.domain.DebugPanelModel
 import ru.sla.clarify.feature.debug.panel.ui.routing.FlowEvent
+import javax.inject.Inject
 
 class FeatureTogglesViewModel @Inject constructor(
   private val eventSink: FlowEventSink,

@@ -1,11 +1,11 @@
 package ru.sla.clarify.feature.login.domain
 
 import kotlinx.coroutines.CoroutineScope
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.domain.AuthSessionRepository
 import ru.sla.clarify.core.domain.ReactiveModel
-import software.amazon.lastmile.kotlin.inject.anvil.ForScope
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import ru.sla.clarify.core.domain.di.scope.ForScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
+import javax.inject.Inject
 
 @SingleIn(LoginScope::class)
 class LoginModel @Inject constructor(

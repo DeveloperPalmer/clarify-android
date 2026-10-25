@@ -1,6 +1,6 @@
 plugins {
   id "android-library-convention"
-  id "kotlin-inject-convention"
+  id "dagger-convention"
   alias(libs.plugins.kotlinx.serialization)
 }
 

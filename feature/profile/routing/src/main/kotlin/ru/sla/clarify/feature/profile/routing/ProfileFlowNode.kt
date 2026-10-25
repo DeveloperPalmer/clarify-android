@@ -1,17 +1,17 @@
 package ru.sla.clarify.feature.profile.routing
 
 import kotlinx.coroutines.CoroutineScope
-import me.tatarka.inject.annotations.Inject
 import ru.kode.way.Event
 import ru.kode.way.Finish
 import ru.kode.way.FlowTransition
 import ru.kode.way.Ignore
 import ru.kode.way.Target
 import ru.kode.way.extension.node.hook.BaseFlowNode
+import ru.sla.clarify.core.domain.di.scope.ForScope
 import ru.sla.clarify.core.routing.FlowNodeScopeDisposalHook
 import ru.sla.clarify.feature.profile.domain.di.ProfileScope
 import ru.sla.clarify.feature.profile.ui.routing.FlowEvent
-import software.amazon.lastmile.kotlin.inject.anvil.ForScope
+import javax.inject.Inject
 
 class ProfileFlowNode @Inject constructor(
   @ForScope(ProfileScope::class)

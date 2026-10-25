@@ -1,13 +1,13 @@
 package ru.sla.clarify.app.data.channel
 
+import com.squareup.anvil.annotations.ContributesBinding
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocketSession
-import me.tatarka.inject.annotations.Inject
 import ru.kode.pathfinder.PathFinder
 import ru.sla.clarify.app.data.mapper.toWebSocketUrl
 import ru.sla.clarify.core.domain.di.scope.AppScope
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import ru.sla.clarify.core.domain.di.scope.SingleIn
+import javax.inject.Inject
 
 /**
  * Канал на том же клиенте, что и команды: один пул соединений, одни таймауты, один токен.

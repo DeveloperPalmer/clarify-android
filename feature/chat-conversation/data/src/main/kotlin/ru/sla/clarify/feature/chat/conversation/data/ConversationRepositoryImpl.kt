@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chat.conversation.data
 
 import androidx.room3.withWriteTransaction
+import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
@@ -8,12 +9,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.chat.api.ConversationApi
 import ru.sla.clarify.chat.api.UnreadCountApi
 import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.di.scope.AppScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.Email
 import ru.sla.clarify.core.domain.entity.GroupName
 import ru.sla.clarify.core.domain.entity.User
@@ -30,8 +31,7 @@ import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.chat.conversation.domain.entity.PeerNotFoundException
 import ru.sla.clarify.mapper.data.toCacheRow
 import ru.sla.clarify.mapper.data.toDomainModel
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import javax.inject.Inject
 
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)

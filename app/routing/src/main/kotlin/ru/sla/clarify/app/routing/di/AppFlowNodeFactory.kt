@@ -1,6 +1,6 @@
 package ru.sla.clarify.app.routing.di
 
-import me.tatarka.inject.annotations.Inject
+import com.squareup.anvil.annotations.ContributesBinding
 import ru.kode.way.FlowNode
 import ru.kode.way.NodeBuilder
 import ru.kode.way.ScreenNode
@@ -9,29 +9,26 @@ import ru.sla.clarify.app.routing.AppFlowNode
 import ru.sla.clarify.app.routing.AppFlowNodeBuilder
 import ru.sla.clarify.app.routing.InitialFlowResolveNode
 import ru.sla.clarify.feature.chat.conversation.routing.ConversationFlow
-import ru.sla.clarify.feature.chat.conversation.routing.di.ConversationFlowComponent
 import ru.sla.clarify.feature.login.routing.LoginFlow
-import ru.sla.clarify.feature.login.routing.di.LoginFlowComponent
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
+import javax.inject.Inject
+import javax.inject.Provider
 
 @ContributesBinding(AppFlowScope::class)
 class AppFlowNodeFactory @Inject constructor(
-  private val flowNode: () -> AppFlowNode,
+  private val flowNode: Provider<AppFlowNode>,
   private val appFlowComponent: AppFlowComponent
 ) : AppFlowNodeBuilder.Factory {
 
   override fun createRootNode(): FlowNode<*> {
-    return flowNode()
+    return flowNode.get()
   }
 
   override fun createConversationFlowNodeBuilder(): NodeBuilder {
-    val factory = appFlowComponent as ConversationFlowComponent.Factory
-    return ConversationFlow.nodeBuilder(factory.createConversationFlowComponent())
+    return ConversationFlow.nodeBuilder(appFlowComponent.conversationFlowComponent())
   }
 
   override fun createLoginFlowNodeBuilder(): NodeBuilder {
-    val factory = appFlowComponent as LoginFlowComponent.Factory
-    return LoginFlow.nodeBuilder(factory.createLoginFlowComponent())
+    return LoginFlow.nodeBuilder(appFlowComponent.loginFlowComponent())
   }
 
   override fun createInitialFlowResolveNode(): ScreenNode {

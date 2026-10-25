@@ -5,16 +5,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.domain.entity.AuthSessionState
 import ru.sla.clarify.core.domain.ReactiveModel
 import ru.sla.clarify.core.domain.di.scope.AppScope
+import ru.sla.clarify.core.domain.di.scope.ForScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.ApiError
 import ru.sla.clarify.core.domain.entity.ConnectivityError
 import ru.sla.clarify.core.domain.logError
 import ru.sla.log.asLog
-import software.amazon.lastmile.kotlin.inject.anvil.ForScope
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import javax.inject.Inject
 
 @SingleIn(AppScope::class)
 class AuthSessionModel @Inject constructor(

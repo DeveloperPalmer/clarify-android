@@ -1,32 +1,39 @@
 package ru.sla.clarify.feature.chronology.routing.di
 
+import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.annotations.MergeSubcomponent
+import dagger.BindsInstance
+import dagger.Module
+import dagger.Provides
 import kotlinx.coroutines.CoroutineScope
-import me.tatarka.inject.annotations.Provides
 import ru.sla.clarify.core.domain.createCoroutineScope
+import ru.sla.clarify.core.domain.di.scope.ForScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chronology.domain.di.ChronologyScope
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesSubcomponent
-import software.amazon.lastmile.kotlin.inject.anvil.ForScope
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import ru.sla.clarify.feature.chronology.domain.entity.TargetParams as ChronologyTargetParams
 
 @SingleIn(ChronologyScope::class)
-@ContributesSubcomponent(ChronologyScope::class)
+@MergeSubcomponent(ChronologyScope::class)
 interface ChronologyFlowComponent {
-  val nodeFactory: ChronologyFlowNodeFactory
+  fun nodeFactory(): ChronologyFlowNodeFactory
 
-  @Provides
-  fun provideChronologyFlowComponent(): ChronologyFlowComponent = this
+  @MergeSubcomponent.Builder
+  interface Builder {
+    @BindsInstance
+    fun params(params: ChronologyTargetParams): Builder
 
+    fun build(): ChronologyFlowComponent
+  }
+}
+
+@ContributesTo(ChronologyScope::class)
+@Module
+object ChronologyFlowModule {
   @Provides
   @SingleIn(ChronologyScope::class)
   @ForScope(ChronologyScope::class)
   fun provideCoroutineScope(@ForScope(DirectThreadScope::class) parent: CoroutineScope): CoroutineScope {
     return createCoroutineScope(parent)
-  }
-
-  @ContributesSubcomponent.Factory(DirectThreadScope::class)
-  interface Factory {
-    fun createChronologyFlowComponent(params: ChronologyTargetParams): ChronologyFlowComponent
   }
 }

@@ -1,6 +1,7 @@
 package ru.sla.clarify.feature.chat.group.thread.data
 
 import androidx.room3.withWriteTransaction
+import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -8,13 +9,13 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.chat.api.CommitApi
 import ru.sla.clarify.chat.api.ConversationApi
 import ru.sla.clarify.chat.api.MemberApi
 import ru.sla.clarify.chat.api.UnreadCountApi
 import ru.sla.clarify.chat.api.UserApi
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.ChatDatabase
 import ru.sla.clarify.database.entity.ChatMemberEntity
@@ -33,9 +34,8 @@ import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams
 import ru.sla.clarify.mapper.data.toCacheRow
 import ru.sla.clarify.mapper.data.toDomainModel
 import ru.sla.log.log
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
+import javax.inject.Inject
 
 @SingleIn(GroupThreadScope::class)
 @ContributesBinding(GroupThreadScope::class)

@@ -1,7 +1,8 @@
 package ru.sla.clarify.feature.debug.panel.data
 
-import me.tatarka.inject.annotations.Inject
+import com.squareup.anvil.annotations.ContributesBinding
 import ru.sla.clarify.chat.api.UserApi
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.toggle.AppFeature
 import ru.sla.clarify.feature.debug.panel.data.config.DebugConfig
@@ -9,8 +10,7 @@ import ru.sla.clarify.feature.debug.panel.domain.DebugPanelRepository
 import ru.sla.clarify.feature.debug.panel.domain.di.DebugPanelScope
 import ru.sla.clarify.feature.debug.panel.domain.entity.DebugUserException
 import ru.sla.clarify.feature.debug.panel.domain.entity.UserJsonError
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import javax.inject.Inject
 
 @SingleIn(DebugPanelScope::class)
 @ContributesBinding(DebugPanelScope::class)

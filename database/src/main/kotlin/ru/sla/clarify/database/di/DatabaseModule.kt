@@ -5,16 +5,18 @@ import androidx.room3.Room
 import androidx.room3.RoomDatabase
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.AndroidSQLiteDriver
-import me.tatarka.inject.annotations.Provides
+import com.squareup.anvil.annotations.ContributesTo
+import dagger.Module
+import dagger.Provides
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.ChatDatabase
 import ru.sla.clarify.database.SettingsDatabase
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @ContributesTo(AppScope::class)
-interface DatabaseModule {
+@Module
+object DatabaseModule {
 
   @SingleIn(AppScope::class)
   @Provides

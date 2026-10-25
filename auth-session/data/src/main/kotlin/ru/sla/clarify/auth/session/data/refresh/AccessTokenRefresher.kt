@@ -2,14 +2,14 @@ package ru.sla.clarify.auth.session.data.refresh
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.auth.session.domain.TokenRefresher
 import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshRejectedException
 import ru.sla.clarify.core.domain.di.scope.AppScope
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import ru.sla.clarify.core.domain.di.scope.SingleIn
+import javax.inject.Inject
 
 /**
  * Обновляет пару токенов ровно один раз на всех, кто упёрся в один и тот же протухший access.
@@ -23,8 +23,7 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
  * бы мьютекс, и гарантия единственности перестала бы существовать, оставшись на словах.
  */
 @SingleIn(AppScope::class)
-@Inject
-class AccessTokenRefresher(
+class AccessTokenRefresher @Inject constructor(
   private val persistence: AuthSessionPersistence,
   private val refresher: TokenRefresher
 ) {

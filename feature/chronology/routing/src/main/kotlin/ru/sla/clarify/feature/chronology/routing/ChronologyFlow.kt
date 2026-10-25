@@ -7,7 +7,7 @@ object ChronologyFlow {
 
   fun nodeBuilder(component: ChronologyFlowComponent): ChronologyFlowNodeBuilder {
     return ChronologyFlowNodeBuilder(
-      nodeFactory = component.nodeFactory,
+      nodeFactory = component.nodeFactory(),
       schema = schema
     )
   }

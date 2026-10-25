@@ -1,32 +1,39 @@
 package ru.sla.clarify.feature.debug.panel.routing.di
 
+import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.annotations.MergeSubcomponent
+import dagger.BindsInstance
+import dagger.Module
+import dagger.Provides
 import kotlinx.coroutines.CoroutineScope
-import me.tatarka.inject.annotations.Provides
 import ru.sla.clarify.core.domain.createCoroutineScope
 import ru.sla.clarify.core.domain.di.scope.AppScope
+import ru.sla.clarify.core.domain.di.scope.ForScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.ui.FlowEventSink
 import ru.sla.clarify.feature.debug.panel.domain.di.DebugPanelScope
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesSubcomponent
-import software.amazon.lastmile.kotlin.inject.anvil.ForScope
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 @SingleIn(DebugPanelScope::class)
-@ContributesSubcomponent(DebugPanelScope::class)
+@MergeSubcomponent(DebugPanelScope::class)
 interface DebugPanelFlowComponent {
-  val nodeFactory: DebugPanelFlowNodeFactory
+  fun nodeFactory(): DebugPanelFlowNodeFactory
 
-  @Provides
-  fun provideDebugPanelFlowComponent(): DebugPanelFlowComponent = this
+  @MergeSubcomponent.Builder
+  interface Builder {
+    @BindsInstance
+    fun eventSink(sink: FlowEventSink): Builder
 
+    fun build(): DebugPanelFlowComponent
+  }
+}
+
+@ContributesTo(DebugPanelScope::class)
+@Module
+object DebugPanelFlowModule {
   @Provides
   @SingleIn(DebugPanelScope::class)
   @ForScope(DebugPanelScope::class)
   fun provideCoroutineScope(@ForScope(AppScope::class) parent: CoroutineScope): CoroutineScope {
     return createCoroutineScope(parent)
-  }
-
-  @ContributesSubcomponent.Factory(AppScope::class)
-  interface Factory {
-    fun createDebugPanelFlowComponent(eventSink: FlowEventSink): DebugPanelFlowComponent
   }
 }

@@ -1,19 +1,19 @@
 package ru.sla.clarify.feature.login.data
 
+import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.tasks.await
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.domain.entity.AccessToken
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.chat.api.UserApi
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.feature.login.domain.LoginRepository
 import ru.sla.clarify.feature.login.domain.LoginScope
 import ru.sla.clarify.feature.login.entity.AuthResult
 import ru.sla.clarify.feature.login.entity.GoogleAuthError
 import ru.sla.clarify.lib.google.authenticator.GoogleAuthenticator
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import javax.inject.Inject
 import ru.sla.clarify.lib.google.authenticator.SignInResult as GoogleSignInResult
 
 @SingleIn(LoginScope::class)

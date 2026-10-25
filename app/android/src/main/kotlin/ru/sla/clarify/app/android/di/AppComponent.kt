@@ -1,35 +1,47 @@
 package ru.sla.clarify.app.android.di
 
 import android.content.Context
+import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.annotations.MergeComponent
+import dagger.BindsInstance
+import dagger.Module
+import dagger.Provides
 import kotlinx.coroutines.CoroutineScope
-import me.tatarka.inject.annotations.Provides
 import ru.kode.plexus.core.FeatureConfigsBuilder
 import ru.kode.plexus.core.FeatureConfigsManager
 import ru.sla.clarify.app.domain.buildconfig.BuildConfigProvider
 import ru.sla.clarify.app.domain.buildconfig.BuildType
+import ru.sla.clarify.app.routing.di.AppFlowComponent
 import ru.sla.clarify.core.domain.createCoroutineScope
 import ru.sla.clarify.core.domain.di.scope.AppScope
 import ru.sla.clarify.core.domain.di.scope.ApplicationContext
+import ru.sla.clarify.core.domain.di.scope.ForScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.toggle.DefaultConfig
 import ru.sla.clarify.feature.chat.conversation.domain.ConversationRepository
 import ru.sla.clarify.feature.debug.panel.data.config.DebugConfig
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesTo
-import software.amazon.lastmile.kotlin.inject.anvil.ForScope
-import software.amazon.lastmile.kotlin.inject.anvil.MergeComponent
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import ru.sla.clarify.feature.debug.panel.routing.di.DebugPanelFlowComponent
+import javax.inject.Provider
 
 @SingleIn(AppScope::class)
 @MergeComponent(AppScope::class)
-abstract class AppComponent(
-  @get:Provides
-  @get:ApplicationContext
-  val applicationContext: Context
-) {
-  abstract val conversationRepository: ConversationRepository
+interface AppComponent {
+  fun appFlowComponentBuilder(): AppFlowComponent.Builder
+  fun debugPanelFlowComponentBuilder(): DebugPanelFlowComponent.Builder
+
+  fun conversationRepository(): ConversationRepository
+
+  @MergeComponent.Builder
+  interface Builder {
+    @BindsInstance
+    fun applicationContext(@ApplicationContext context: Context): Builder
+    fun build(): AppComponent
+  }
 }
 
 @ContributesTo(AppScope::class)
-interface AppModule {
+@Module
+object AppModule {
   @Provides
   @SingleIn(AppScope::class)
   fun provideBuildConfiguration(@ApplicationContext context: Context): BuildConfigProvider {
@@ -46,13 +58,13 @@ interface AppModule {
   @Provides
   @SingleIn(AppScope::class)
   fun provideFeatureConfigsManager(
-    debugConfig: () -> DebugConfig,
+    debugConfig: Provider<DebugConfig>,
     buildConfigProvider: BuildConfigProvider
   ): FeatureConfigsManager {
     return FeatureConfigsBuilder()
       .apply {
         if (buildConfigProvider.buildType != BuildType.Release) {
-          addConfig(debugConfig())
+          addConfig(debugConfig.get())
         }
       }
       .addConfig(DefaultConfig())

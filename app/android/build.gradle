@@ -10,7 +10,7 @@ plugins {
   alias(libs.plugins.google.services)
 
   id "android-compose-convention"
-  id "kotlin-inject-convention"
+  id "dagger-convention"
   id "spotless-convention"
 }
 

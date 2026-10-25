@@ -3,6 +3,7 @@ package ru.sla.clarify.feature.chat.direct.thread.data
 import androidx.room3.withWriteTransaction
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
+import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.auth.session.data.storage.AuthSessionPersistence
 import ru.sla.clarify.chat.api.BranchApi
 import ru.sla.clarify.chat.api.CommitApi
@@ -26,6 +26,7 @@ import ru.sla.clarify.chat.api.MemberApi
 import ru.sla.clarify.chat.api.UnreadCountApi
 import ru.sla.clarify.chat.api.UserApi
 import ru.sla.clarify.core.domain.date.nowEpochNanos
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.core.domain.entity.User
 import ru.sla.clarify.core.domain.entity.UserId
 import ru.sla.clarify.database.ChatDatabase
@@ -57,9 +58,8 @@ import ru.sla.clarify.mapper.data.toReplyRecord
 import ru.sla.clarify.mapper.data.unreadDelta
 import ru.sla.clarify.mapper.data.withReadStatus
 import ru.sla.log.log
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import java.time.LocalDateTime
+import javax.inject.Inject
 
 @Suppress("TooManyFunctions")
 @SingleIn(DirectThreadScope::class)

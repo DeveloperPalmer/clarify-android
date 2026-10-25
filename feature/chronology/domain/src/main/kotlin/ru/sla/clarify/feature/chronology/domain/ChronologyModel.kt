@@ -3,12 +3,12 @@ package ru.sla.clarify.feature.chronology.domain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import me.tatarka.inject.annotations.Inject
 import ru.sla.clarify.core.domain.ReactiveModel
+import ru.sla.clarify.core.domain.di.scope.ForScope
+import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chronology.domain.di.ChronologyScope
 import ru.sla.clarify.feature.chronology.domain.entity.ChronologyHistory
-import software.amazon.lastmile.kotlin.inject.anvil.ForScope
-import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
+import javax.inject.Inject
 
 /**
  * История беседы для экрана хронологии.

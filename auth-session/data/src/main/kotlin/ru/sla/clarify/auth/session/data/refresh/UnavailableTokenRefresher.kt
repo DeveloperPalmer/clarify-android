@@ -1,12 +1,12 @@
 package ru.sla.clarify.auth.session.data.refresh
 
-import me.tatarka.inject.annotations.Inject
+import com.squareup.anvil.annotations.ContributesBinding
 import ru.sla.clarify.auth.session.domain.TokenRefresher
 import ru.sla.clarify.auth.session.domain.entity.AuthTokens
 import ru.sla.clarify.auth.session.domain.entity.RefreshRejectedException
 import ru.sla.clarify.auth.session.domain.entity.RefreshToken
 import ru.sla.clarify.core.domain.di.scope.AppScope
-import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
+import javax.inject.Inject
 
 /**
  * Отказывает всегда: обменять refresh-токен не на что, пока в API нет такой операции.
