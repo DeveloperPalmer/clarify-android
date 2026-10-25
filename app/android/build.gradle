@@ -107,7 +107,10 @@ dependencies {
   implementation project(":build-config")
 
   implementation project(":uikit")
+  implementation project(":database")
+  implementation project(":app:data")
   implementation project(":app:routing")
+  implementation project(":auth-session:data")
   implementation project(":feature:chat-conversation:data")
   implementation project(":feature:chat-conversation:domain")
   implementation project(":feature:debug-panel:routing")

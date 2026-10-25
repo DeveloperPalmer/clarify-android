@@ -5,7 +5,6 @@ import androidx.room3.Room
 import androidx.room3.RoomDatabase
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.AndroidSQLiteDriver
-import com.squareup.anvil.annotations.ContributesTo
 import dagger.Module
 import dagger.Provides
 import ru.sla.clarify.core.domain.di.scope.AppScope
@@ -15,7 +14,6 @@ import ru.sla.clarify.database.ChatDatabase
 import ru.sla.clarify.database.SettingsDatabase
 
 @Module
-@ContributesTo(AppScope::class)
 object DatabaseModule {
 
   @SingleIn(AppScope::class)
