@@ -1,24 +1,31 @@
 package ru.sla.clarify.feature.chat.branch.routing.di
 
-import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.BindsInstance
 import dagger.Module
 import dagger.Provides
+import dagger.Subcomponent
 import kotlinx.coroutines.CoroutineScope
 import ru.sla.clarify.core.domain.createCoroutineScope
 import ru.sla.clarify.core.domain.di.scope.ForScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.feature.chat.branch.data.di.BranchDataModule
 import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
+import ru.sla.clarify.feature.chat.branch.ui.di.BranchUiModule
 import ru.sla.clarify.feature.chat.direct.thread.domain.di.DirectThreadScope
 import ru.sla.clarify.feature.chat.branch.domain.entity.TargetParams as BranchTargetParams
 
 @SingleIn(BranchScope::class)
-@MergeSubcomponent(BranchScope::class)
+@Subcomponent(
+  modules = [
+    BranchDataModule::class,
+    BranchFlowModule::class,
+    BranchUiModule::class
+  ]
+)
 interface BranchFlowComponent {
   fun nodeFactory(): BranchFlowNodeFactory
 
-  @MergeSubcomponent.Builder
+  @Subcomponent.Builder
   interface Builder {
     @BindsInstance
     fun params(params: BranchTargetParams): Builder
@@ -28,7 +35,6 @@ interface BranchFlowComponent {
 }
 
 @Module
-@ContributesTo(BranchScope::class)
 object BranchFlowModule {
   @Provides
   @SingleIn(BranchScope::class)

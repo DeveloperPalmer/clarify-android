@@ -1,24 +1,31 @@
 package ru.sla.clarify.feature.chat.group.thread.routing.di
 
-import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.BindsInstance
 import dagger.Module
 import dagger.Provides
+import dagger.Subcomponent
 import kotlinx.coroutines.CoroutineScope
 import ru.sla.clarify.core.domain.createCoroutineScope
 import ru.sla.clarify.core.domain.di.scope.ForScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
+import ru.sla.clarify.feature.chat.group.thread.data.di.GroupThreadDataModule
 import ru.sla.clarify.feature.chat.group.thread.domain.di.GroupThreadScope
 import ru.sla.clarify.feature.chat.group.thread.domain.entity.TargetParams
+import ru.sla.clarify.feature.chat.group.thread.ui.di.GroupThreadUiModule
 
 @SingleIn(GroupThreadScope::class)
-@MergeSubcomponent(GroupThreadScope::class)
+@Subcomponent(
+  modules = [
+    GroupThreadDataModule::class,
+    GroupThreadFlowModule::class,
+    GroupThreadUiModule::class
+  ]
+)
 interface GroupThreadFlowComponent {
   fun nodeFactory(): GroupThreadFlowNodeFactory
 
-  @MergeSubcomponent.Builder
+  @Subcomponent.Builder
   interface Builder {
     @BindsInstance
     fun params(target: TargetParams): Builder
@@ -28,7 +35,6 @@ interface GroupThreadFlowComponent {
 }
 
 @Module
-@ContributesTo(GroupThreadScope::class)
 object GroupThreadFlowModule {
   @Provides
   @SingleIn(GroupThreadScope::class)

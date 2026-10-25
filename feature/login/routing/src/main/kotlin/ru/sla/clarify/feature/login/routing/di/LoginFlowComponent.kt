@@ -1,24 +1,30 @@
 package ru.sla.clarify.feature.login.routing.di
 
-import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.Module
 import dagger.Provides
+import dagger.Subcomponent
 import kotlinx.coroutines.CoroutineScope
 import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.core.domain.createCoroutineScope
 import ru.sla.clarify.core.domain.di.scope.ForScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
+import ru.sla.clarify.feature.login.data.di.LoginDataModule
 import ru.sla.clarify.feature.login.domain.LoginScope
+import ru.sla.clarify.feature.login.ui.di.LoginUiModule
 
 @SingleIn(LoginScope::class)
-@MergeSubcomponent(LoginScope::class)
+@Subcomponent(
+  modules = [
+    LoginDataModule::class,
+    LoginFlowModule::class,
+    LoginUiModule::class
+  ]
+)
 interface LoginFlowComponent {
   fun nodeFactory(): LoginFlowNodeFactory
 }
 
 @Module
-@ContributesTo(LoginScope::class)
 object LoginFlowModule {
   @Provides
   @SingleIn(LoginScope::class)
