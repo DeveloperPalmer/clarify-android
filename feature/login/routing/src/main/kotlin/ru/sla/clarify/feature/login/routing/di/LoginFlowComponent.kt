@@ -17,8 +17,8 @@ interface LoginFlowComponent {
   fun nodeFactory(): LoginFlowNodeFactory
 }
 
-@ContributesTo(LoginScope::class)
 @Module
+@ContributesTo(LoginScope::class)
 object LoginFlowModule {
   @Provides
   @SingleIn(LoginScope::class)

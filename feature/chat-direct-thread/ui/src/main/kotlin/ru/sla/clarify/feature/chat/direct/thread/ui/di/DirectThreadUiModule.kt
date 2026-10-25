@@ -9,8 +9,8 @@ import ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread.DirectThreadSc
 import ru.sla.clarify.feature.chat.direct.thread.ui.screen.thread.DirectThreadViewModel
 import javax.inject.Qualifier
 
-@ContributesTo(DirectThreadScope::class)
 @Module
+@ContributesTo(DirectThreadScope::class)
 object DirectThreadUiModule {
   @Provides
   @WiredScreen(Screen.DirectThread)

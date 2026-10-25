@@ -27,8 +27,8 @@ interface ChronologyFlowComponent {
   }
 }
 
-@ContributesTo(ChronologyScope::class)
 @Module
+@ContributesTo(ChronologyScope::class)
 object ChronologyFlowModule {
   @Provides
   @SingleIn(ChronologyScope::class)

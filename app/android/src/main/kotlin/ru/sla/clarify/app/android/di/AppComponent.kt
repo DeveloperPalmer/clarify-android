@@ -39,8 +39,8 @@ interface AppComponent {
   }
 }
 
-@ContributesTo(AppScope::class)
 @Module
+@ContributesTo(AppScope::class)
 object AppModule {
   @Provides
   @SingleIn(AppScope::class)

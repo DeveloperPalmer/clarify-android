@@ -27,8 +27,8 @@ interface DebugPanelFlowComponent {
   }
 }
 
-@ContributesTo(DebugPanelScope::class)
 @Module
+@ContributesTo(DebugPanelScope::class)
 object DebugPanelFlowModule {
   @Provides
   @SingleIn(DebugPanelScope::class)

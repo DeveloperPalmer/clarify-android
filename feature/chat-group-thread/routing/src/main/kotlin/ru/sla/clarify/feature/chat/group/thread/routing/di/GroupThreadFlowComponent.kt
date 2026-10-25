@@ -27,8 +27,8 @@ interface GroupThreadFlowComponent {
   }
 }
 
-@ContributesTo(GroupThreadScope::class)
 @Module
+@ContributesTo(GroupThreadScope::class)
 object GroupThreadFlowModule {
   @Provides
   @SingleIn(GroupThreadScope::class)

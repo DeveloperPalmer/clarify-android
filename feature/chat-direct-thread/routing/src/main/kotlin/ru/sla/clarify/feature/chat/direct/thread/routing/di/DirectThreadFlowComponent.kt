@@ -31,8 +31,8 @@ interface DirectThreadFlowComponent {
   }
 }
 
-@ContributesTo(DirectThreadScope::class)
 @Module
+@ContributesTo(DirectThreadScope::class)
 object DirectThreadFlowModule {
   @Provides
   @SingleIn(DirectThreadScope::class)

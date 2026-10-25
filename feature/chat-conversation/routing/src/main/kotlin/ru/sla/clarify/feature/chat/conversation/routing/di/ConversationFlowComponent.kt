@@ -23,8 +23,8 @@ interface ConversationFlowComponent {
   fun groupThreadFlowComponent(): GroupThreadFlowComponent.Builder
 }
 
-@ContributesTo(ConversationScope::class)
 @Module
+@ContributesTo(ConversationScope::class)
 object ConversationFlowModule {
   @Provides
   @SingleIn(ConversationScope::class)

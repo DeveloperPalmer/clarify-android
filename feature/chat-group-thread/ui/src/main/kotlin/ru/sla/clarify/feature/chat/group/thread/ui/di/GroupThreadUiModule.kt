@@ -11,8 +11,8 @@ import ru.sla.clarify.feature.chat.group.thread.ui.screen.main.GroupThreadScreen
 import ru.sla.clarify.feature.chat.group.thread.ui.screen.main.GroupThreadViewModel
 import javax.inject.Qualifier
 
-@ContributesTo(GroupThreadScope::class)
 @Module
+@ContributesTo(GroupThreadScope::class)
 object GroupThreadUiModule {
   @Provides
   @WiredScreen(Screen.Main)

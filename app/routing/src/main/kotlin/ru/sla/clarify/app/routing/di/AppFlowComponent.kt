@@ -40,8 +40,8 @@ interface AppFlowComponent {
   }
 }
 
-@ContributesTo(AppFlowScope::class)
 @Module
+@ContributesTo(AppFlowScope::class)
 object AppFlowModule {
   @Provides
   @SingleIn(AppFlowScope::class)

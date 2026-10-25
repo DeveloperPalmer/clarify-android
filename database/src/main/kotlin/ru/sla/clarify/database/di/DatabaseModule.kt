@@ -14,8 +14,8 @@ import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.database.ChatDatabase
 import ru.sla.clarify.database.SettingsDatabase
 
-@ContributesTo(AppScope::class)
 @Module
+@ContributesTo(AppScope::class)
 object DatabaseModule {
 
   @SingleIn(AppScope::class)

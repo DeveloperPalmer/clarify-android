@@ -9,8 +9,8 @@ import ru.sla.clarify.feature.chat.conversation.ui.screen.conversation.Conversat
 import ru.sla.clarify.feature.chat.conversation.ui.screen.conversation.ConversationViewModel
 import javax.inject.Qualifier
 
-@ContributesTo(ConversationScope::class)
 @Module
+@ContributesTo(ConversationScope::class)
 object ConversationUiModule {
   @Provides
   @WiredScreen(Screen.Conversation)

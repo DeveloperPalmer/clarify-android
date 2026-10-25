@@ -27,8 +27,8 @@ interface BranchFlowComponent {
   }
 }
 
-@ContributesTo(BranchScope::class)
 @Module
+@ContributesTo(BranchScope::class)
 object BranchFlowModule {
   @Provides
   @SingleIn(BranchScope::class)

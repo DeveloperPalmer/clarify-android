@@ -17,8 +17,8 @@ interface ProfileFlowComponent {
   fun nodeFactory(): ProfileFlowNodeFactory
 }
 
-@ContributesTo(ProfileScope::class)
 @Module
+@ContributesTo(ProfileScope::class)
 object ProfileFlowModule {
   @Provides
   @SingleIn(ProfileScope::class)

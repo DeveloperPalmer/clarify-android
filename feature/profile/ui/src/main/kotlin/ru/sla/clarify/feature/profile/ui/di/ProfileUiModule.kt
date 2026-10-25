@@ -9,8 +9,8 @@ import ru.sla.clarify.feature.profile.ui.screen.main.ProfileScreen
 import ru.sla.clarify.feature.profile.ui.screen.main.ProfileViewModel
 import javax.inject.Qualifier
 
-@ContributesTo(ProfileScope::class)
 @Module
+@ContributesTo(ProfileScope::class)
 object ProfileUiModule {
   @Provides
   @WiredScreen(Screen.Main)

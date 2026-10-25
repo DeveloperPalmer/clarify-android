@@ -8,8 +8,8 @@ import ru.sla.clarify.feature.chat.branch.domain.di.BranchScope
 import ru.sla.clarify.feature.chat.branch.ui.screen.BranchScreen
 import ru.sla.clarify.feature.chat.branch.ui.screen.BranchViewModel
 
-@ContributesTo(BranchScope::class)
 @Module
+@ContributesTo(BranchScope::class)
 object BranchUiModule {
   @Provides
   fun provideBranchScreen(model: BranchViewModel): WiredComposableScreen {

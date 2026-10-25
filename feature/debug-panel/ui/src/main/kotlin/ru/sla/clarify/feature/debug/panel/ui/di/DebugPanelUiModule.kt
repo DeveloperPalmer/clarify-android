@@ -11,8 +11,8 @@ import ru.sla.clarify.feature.debug.panel.ui.screen.main.DebugPanelScreen
 import ru.sla.clarify.feature.debug.panel.ui.screen.main.DebugPanelViewModel
 import javax.inject.Qualifier
 
-@ContributesTo(DebugPanelScope::class)
 @Module
+@ContributesTo(DebugPanelScope::class)
 object DebugPanelUiModule {
   @Provides
   @WiredScreen(Screen.Main)

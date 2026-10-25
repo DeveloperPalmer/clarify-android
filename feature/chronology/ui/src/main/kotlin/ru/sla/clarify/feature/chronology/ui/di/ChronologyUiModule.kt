@@ -8,8 +8,8 @@ import ru.sla.clarify.feature.chronology.domain.di.ChronologyScope
 import ru.sla.clarify.feature.chronology.ui.screen.chronology.ChronologyScreen
 import ru.sla.clarify.feature.chronology.ui.screen.chronology.ChronologyViewModel
 
-@ContributesTo(ChronologyScope::class)
 @Module
+@ContributesTo(ChronologyScope::class)
 object ChronologyUiModule {
   @Provides
   fun provideChronologyScreen(model: ChronologyViewModel): WiredComposableScreen {
