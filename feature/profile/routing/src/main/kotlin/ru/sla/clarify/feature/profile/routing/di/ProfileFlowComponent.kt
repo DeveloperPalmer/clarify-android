@@ -1,24 +1,28 @@
 package ru.sla.clarify.feature.profile.routing.di
 
-import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.Module
 import dagger.Provides
+import dagger.Subcomponent
 import kotlinx.coroutines.CoroutineScope
 import ru.sla.clarify.core.domain.createCoroutineScope
 import ru.sla.clarify.core.domain.di.scope.ForScope
 import ru.sla.clarify.core.domain.di.scope.SingleIn
 import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.profile.domain.di.ProfileScope
+import ru.sla.clarify.feature.profile.ui.di.ProfileUiModule
 
 @SingleIn(ProfileScope::class)
-@MergeSubcomponent(ProfileScope::class)
+@Subcomponent(
+  modules = [
+    ProfileFlowModule::class,
+    ProfileUiModule::class
+  ]
+)
 interface ProfileFlowComponent {
   fun nodeFactory(): ProfileFlowNodeFactory
 }
 
 @Module
-@ContributesTo(ProfileScope::class)
 object ProfileFlowModule {
   @Provides
   @SingleIn(ProfileScope::class)
