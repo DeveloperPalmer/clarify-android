@@ -1,16 +1,13 @@
 package ru.sla.clarify.feature.chat.conversation.ui.di
 
-import com.squareup.anvil.annotations.ContributesTo
 import dagger.Module
 import dagger.Provides
 import ru.sla.clarify.core.ui.WiredComposableScreen
-import ru.sla.clarify.feature.chat.conversation.domain.di.ConversationScope
 import ru.sla.clarify.feature.chat.conversation.ui.screen.conversation.ConversationScreen
 import ru.sla.clarify.feature.chat.conversation.ui.screen.conversation.ConversationViewModel
 import javax.inject.Qualifier
 
 @Module
-@ContributesTo(ConversationScope::class)
 object ConversationUiModule {
   @Provides
   @WiredScreen(Screen.Conversation)

@@ -1,11 +1,10 @@
 package ru.sla.clarify.app.routing.di
 
 import android.app.Activity
-import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.BindsInstance
 import dagger.Module
 import dagger.Provides
+import dagger.Subcomponent
 import kotlinx.coroutines.CoroutineScope
 import ru.sla.clarify.app.domain.di.AppFlowScope
 import ru.sla.clarify.core.domain.createCoroutineScope
@@ -19,7 +18,11 @@ import ru.sla.clarify.feature.chat.conversation.routing.di.ConversationFlowCompo
 import ru.sla.clarify.feature.login.routing.di.LoginFlowComponent
 
 @SingleIn(AppFlowScope::class)
-@MergeSubcomponent(AppFlowScope::class)
+@Subcomponent(
+  modules = [
+    AppFlowModule::class
+  ]
+)
 interface AppFlowComponent {
   fun nodeFactory(): AppFlowNodeFactory
 
@@ -28,7 +31,7 @@ interface AppFlowComponent {
 
   fun viewEventsHostMediator(): ViewEventsHostMediator
 
-  @MergeSubcomponent.Builder
+  @Subcomponent.Builder
   interface Builder {
     @BindsInstance
     fun eventSink(sink: FlowEventSink): Builder
@@ -41,7 +44,6 @@ interface AppFlowComponent {
 }
 
 @Module
-@ContributesTo(AppFlowScope::class)
 object AppFlowModule {
   @Provides
   @SingleIn(AppFlowScope::class)
