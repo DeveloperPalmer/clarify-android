@@ -5,7 +5,6 @@ import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
-import com.squareup.anvil.annotations.ContributesBinding
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -85,13 +84,6 @@ import javax.inject.Inject
 
 @Suppress("TooManyFunctions", "LargeClass")
 @SingleIn(AppScope::class)
-@ContributesBinding(AppScope::class, boundType = BranchApi::class)
-@ContributesBinding(AppScope::class, boundType = CommitApi::class)
-@ContributesBinding(AppScope::class, boundType = ConversationApi::class)
-@ContributesBinding(AppScope::class, boundType = MergeRequestApi::class)
-@ContributesBinding(AppScope::class, boundType = MemberApi::class)
-@ContributesBinding(AppScope::class, boundType = UnreadCountApi::class)
-@ContributesBinding(AppScope::class, boundType = UserApi::class)
 class Firestore @Inject constructor(
   firestoreWrapper: FirestoreWrapper,
   private val authSessionPersistence: AuthSessionPersistence,
